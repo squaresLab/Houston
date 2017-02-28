@@ -46,7 +46,7 @@ class CollisionOutcome(MissionOutcome):
     def __str__(self):
         return "Collision()"
 
-class ReachedGoalOutcome(MissionOutcome):
+class GoalReachedOutcome(MissionOutcome):
     def __init__(self, time, distance, pos_error):
         self.time = time
         self.distance = distance
