@@ -19,6 +19,9 @@
 # | SystemCrashed
 # | PowerExpired
 #
+#
+# TODO:
+# - need to be able to pass parameters to launch file
 import signal
 import os
 import time
@@ -128,22 +131,14 @@ class MissionControl(object):
 
     # Executes the mission and returns the outcome as a MissionOutcome
     # instance
-    #
-    # * fire up a given launch file
-    # * ensure that ROS is cleanly killed
-    #
     def execute(self):
         launch = None
         try:
-            # start roscore
-            roscore = subprocess.Popen('roscore')
-            time.sleep(ROSCORE_WAIT)
-    
             # launch ROS
             file_path = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
             uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
             roslaunch.configure_logging(uuid)
-            launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
+            launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path], is_core=True)
             launch.start()
 
             # setup mission controller
@@ -188,7 +183,6 @@ class MissionControl(object):
         finally:
             if launch:
                 launch.shutdown()
-            os.killpg(roscore.pid, signal.SIGKILL)
 
     def __init__(self, goal):
         assert isinstance(goal, tuple) and len(goal) == 3
