@@ -53,7 +53,7 @@ class GoalReachedOutcome(MissionOutcome):
         self.pos_error = pos_error
 
     def __str__(self):
-        return "ReachedGoal(Time = {}, Distance = {}, Pos. Error = {})".format(self.time, self.distance, self.accuracy)
+        return "ReachedGoal(Time = {}, Distance = {}, Pos. Error = {})".format(self.time, self.distance, self.pos_error)
 
 class TimeExpiredOutcome(MissionOutcome):
     def __init__(self, distance, pos_error):
