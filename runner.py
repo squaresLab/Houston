@@ -11,7 +11,6 @@
 # * subscribe to bumper event topic
 # * terminate test as soon as we collide
 #
-#
 # Outcomes
 #
 # | Collision
@@ -39,9 +38,6 @@ from nav_msgs.msg import Odometry
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, Quaternion
-
-# TODO: should be passed as part of the mission description
-MAX_RUN_TIME = 60
 
 # The name of the model for the robot within Gazebo
 # TODO: allow command line customisation (so we can use this with other robots)
@@ -134,6 +130,7 @@ class MissionControl(object):
         launch = None
         try:
             # launch ROS
+            # TODO: ability to pass parameters
             file_path = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
             uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
             roslaunch.configure_logging(uuid)
@@ -163,7 +160,7 @@ class MissionControl(object):
             client.send_goal(goal)
 
             # wait until goal is reached or max time is expired
-            client.wait_for_result(rospy.Duration(MAX_RUN_TIME))
+            client.wait_for_result(rospy.Duration(self.time_limit))
 
             time_end = rospy.get_time()
             time_elapsed = time_end - time_start
@@ -183,8 +180,10 @@ class MissionControl(object):
             if launch:
                 launch.shutdown()
 
-    def __init__(self, goal):
+    def __init__(self, time_limit, goal):
         assert isinstance(goal, tuple) and len(goal) == 3
+        assert time_limit > 0
+        self.time_limit = time_limit
         self.goal_position = Point(goal[0], goal[1], goal[2])
         self.goal_orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         self.collided = False
@@ -197,7 +196,7 @@ if __name__ == "__main__":
     target = (target_x, target_y, 0.0)
 
     # build the mission
-    mission = MissionControl(target)
+    mission = MissionControl(60, target)
 
     # execute!
     print(mission.execute())
