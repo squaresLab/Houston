@@ -18,9 +18,6 @@
 # | SystemCrashed
 # | PowerExpired
 #
-#
-# TODO:
-# - need to be able to pass parameters to launch file
 import signal
 import os
 import time
@@ -31,7 +28,9 @@ import math
 import subprocess
 import roslaunch
 
-#from roslaunch.scriptapi import ROSLaunch
+import xml.etree.ElementTree as ET
+
+from tempfile import NamedTemporaryFile
 from kobuki_msgs.msg import BumperEvent
 from gazebo_msgs.msg import ModelStates
 from nav_msgs.msg import Odometry
@@ -43,13 +42,33 @@ from geometry_msgs.msg import Point, Quaternion
 # TODO: allow command line customisation (so we can use this with other robots)
 ROBOT_MODEL_NAME = "mobile_base"
 
+# Used to construct a temporary launch file to pass along launch-time
+# parameters to ROSLaunchParent (since there isn't a native way to supply
+# parameters).
+class EphemeralLaunchFile(object):
+
+    def __init__(self, parameters):
+        root = ET.Element('launch')
+        for (param, value) in parameters.items():
+            arg = ET.SubElement(root, 'arg')
+            arg.set('name', param)
+            arg.set('value', value)
+        tree = ET.ElementTree(root)
+        self.handle = NamedTemporaryFile(suffix='.launch')
+        tree.write(self.path())
+
+    def path(self):
+        return self.handle.name
+
 # Used to describe an outcome to the mission
 class MissionOutcome(object):
     pass
 
+
 class CollisionOutcome(MissionOutcome):
     def __str__(self):
         return "Collision()"
+
 
 class GoalReachedOutcome(MissionOutcome):
     def __init__(self, time, distance, pos_error):
@@ -59,6 +78,7 @@ class GoalReachedOutcome(MissionOutcome):
 
     def __str__(self):
         return "ReachedGoal(Time = {}, Distance = {}, Pos. Error = {})".format(self.time, self.distance, self.pos_error)
+
 
 class TimeExpiredOutcome(MissionOutcome):
     def __init__(self, distance, pos_error):
@@ -129,12 +149,14 @@ class MissionControl(object):
     def execute(self):
         launch = None
         try:
+            # generate an ephemeral launch file to pass the parameters
+            parameter_file = EphemeralLaunchFile(self.launch_parameters)
+
             # launch ROS
-            # TODO: ability to pass parameters
-            file_path = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
             uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
             roslaunch.configure_logging(uuid)
-            launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path], is_core=True)
+            launch_files = [parameter_file.path(), self.launch_file]
+            launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
             launch.start()
 
             # setup mission controller
@@ -180,12 +202,15 @@ class MissionControl(object):
             if launch:
                 launch.shutdown()
 
-    def __init__(self, time_limit, goal):
+
+    def __init__(self, time_limit, goal, launch_file, parameters):
         assert isinstance(goal, tuple) and len(goal) == 3
         assert time_limit > 0
         self.time_limit = time_limit
         self.goal_position = Point(goal[0], goal[1], goal[2])
         self.goal_orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+        self.launch_file = launch_file
+        self.launch_parameters = parameters
         self.collided = False
 
 
@@ -196,7 +221,8 @@ if __name__ == "__main__":
     target = (target_x, target_y, 0.0)
 
     # build the mission
-    mission = MissionControl(60, target)
+    configuration = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
+    mission = MissionControl(60, target, configuration, {'gui': 'false'})
 
     # execute!
     print(mission.execute())
