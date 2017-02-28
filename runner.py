@@ -133,6 +133,7 @@ class MissionControl(object):
     # * ensure that ROS is cleanly killed
     #
     def execute(self):
+        launch = None
         try:
             # start roscore
             roscore = subprocess.Popen('roscore')
@@ -185,7 +186,8 @@ class MissionControl(object):
 
         # ensure ROS is cleanly exited
         finally:
-            #launch.stop()
+            if launch:
+                launch.shutdown()
             os.killpg(roscore.pid, signal.SIGKILL)
 
     def __init__(self, goal):
