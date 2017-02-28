@@ -47,13 +47,20 @@ ROBOT_MODEL_NAME = "mobile_base"
 # parameters).
 class EphemeralLaunchFile(object):
 
-    def __init__(self, parameters):
-        root = ET.Element('launch')
+    def __init__(self, base_file, parameters):
+        # load the contents of the base file
+        tree = ET.ElementTree()
+        tree.parse(base_file)
+        root = tree.getroot()
+
+        # find the corresponding argument for each parameter
+        new_parameters = []
         for (param, value) in parameters.items():
-            arg = ET.SubElement(root, 'arg')
-            arg.set('name', param)
-            arg.set('value', value)
-        tree = ET.ElementTree(root)
+            for arg in root.findall("arg[@name='{}']".format(param)):
+                arg.attrib.pop('default')
+                arg.set('value', value)
+
+        # write the modified XML to a temporary file
         self.handle = NamedTemporaryFile(suffix='.launch')
         tree.write(self.path())
 
@@ -150,12 +157,13 @@ class MissionControl(object):
         launch = None
         try:
             # generate an ephemeral launch file to pass the parameters
-            parameter_file = EphemeralLaunchFile(self.launch_parameters)
+            ephemeral_launch = EphemeralLaunchFile( self.launch_file, \
+                                                    self.launch_parameters)
 
             # launch ROS
             uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
             roslaunch.configure_logging(uuid)
-            launch_files = [parameter_file.path(), self.launch_file]
+            launch_files = [ephemeral_launch.path()]
             launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
             launch.start()
 
