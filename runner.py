@@ -19,11 +19,17 @@
 # | SystemCrashed
 # | PowerExpired
 #
+import signal
+import os
+import time
 import sys
 import rospy
 import actionlib
 import math
+import subprocess
+import roslaunch
 
+#from roslaunch.scriptapi import ROSLaunch
 from kobuki_msgs.msg import BumperEvent
 from gazebo_msgs.msg import ModelStates
 from nav_msgs.msg import Odometry
@@ -37,6 +43,9 @@ MAX_RUN_TIME = 60
 # The name of the model for the robot within Gazebo
 # TODO: allow command line customisation (so we can use this with other robots)
 ROBOT_MODEL_NAME = "mobile_base"
+
+# Number of seconds to wait for roscore to initialise
+ROSCORE_WAIT = 5
 
 # Used to describe an outcome to the mission
 class MissionOutcome(object):
@@ -74,10 +83,13 @@ def euclidean(a, b):
     return math.sqrt(d)
 
 class MissionControl(object):
+
+    # Records any collisions registered via the bumper sensors
     def bumper_listener(self, event):
         if event.state == 1:
             rospy.loginfo('BUMPER: We hit something!')
             self.collided = True
+
 
     # Determines the outcome of the mission
     def assess(self, goal_reached, time_elapsed):
@@ -113,54 +125,77 @@ class MissionControl(object):
         else:
             return TimeExpiredOutcome(dist, pos_error)
 
+
     # Executes the mission and returns the outcome as a MissionOutcome
     # instance
+    #
+    # * fire up a given launch file
+    # * ensure that ROS is cleanly killed
+    #
     def execute(self):
-        rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, \
-                         self.bumper_listener, callback_args=[self])
-        client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        try:
+            # start roscore
+            roscore = subprocess.Popen('roscore')
+            time.sleep(ROSCORE_WAIT)
+    
+            # launch ROS
+            file_path = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
+            uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+            roslaunch.configure_logging(uuid)
+            launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
+            launch.start()
 
-        # TODO: concurrency dangers?
-        while not client.wait_for_server(rospy.Duration.from_sec(5.0)):
-            rospy.loginfo("Waiting for move_base client action server to initialise")
+            # setup mission controller
+            rospy.init_node('mission_controller')
+            rospy.loginfo('Launched mission_controller node')
+            rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, \
+                             self.bumper_listener, callback_args=[self])
+            client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
-        # specify the goal for move_base
-        goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position = self.goal_position
-        goal.target_pose.pose.orientation = self.goal_orientation
+            # TODO: concurrency dangers?
+            while not client.wait_for_server(rospy.Duration.from_sec(5.0)):
+                rospy.loginfo("Waiting for move_base client action server to initialise")
 
-        rospy.loginfo('Sending goal information...')
-        time_start = rospy.get_time()
-        client.send_goal(goal)
+            # specify the goal for move_base
+            goal = MoveBaseGoal()
+            goal.target_pose.header.frame_id = "map"
+            goal.target_pose.header.stamp = rospy.Time.now()
+            goal.target_pose.pose.position = self.goal_position
+            goal.target_pose.pose.orientation = self.goal_orientation
 
-        # wait until goal is reached or max time is expired
-        client.wait_for_result(rospy.Duration(MAX_RUN_TIME))
+            rospy.loginfo('Sending goal information...')
+            time_start = rospy.get_time()
+            client.send_goal(goal)
 
-        time_end = rospy.get_time()
-        time_elapsed = time_end - time_start
+            # wait until goal is reached or max time is expired
+            client.wait_for_result(rospy.Duration(MAX_RUN_TIME))
 
-        # did we reach the goal?
-        goal_reached = client.get_state() == GoalStatus.SUCCEEDED
+            time_end = rospy.get_time()
+            time_elapsed = time_end - time_start
 
-        # ensure that we're not still trying to move towards
-        # the goal
-        if not goal_reached:
-            client.cancel_goal()
+            # did we reach the goal?
+            goal_reached = client.get_state() == GoalStatus.SUCCEEDED
 
-        return self.assess(goal_reached, time_elapsed)
+            # ensure that we're not still trying to move towards
+            # the goal
+            if not goal_reached:
+                client.cancel_goal()
+
+            return self.assess(goal_reached, time_elapsed)
+
+        # ensure ROS is cleanly exited
+        finally:
+            #launch.stop()
+            os.killpg(roscore.pid, signal.SIGKILL)
 
     def __init__(self, goal):
         assert isinstance(goal, tuple) and len(goal) == 3
-        rospy.init_node('mission_controller')
-        rospy.loginfo('Launched mission_controller node')
         self.goal_position = Point(goal[0], goal[1], goal[2])
         self.goal_orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         self.collided = False
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     # target co-ordinates
     target_x = float(sys.argv[1])
     target_y = float(sys.argv[2])
