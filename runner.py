@@ -17,6 +17,7 @@
 # | Collision
 # | ReachedGoal(time, distance, accuracy, power*) [should record node failures]
 # | SystemCrashed
+# | PowerExpired
 #
 import sys
 import rospy
@@ -46,12 +47,21 @@ class CollisionOutcome(MissionOutcome):
         return "Collision()"
 
 class ReachedGoalOutcome(MissionOutcome):
+    def __init__(self, time, distance, accuracy):
+        self.time = time
+        self.distance = distance
+        self.accuracy = accuracy
+
     def __str__(self):
-        return "ReachedGoal()"
+        return "ReachedGoal(Time = {}, Distance = {}, Accuracy = {})".format(self.time, self.distance, self.accuracy)
 
 class TimeExpiredOutcome(MissionOutcome):
+    def __init__(self, distance, accuracy):
+        self.distance = distance
+        self.accuracy = accuracy
+
     def __str__(self):
-        return "TimeExpired()"
+        return "TimeExpired(Distance = {}, Accuracy = {})".format(self.distance, self.accuracy)
 
 
 # Measures the Euclidean distance between two sets of co-ordinates, a and b
