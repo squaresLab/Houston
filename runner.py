@@ -56,11 +56,23 @@ class EphemeralLaunchFile(object):
         # find the corresponding argument for each parameter
         new_parameters = []
         for (param, value) in parameters.items():
-            for arg in root.findall("arg[@name='{}']".format(param)):
+            found = False
+
+            # doesn't look at child arguments --- considered unnecessary
+            for arg in root.find("arg[@name='{}']".format(param)):
                 arg.attrib.pop('default')
+                arg.set('value', value)
+                found = True
+
+            # if we didn't find the tag for this argument, add a new one
+            if not found:
+                arg = ET.SubElement(root, 'arg')
+                arg.set('name', param)
                 arg.set('value', value)
 
         # write the modified XML to a temporary file
+        # n.b. Python will take care of destroying the temporary file during
+        # garbage collection
         self.handle = NamedTemporaryFile(suffix='.launch')
         tree.write(self.path())
 
