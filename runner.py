@@ -89,7 +89,7 @@ def move_to_location(tx, ty, tz=0.0):
     client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
     # watch out for collisions
-    rospy.Subscriber('/mobile_base/events/BumperEvent', BumperEvent, collision_event_handler)
+    rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, collision_event_handler)
     
     # TODO: concurrency dangers
     while not client.wait_for_server(rospy.Duration.from_sec(5.0)):
