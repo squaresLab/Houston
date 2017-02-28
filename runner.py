@@ -80,7 +80,7 @@ class MissionControl(object):
             self.collided = True
 
     # Determines the outcome of the mission
-    def assess(self, goal_reached):
+    def assess(self, goal_reached, time_elapsed):
         
         # TODO: may be better to terminate straightaway?
         # did we collide at some point?
@@ -108,6 +108,10 @@ class MissionControl(object):
         accuracy = euclidean((believed_position.x, believed_position.y, believed_position.z), \
                              (real_position.x, real_position.y, real_position.z))
 
+        if goal_reached:
+            return GoalReachedOutcome(time_elapsed, dist, accuracy)
+        else:
+            return TimeExpiredOutcome(dist, accuracy)
 
     # Executes the mission and returns the outcome as a MissionOutcome
     # instance
@@ -145,7 +149,7 @@ class MissionControl(object):
         if not goal_reached:
             client.cancel_goal()
 
-        return self.assess(goal_reached)
+        return self.assess(goal_reached, time_elapsed)
 
     def __init__(self, goal):
         assert isinstance(goal, tuple) and len(goal) == 3
