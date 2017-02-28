@@ -63,24 +63,6 @@ def euclidean(a, b):
     d = sum((x - y) ** 2 for (x, y) in zip(a, b))
     return math.sqrt(d)
 
-# Computes and returns the ground truth pose for the robot
-def measure_ground_truth_pose():
-    rospy.loginfo('Fetching ground truth pose')
-    # TODO: what happens if this times out?
-    states = rospy.client.wait_for_message("/gazebo/model_states", ModelStates, timeout=1.0)
-    entry_num = states.name.index(ROBOT_MODEL_NAME)
-    pose = states.pose[entry_num]
-    rospy.loginfo('Fetched ground truth pose')
-    return pose
-
-# Computes and returns the believed pose for the robot (provided by odometry)
-def measure_believed_pose():
-    rospy.loginfo('Fetching believed pose information from /odom')
-    # TODO: timeout case?
-    odom = rospy.client.wait_for_message("odom", Odometry, timeout=1.0)
-    rospy.loginfo('Fetched believed pose information from /odom')
-    return odom.pose.pose
-
 class MissionControl(object):
     def bumper_listener(self, event):
         if event.state == 1:
@@ -95,10 +77,17 @@ class MissionControl(object):
         if self.collided:
             return CollidedOutcome()
 
-        # determine the real and believed pose of the robot
-        pose_observed = measure_believed_pose()
-        pose_reality = measure_ground_truth_pose()
+        # determine ground truth position of the robot
+        # TODO: what happens if this times out?
+        model_states = \
+            rospy.client.wait_for_message("/gazebo/model_states", ModelStates, timeout=1.0)
+        pose_reality = states.pose[model_states.name.index(ROBOT_MODEL_NAME)]
         real_position = pose_reality.position
+
+        # determine the believed position of the robot
+        # TODO: timeout case?
+        odom = rospy.client.wait_for_message("odom", Odometry, timeout=1.0)
+        pose_observed = odom.pose.pose
         believed_position = pose_observed.position
 
         # measure the Euclidean distance to the goal
@@ -108,7 +97,6 @@ class MissionControl(object):
         # measure the positional accuracy of the robot
         accuracy = euclidean((believed_position.x, believed_position.y, believed_position.z), \
                              (real_position.x, real_position.y, real_position.z))
-
 
 
     # Executes the mission and returns the outcome as a MissionOutcome
@@ -156,13 +144,6 @@ class MissionControl(object):
         self.goal_position = Point(goal[0], goal[1], goal[2])
         self.goal_orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         self.collided = False
-
-def move_to_location(tx, ty, tz=0.0):
-
-    # quality and safety measurements
-    rospy.loginfo('-- Elapsed time: {} seconds'.format(time_elapsed))
-    rospy.loginfo('-- Distance to goal: {}'.format(dist))
-    rospy.loginfo('-- Positional accuracy: {}'.format(accuracy))
 
 if __name__ == "__main__":
 
