@@ -47,9 +47,6 @@ MAX_RUN_TIME = 60
 # TODO: allow command line customisation (so we can use this with other robots)
 ROBOT_MODEL_NAME = "mobile_base"
 
-# Number of seconds to wait for roscore to initialise
-ROSCORE_WAIT = 5
-
 # Used to describe an outcome to the mission
 class MissionOutcome(object):
     pass
