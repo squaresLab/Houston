@@ -85,6 +85,8 @@ def euclidean(a, b):
     d = sum((x - y) ** 2 for (x, y) in zip(a, b))
     return math.sqrt(d)
 
+# For now, the only mission involves moving the robot from the spawn-point to
+# a given location.
 class MissionControl(object):
 
     # Records any collisions registered via the bumper sensors
