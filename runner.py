@@ -30,6 +30,7 @@ from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, Quaternion
 
+# TODO: should be passed as part of the mission description
 MAX_RUN_TIME = 60
 
 # The name of the model for the robot within Gazebo
@@ -41,21 +42,17 @@ class MissionOutcome(object):
     pass
 
 class CollisionOutcome(MissionOutcome):
-    pass
+    def __str__(self):
+        return "Collision()"
 
 class ReachedGoalOutcome(MissionOutcome):
-    pass
+    def __str__(self):
+        return "ReachedGoal()"
 
 class TimeExpiredOutcome(MissionOutcome):
-    pass
+    def __str__(self):
+        return "TimeExpired()"
 
-# Handles a reported collision event
-def collision_event_handler(event):
-    rospy.loginfo('Handling collision event')
-    if event.state == 1: # was the bumper pressed?
-        rospy.loginfo('We hit something!')
-
-        # now we want to terminate our action and report the outcome
 
 # Measures the Euclidean distance between two sets of co-ordinates, a and b
 # TODO: This can be deceptive.
@@ -84,73 +81,91 @@ def measure_believed_pose():
     rospy.loginfo('Fetched believed pose information from /odom')
     return odom.pose.pose
 
+class MissionControl(object):
+    def bumper_listener(self, event):
+        if event.state == 1:
+            rospy.loginfo('BUMPER: We hit something!')
+            self.collided = True
+
+    # Determines the outcome of the mission
+    def assess(self, goal_reached):
+        
+        # TODO: may be better to terminate straightaway?
+        # did we collide at some point?
+        if self.collided:
+            return CollidedOutcome()
+
+        # determine the real and believed pose of the robot
+        pose_observed = measure_believed_pose()
+        pose_reality = measure_ground_truth_pose()
+        real_position = pose_reality.position
+        believed_position = pose_observed.position
+
+        # measure the Euclidean distance to the goal
+        dist = euclidean((real_position.x, real_position.y, real_position.z), \
+                         (self.goal.x, self.goal.y, self.goal.z))
+
+        # measure the positional accuracy of the robot
+        accuracy = euclidean((believed_position.x, believed_position.y, believed_position.z), \
+                             (real_position.x, real_position.y, real_position.z))
+
+
+
+    # Executes the mission and returns the outcome as a MissionOutcome
+    # instance
+    def execute(self):
+        rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, \
+                         self.bumper_listener, callback_args=[self], queue=1)
+        client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+
+        # TODO: concurrency dangers?
+        while not client.wait_for_server(rospy.Duration.from_sec(5.0)):
+            rospy.loginfo("Waiting for move_base client action server to initialise")
+
+        # specify the goal for move_base
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose.position = self.goal_position
+        goal.target_pose.pose.orientation = self.goal_orientation
+
+        rospy.loginfo('Sending goal information...')
+        time_start = rospy.get_time()
+        client.send_goal(goal)
+
+        # wait until goal is reached or max time is expired
+        client.wait_for_result(rospy.Duration(MAX_RUN_TIME))
+
+        time_end = rospy.get_time()
+        time_elapsed = time_end - time_start
+
+        # did we reach the goal?
+        goal_reached = client.get_state() == GoalStatus.SUCCEEDED
+
+        # ensure that we're not still trying to move towards
+        # the goal
+        if not goal_reached:
+            client.cancel_goal()
+
+        return self.assess(goal_reached)
+
+    def __init__(self, goal):
+        assert isinstance(goal, tuple) and len(goal) == 3
+        rospy.init_node('mission_controller')
+        rospy.loginfo('Launched mission_controller node')
+        self.goal_position = Point(goal[0], goal[1], goal[2])
+        self.goal_orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+        self.collided = False
+
 def move_to_location(tx, ty, tz=0.0):
-    # create an actionlib client for our request
-    client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-
-    # watch out for collisions
-    rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, collision_event_handler)
-    
-    # TODO: concurrency dangers
-    while not client.wait_for_server(rospy.Duration.from_sec(5.0)):
-        rospy.loginfo("Waiting for move_base client action server to initialise")
-
-    # specify the goal of the move_base clienttion
-    goal = MoveBaseGoal()
-    goal.target_pose.header.frame_id = "map"
-    goal.target_pose.header.stamp = rospy.Time.now()
-    goal.target_pose.pose.position = Point(tx, ty, tz)
-    goal.target_pose.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
-    
-    rospy.loginfo('Sending goal information...')
-
-    time_start = rospy.get_time()
-    client.send_goal(goal)
-
-    # blocks until result is returned or max run time has expired
-    client.wait_for_result(rospy.Duration(MAX_RUN_TIME))
-
-    time_end = rospy.get_time()
-    time_elapsed = time_end - time_start
-
-    # did we reach the goal?
-    goal_reached = client.get_state() == GoalStatus.SUCCEEDED
-
-    # stop executing the goal!
-    if not goal_reached:
-        client.cancel_goal()
-
-    # measure the pose delta
-    pose_observed = measure_believed_pose()
-    pose_reality = measure_ground_truth_pose()
-    real_position = pose_reality.position
-    believed_position = pose_observed.position
-
-    # measure the Euclidean distance to the goal
-    dist = euclidean((real_position.x, real_position.y, real_position.z), \
-                     (tx, ty, tz))
-
-    # measure the positional accuracy of the robot
-    accuracy = euclidean((believed_position.x, believed_position.y, believed_position.z), \
-                         (real_position.x, real_position.y, real_position.z))
 
     # quality and safety measurements
     rospy.loginfo('-- Elapsed time: {} seconds'.format(time_elapsed))
     rospy.loginfo('-- Distance to goal: {}'.format(dist))
     rospy.loginfo('-- Positional accuracy: {}'.format(accuracy))
 
-    return goal_reached
-
 if __name__ == "__main__":
 
     # target co-ordinates
     target_x = float(sys.argv[1])
     target_y = float(sys.argv[2])
-
-    rospy.init_node('mission_controller')
-    rospy.loginfo('Launched mission_controller node')
-
-    if move_to_location(target_x, target_y):
-        rospy.loginfo('SUCCESS: reached target location')
-    else:
-        rospy.loginfo('FAILURE: failed to reach the target location')
