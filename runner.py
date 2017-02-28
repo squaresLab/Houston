@@ -91,7 +91,7 @@ class MissionControl(object):
         # TODO: what happens if this times out?
         model_states = \
             rospy.client.wait_for_message("/gazebo/model_states", ModelStates, timeout=1.0)
-        pose_reality = states.pose[model_states.name.index(ROBOT_MODEL_NAME)]
+        pose_reality = model_states.pose[model_states.name.index(ROBOT_MODEL_NAME)]
         real_position = pose_reality.position
 
         # determine the believed position of the robot
@@ -102,7 +102,7 @@ class MissionControl(object):
 
         # measure the Euclidean distance to the goal
         dist = euclidean((real_position.x, real_position.y, real_position.z), \
-                         (self.goal.x, self.goal.y, self.goal.z))
+                         (self.goal_position.x, self.goal_position.y, self.goal_position.z))
 
         # measure the positional error of the robot
         pos_error = euclidean((believed_position.x, believed_position.y, believed_position.z), \
@@ -117,7 +117,7 @@ class MissionControl(object):
     # instance
     def execute(self):
         rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, \
-                         self.bumper_listener, callback_args=[self], queue=1)
+                         self.bumper_listener, callback_args=[self])
         client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
         # TODO: concurrency dangers?
