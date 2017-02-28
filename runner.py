@@ -47,21 +47,21 @@ class CollisionOutcome(MissionOutcome):
         return "Collision()"
 
 class ReachedGoalOutcome(MissionOutcome):
-    def __init__(self, time, distance, accuracy):
+    def __init__(self, time, distance, pos_error):
         self.time = time
         self.distance = distance
-        self.accuracy = accuracy
+        self.pos_error = pos_error
 
     def __str__(self):
-        return "ReachedGoal(Time = {}, Distance = {}, Accuracy = {})".format(self.time, self.distance, self.accuracy)
+        return "ReachedGoal(Time = {}, Distance = {}, Pos. Error = {})".format(self.time, self.distance, self.accuracy)
 
 class TimeExpiredOutcome(MissionOutcome):
-    def __init__(self, distance, accuracy):
+    def __init__(self, distance, pos_error):
         self.distance = distance
-        self.accuracy = accuracy
+        self.pos_error = pos_error 
 
     def __str__(self):
-        return "TimeExpired(Distance = {}, Accuracy = {})".format(self.distance, self.accuracy)
+        return "TimeExpired(Distance = {}, Pos. Error = {})".format(self.distance, self.pos_error)
 
 
 # Measures the Euclidean distance between two sets of co-ordinates, a and b
@@ -104,14 +104,14 @@ class MissionControl(object):
         dist = euclidean((real_position.x, real_position.y, real_position.z), \
                          (self.goal.x, self.goal.y, self.goal.z))
 
-        # measure the positional accuracy of the robot
-        accuracy = euclidean((believed_position.x, believed_position.y, believed_position.z), \
-                             (real_position.x, real_position.y, real_position.z))
+        # measure the positional error of the robot
+        pos_error = euclidean((believed_position.x, believed_position.y, believed_position.z), \
+                              (real_position.x, real_position.y, real_position.z))
 
         if goal_reached:
-            return GoalReachedOutcome(time_elapsed, dist, accuracy)
+            return GoalReachedOutcome(time_elapsed, dist, pos_error)
         else:
-            return TimeExpiredOutcome(dist, accuracy)
+            return TimeExpiredOutcome(dist, pos_error)
 
     # Executes the mission and returns the outcome as a MissionOutcome
     # instance
@@ -164,3 +164,10 @@ if __name__ == "__main__":
     # target co-ordinates
     target_x = float(sys.argv[1])
     target_y = float(sys.argv[2])
+    target = (target_x, target_y, 0.0)
+
+    # build the mission
+    mission = MissionControl(target)
+
+    # execute!
+    print(mission.execute())
