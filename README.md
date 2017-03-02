@@ -2,6 +2,6 @@
 
 ```
 $ make
-$ docker run --rm -it robotest
+$ ./run.sh
 % ./runner.py 3.0 1.5
 ```
