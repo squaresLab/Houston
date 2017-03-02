@@ -119,7 +119,12 @@ def euclidean(a, b):
 
 # For now, the only mission involves moving the robot from the spawn-point to
 # a given location.
-class MissionControl(object):
+class Mission(object):
+
+    # TODO: implement
+    @staticmethod
+    def from_json(jsn):
+        pass
 
     # Records any collisions registered via the bumper sensors
     def bumper_listener(self, event):
@@ -233,7 +238,7 @@ class MissionControl(object):
         self.launch_parameters = parameters
         self.collided = False
 
-
+# TODO: accept the location of a JSON file as input
 if __name__ == "__main__":
     # target co-ordinates
     target_x = float(sys.argv[1])
@@ -241,8 +246,9 @@ if __name__ == "__main__":
     target = (target_x, target_y, 0.0)
 
     # build the mission
+    # TODO: parameterise
     configuration = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
-    mission = MissionControl(60, target, configuration, {'gui': 'false'})
+    mission = Mission(60, target, configuration, {'gui': 'false'})
 
     # execute!
     print(mission.execute())
