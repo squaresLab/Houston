@@ -248,7 +248,8 @@ if __name__ == "__main__":
     # build the mission
     # TODO: parameterise
     configuration = "/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch"
-    mission = Mission(60, target, configuration, {'gui': 'false'})
+    # mission = Mission(60, target, configuration, {'gui': 'false'})
+    mission = Mission(60, target, configuration, {})
 
     # execute!
     print(mission.execute())
