@@ -1,0 +1,50 @@
+{
+	"MDescription":
+	{
+		"RobotType":	"ArduCopter",
+		"LaunchFile":	"robotest.launch",
+		"Map":	"Airport.world",
+		"Mission":
+		{
+			"Name":"JustARide",
+			"Action":
+			{
+				"Type": "PTP",
+				"Alt" : "5.0",
+				"x":	"5.0",
+				"y":	"5.0",
+				"z":	"5.0",
+				"x_d":	"0.0",
+				"y_d":	"0.0",
+				"z_d":	"0.0"
+			},
+			"QualityAttributes":
+			{
+				"ReportRate" : "5",
+				"Time": "True",
+				"Battery": "False",
+				"MaxHeight": "True",
+				"MinHeight": "True"
+			},
+
+			"Intents":
+			{
+				"Time": "<:10",  
+				"Battery": "<:0.6",  
+				"MaxHeight": "20",  
+				"MinHeight": ""
+			},
+
+			"FailureFlags":
+			{
+				"Time":	"30.0",
+				"Battery": "90",
+				"SystemShutdown":"True",
+				"MaxHeight": "True"
+			}
+						
+		}
+			
+	}
+}
+

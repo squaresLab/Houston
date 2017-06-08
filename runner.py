@@ -20,8 +20,11 @@ from mavros_msgs.srv import CommandLong, SetMode, CommandBool, CommandTOL
 # Command IDs in MAVLINK
 #COMMANDS = {"TAKEOFF": 24, "SETMODE": 176, "ARM": 400 }
 #home coordinates
-HOME_COORDINATES = (-35.3632607, 149.1652351) 
-ERROR_LIMIT_DISTANCE = .3 # 30cm TODO: pick a better name 
+HOME_COORDINATES              = (-35.3632607, 149.1652351) 
+ERROR_LIMIT_DISTANCE          = .3 # 30cm TODO: pick a better name 
+TIME_INFORM_RATE              = 10 # seconds. How often log time
+QUALITY_ATTRUBUTE_INFORM_RATE = 5  # seconds. 
+
 
 
 class Error(object):
@@ -50,18 +53,49 @@ class Log(object):
 
 class ROSHandler(object):
     def __init__ (self, target):
-        self.initial_coor_set         = False
-        self.starting_time            = time.time()
-        self.target = target
-        self.initial_lat              = 0
-        self.initial_long             = 0 
-        self.current_local_x          = 0
-        self.current_local_y          = 0
-        self.current_local_alt        = 0           #alt measures in meters (z) 
-        self.current_global_lat       = 0
-        self.current_global_long      = 0
-        self.current_global_alt       = 0
+        self.mission_on                 = True
+        self.initial_set                = [False, False, False]
+        self.starting_time              = time.time()
+        self.target                     = target
+        self.battery                    = [0,0]
+        self.min_max_height             = [0,0]
+        self.lock_min_max_height        = False
+
+        self.initial_global_coordinates = [0,0]
+        self.initial_local_position     = [0,0,0]
+
+        self.current_global_coordinates = [0,0]
+        self.current_local_position     = [0,0,0]
+
+        self.global_alt                 = [0,0]
         
+    def check_command_completion(self, _type, alt, expected_coor, pose, pub):
+        local_action_time = time.time()
+
+        if _type == 'takeoff':
+            while ((alt+(ERROR_LIMIT_DISTANCE/2)) >= self.current_local_position[2]) \
+            and (self.current_local_position[2] <= (alt-(ERROR_LIMIT_DISTANCE/2))):
+
+                local_action_time = self.inform_time(local_action_time, 5, \
+                    'Waiting to reach alt. Goal: '+ str(alt) +' - Current: '\
+                    +str(self.current_local_position[2]))
+        elif _type == 'land':
+            while self.current_local_position[2] >= ERROR_LIMIT_DISTANCE:
+                local_action_time = self.inform_time(local_action_time, 5, \
+                    'Waiting to reach land. Goal: ~0' +' - Current: '\
+                    +str(self.current_local_position[2]))
+        elif _type == 'pos':
+
+            self.lock_min_max_height = True
+            while vincenty(expected_coor, self.current_global_coordinates).meters\
+             >= ERROR_LIMIT_DISTANCE: 
+
+                distance_traveled = vincenty(self.initial_global_coordinates, \
+                    self.current_global_coordinates).meters
+                pub.publish(pose)
+                local_action_time = self.inform_time(local_action_time, 2,\
+                 'Distance traveled: ' + str(distance_traveled))
+            self.lock_min_max_height = False
 
 
 
@@ -70,7 +104,6 @@ class ROSHandler(object):
     def ros_command_takeoff(self, alt):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
         res = set_mode(0, "GUIDED")
-        self.target_alt = alt
 
         if res: # DO check res return to match bool 
             Log("Mode changed to GUIDED")
@@ -90,21 +123,22 @@ class ROSHandler(object):
             Log("System Taking off...")
         else:
             Error("System did not take off.")
-        while not self.current_local_alt >= alt-ERROR_LIMIT_DISTANCE:
-            Log('Waiting to reach alt. Goal: '+ str(alt) +' - Current: '+ \
-                str(self.current_local_alt))
-            time.sleep(1)
+        self.check_command_completion('takeoff', alt, None, None, None)
+        Log('System reached height')
+        
         
     #def goto_command(self, lat, longitud):
 
     # Makes a service call to coomand the system to land
-    def ros_command_land(self, alt):
+    def ros_command_land(self, alt, last_command):
         land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
         res = land(0, 0, 0, 0, alt)
         if res:
             Log("System landing...")
         else:
             Error("System is not landing.")
+        self.check_command_completion('land', None, None, None, None)
+        Log('System has landed')
 
 
     # Commands the system to a given location. Verifies the end of the publications
@@ -117,8 +151,8 @@ class ROSHandler(object):
         pose.pose.position.x = target[0]
         pose.pose.position.y = target[1]
         pose.pose.position.z = target[2]
-        initial_coor = (self.initial_lat, self.initial_long)
-        current_coor = (self.current_global_lat, self.current_global_long)
+        current_coor = (self.current_global_coordinates[0], \
+            self.current_global_coordinates[1])
         expected_lat      = None
         expected_long     = None
         expected_coor     = None
@@ -127,71 +161,153 @@ class ROSHandler(object):
         # 0,0 is to HOME which is the starting position of the system. 
         if target[0] == 0 and target[1] == 0:
             expected_coor = (HOME_COORDINATES[0], HOME_COORDINATES[1])
-            expected_distance = vincenty(initial_coor, expected_coor).meters
+            expected_distance = vincenty(self.initial_global_coordinates, expected_coor).meters
         else:
             # Check for a better solution 
-            # TODO: acount for 0 latitud  (x value)
-            expected_lat = self.current_global_lat + (target[0] * 0.000008983)
-            expected_long = self.current_global_long + ((target[0] * 0.000008983)/ \
-                math.cos(self.current_global_lat * 0.018))
+            # TODO: acount for 0 latitude  (x value)
+            expected_lat = self.current_global_coordinates[0] + (target[0] * \
+                0.000008983)
+            expected_long = self.current_global_coordinates[1] + ((target[0] *\
+             0.000008983)/ \
+                math.cos(self.current_global_coordinates[0] * 0.018))
+            expected_coor = (expected_lat, expected_long)
+            expected_distance = vincenty(self.current_global_coordinates, expected_coor).meters
 
-        expected_coor = (expected_lat, expected_long)
-        expected_distance = vincenty(initial_coor, expected_coor).meters
-        distance_traveled = vincenty(initial_coor, current_coor).meters
+        distance_traveled = vincenty(self.initial_global_coordinates, current_coor).meters
 
         local_action_time = time.time()
         Log('Expected distance to travel: ' + str(expected_distance))
-
-        while vincenty(expected_coor, current_coor).meters >= ERROR_LIMIT_DISTANCE: 
-            current_coor = (self.current_global_lat, self.current_global_long)
-            distance_traveled = vincenty(initial_coor, current_coor).meters
-            goto_publisher.publish(pose)
-            if time.time() - local_action_time  >= 5:
-                Log('Distance traveled: ' + str(distance_traveled))
-                local_action_time = time.time()
-                print 'Current Coor:  '+ str(current_coor)
-                print 'Expected Coor: '+ str(expected_coor)
-
+        self.check_command_completion('pos', None, expected_coor, pose, goto_publisher)
         Log('Position reached')
 
-    # Callback for local position sub
+    # Callback for local position sub. It also updates the min and the max height
     def ros_monitor_callback_local_position(self, data):
-        self.current_local_lat = data.pose.pose.position.x
-        self.current_local_long = data.pose.pose.position.y
-        self.current_local_alt = data.pose.pose.position.z
+        if data.pose.position.z > self.min_max_height[1] and not \
+            self.lock_min_max_height:
+            self.min_max_height[1] = data.pose.position.z
+        if data.pose.position.z < self.min_max_height[0] and not \
+            self.lock_min_max_height:
+            self.min_max_height[0] = data.pose.position.z
+
+        if not self.initial_set[0]:
+            self.initial_local_position[0]        = data.pose.position.x
+            self.initial_local_position[1]        = data.pose.position.y
+            self.initial_local_position[2]        = data.pose.position.z
+            self.initial_set[0]                   = True
+        self.current_local_position[0]            = data.pose.position.x
+        self.current_local_position[1]            = data.pose.position.y
+        self.current_local_position[2]            = data.pose.position.z
+        
 
     # Callback for global position sub
     def ros_monitor_callback_global_position(self, data):
-        if not self.initial_coor_set:
-            self.initial_lat     = data.latitude
-            self.initial_long    = data.longitude
-            self.initial_coor_set= True
-        self.current_global_lat  = data.latitude
-        self.current_global_long = data.longitude
-        self.current_global_alt  = data.altitude
+        if not self.initial_set[1]:
+            self.initial_global_coordinates[0]    = data.latitude 
+            self.initial_global_coordinates[1]    = data.longitude
+            self.global_alt[0]                    = data.altitude
+            self.initial_set[1]                   = True
+        self.current_global_coordinates[0]        = data.latitude
+        self.current_global_coordinates[1]        = data.longitude
+        self.global_alt[1]                        = data.altitude
+
+    def ros_monitor_callback_battery(self, data):
+        if not self.initial_set[2]:
+            self.battery[0]                       = data.remaining
+            self.initial_set[2]                   = True
+        self.battery[1]                           = data.remaining
 
 
+    def inform_time(self, temp_time, time_rate = TIME_INFORM_RATE , \
+            message = ''):
+        current_time = time.time()
+        if  (current_time - temp_time) > time_rate:
+                Log('Current time: ' + str(time.time() - self.starting_time)+ \
+                    ': '+ str(message))
+                return current_time
+        else:
+            return temp_time
+
+    def check_failure_flags(self, failure_flags):
+        if time.time() - self.starting_time >= failure_flags['Time']:
+            return True, 'Time exceeded'
+        elif self.battery[0] - self.battery[1] >= failure_flags['Battery']:
+            return True, 'Battery exceeded'
+        elif self.current_local_position[2] >= failure_flags['MaxHeight']:
+            return True, 'Max Height exceeded'
+        else:
+            return False, None
+
+    def check_quality_attributes(self, quality_attributes, current_data, _time):
+        if time.time() - _time >= float(quality_attributes['ReportRate']):
+            current_data.append({'Time': time.time() - self.starting_time, \
+                'Battery': self.battery[0]-self.battery[1], 'MinHeight': \
+                self.min_max_height[0], 'MaxHeight': self.min_max_height[1]})
+            return time.time(), current_data
+        else:
+            return _time, current_data
 
     # Starts two subscribers to populate the system's location. It also ensures 
     # failure flags. *More to be added 
     def ros_monitor(self, quality_attributes, intents, failure_flags):        
-        local_pos = rospy.Subscriber('/mavros/global_position/local', Odometry \
+        local_pos_sub   = rospy.Subscriber('/mavros/local_position/pose', \
+            PoseStamped \
          , self.ros_monitor_callback_local_position)
-        global_pos = rospy.Subscriber('/mavros/global_position/global', NavSatFix \
+        global_pos_sub  = rospy.Subscriber('/mavros/global_position/global', \
+            NavSatFix \
          , self.ros_monitor_callback_global_position)
+        battery_sub     = rospy.Subscriber('/mavros/battery', BatteryStatus, \
+          self.ros_monitor_callback_battery)
         
-        temp_time = time.time()
+        report_data = {'QualityAttributes':[],'FailureFlags':None}
+        temp_time   = time.time() #time used for failure flags and time inform
+        qua_time    = time.time() #time used for the rate of attribute reports
         while not rospy.is_shutdown():
-            current_time = time.time()
+            temp_time = self.inform_time(temp_time)
+            fail, reason = self.check_failure_flags(failure_flags)
+            if fail:
+                report_data['FailureFlags'] = reason
+            else:
+                qua_time, qua_report = self.check_quality_attributes(quality_attributes,report_data['QualityAttributes'], qua_time)
+                report_data['QualityAttributes'] = qua_report
 
-            if  (current_time - temp_time) > 10.0:
-                Log('Current time: ' + str(time.time() - self.starting_time))
-                temp_time = current_time
+        report_generator = Report(self, report_data)
+        report_generator.generate()
 
-            if  (current_time - self.starting_time) > float(failure_flags['Time']):
-                Log('Mission Failed')
-                rospy.signal_shutdown('Life')
-                exit()
+class Report(object):
+    def __init__(self, ros_handler_self ,report_data):
+        self.report_data      = report_data
+        self.ros_handler_self = ros_handler_self
+
+    def generate(self):
+        print self.report_data['QualityAttributes']
+        print self.report_data['FailureFlags']
+
+#    def check_intents(self, intents):
+#       current_data = intents
+#        inequality_simbols = {'time':intents['Time'].split(':')[0], 'battery':intents['Battery'].split(':')[0]}
+#        values = {'time':intents['Time'].split(':')[1], 'battery':intents['Battery'].split(':')[1]}
+#
+#        if inequality_simbols['time'] == '>' and time.time() - self.starting_time > values['time']:
+#            current_data['Time'] = True
+#        else:
+#            current_data['Time'] = False # Hmm
+#        if inequality_simbols['time'] == '<' and time.time() - self.starting_time < values['time']:
+#            current_data['Time'] = True
+#        else:
+#            current_data['Time'] = False
+#
+#        if inequality_simbols['battery'] == '>' and self.battery[0] - self.battery[1] > values['battery']:
+#            current_data['battery'] = True
+#        else:
+#            current_data['battery'] = False # Hmm
+#        if inequality_simbols['battery'] == '<' and self.battery[0] - self.battery[1] < values['battery']:
+#            current_data['battery'] = True
+#        else:
+#            current_data['battery'] = False
+#
+#        if self.min_max_height + ERROR_LIMIT_DISTANCE >=
+
+
 
 class Mission(object):
 
@@ -206,7 +322,7 @@ class Mission(object):
              failure_flags))
             ros.ros_command_takeoff(alt)
             ros.ros_command_goto(target)
-            ros.ros_command_land(alt)
+            ros.ros_command_land(alt, False)
 
         except:
             #Error('unable to start thread').thread_error()
