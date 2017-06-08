@@ -2,7 +2,6 @@
 
 # TODO: Description!
 
-
 import time
 import json
 import sys
@@ -18,11 +17,10 @@ from sensor_msgs.msg import NavSatFix
 from mavros_msgs.srv import CommandLong, SetMode, CommandBool, CommandTOL
 
 
-# The name of the model for the robot within Gazebo
-# TODO: allow command line customisation (so we can use this with other robots)
-ROBOT_MODEL_NAME = "mobile_base"
-COMMANDS = {"TAKEOFF": 24, "SETMODE": 176, "ARM": 400 }
-HOME_COOR = (-35.3632607, 149.1652351)
+# Command IDs in MAVLINK
+#COMMANDS = {"TAKEOFF": 24, "SETMODE": 176, "ARM": 400 }
+#home coordinates
+HOME_COORDINATES = (-35.3632607, 149.1652351) 
 ERROR_LIMIT_DISTANCE = .3 # 30cm TODO: pick a better name 
 
 
@@ -69,7 +67,7 @@ class ROSHandler(object):
 
     # Sets the system to GUIDED, arms and takesoff to a given altitude.
     # TODO: add mode to mission parameters? 
-    def takeoff_command(self, alt):
+    def ros_command_takeoff(self, alt):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
         res = set_mode(0, "GUIDED")
         self.target_alt = alt
@@ -100,7 +98,7 @@ class ROSHandler(object):
     #def goto_command(self, lat, longitud):
 
     # Makes a service call to coomand the system to land
-    def land_command(self, alt):
+    def ros_command_land(self, alt):
         land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
         res = land(0, 0, 0, 0, alt)
         if res:
@@ -112,7 +110,7 @@ class ROSHandler(object):
     # Commands the system to a given location. Verifies the end of the publications
     # by comparing the current position with the expected position.
     # Need to add z for angular displacement. 
-    def goto_command(self, target):
+    def ros_command_goto(self, target):
         goto_publisher = rospy.Publisher('/mavros/setpoint_position/local',\
          PoseStamped, queue_size=10)
         pose = PoseStamped()
@@ -128,7 +126,7 @@ class ROSHandler(object):
 
         # 0,0 is to HOME which is the starting position of the system. 
         if target[0] == 0 and target[1] == 0:
-            expected_coor = (HOME_COOR[0], HOME_COOR[1])
+            expected_coor = (HOME_COORDINATES[0], HOME_COORDINATES[1])
             expected_distance = vincenty(initial_coor, expected_coor).meters
         else:
             # Check for a better solution 
@@ -206,9 +204,9 @@ class Mission(object):
         try:
             thread.start_new_thread(ros.ros_monitor, (quality_attributes, intents, \
              failure_flags))
-            ros.takeoff_command(alt)
-            ros.goto_command(target)
-            ros.land_command(alt)
+            ros.ros_command_takeoff(alt)
+            ros.ros_command_goto(target)
+            ros.ros_command_land(alt)
 
         except:
             #Error('unable to start thread').thread_error()
