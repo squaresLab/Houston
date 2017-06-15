@@ -1,9 +1,12 @@
-FROM christimperley/turtlebot:source
+FROM ros:indigo-ros-base
 
 RUN apt-get update && \
     apt-get install -y vim
 
-ADD robotest.launch /catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch
-RUN sed -i "s#includes/amcl.launch.xml#includes/amcl/amcl.launch.xml#" \
-    /catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/amcl_demo.launch
-ADD runner.py /catkin_ws/runner.py
+
+RUN apt-get install -y ros-indigo-mavros  \
+  ros-indigo-mavros-msgs                  \
+  ros-indigo-mavros-extras
+
+
+ADD runner.py /runner.py

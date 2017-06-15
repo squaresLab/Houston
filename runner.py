@@ -20,10 +20,10 @@ from sensor_msgs.msg   import NavSatFix
 from mavros_msgs.srv   import CommandLong, SetMode, CommandBool, CommandTOL
 
 HOME_COORDINATES              = (-35.3632607, 149.1652351) 
-ERROR_LIMIT_DISTANCE          = .4 # 30cm TODO: pick a better name 
+ERROR_LIMIT_DISTANCE          = .3 # 30cm TODO: pick a better name 
 TIME_INFORM_RATE              = 10 # seconds. How often log time
 QUALITY_ATTRUBUTE_INFORM_RATE = 5  # seconds. 
-STABLE_BUFFER_TIME            = 4.0  # Seconds time to wait after each command 
+STABLE_BUFFER_TIME            = 5.0  # Seconds time to wait after each command 
 
 
 class Error(object):
@@ -41,7 +41,7 @@ class ROSHandler(object):
     def __init__ (self, target):
         self.mission_info               = None
         self.mission_on                 = True
-        self.initial_set                = [False, False, False]
+        self.initial_set                = [False, False, False, False]
         self.starting_time              = time.time()
         self.target                     = target
         self.battery                    = [0,0]
@@ -49,10 +49,10 @@ class ROSHandler(object):
         self.lock_min_height            = True
         self.initial_global_coordinates = [0,0]
         self.initial_local_position     = [0,0,0]
-
+        self.initial_odom_position      = [0,0,0]
         self.current_global_coordinates = [0,0]
         self.current_local_position     = [0,0,0]
-
+        self.current_odom_position      = [0,0,0]
         self.global_alt                 = [0,0]
         
 
@@ -69,17 +69,18 @@ class ROSHandler(object):
         local_action_time = time.time()
         success = True
         r = rospy.Rate(10)
-        while great_circle(self.current_global_coordinates,expected_coor).meters\
-             >= ERROR_LIMIT_DISTANCE and self.mission_on: 
+
+        remaining_distance = euclidean((pose.pose.position.x,pose.pose.position.y), \
+            (self.current_odom_position[0], self.current_odom_position[1]))
+        while remaining_distance >0:
             r.sleep()
             pub.publish(pose)
             local_action_time = self.inform_time(local_action_time, 2,\
-                'Remaining: ' + str(great_circle(self.current_global_coordinates,\
-                    expected_coor).meters))
+                'Remaining: ' + str(remaining_distance))
+
         if great_circle(self.current_global_coordinates,expected_coor).meters\
             >= ERROR_LIMIT_DISTANCE:
             success = False
-
         time.sleep(STABLE_BUFFER_TIME)
         return success
 
@@ -169,6 +170,8 @@ class ROSHandler(object):
             Log('System did not land on time ')
 
 
+    # Gets the current x and y values using latitude and longitud instead of 
+    # getting the values form odom 
     def get_current_x_y(self):
         x = great_circle(HOME_COORDINATES, ( HOME_COORDINATES[0], \
             self.current_global_coordinates[1],)).meters
@@ -242,7 +245,7 @@ class ROSHandler(object):
         else:
             current_x, current_y = self.get_current_x_y()
             x_y = (current_x, current_y)
-            x_distance = euclidean((target['x'], 0),(current_x, 0)) - \
+            x_distance = euclidean((target['x'], 0),(current_y, 0)) - \
                 ERROR_LIMIT_DISTANCE
             y_distance = euclidean((0, target['y']),(0, current_y)) - \
                 ERROR_LIMIT_DISTANCE
@@ -294,11 +297,23 @@ class ROSHandler(object):
         self.current_global_coordinates[1]        = data.longitude
         self.global_alt[1]                        = data.altitude
 
+
     def ros_monitor_callback_battery(self, data):
         if not self.initial_set[2]:
             self.battery[0]                       = data.remaining
             self.initial_set[2]                   = True
         self.battery[1]                           = data.remaining
+
+    def ros_monitor_callback_odom_local_position(self, data):
+        if not self.initial_set[3]:
+            self.initial_odom_position[0]         = data.pose.pose.position.x 
+            self.initial_odom_position[1]         = data.pose.pose.position.y
+            self.initial_odom_position[2]         = data.pose.pose.position.z
+            self.initial_set[3]                   = True
+        self.current_odom_position[0]             = data.pose.pose.position.x
+        self.current_odom_position[1]             = data.pose.pose.position.y
+        self.current_odom_position[3]             = data.pose.pose.position.z
+
 
 
     def inform_time(self, temp_time, time_rate = TIME_INFORM_RATE , \
@@ -358,6 +373,10 @@ class ROSHandler(object):
          , self.ros_monitor_callback_global_position)
         battery_sub     = rospy.Subscriber('/mavros/battery', BatteryStatus, \
           self.ros_monitor_callback_battery)
+        local_odom_sub  = rospy.Subscriber('/mavros/local_position/odom', \
+            Odometry, self.ros_monitor_callback_odom_local_position)
+
+
         intents_for_report = {'Time': True, 'Battery': True, 'MaxHeight':True,\
         'MinHeight': True}
         report_data = {'QualityAttributes':[],'Intents':intents_for_report,\
