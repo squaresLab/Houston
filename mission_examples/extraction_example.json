@@ -9,8 +9,9 @@
 			"Name":"JustARide",
 			"Action":
 			{
-				"Type": "PTP",
-				"Alt" : "5.0",
+				"Type": "Extraction",
+				"wait": "10.0",
+				"alt" : "5.0",
 				"x":	"5.0",
 				"y":	"5.0",
 				"z":	"5.0",
@@ -20,27 +21,29 @@
 			},
 			"QualityAttributes":
 			{
-				"ReportRate" : "5",
+				"ReportRate":"2",
 				"Time": "True",
-				"Battery": "False",
+				"Battery": "True",
 				"MaxHeight": "True",
-				"MinHeight": "True"
+				"MinHeight": "True",
+				"DistanceTraveled": "True"
 			},
 
 			"Intents":
 			{
-				"Time": "<:10",  
-				"Battery": "<:0.6",  
-				"MaxHeight": "20",  
-				"MinHeight": ""
+				"Time": "60",  
+				"Battery": ".6",  
+				"MaxHeight": "10",  
+				"MinHeight": "4"
 			},
 
 			"FailureFlags":
 			{
-				"Time":	"30.0",
-				"Battery": "90",
+				"Time":	"120.0",
+				"Battery": "1",
 				"SystemShutdown":"True",
-				"MaxHeight": "True"
+				"MaxHeight":      "30",
+				"MinHeight": "2"
 			}
 						
 		}

@@ -6,7 +6,10 @@ RUN apt-get update && \
 
 RUN apt-get install -y ros-indigo-mavros  \
   ros-indigo-mavros-msgs                  \
-  ros-indigo-mavros-extras
+  ros-indigo-mavros-extras                \
+  python-pip                            &&\
+  pip install geopy
 
-
-ADD runner.py /runner.py
+WORKDIR /home/HoustonBase
+ADD mission_examples mission_examples
+ADD runner.py runner.py

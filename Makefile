@@ -1,6 +1,6 @@
 all: build
 
 build: 
-	docker build -t robotest .
+	docker build -t houston .
 
 .PHONY: build

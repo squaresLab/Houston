@@ -10,16 +10,17 @@
 			"Action":
 			{
 				"Type": "PTP",
-				"Alt" : "5.0",
-				"x":	"5.0",
-				"y":	"5.0",
-				"z":	"5.0",
+				"alt" : "11.0",
+				"x":	"4.0",
+				"y":	"8.0",
+				"z":	"11.0",
 				"x_d":	"0.0",
 				"y_d":	"0.0",
 				"z_d":	"0.0"
 			},
 			"QualityAttributes":
 			{
+				"ReportRate":"2",
 				"Time": "True",
 				"Battery": "False",
 				"MaxHeight": "True",
@@ -28,17 +29,19 @@
 
 			"Intents":
 			{
-				"Time": "<10",  
-				"Battery": "<.6",  
+				"Time": "10",  
+				"Battery": ".5",  
 				"MaxHeight": "20",  
-				"MinHeight": ""
+				"MinHeight": "10"
 			},
 
 			"FailureFlags":
 			{
-				"Time":	"30.0",
-				"Battery": "90",
-				"SystemShutdown":"True"	
+				"Time":	"40.0",
+				"Battery": "1",
+				"SystemShutdown":"True",
+				"MaxHeight":      "30",
+				"MinHeight":      "5"
 			}
 						
 		}
