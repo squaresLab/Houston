@@ -48,12 +48,52 @@ In the specific case of ArduPilot, Houston requires the following programs to be
 
 Note that Gazebo is not a necessity, but it does help visualize the test. It can also add more variation to the tests by providing different maps (worlds).
 
-### 2.1 Setting up the Environment
+### 2.1 Setting up the Testing Environment
 We use docker [containers](https://www.docker.com/what-docker) to facilitate the test environment setup.
 * **Gazebo**: Running gazebo on a docker container can be difficult since there are multiple dependency issues. We have decided to run Gazebo in the non-simulated computer. A tested version of Gazebo for this setup can be found [here](https://github.com/osrf/uctf/tree/master/doc/install_binary). For more information visit the ArduPilot gazebo installation guide [here](http://ardupilot.org/dev/docs/using-gazebo-simulator-with-sitl.html)
 
-* **ArduCopter, MAVROS & ROSCORE**:
+* **ArduCopter, mavros & roscore**:
 ```
   cd test_environment
   make                  // This action can take quite some time.
 ```
+
+## Running Houston
+Running all three containers can be simplified by using docker-compose. It can be easily done, but not yet implemented.
+Open five terminals and do the following:
+
+  * **roscore terminal**:
+  ```
+  ./run.sh art:roscore
+  roscore
+  ```
+  * **mavros terminal**:
+  ```
+  ./run.sh art:mavros
+  source /opt/ros/indigo/setup.bash
+  rosrun mavros mavros_node _fcu_url:=udp://:14550@ _gcs_url:=udp://:14551@
+  ```
+  * **ArduCopter terminal**:
+  ```
+  ./run.sh art:ardupilot
+  cd ardupilot/ArduCopter/
+  sim_vehicle.py -f gazebo-iris
+
+  ```
+  * **Gazebo terminal** (Assuming you have installed the version that we tested):
+  ```
+  cd /opt/sasc/share/gazebo-8/
+  export INSTALL_SPACE=/opt/sasc
+  . ${INSTALL_SPACE}/setup.bash
+  . ${INSTALL_SPACE}/share/gazebo-8/setup.sh
+  . ${INSTALL_SPACE}/share/uctf/setup.sh
+  export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:${INSTALL_SPACE}/share/gazebo_models
+  export PATH=/opt/sasc/bin:$PATH
+  gazebo worlds/iris_arducopter_demo.world
+  ```
+  * **Houston** (cool part):
+  As an example we are just going to run a PTP mission.
+  ```
+  python runner.py mission_examples/point_to_point.json
+  ```
+  Hopefully you can see the magic happen.
