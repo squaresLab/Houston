@@ -52,7 +52,7 @@ Note that Gazebo is not a necessity, but it does help visualize the test. It can
 We use docker [containers](https://www.docker.com/what-docker) to facilitate the test environment setup.
 * **Gazebo**: Running gazebo on a docker container can be difficult since there are multiple dependency issues. We have decided to run Gazebo in the non-simulated computer. A tested version of Gazebo for this setup can be found [here](https://github.com/osrf/uctf/tree/master/doc/install_binary). For more information visit the ArduPilot gazebo installation guide [here](http://ardupilot.org/dev/docs/using-gazebo-simulator-with-sitl.html)
 
-* **ArduCopter, mavros & roscore**:
+* **ArduCopter, mavros, and roscore**:
 ```
   cd test_environment
   make                  // This action can take quite some time.
