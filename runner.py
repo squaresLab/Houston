@@ -79,11 +79,11 @@ class ROSHandler(object):
         # This is done to double check, that the current position is the actual
         # goal position.
         if remaining_distance > ERROR_LIMIT_DISTANCE:
-            return (False, position)
+            return (False, position), 'System did not reached location on time'
         time.sleep(STABLE_BUFFER_TIME)
-        return (True, position)
+        return (True, position), 'System reached locaiton'
 
-
+    # Makes sure that the system has landed.
     def check_land_completion(self, alt, wait = STABLE_BUFFER_TIME):
         local_action_time = time.time()
         self.lock_min_height = True
@@ -91,11 +91,12 @@ class ROSHandler(object):
             self.mission_on:
             local_action_time = self.timer_log(local_action_time, 5, 'Waiting to reach land. Goal: ~0 - Current: {}'.format(self.current_model_position[2]))
         if self.current_model_position[2] >= ERROR_LIMIT_DISTANCE:
-            return False
+            return False, 'System did not land on time'
         time.sleep(wait)
-        return True
+        return True, 'System has landed'
 
 
+    # Makes sure that the system reaches a given altitude (takeoff).
     def check_takeoff_completion(self, alt):
         local_action_time = time.time()
 
@@ -112,9 +113,9 @@ class ROSHandler(object):
             self.min_max_height[0] = self.current_model_position[2]
 
         if alt < (self.current_model_position[2] - ERROR_LIMIT_DISTANCE):
-            return (False, alt)
+            return (False, alt), 'System did not reach height on time'
         time.sleep(STABLE_BUFFER_TIME)
-        return (True, alt)
+        return (True, alt), 'System reached height'
 
 
     # Sets the system to GUIDED, arms and takesoff to a given altitude.
@@ -122,45 +123,39 @@ class ROSHandler(object):
     def ros_command_takeoff(self, alt):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
         res = set_mode(0, "GUIDED")
-
         if res: # DO check res return to match bool
             log("Mode changed to GUIDED") # TODO log
         else:
             error("System mode could not be changed to GUIDED")
 
         arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
-        res = arm(True)
         # TODO return if arm or mode fail
-        if res:
+        if arm(True):
             log("System ARMED...")
         else:
             error("System could not be ARMED.")
 
         takeoff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
-        res = takeoff(0, 0, 0, 0, alt)
-        if res:
+        if takeoff(0, 0, 0, 0, alt):
             log("System Taking off...")
         else:
             error("System did not take off.")
-        return self.check_takeoff_completion(alt)
-#        if succes:
-#            log('System reached height')
-#        else:
-#            log('System did not reach height on time')
 
+        return_data, message = self.check_takeoff_completion(alt)
+        log(message)
+        return return_data
 
-    #def goto_command(self, lat, longitud):
 
     # Makes a service call to coomand the system to land
     def ros_command_land(self, alt, wait = None):
         land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
-        res = land(0, 0, 0, 0, alt)
-        if res:
+        if land(0, 0, 0, 0, alt):
             log("System landing...")
         else:
             error("System is not landing.")
-
-        return self.check_land_completion(alt, wait)
+        return_data, message = self.check_land_completion(alt)
+        log(message)
+        return return_data
 
 
 
@@ -255,7 +250,10 @@ class ROSHandler(object):
         self.current_global_coordinates = self.initial_global_coordinates
         log('Expected distance to travel : {}'.format(expected_distance))
 
-        return self.check_goto_completion(expected_coor, pose, goto_publisher)
+        return_data, message = self.check_goto_completion(expected_coor, pose, \
+            goto_publisher)
+        log(message)
+        return return_data
 
 
 
