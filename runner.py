@@ -8,38 +8,38 @@ import os
 import sys
 import thread
 import math
-
+import random
+import RandomMissionGenerator
 import rospy
 import xmlrpclib
 
-from geopy.distance    import great_circle
+from gazebo_msgs.msg   import ModelStates
+from geopy             import distance
 from nav_msgs.msg      import Odometry
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg   import BatteryStatus
 from sensor_msgs.msg   import NavSatFix
 from mavros_msgs.srv   import CommandLong, SetMode, CommandBool, CommandTOL
 
-HOME_COORDINATES              = (-35.3632607, 149.1652351) 
-ERROR_LIMIT_DISTANCE          = .3 # 30cm TODO: pick a better name 
+HOME_COORDINATES              = (-35.3632607, 149.1652351)
+ERROR_LIMIT_DISTANCE          = .3 # 30cm TODO: pick a better name
 TIME_INFORM_RATE              = 10 # seconds. How often log time
-QUALITY_ATTRUBUTE_INFORM_RATE = 5  # seconds. 
-STABLE_BUFFER_TIME            = 5.0  # Seconds time to wait after each command 
+QUALITY_ATTRUBUTE_INFORM_RATE = 5  # seconds.
+STABLE_BUFFER_TIME            = 5.0  # Seconds time to wait after each command
+ROBOT_MODEL_NAME              = 'iris_demo'
 
+def error(error):
+    print '[ERROR]: {}'.format(error)
 
-class Error(object):
-
-    def __init__(self, error):
-        print '[ERROR]: ' + error
-
-class Log(object):
-
-    def __init__(self, log):
-        print '[LOG]: ' + log
+def log(to_log):
+    print '[LOG]: {}'.format(to_log)
 
 
 class ROSHandler(object):
     def __init__ (self, target):
         self.mission_info               = None
+        # mission_on is used to mark if the mission is on going. Monitor updates,
+        # mission_on to false if the mission has failed.
         self.mission_on                 = True
         self.initial_set                = [False, False, False, False]
         self.starting_time              = time.time()
@@ -54,102 +54,101 @@ class ROSHandler(object):
         self.current_local_position     = [0,0,0]
         self.current_odom_position      = [0,0,0]
         self.global_alt                 = [0,0]
-        
+
 
     def check_mavros(self):
         m = xmlrpclib.ServerProxy(os.environ['ROS_MASTER_URI'])
         code, status_message, uri = m.lookupNode('/mavros', '/mavros')
-        if code == 1:
-            return True
-        else:
-            return False
+        return code == 1
 
 
     def check_goto_completion(self, expected_coor, pose, pub):
+        position = pose.pose.position
         local_action_time = time.time()
-        success = True
         r = rospy.Rate(10)
 
-        remaining_distance = euclidean((pose.pose.position.x,pose.pose.position.y), \
-            (self.current_odom_position[0], self.current_odom_position[1]))
-        while remaining_distance >0:
+        remaining_distance = euclidean((position.x, position.y), \
+            (self.current_local_position[0], self.current_local_position[1]))
+        while remaining_distance > ERROR_LIMIT_DISTANCE  and self.mission_on:
             r.sleep()
             pub.publish(pose)
-            local_action_time = self.inform_time(local_action_time, 2,\
-                'Remaining: ' + str(remaining_distance))
+            local_action_time = self.timer_log(local_action_time, 2, 'Remaining: {}'.format(remaining_distance)) # TODO
+            remaining_distance = euclidean((pose.pose.position.x,pose.pose.position.y), \
+                (self.current_local_position[0], self.current_local_position[1]))
 
-        if great_circle(self.current_global_coordinates,expected_coor).meters\
-            >= ERROR_LIMIT_DISTANCE:
-            success = False
+        # This is done to double check, that the current position is the actual
+        # goal position.
+        if remaining_distance > ERROR_LIMIT_DISTANCE:
+            return (False, position)
         time.sleep(STABLE_BUFFER_TIME)
-        return success
+        return (True, position)
+
 
     def check_land_completion(self, alt, wait = STABLE_BUFFER_TIME):
         local_action_time = time.time()
-        success = True
         self.lock_min_height = True
-        while self.current_local_position[2] >= ERROR_LIMIT_DISTANCE and \
+        while self.current_odom_position[2] >= ERROR_LIMIT_DISTANCE and \
             self.mission_on:
-            local_action_time = self.inform_time(local_action_time, 5, \
-            'Waiting to reach land. Goal: ~0' +' - Current: '\
-                +str(self.current_local_position[2]))
+            local_action_time = self.timer_log(local_action_time, 5, 'Waiting to reach land. Goal: ~0 - Current: {}'.format(self.current_local_position[2]))
         if self.current_local_position[2] >= ERROR_LIMIT_DISTANCE:
-            success = False
+            return False
         time.sleep(wait)
-        return success
-
+        return True
 
 
     def check_takeoff_completion(self, alt):
         local_action_time = time.time()
-        success = True
-        
-        while ((alt+(ERROR_LIMIT_DISTANCE/2)) >= self.current_local_position[2]) \
-            and (self.current_local_position[2] <= (alt-(ERROR_LIMIT_DISTANCE/2)))\
-            and self.mission_on:
-                local_action_time = self.inform_time(local_action_time, 5, \
-                'Waiting to reach alt. Goal: '+ str(alt) +' - Current: '\
-                +str(self.current_local_position[2]))
+
+        # We check with current_odom_position beacuse the difference between,
+        # the ground truth and the current_odom_position increases as the alt
+        # does.
+        while alt >= (self.current_odom_position[2] + ERROR_LIMIT_DISTANCE)\
+         and self.mission_on:
+            local_action_time = self.timer_log(local_action_time, 5, \
+                'Waiting to reach alt. Goal: {} - Current: {}'.format(alt, \
+            self.current_local_position[2]))
         self.lock_min_height = False
         if self.min_max_height[0] == -1:
             self.min_max_height[0] = self.current_local_position[2]
-        if ((alt+(ERROR_LIMIT_DISTANCE/2)) >= self.current_local_position[2]) \
-            and (self.current_local_position[2] <= (alt-(ERROR_LIMIT_DISTANCE/2))):
-            success = False
+
+        if alt < (self.current_local_position[2] - ERROR_LIMIT_DISTANCE):
+            return (False, alt)
         time.sleep(STABLE_BUFFER_TIME)
-        return success
+        return (True, alt)
+
 
     # Sets the system to GUIDED, arms and takesoff to a given altitude.
-    # TODO: add mode to mission parameters? 
+    # TODO: add mode to mission parameters?
     def ros_command_takeoff(self, alt):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
         res = set_mode(0, "GUIDED")
 
-        if res: # DO check res return to match bool 
-            Log("Mode changed to GUIDED")
+        if res: # DO check res return to match bool
+            log("Mode changed to GUIDED") # TODO log
         else:
-            Error("System mode could not be changed to GUIDED")
+            error("System mode could not be changed to GUIDED")
 
         arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
         res = arm(True)
+        # TODO return if arm or mode fail
         if res:
-            Log("System ARMED...")
+            log("System ARMED...")
         else:
-            Error("System could not be ARMED.")
+            error("System could not be ARMED.")
 
         takeoff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
         res = takeoff(0, 0, 0, 0, alt)
         if res:
-            Log("System Taking off...")
+            log("System Taking off...")
         else:
-            Error("System did not take off.")
-        succes = self.check_takeoff_completion(alt)
-        if succes:
-            Log('System reached height')
-        else:
-            Log('System did not reach height on time')
-        
-        
+            error("System did not take off.")
+        return self.check_takeoff_completion(alt)
+#        if succes:
+#            log('System reached height')
+#        else:
+#            log('System did not reach height on time')
+
+
     #def goto_command(self, lat, longitud):
 
     # Makes a service call to coomand the system to land
@@ -157,33 +156,28 @@ class ROSHandler(object):
         land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
         res = land(0, 0, 0, 0, alt)
         if res:
-            Log("System landing...")
+            log("System landing...")
         else:
-            Error("System is not landing.")
-        if wait == None:
-            success = self.check_land_completion(alt)
-        else:
-            success = self.check_land_completion(alt, wait)
-        if success:
-            Log('System has landed')
-        else:
-            Log('System did not land on time ')
+            error("System is not landing.")
+
+        return self.check_land_completion(alt, wait)
 
 
-    # Gets the current x and y values using latitude and longitud instead of 
-    # getting the values form odom 
+
+    # Gets the current x and y values using latitude and longitud instead of
+    # getting the values form odom
     def get_current_x_y(self):
-        x = great_circle(HOME_COORDINATES, ( HOME_COORDINATES[0], \
+        x = distance.great_circle(HOME_COORDINATES, ( HOME_COORDINATES[0], \
             self.current_global_coordinates[1],)).meters
-        y = great_circle(HOME_COORDINATES, (self.current_global_coordinates[0],\
+        y = distance.great_circle(HOME_COORDINATES, (self.current_global_coordinates[0],\
          HOME_COORDINATES[1],)).meters
         if HOME_COORDINATES[0]> self.current_global_coordinates[0]:
-            y *= -1
+            y = -y
         if HOME_COORDINATES[1]> self.current_global_coordinates[1]:
-            x *= -1
-
+            x = -x
 
         return x, y
+
 
     def get_expected_lat_long(self, x_y, target, x_distance, y_distance):
         expected_lat  = 0
@@ -210,6 +204,7 @@ class ROSHandler(object):
                     self.initial_global_coordinates[0])))
         return expected_lat, expected_long
 
+
     def reset_initial_global_position(self):
         self.initial_set[0] = False
         self.initial_set[1] = False
@@ -217,12 +212,13 @@ class ROSHandler(object):
 
     # Commands the system to a given location. Verifies the end of the publications
     # by comparing the current position with the expected position.
-    # Need to add z for angular displacement. 
+    # Need to add z for angular displacement.
+    # mptp = multiple point to point mission type.
     def ros_command_goto(self, target, mptp):
         # It makes sure that the initial position is updated in order to calculate
-        # the next coordinate 
+        # the next coordinate
         if mptp:
-                self.reset_initial_global_position()
+            self.reset_initial_global_position()
         goto_publisher = rospy.Publisher('/mavros/setpoint_position/local',\
             PoseStamped, queue_size=10)
         pose = PoseStamped()
@@ -234,62 +230,60 @@ class ROSHandler(object):
         expected_coor     = None
         expected_distance = None
 
-        # 0,0 is set to HOME which is the starting position of the system. 
+        # 0,0 is set to HOME which is the starting position of the system.
         if target['x'] == 0 and target['y'] == 0:
             expected_coor = (HOME_COORDINATES[0], HOME_COORDINATES[1])
-            
-            expected_distance = great_circle(self.initial_global_coordinates, \
+
+            expected_distance = distance.great_circle(self.initial_global_coordinates, \
                 expected_coor).meters
-            Log('Using home coordinates: initial' + str(self.initial_global_coordinates)\
-                + ' expected: ' + str(expected_coor))
+            log('Using home coordinates: initial: {} -  expected: {}'.format(\
+                self.initial_global_coordinates, expected_coor))
         else:
             current_x, current_y = self.get_current_x_y()
             x_y = (current_x, current_y)
-            x_distance = euclidean((target['x'], 0),(current_y, 0)) - \
+            x_distance = target['x'] - current_x - \
                 ERROR_LIMIT_DISTANCE
-            y_distance = euclidean((0, target['y']),(0, current_y)) - \
+            y_distance = target['y'] -current_y - \
                 ERROR_LIMIT_DISTANCE
             expected_lat, expected_long = self.get_expected_lat_long(x_y, target, \
                 x_distance, y_distance)
             expected_coor = (expected_lat, expected_long)
-            Log('Using other coordinates: initial' + str(\
-                self.initial_global_coordinates)\
-                + ' expected: ' + str(expected_coor))
-            expected_distance = great_circle(self.initial_global_coordinates, \
+            log('Using coordinates: initial: {} -  expected: {}'.format(self.initial_global_coordinates, expected_coor))
+            expected_distance = distance.great_circle(self.initial_global_coordinates, \
                 expected_coor).meters
 
-
         self.current_global_coordinates = self.initial_global_coordinates
-        Log('Remaining distance to travel :  ' + str( great_circle(\
-            self.current_global_coordinates,expected_coor).meters))
-        success = self.check_goto_completion(expected_coor, pose, goto_publisher)
-        if success:
-            Log('Position reached')
-        else:
-            Log('System did not reach position on time')
+        log('Expected distance to travel : {}'.format(expected_distance))
 
-    # Callback for local position sub. It also updates the min and the max height
-    def ros_monitor_callback_local_position(self, data):
-        if data.pose.position.z > self.min_max_height[1]:
-            self.min_max_height[1] = data.pose.position.z
-        if data.pose.position.z < self.min_max_height[0] and not \
+        return self.check_goto_completion(expected_coor, pose, goto_publisher)
+
+
+
+    # Callback for model position sub. It also updates the min and the max height
+    def ros_monitor_callback_model_position_gazebo(self, data):
+
+        pose_reality = data.pose[data.name.index(ROBOT_MODEL_NAME)]
+        real_position = pose_reality.position
+        if real_position.z > self.min_max_height[1]:
+            self.min_max_height[1] = real_position.z
+        if real_position.z < self.min_max_height[0] and not \
             self.lock_min_height:
-            self.min_max_height[0] = data.pose.position.z
+            self.min_max_height[0] = real_position.z
 
         if not self.initial_set[0]:
-            self.initial_local_position[0]        = data.pose.position.x
-            self.initial_local_position[1]        = data.pose.position.y
-            self.initial_local_position[2]        = data.pose.position.z
+            self.initial_local_position[0]        = -real_position.y
+            self.initial_local_position[1]        = real_position.x
+            self.initial_local_position[2]        = real_position.z
             self.initial_set[0]                   = True
-        self.current_local_position[0]            = data.pose.position.x
-        self.current_local_position[1]            = data.pose.position.y
-        self.current_local_position[2]            = data.pose.position.z
-        
+        self.current_local_position[0]            = -real_position.y
+        self.current_local_position[1]            = real_position.x
+        self.current_local_position[2]            = real_position.z
+
 
     # Callback for global position sub
     def ros_monitor_callback_global_position(self, data):
         if not self.initial_set[1]:
-            self.initial_global_coordinates[0]    = data.latitude 
+            self.initial_global_coordinates[0]    = data.latitude
             self.initial_global_coordinates[1]    = data.longitude
             self.global_alt[0]                    = data.altitude
             self.initial_set[1]                   = True
@@ -304,46 +298,48 @@ class ROSHandler(object):
             self.initial_set[2]                   = True
         self.battery[1]                           = data.remaining
 
+
     def ros_monitor_callback_odom_local_position(self, data):
         if not self.initial_set[3]:
-            self.initial_odom_position[0]         = data.pose.pose.position.x 
+            self.initial_odom_position[0]         = data.pose.pose.position.x
             self.initial_odom_position[1]         = data.pose.pose.position.y
             self.initial_odom_position[2]         = data.pose.pose.position.z
             self.initial_set[3]                   = True
         self.current_odom_position[0]             = data.pose.pose.position.x
         self.current_odom_position[1]             = data.pose.pose.position.y
-        self.current_odom_position[3]             = data.pose.pose.position.z
+        self.current_odom_position[2]             = data.pose.pose.position.z
 
 
 
-    def inform_time(self, temp_time, time_rate = TIME_INFORM_RATE , \
-            message = ''):
+    def timer_log(self, temp_time, time_rate = TIME_INFORM_RATE, message = ''):
         current_time = time.time()
         if  (current_time - temp_time) > time_rate:
-                Log('Current time: ' + str(time.time() - self.starting_time)+ \
-                    ': '+ str(message))
-                return current_time
+            log('Current time: {} : {}'.format((time.time() - self.starting_time), message))
+            return current_time
         else:
             return temp_time
 
+
     def check_failure_flags(self, failure_flags):
         if time.time() - self.starting_time >= float(failure_flags['Time']):
-            return True, 'Time exceeded'
+            return True, 'Time exceeded: Expected: {} Current: {}'.format(failure_flags['Time'], (time.time() - self.starting_time))
         elif self.battery[0] - self.battery[1] >= float(failure_flags['Battery']):
             return True, 'Battery exceeded'
         elif self.current_local_position[2] >= failure_flags['MaxHeight']:
             return True, 'Max Height exceeded'
         else:
             return False, None
+        # TODO Min Height
 
     def check_quality_attributes(self, quality_attributes, current_data, _time):
         if time.time() - _time >= float(quality_attributes['ReportRate']):
-            current_data.append({'Time': time.time() - self.starting_time, \
+            current_data.append({'Time': (time.time() - self.starting_time), \
                 'Battery': self.battery[0]-self.battery[1], 'MinHeight': \
                 self.min_max_height[0], 'MaxHeight': self.min_max_height[1]})
             return time.time(), current_data
         else:
             return _time, current_data
+
 
     def check_intents(self, intents, current_data):
         current_time =  time.time() - self.starting_time
@@ -360,14 +356,14 @@ class ROSHandler(object):
             current_data['MinHeight'] = {'Time':current_time, 'Success':False, \
             'MinHeight': self.current_local_position[2]}
         return current_data
+        # TODO Better name for current_data
 
 
-    # Starts two subscribers to populate the system's location. It also ensures 
-    # failure flags. *More to be added 
-    def ros_monitor(self, quality_attributes, intents, failure_flags):        
-        local_pos_sub   = rospy.Subscriber('/mavros/local_position/pose', \
-            PoseStamped \
-         , self.ros_monitor_callback_local_position, queue_size=10)
+    # Starts two subscribers to populate the system's location. It also ensures
+    # failure flags. *More to be added
+    def ros_monitor(self, quality_attributes, intents, failure_flags, random = False):
+        model_pos_sub   = rospy.Subscriber("/gazebo/model_states", ModelStates, \
+            self.ros_monitor_callback_model_position_gazebo, queue_size=10)
         global_pos_sub  = rospy.Subscriber('/mavros/global_position/global', \
             NavSatFix \
          , self.ros_monitor_callback_global_position)
@@ -375,20 +371,26 @@ class ROSHandler(object):
           self.ros_monitor_callback_battery)
         local_odom_sub  = rospy.Subscriber('/mavros/local_position/odom', \
             Odometry, self.ros_monitor_callback_odom_local_position)
+        time.sleep(2)
+        if random:
+            return (self.initial_odom_position[0],self.initial_odom_position[1])
 
-
-        intents_for_report = {'Time': True, 'Battery': True, 'MaxHeight':True,\
-        'MinHeight': True}
+        intents_for_report ={
+                'Time': True,
+                'Battery': True,
+                'MaxHeight':True,
+                'MinHeight': True}
         report_data = {'QualityAttributes':[],'Intents':intents_for_report,\
         'FailureFlags':'None'}
-        temp_time   = time.time() #time used for failure flags and time inform
-        qua_time    = time.time() #time used for the rate of attribute reports
+        temp_time   = time.time() #time used for failure flags and time inform (seconds)
+        qua_time    = time.time() #time used for the rate of attribute reports (seconds)
         while self.mission_on:
-            temp_time = self.inform_time(temp_time)
+            temp_time = self.timer_log(temp_time)
             fail, reason = self.check_failure_flags(failure_flags)
             if fail:
                 report_data['FailureFlags'] = reason
                 self.mission_on = False
+                error(reason)
             else:
                 qua_time, qua_report = self.check_quality_attributes(\
                     quality_attributes,report_data['QualityAttributes'], qua_time)
@@ -399,17 +401,23 @@ class ROSHandler(object):
         report_generator = Report(self, report_data, self.mission_info)
         report_generator.generate()
 
+
     def ros_set_mission_over(self):
         self.mission_on = False
+
 
     def ros_set_mission_info(self, mission_info):
         self.mission_info = mission_info
 
+
 class Report(object):
+
+
     def __init__(self, ros_handler ,report_data, mission_info):
         self.report_data      = report_data
         self.ros_handler = ros_handler
         self.mission_info     = mission_info
+
 
     def generate(self):
         data_to_dump = {}
@@ -421,11 +429,9 @@ class Report(object):
         data_to_dump['QualityAttributes'] = self.report_data['QualityAttributes']
         data_to_dump['Intents'] = self.report_data['Intents']
         data_to_dump['Failure Flags'] = self.report_data['FailureFlags']
-        
+
         with open('report.json', 'w') as file:
             json.dump(data_to_dump, file)
-
-
 
 
 class Mission(object):
@@ -434,98 +440,83 @@ class Mission(object):
         ros = ROSHandler('mavros')
         main = rospy.init_node('HoustonMonitor')
         if not ros.check_mavros():
-            Error('Missing mavros')
+            error('Missing mavros')
             sys.exit()
         return ros, main
 
-    # Starts mission point to point. Function starts a monitor thread which constantly 
+
+    # Starts mission point to point. Function starts a monitor thread which constantly
     # updates the systems location and data required for the mission.
-    def execute_point_to_point(self, action_data, quality_attributes, intents, \
-        failure_flags, mission_info):
-        ros, main = self.initial_check()
-        try:
-            ros.ros_set_mission_info(mission_info)
-            thread.start_new_thread(ros.ros_monitor, (quality_attributes, intents, \
-             failure_flags))
-            time.sleep(2) # TODO Check for populated
-            ros.ros_command_takeoff(action_data['alt']) #position 6 is alt
-            ros.ros_command_goto(action_data, False)
-            ros.ros_command_land(action_data['alt'])
-            ros.ros_set_mission_over()
+    def execute_point_to_point(self, action_data, ros):
+        command_success = {}
+        command_success['takeoff'] = ros.ros_command_takeoff(action_data['alt'])
+        command_success['go_to'] = (action_data, ros.ros_command_goto(action_data, False))
+        command_success['land'] = ros.ros_command_land(action_data['alt'])
+        return command_success
 
-        except:
-            #Error('unable to start thread').thread_error()
-            raise 
 
-    def execute_multiple_point_to_point(self, action_data, quality_attributes,\
-        intents, failure_flags, mission_info):
-        ros, main = self.initial_check()
-        try:
-            ros.ros_set_mission_info(mission_info)
-            thread.start_new_thread(ros.ros_monitor, (quality_attributes, intents, \
-                failure_flags))
-            time.sleep(2)
-            # TODO: Mulitple altitudes 
-            ros.ros_command_takeoff(action_data[0]['alt'])
-            for target in action_data:
+
+    def execute_multiple_point_to_point(self, action_data, ros):
+        command_success = {}
+        command_success['takeoff']= ros.ros_command_takeoff(action_data[0]['alt'])
+        location_count = 0
+        for target in action_data:
+            command_success['go_to_{}'.format(location_count)] = \
                 ros.ros_command_goto(target, True)
-            ros.ros_command_land(action_data[0]['alt'])
-            ros.ros_set_mission_over()
-        except:
-            raise
+            location_count += 1
+        command_success['land'] = ros.ros_command_land(action_data[0]['alt'])
+        return command_success
 
-    def execute_extraction(self, action_data, quality_attributes, intents, \
-        failure_flags, mission_info):
-        ros, main = self.initial_check()
-        
-        try:
-            ros.ros_set_mission_info(mission_info)
-            thread.start_new_thread(ros.ros_monitor, (quality_attributes, intents, \
-                failure_flags))
-            time.sleep(2)
-            initial_x_y = ros.get_current_x_y()
-            ros.ros_command_takeoff(action_data['alt'])
-            ros.ros_command_goto(action_data, False)
-            ros.ros_command_land(action_data['alt'], action_data['wait']) # 7 wait time
-            ros.ros_command_takeoff(action_data['alt'])
-            action_data['x'] = initial_x_y[0]
-            action_data['y'] = initial_x_y[1]
-            ros.ros_command_goto(action_data, False)
-            ros.ros_command_land(action_data['alt'])
-            ros.ros_set_mission_over()
-        except:
-            raise
-    # Checks that all the required parameters for a correct mission run are present 
+
+    def execute_extraction(self, action_data, ros):
+        initial_x_y = ros.current_local_position
+        to_command_success = self.execute_point_to_point(action_data['alt'], action_data,False)
+        time.sleep(action_data['wait'])
+        action_data['x'] = initial_x_y[0]
+        action_data['y'] = initial_x_y[1]
+        from_command_success = self.execute_point_to_point(action_data['alt'], action_data, False)
+        return {'to':to_command_success, 'from': from_command_success}
+
+
+    # Checks that all the required parameters for a correct mission run are present
     def check_parameters(self, parameters):
         gen_parameters = {'Time', 'Battery', 'MaxHeight', 'MinHeight'}
         if 'QualityAttributes' in parameters:
             if not all  (param in parameters['QualityAttributes'] for param \
                 in gen_parameters):
-                Error("QualityAttributes description does not have enough attributes")
+                error("QualityAttributes description does not have enough attributes")
         else:
-            Error('QualityAttributes not found.')
+            error('QualityAttributes not found.')
         if 'Intents' in parameters:
             if not all (param in parameters['Intents'] for param in gen_parameters):
-                Error("Intents description does not have enough attributes")
+                error("Intents description does not have enough attributes")
         else:
-            Error("Intents not found")
+            error("Intents not found")
         if 'FailureFlags' in parameters:
             if not all (param in parameters['FailureFlags'] \
                 for param in gen_parameters):
-                Error("FailureFlags description does not have enough attributes")
+                error("FailureFlags description does not have enough attributes")
         else:
-            Error("FailureFlags not found")
+            error("FailureFlags not found")
         return True
 
+
     def get_params(self, mission_action, multiple_actions = False):
-        params_to_return = {'x':None,'y':None,'z':None,'x_d':None,'y_d':None,\
-        'z_d':None,'alt':None,'wait':None,'Type':None}
+        params_to_return = {
+            'x': None,
+            'y': None,
+            'z': None,
+            'x_d': None,
+            'y_d': None,
+            'z_d': None,
+            'alt': None,
+            'wait' : None,
+            'Type' : None}
         params_to_return_multiple_case = []
         if multiple_actions:
-            count = 0
             for locations in mission_action['Locations']:
-                params = {'x':None,'y':None,'z':None,'x_d':None,'y_d':None,\
-                'z_d':None,'alt':None,'wait':None,'Type':None}
+                params = {'x': None,'y': None,'z': None,'x_d': None,'y_d': None,\
+                'z_d':None,'alt':None,'wait':None,'Type': None} # TODO
                 for param in locations:
                     if param == 'Type':
                         continue
@@ -542,26 +533,36 @@ class Mission(object):
 
     # Executes mission
     def execute(self):
-        mission_action = self.mission_info['Action']
-        parameter_pass = self.check_parameters(self.mission_info)
+        ros, main = self.initial_check()
+        self.check_parameters(self.mission_info)
+        mission_action     = self.mission_info['Action']
         quality_attributes = self.mission_info['QualityAttributes']
-        intents = self.mission_info['Intents']
-        failure_flags = self.mission_info['FailureFlags']
+        intents            = self.mission_info['Intents']
+        failure_flags      = self.mission_info['FailureFlags']
+        success_report     = []
+        try:
+            ros.ros_set_mission_info(self)
+            thread.start_new_thread(ros.ros_monitor, (quality_attributes, intents, \
+                failure_flags))
+            if mission_action['Type'] == 'PTP':
+                action_data = self.get_params(mission_action)
+                success_report.append(self.execute_point_to_point(action_data, ros))
+            elif mission_action['Type'] == 'MPTP':
+                action_data = self.get_params(mission_action, True)
+                success_report.append(self.execute_multiple_point_to_point(action_data, ros))
+            elif mission_action['Type'] == 'Extraction':
+                action_data = self.get_params(mission_action)
+                success_report.append(self.execute_extraction(action_data, ros))
+            else:
+                print 'Mission type found not supported'
+        except KeyboardInterrupt:
+            log('User KeyboardInterrupt... exiting.')
+        except Exception:
+            raise
+        print success_report
+        ros.ros_set_mission_over
+        sys.exit(0)
 
-        if (mission_action['Type'] == 'PTP') and parameter_pass:
-            action_data = self.get_params(mission_action)
-            self.execute_point_to_point(action_data, quality_attributes, intents,\
-             failure_flags, self)
-        elif (mission_action['Type'] == 'MPTP' and parameter_pass):
-            action_data = self.get_params(mission_action, True)
-            self.execute_multiple_point_to_point(action_data,quality_attributes,\
-                intents,failure_flags, self)
-        elif (mission_action['Type'] == 'Extraction' and parameter_pass):
-            action_data = self.get_params(mission_action)
-            self.execute_extraction(action_data,quality_attributes,\
-                intents,failure_flags, self)
-        else:
-            print 'Mission type found not supported'
 
     def __init__(self, mission_info):
         self.robot_type  = mission_info['RobotType']
@@ -570,48 +571,46 @@ class Mission(object):
         self.mission_info = mission_info['Mission']
 
 
-
 def check_json(json_file):
     if not 'MDescription' in json_file:
-        Error('MDescription').format_error()
+        error('MDescription')
     elif not 'RobotType' in json_file['MDescription']:
-        Error('RobotType').format_error()
+        error('RobotType')
     elif not 'LaunchFile' in json_file['MDescription']:
-        Error('LaunchFile').format_error()
+        error('LaunchFile')
     elif not 'Map' in json_file['MDescription']:
-        Error('Map').format_error()
+        error('Map')
     elif not 'Mission' in json_file['MDescription']:
-        Error('Mission').format_error()
+        error('Mission')
     elif not 'Name' in json_file['MDescription']['Mission']:
-        Error('Mission - Name').format_error()
+        error('Mission - Name')
     elif not 'Action' in json_file['MDescription']['Mission']:
-        Error('Mission - Action').format_error()
+        error('Mission - Action')
     elif not 'QualityAttributes' in json_file['MDescription']['Mission']:
-        Error('Mission - QualityAttrubutes').format_error()
+        error('Mission - QualityAttrubutes')
     elif not 'Intents' in json_file['MDescription']['Mission']:
-        Error('Mission - Intents').format_error()
+        error('Mission - Intents')
     elif not 'FailureFlags' in json_file['MDescription']['Mission']:
-        Error('Mission - FailrueFlags').format_error()
+        error('Mission - FailrueFlags')
     else:
-        print Log('JSON file meets format requirements.')
+        print log('JSON file meets format requirements.')
 
 
 def euclidean(a, b):
     assert isinstance(a, tuple) and isinstance(b, tuple)
-    assert len(a) != []
+    assert a != tuple()
     assert len(a) == len(b)
     d = sum((x - y) ** 2 for (x, y) in zip(a, b))
     return math.sqrt(d)
 
 
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print ('Please provide a mission description file. (JSON)')
-        exit()
+        randomGenerator = RandomMissionGenerator()
+        json_file = randomGenerator.generateRandomjson()
     with open(sys.argv[1]) as file:
         json_file = json.load(file)
-
     check_json(json_file)
     mission = Mission(json_file['MDescription'])
     mission_results = mission.execute()
