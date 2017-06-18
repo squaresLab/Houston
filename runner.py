@@ -48,10 +48,10 @@ class ROSHandler(object):
         self.min_max_height             = [-1,0]
         self.lock_min_height            = True
         self.initial_global_coordinates = [0,0]
-        self.initial_local_position     = [0,0,0]
+        self.initial_model_position     = [0,0,0]
         self.initial_odom_position      = [0,0,0]
         self.current_global_coordinates = [0,0]
-        self.current_local_position     = [0,0,0]
+        self.current_model_position     = [0,0,0]
         self.current_odom_position      = [0,0,0]
         self.global_alt                 = [0,0]
 
@@ -68,13 +68,13 @@ class ROSHandler(object):
         r = rospy.Rate(10)
 
         remaining_distance = euclidean((position.x, position.y), \
-            (self.current_local_position[0], self.current_local_position[1]))
+            (self.current_model_position[0], self.current_model_position[1]))
         while remaining_distance > ERROR_LIMIT_DISTANCE  and self.mission_on:
             r.sleep()
             pub.publish(pose)
             local_action_time = self.timer_log(local_action_time, 2, 'Remaining: {}'.format(remaining_distance)) # TODO
             remaining_distance = euclidean((pose.pose.position.x,pose.pose.position.y), \
-                (self.current_local_position[0], self.current_local_position[1]))
+                (self.current_model_position[0], self.current_model_position[1]))
 
         # This is done to double check, that the current position is the actual
         # goal position.
@@ -89,8 +89,8 @@ class ROSHandler(object):
         self.lock_min_height = True
         while self.current_odom_position[2] >= ERROR_LIMIT_DISTANCE and \
             self.mission_on:
-            local_action_time = self.timer_log(local_action_time, 5, 'Waiting to reach land. Goal: ~0 - Current: {}'.format(self.current_local_position[2]))
-        if self.current_local_position[2] >= ERROR_LIMIT_DISTANCE:
+            local_action_time = self.timer_log(local_action_time, 5, 'Waiting to reach land. Goal: ~0 - Current: {}'.format(self.current_model_position[2]))
+        if self.current_model_position[2] >= ERROR_LIMIT_DISTANCE:
             return False
         time.sleep(wait)
         return True
@@ -106,12 +106,12 @@ class ROSHandler(object):
          and self.mission_on:
             local_action_time = self.timer_log(local_action_time, 5, \
                 'Waiting to reach alt. Goal: {} - Current: {}'.format(alt, \
-            self.current_local_position[2]))
+            self.current_model_position[2]))
         self.lock_min_height = False
         if self.min_max_height[0] == -1:
-            self.min_max_height[0] = self.current_local_position[2]
+            self.min_max_height[0] = self.current_model_position[2]
 
-        if alt < (self.current_local_position[2] - ERROR_LIMIT_DISTANCE):
+        if alt < (self.current_model_position[2] - ERROR_LIMIT_DISTANCE):
             return (False, alt)
         time.sleep(STABLE_BUFFER_TIME)
         return (True, alt)
@@ -271,13 +271,13 @@ class ROSHandler(object):
             self.min_max_height[0] = real_position.z
 
         if not self.initial_set[0]:
-            self.initial_local_position[0]        = -real_position.y
-            self.initial_local_position[1]        = real_position.x
-            self.initial_local_position[2]        = real_position.z
+            self.initial_model_position[0]        = -real_position.y
+            self.initial_model_position[1]        = real_position.x
+            self.initial_model_position[2]        = real_position.z
             self.initial_set[0]                   = True
-        self.current_local_position[0]            = -real_position.y
-        self.current_local_position[1]            = real_position.x
-        self.current_local_position[2]            = real_position.z
+        self.current_model_position[0]            = -real_position.y
+        self.current_model_position[1]            = real_position.x
+        self.current_model_position[2]            = real_position.z
 
 
     # Callback for global position sub
@@ -325,7 +325,7 @@ class ROSHandler(object):
             return True, 'Time exceeded: Expected: {} Current: {}'.format(failure_flags['Time'], (time.time() - self.starting_time))
         elif self.battery[0] - self.battery[1] >= float(failure_flags['Battery']):
             return True, 'Battery exceeded'
-        elif self.current_local_position[2] >= failure_flags['MaxHeight']:
+        elif self.current_model_position[2] >= failure_flags['MaxHeight']:
             return True, 'Max Height exceeded'
         else:
             return False, None
@@ -351,10 +351,10 @@ class ROSHandler(object):
             'Battery': current_battery_used }
         if self.min_max_height[0] >= intents['MaxHeight']:
             current_data['MaxHeight'] = {'Time':current_time, 'Success':False, \
-            'MaxHeight': self.current_local_position[2]}
+            'MaxHeight': self.current_model_position[2]}
         if self.min_max_height[1]<= intents['MinHeight']:
             current_data['MinHeight'] = {'Time':current_time, 'Success':False, \
-            'MinHeight': self.current_local_position[2]}
+            'MinHeight': self.current_model_position[2]}
         return current_data
         # TODO Better name for current_data
 
@@ -469,7 +469,7 @@ class Mission(object):
 
 
     def execute_extraction(self, action_data, ros):
-        initial_x_y = ros.current_local_position
+        initial_x_y = ros.current_model_position
         to_command_success = self.execute_point_to_point(action_data['alt'], action_data,False)
         time.sleep(action_data['wait'])
         action_data['x'] = initial_x_y[0]
