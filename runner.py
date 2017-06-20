@@ -673,7 +673,7 @@ def start_random_mission(mission_type, quantity, quiet, log_in_file):
 
 # Recieves a JSON file opens it and starts the test
 def start_json_mission(json_file, quiet, log_in_file):
-    with open(sys.argv[1]) as file:
+    with open(json_file) as file:
         json_file = json.load(file)
     start_test(json_file, quiet, log_in_file)
 
