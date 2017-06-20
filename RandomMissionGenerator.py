@@ -1,5 +1,6 @@
 import random
 import math
+from runner import euclidean
 QUALITY_ATTRUBUTE_INFORM_RATE = 5
 FAILURE_FLAG_SHUTDOWN         = True
 
@@ -56,7 +57,7 @@ class RandomMissionGenerator(object):
             return action_data
         elif psudo_random_number == 1:
             action_data['Type'] = self.types[1]
-            action_data['Locations'] = self.get_multiple_locations(random.randint(0,10))
+            action_data['Locations'] = self.get_multiple_locations(random.randint(1,10))
             return action_data
         elif psudo_random_number == 2:
             action_data['Type'] = self.types[2]
@@ -84,12 +85,12 @@ class RandomMissionGenerator(object):
             total_time += float(mission_action['Locations'][0]['alt']) * 1.8
             previous_location = self.current_model_position
             for locations in mission_action['Locations']:
-                total_time += self.euclidean((previous_location.x, previous_location.y),(\
+                total_time += euclidean((previous_location.x, previous_location.y),(\
                     locations['x'], locations['y'])) * 1.8
             total_time += float(mission_action['Locations'][0]['alt']) * 2.6
         else:
             total_time += mission_action['alt'] * 1.8
-            total_time += self.euclidean((self.current_model_position.x, \
+            total_time += euclidean((self.current_model_position.x, \
                 self.current_model_position.y), (mission_action['x'], \
                 mission_action['y'])) * 1.8
             total_time += mission_action['alt'] * 2.6
@@ -116,12 +117,6 @@ class RandomMissionGenerator(object):
         intents_data['Battery']   = intents_data['Time'] * 0.0025
         return intents_data
 
-    def euclidean(self, a, b):
-        assert isinstance(a, tuple) and isinstance(b, tuple)
-        assert a != tuple()
-        assert len(a) == len(b)
-        d = sum((x - y) ** 2 for (x, y) in zip(a, b))
-        return math.sqrt(d)
 
     def get_failure_flags(self, intents):
         failure_flags_data = {}
