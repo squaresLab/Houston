@@ -34,6 +34,7 @@ ROBOT_MODEL_NAME              = 'iris_demo' # name of the model being used in ga
 def error(error, quiet, log_in_file):
     log(error, quiet, log_in_file, 'ERROR')
 
+# Logs..
 def log(to_log, quiet, log_in_file, nature = 'LOG'):
     if log_in_file:
         if os.path.exists('houston.log'):
@@ -70,13 +71,15 @@ class ROSHandler(object):
         self.quiet                      = False
         self.log_in_file                = True
 
-
+    # Checks that MAVROS node is running
     def check_mavros(self):
         m = xmlrpclib.ServerProxy(os.environ['ROS_MASTER_URI'])
         code, status_message, uri = m.lookupNode('/mavros', '/mavros')
         return code == 1
 
-
+    # Verifies that the system has reached its correct position by comparing
+    # the distance between the current model position and the position where is
+    # supposed to be.
     def check_go_to_completion(self, expected_coor, pose, pub):
         position = pose.pose.position
         local_action_time = time.time()
@@ -175,7 +178,7 @@ class ROSHandler(object):
 
 
     # Gets the current x and y values using latitude and longitud instead of
-    # getting the values form odom
+    # getting the values form local posiiton (odom)
     def get_current_x_y(self):
         x = distance.great_circle(HOME_COORDINATES, ( HOME_COORDINATES[0], \
             self.current_global_coordinates[1],)).meters
@@ -189,6 +192,7 @@ class ROSHandler(object):
         return x, y
 
 
+    # Calculates the expected latitude and longitude, x and y are given in meters.
     def get_expected_lat_long(self, x_y, target, x_distance, y_distance):
         expected_lat  = 0
         expected_long = 0
@@ -215,15 +219,15 @@ class ROSHandler(object):
         return expected_lat, expected_long
 
 
+    # Resets the initial global position
     def reset_initial_global_position(self):
         self.initial_set[1] = False
 
+    # Resets the initail model position
     def reset_intial_model_position(self):
         self.initial_set[0] = False
 
-    # Commands the system to a given location. Verifies the end of the publications
-    # by comparing the current position with the expected position.
-    # Need to add z for angular displacement.
+    # Commands the system to a given location.
     # mptp = multiple point to point mission type.
     def ros_command_go_to(self, target, mptp):
         # It makes sure that the initial position is updated in order to calculate
@@ -307,14 +311,14 @@ class ROSHandler(object):
         self.current_global_coordinates[1]        = data.longitude
         self.global_alt[1]                        = data.altitude
 
-
+    # Callback for battery sub
     def ros_monitor_callback_battery(self, data):
         if not self.initial_set[2]:
             self.battery[0]                       = data.remaining
             self.initial_set[2]                   = True
         self.battery[1]                           = data.remaining
 
-
+    # Callback for local_position sub
     def ros_monitor_callback_odom_local_position(self, data):
         if not self.initial_set[3]:
             self.initial_odom_position[0]         = data.pose.pose.position.x
@@ -326,7 +330,7 @@ class ROSHandler(object):
         self.current_odom_position[2]             = data.pose.pose.position.z
 
 
-
+    # Timer which logs information with a given message.
     def timer_log(self, temp_time, time_rate = TIME_INFORM_RATE, message = ''):
         current_time = time.time()
         if  (current_time - temp_time) > time_rate:
@@ -336,7 +340,7 @@ class ROSHandler(object):
         else:
             return temp_time
 
-
+    # Checks failure flags
     def check_failure_flags(self, failure_flags):
         if time.time() - self.starting_time >= float(failure_flags['Time']):
             return True, 'Time exceeded: Expected: {} Current: {}'.format(failure_flags['Time'], (time.time() - self.starting_time))
@@ -348,6 +352,8 @@ class ROSHandler(object):
             return False, None
         # TODO Min Height
 
+
+    # Updates quality attributes.
     def check_quality_attributes(self, quality_attributes, current_data, _time):
         if time.time() - _time >= float(quality_attributes['ReportRate']):
             current_data.append({'Time': (time.time() - self.starting_time), \
@@ -358,6 +364,7 @@ class ROSHandler(object):
             return _time, current_data
 
 
+    # Checks if the current state of the system violates an intent.
     def check_intents(self, intents, current_data):
         current_time =  time.time() - self.starting_time
         current_battery_used = self.battery[0] - self.battery[1]
@@ -376,8 +383,10 @@ class ROSHandler(object):
         # TODO Better name for current_data
 
 
-    # Starts two subscribers to populate the system's location. It also ensures
-    # failure flags. *More to be added
+    # Starts four subscribers to populate the system's location, system battery and
+    # the model position which is very similar to the position given by the local position.
+    # It also updates intents, quality attributes and checks failure_flags.
+    # Sends all the data to the report generator.
     def ros_monitor(self, quality_attributes, intents, failure_flags, random = False):
         model_pos_sub   = rospy.Subscriber("/gazebo/model_states", ModelStates, \
             self.ros_monitor_callback_model_position_gazebo, queue_size=10)
@@ -418,11 +427,12 @@ class ROSHandler(object):
         report_generator = Report(self, report_data, self.mission_info)
         report_generator.generate()
 
-
+    # Sets the mission to over, which would stop all while loops related to the
+    # check of a action execution.
     def ros_set_mission_over(self):
         self.mission_on = False
 
-
+    # Populates the mission info, quiet, and log in file.
     def ros_set_mission_info(self, mission_info, quiet, log_in_file):
         self.mission_info = mission_info
         self.quiet = quiet
@@ -437,6 +447,7 @@ class Report(object):
         self.mission_info     = mission_info
 
 
+    # Generates a report in JSON format
     def generate(self):
         data_to_dump = {}
         data_to_dump['MissionType'] = self.mission_info.mission_info['Action']['Type']
@@ -454,7 +465,13 @@ class Report(object):
 
 class Mission(object):
 
+    # Checks that everything is the for the mission execution. It also starts,
+    # ROSHandler and starts Houston's node
     def initial_check(self):
+        if self.mission_info['Action']['Type'] not in self.missions_supported:
+            error('Mission: {}. Not supported.'.format(self.mission_info['Action']\
+                ['Type']))
+            exit()
         ros = ROSHandler('mavros')
         main = rospy.init_node('HoustonMonitor')
         if not ros.check_mavros():
@@ -463,8 +480,7 @@ class Mission(object):
         return ros, main
 
 
-    # Starts mission point to point. Function starts a monitor thread which constantly
-    # updates the systems location and data required for the mission.
+    # Starts action point to point.
     def execute_point_to_point(self, action_data, ros):
         command_success = {}
         command_success['takeoff'] = ros.ros_command_takeoff(action_data['alt'])
@@ -473,7 +489,7 @@ class Mission(object):
         return command_success
 
 
-
+    # Executes multiple point to point action
     def execute_multiple_point_to_point(self, action_data, ros):
         command_success = {}
         command_success['takeoff']= ros.ros_command_takeoff(action_data[0]['alt'])
@@ -486,6 +502,7 @@ class Mission(object):
         return command_success
 
 
+    # Executes extraction action
     def execute_extraction(self, action_data, ros):
         initial_x_y = ros.current_model_position
         to_command_success = self.execute_point_to_point(action_data,ros)
@@ -520,6 +537,7 @@ class Mission(object):
         return True
 
 
+    # Gets the parameters of an action.
     def get_params(self, mission_action, multiple_actions = False):
         params_to_return = {
             'x': None,
@@ -550,7 +568,8 @@ class Mission(object):
             return params_to_return
 
 
-    # Executes mission
+    # Looks into the type of action and executes them.  Function starts a monitor
+    # thread which constantly updates the systems location and data required for the mission.
     def execute(self, quiet, log_in_file):
         ros, main = self.initial_check()
         self.check_parameters(self.mission_info)
@@ -572,8 +591,6 @@ class Mission(object):
             elif mission_action['Type'] == 'Extraction':
                 action_data = self.get_params(mission_action)
                 success_report.append(self.execute_extraction(action_data, ros))
-            else:
-                print 'Mission type found not supported'
             ros.ros_set_mission_over()
         except KeyboardInterrupt:
             ros.ros_set_mission_over()
@@ -585,12 +602,14 @@ class Mission(object):
 
 
     def __init__(self, mission_info):
-        self.robot_type  = mission_info['RobotType']
-        self.launch_file = mission_info['LaunchFile']
-        self.map         = mission_info['Map']
-        self.mission_info = mission_info['Mission']
+        self.robot_type         = mission_info['RobotType']
+        self.launch_file        = mission_info['LaunchFile']
+        self.map                = mission_info['Map']
+        self.mission_info       = mission_info['Mission']
+        self.missions_supported = ('PTP', 'MPTP', 'Extraction')
 
 
+# Checks that JSON file meets the requirements to start the mission.
 def check_json(json_file):
     if not 'MDescription' in json_file:
         error('MDescription')
@@ -616,6 +635,7 @@ def check_json(json_file):
         log('JSON file meets format requirements.', False, False)
 
 
+# Gets the distance between two points
 def euclidean(a, b):
     assert isinstance(a, tuple) and isinstance(b, tuple)
     assert a != tuple()
@@ -623,6 +643,8 @@ def euclidean(a, b):
     d = sum((x - y) ** 2 for (x, y) in zip(a, b))
     return math.sqrt(d)
 
+# Gets the gazebo model position. This function is here to allow the position be
+# passed to the random mission generator without creating a ROSHandler
 def get_gazebo_model_positon(from_outside_mission = False):
     if from_outside_mission:
         temporary_node = rospy.init_node('HoustonMonitor')
@@ -632,12 +654,15 @@ def get_gazebo_model_positon(from_outside_mission = False):
     return pose_reality.position
 
 
+# Starts the actual mission (Test).
 def start_test(mission_description, quiet, log_in_file):
     check_json(mission_description)
     mission = Mission(mission_description['MDescription'])
     mission_results = mission.execute(quiet, log_in_file)
 
 
+# Handles random missions, loops through the quantity of missions wanted and executes,
+# them.
 def start_random_mission(mission_type, quantity, quiet, log_in_file):
     for x in range(0, int(quantity)):
         randomGenerator = RandomMissionGenerator.RandomMissionGenerator('random',\
@@ -646,6 +671,7 @@ def start_random_mission(mission_type, quantity, quiet, log_in_file):
         log_in_file)
 
 
+# Recieves a JSON file opens it and starts the test
 def start_json_mission(json_file, quiet, log_in_file):
     with open(sys.argv[1]) as file:
         json_file = json.load(file)
