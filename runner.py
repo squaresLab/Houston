@@ -9,7 +9,7 @@ import sys
 import thread
 import math
 import random
-import RandomMissionGenerator
+import RandomMissionGenerator as RandomMissionGenerator
 import rospy
 import xmlrpclib
 
@@ -24,9 +24,8 @@ from mavros_msgs.srv   import CommandLong, SetMode, CommandBool, CommandTOL
 HOME_COORDINATES              = (-35.3632607, 149.1652351)
 ERROR_LIMIT_DISTANCE          = .3 # 30cm TODO: pick a better name
 TIME_INFORM_RATE              = 10 # seconds. How often log time
-QUALITY_ATTRUBUTE_INFORM_RATE = 5  # seconds.
 STABLE_BUFFER_TIME            = 5.0  # Seconds time to wait after each command
-ROBOT_MODEL_NAME              = 'iris_demo'
+ROBOT_MODEL_NAME              = 'iris_demo' # name of the model being used in gazebo
 
 def error(error):
     print '[ERROR]: {}'.format(error)
@@ -62,7 +61,7 @@ class ROSHandler(object):
         return code == 1
 
 
-    def check_goto_completion(self, expected_coor, pose, pub):
+    def check_go_to_completion(self, expected_coor, pose, pub):
         position = pose.pose.position
         local_action_time = time.time()
         r = rospy.Rate(10)
@@ -87,7 +86,7 @@ class ROSHandler(object):
     def check_land_completion(self, alt, wait = STABLE_BUFFER_TIME):
         local_action_time = time.time()
         self.lock_min_height = True
-        while self.current_odom_position[2] >= ERROR_LIMIT_DISTANCE and \
+        while self.current_model_position[2] >= ERROR_LIMIT_DISTANCE and \
             self.mission_on:
             local_action_time = self.timer_log(local_action_time, 5, 'Waiting to reach land. Goal: ~0 - Current: {}'.format(self.current_model_position[2]))
         if self.current_model_position[2] >= ERROR_LIMIT_DISTANCE:
@@ -201,25 +200,26 @@ class ROSHandler(object):
 
 
     def reset_initial_global_position(self):
-        self.initial_set[0] = False
         self.initial_set[1] = False
 
+    def reset_intial_model_position(self):
+        self.initial_set[0] = False
 
     # Commands the system to a given location. Verifies the end of the publications
     # by comparing the current position with the expected position.
     # Need to add z for angular displacement.
     # mptp = multiple point to point mission type.
-    def ros_command_goto(self, target, mptp):
+    def ros_command_go_to(self, target, mptp):
         # It makes sure that the initial position is updated in order to calculate
         # the next coordinate
         if mptp:
             self.reset_initial_global_position()
-        goto_publisher = rospy.Publisher('/mavros/setpoint_position/local',\
+        go_to_publisher = rospy.Publisher('/mavros/setpoint_position/local',\
             PoseStamped, queue_size=10)
         pose = PoseStamped()
-        pose.pose.position.x = target['x']
-        pose.pose.position.y = target['y']
-        pose.pose.position.z = target['z']
+        pose.pose.position.x = float(target['x'])
+        pose.pose.position.y = float(target['y'])
+        pose.pose.position.z = float(target['z'])
         expected_lat      = None
         expected_long     = None
         expected_coor     = None
@@ -250,8 +250,8 @@ class ROSHandler(object):
         self.current_global_coordinates = self.initial_global_coordinates
         log('Expected distance to travel : {}'.format(expected_distance))
 
-        return_data, message = self.check_goto_completion(expected_coor, pose, \
-            goto_publisher)
+        return_data, message = self.check_go_to_completion(expected_coor, pose, \
+            go_to_publisher)
         log(message)
         return return_data
 
@@ -407,7 +407,6 @@ class ROSHandler(object):
     def ros_set_mission_info(self, mission_info):
         self.mission_info = mission_info
 
-
 class Report(object):
 
 
@@ -448,7 +447,7 @@ class Mission(object):
     def execute_point_to_point(self, action_data, ros):
         command_success = {}
         command_success['takeoff'] = ros.ros_command_takeoff(action_data['alt'])
-        command_success['go_to'] = (action_data, ros.ros_command_goto(action_data, False))
+        command_success['go_to'] = (action_data, ros.ros_command_go_to(action_data, False))
         command_success['land'] = ros.ros_command_land(action_data['alt'])
         return command_success
 
@@ -460,7 +459,7 @@ class Mission(object):
         location_count = 0
         for target in action_data:
             command_success['go_to_{}'.format(location_count)] = \
-                ros.ros_command_goto(target, True)
+                ros.ros_command_go_to(target, True)
             location_count += 1
         command_success['land'] = ros.ros_command_land(action_data[0]['alt'])
         return command_success
@@ -468,17 +467,18 @@ class Mission(object):
 
     def execute_extraction(self, action_data, ros):
         initial_x_y = ros.current_model_position
-        to_command_success = self.execute_point_to_point(action_data['alt'], action_data,False)
+        to_command_success = self.execute_point_to_point(action_data,ros)
         time.sleep(action_data['wait'])
         action_data['x'] = initial_x_y[0]
         action_data['y'] = initial_x_y[1]
-        from_command_success = self.execute_point_to_point(action_data['alt'], action_data, False)
+        ros.reset_intial_model_position()
+        from_command_success = self.execute_point_to_point(action_data, ros)
         return {'to':to_command_success, 'from': from_command_success}
 
 
     # Checks that all the required parameters for a correct mission run are present
     def check_parameters(self, parameters):
-        gen_parameters = {'Time', 'Battery', 'MaxHeight', 'MinHeight'}
+        gen_parameters = ['Time', 'Battery', 'MaxHeight', 'MinHeight']
         if 'QualityAttributes' in parameters:
             if not all  (param in parameters['QualityAttributes'] for param \
                 in gen_parameters):
@@ -553,12 +553,13 @@ class Mission(object):
                 success_report.append(self.execute_extraction(action_data, ros))
             else:
                 print 'Mission type found not supported'
+            ros.ros_set_mission_over()
         except KeyboardInterrupt:
+            ros.ros_set_mission_over()
             log('User KeyboardInterrupt... exiting.')
         except Exception:
             raise
         print success_report
-        ros.ros_set_mission_over
         sys.exit(0)
 
 
@@ -601,14 +602,23 @@ def euclidean(a, b):
     d = sum((x - y) ** 2 for (x, y) in zip(a, b))
     return math.sqrt(d)
 
+def get_gazebo_model_positon(from_outside_mission = False):
+    if from_outside_mission:
+        temporary_node = rospy.init_node('HoustonMonitor')
+    model_states = rospy.client.wait_for_message("/gazebo/model_states", \
+        ModelStates, timeout=1.0)
+    pose_reality = model_states.pose[model_states.name.index(ROBOT_MODEL_NAME)]
+    return pose_reality.position
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print ('Please provide a mission description file. (JSON)')
-        randomGenerator = RandomMissionGenerator()
-        json_file = randomGenerator.generateRandomjson()
-    with open(sys.argv[1]) as file:
-        json_file = json.load(file)
+        randomGenerator = RandomMissionGenerator.RandomMissionGenerator('random',\
+            get_gazebo_model_positon(True))
+        json_file = randomGenerator.generate_random_mission()
+    else:
+        with open(sys.argv[1]) as file:
+            json_file = json.load(file)
     check_json(json_file)
     mission = Mission(json_file['MDescription'])
     mission_results = mission.execute()
