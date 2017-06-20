@@ -416,7 +416,7 @@ class ROSHandler(object):
             if fail:
                 report_data['FailureFlags'] = reason
                 self.mission_on = False
-                error(reason)
+                error(reason, self.quiet)
             else:
                 qua_time, qua_report = self.check_quality_attributes(\
                     quality_attributes,report_data['QualityAttributes'], qua_time)
