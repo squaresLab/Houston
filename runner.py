@@ -638,16 +638,12 @@ def start_test(mission_description, quiet, log_in_file):
     mission_results = mission.execute(quiet, log_in_file)
 
 
-def start_random_mission(mission_type, quiet, log_in_file):
-    randomGenerator = RandomMissionGenerator.RandomMissionGenerator('random',\
-        get_gazebo_model_positon(True))
-    start_test(randomGenerator.generate_random_mission(mission_type), quiet, \
-        log_in_file)
-
-
-def start_multiple_random_missions(mission_type, quantity, quiet, log_in_file):
+def start_random_mission(mission_type, quantity, quiet, log_in_file):
     for x in range(0, int(quantity)):
-        start_random_mission(mission_type, quiet, log_in_file)
+        randomGenerator = RandomMissionGenerator.RandomMissionGenerator('random',\
+            get_gazebo_model_positon(True))
+        start_test(randomGenerator.generate_random_mission(mission_type), quiet, \
+        log_in_file)
 
 
 def start_json_mission(json_file, quiet, log_in_file):
@@ -670,19 +666,10 @@ def main():
     random_mission_parser.add_argument('mission_type', help='Mission type. For example: \
         PTP - Point to point. MTP - Muliple point to point. EXTR - Extraction.\
         RDM - Random selection (any of PTP, MTP or EXTR)')
-    random_mission_parser.set_defaults(func = lambda args: start_random_mission(\
-        args.mission_type, args.quiet, args.log_in_file))
-
-    # Multiple random missions, allows to select one mission type 
-    # with random parameters
-    multiple_random_mission_parser = subparsers.add_parser('multiple-random-missions')
-    multiple_random_mission_parser.add_argument('mission_type', help='Mission type.\
-     \nFor example: PTP - Point to point. MTP - Muliple point to point. \
-        EXTR - Extraction\nRDM - Random selection (any of PTP, MTP or EXTR)')
-    multiple_random_mission_parser.add_argument('quantity', help='How many mi\
-        ssions you want to be executed')
-    multiple_random_mission_parser.set_defaults(func = lambda args: \
-        start_multiple_random_missions(args.mission_type, args.quantity, args.quiet,\
+    random_mission_parser.add_argument('quantity', help='How many missions you \
+        want to be executed')
+    random_mission_parser.set_defaults(func = lambda args: \
+        start_random_mission(args.mission_type, args.quantity, args.quiet,\
          args.log_in_file))
 
     # Gets mission instructions from a json file
