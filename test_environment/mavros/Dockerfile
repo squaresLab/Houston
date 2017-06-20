@@ -7,11 +7,8 @@ RUN mkdir -p /home/mavros
 
 WORKDIR /home/mavros
 
-RUN git clone https://github.com/vishnubob/wait-for-it.git
-
 
 RUN apt-get update && \
     apt-get install ros-indigo-mavros -y
 
-RUN apt-get install realpath  -y
 
