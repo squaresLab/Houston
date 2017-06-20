@@ -41,9 +41,9 @@ class RandomMissionGenerator(object):
         return locations
 
 
-    def get_mission_action(self):
+    def get_mission_action(self, psudo_random_number):
         action_data = {}
-        psudo_random_number = random.randint(0,len(self.types)-1)
+
         if psudo_random_number == 0:
             action_data['Type'] = self.types[0]
             for param in self.ptp_params:
@@ -100,7 +100,6 @@ class RandomMissionGenerator(object):
 
     def get_intents(self, mission_action):
         intents_data = {}
-        print mission_action
         if mission_action['Type'] == 'PTP':
             intents_data['Time'] = self.calculate_time_for_intents(mission_action)
         elif mission_action['Type'] == 'MPTP':
@@ -133,11 +132,20 @@ class RandomMissionGenerator(object):
         failure_flags_data['SystemShutdown'] = FAILURE_FLAG_SHUTDOWN
         return failure_flags_data
 
-    def generate_random_mission(self):
+    def get_mission_type(self, mission_type):
+        mission_types = {'PTP': 0, 'MPTP': 1, 'EXTR': 2, 'RDM': -1}
+        if mission_type not in mission_types:
+            print 'Mission not supported. Make sure you are selecting a valid mission.'
+        return mission_types[mission_type]
+
+    def generate_random_mission(self, mission_type):
         json = {'MDescription':{'RobotType': 'Copter','LaunchFile': 'None', 'Map':\
         'None', 'Mission': {'Name': self.name}}}
+        mission_type_number = self.get_mission_type(mission_type)
+        if mission_type_number == -1:
+            mission_type_number = random.randint(0,len(self.types)-1)
 
-        action  = self.get_mission_action()
+        action  = self.get_mission_action(mission_type_number)
         quality_attributes = self.get_quality_attributes()
         intents = self.get_intents(action)
         failure_flags = self.get_failure_flags(intents)

@@ -12,6 +12,8 @@ import random
 import RandomMissionGenerator as RandomMissionGenerator
 import rospy
 import xmlrpclib
+import argparse
+
 
 from gazebo_msgs.msg   import ModelStates
 from geopy             import distance
@@ -27,11 +29,21 @@ TIME_INFORM_RATE              = 10 # seconds. How often log time
 STABLE_BUFFER_TIME            = 5.0  # Seconds time to wait after each command
 ROBOT_MODEL_NAME              = 'iris_demo' # name of the model being used in gazebo
 
-def error(error):
-    print '[ERROR]: {}'.format(error)
 
-def log(to_log):
-    print '[LOG]: {}'.format(to_log)
+# Error needs further handling
+def error(error, quiet, log_in_file):
+    log(error, quiet, log_in_file, 'ERROR')
+
+def log(to_log, quiet, log_in_file, nature = 'LOG'):
+    if log_in_file:
+        if os.path.exists('houston.log'):
+            a_w = 'a' # append if already exists
+        else:
+            a_w = 'w' # make a new file if not
+        with open('houston.log', a_w) as log_file:
+            log_file.write('[{}]: {} \n'.format(nature, to_log))
+    if not quiet:
+        print '[{}]: {}'.format(nature, to_log)
 
 
 class ROSHandler(object):
@@ -53,6 +65,10 @@ class ROSHandler(object):
         self.current_model_position     = [0,0,0]
         self.current_odom_position      = [0,0,0]
         self.global_alt                 = [0,0]
+
+        # option updated in line 413
+        self.quiet                      = False
+        self.log_in_file                = True
 
 
     def check_mavros(self):
@@ -80,7 +96,7 @@ class ROSHandler(object):
         if remaining_distance > ERROR_LIMIT_DISTANCE:
             return (False, position), 'System did not reached location on time'
         time.sleep(STABLE_BUFFER_TIME)
-        return (True, position), 'System reached locaiton'
+        return (True, position), 'System reached location'
 
     # Makes sure that the system has landed.
     def check_land_completion(self, alt, wait = STABLE_BUFFER_TIME):
@@ -123,25 +139,25 @@ class ROSHandler(object):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
         res = set_mode(0, "GUIDED")
         if res: # DO check res return to match bool
-            log("Mode changed to GUIDED") # TODO log
+            log("Mode changed to GUIDED", self.quiet, self.log_in_file) # TODO log
         else:
-            error("System mode could not be changed to GUIDED")
+            error("System mode could not be changed to GUIDED", self.quiet)
 
         arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
         # TODO return if arm or mode fail
         if arm(True):
-            log("System ARMED...")
+            log("System ARMED...", self.quiet, self.log_in_file)
         else:
-            error("System could not be ARMED.")
+            error("System could not be ARMED.", self.quiet, self.log_in_file)
 
         takeoff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
         if takeoff(0, 0, 0, 0, alt):
-            log("System Taking off...")
+            log("System Taking off...", self.quiet, self.log_in_file)
         else:
-            error("System did not take off.")
+            error("System did not take off.", self.quiet, self.log_in_file)
 
         return_data, message = self.check_takeoff_completion(alt)
-        log(message)
+        log(message, self.quiet, self.log_in_file)
         return return_data
 
 
@@ -149,11 +165,11 @@ class ROSHandler(object):
     def ros_command_land(self, alt, wait = None):
         land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
         if land(0, 0, 0, 0, alt):
-            log("System landing...")
+            log("System landing...", self.quiet, self.log_in_file)
         else:
-            error("System is not landing.")
+            error("System is not landing.", self.quiet, self.log_in_file)
         return_data, message = self.check_land_completion(alt)
-        log(message)
+        log(message, self.quiet, self.log_in_file)
         return return_data
 
 
@@ -232,7 +248,7 @@ class ROSHandler(object):
             expected_distance = distance.great_circle(self.initial_global_coordinates, \
                 expected_coor).meters
             log('Using home coordinates: initial: {} -  expected: {}'.format(\
-                self.initial_global_coordinates, expected_coor))
+                self.initial_global_coordinates, expected_coor), self.quiet, self.log_in_file)
         else:
             current_x, current_y = self.get_current_x_y()
             x_y = (current_x, current_y)
@@ -243,16 +259,18 @@ class ROSHandler(object):
             expected_lat, expected_long = self.get_expected_lat_long(x_y, target, \
                 x_distance, y_distance)
             expected_coor = (expected_lat, expected_long)
-            log('Using coordinates: initial: {} -  expected: {}'.format(self.initial_global_coordinates, expected_coor))
+            log('Using coordinates: initial: {} -  expected: {}'.format(\
+                self.initial_global_coordinates, expected_coor), self.quiet, self.log_in_file)
             expected_distance = distance.great_circle(self.initial_global_coordinates, \
                 expected_coor).meters
 
         self.current_global_coordinates = self.initial_global_coordinates
-        log('Expected distance to travel : {}'.format(expected_distance))
+        log('Expected distance to travel : {}'.format(expected_distance), \
+            self.quiet, self.log_in_file)
 
         return_data, message = self.check_go_to_completion(expected_coor, pose, \
             go_to_publisher)
-        log(message)
+        log(message, self.quiet, self.log_in_file)
         return return_data
 
 
@@ -312,7 +330,8 @@ class ROSHandler(object):
     def timer_log(self, temp_time, time_rate = TIME_INFORM_RATE, message = ''):
         current_time = time.time()
         if  (current_time - temp_time) > time_rate:
-            log('Current time: {} : {}'.format((time.time() - self.starting_time), message))
+            log('Current time: {} : {}'.format((time.time() - self.starting_time),\
+                message), self.quiet, self.log_in_file)
             return current_time
         else:
             return temp_time
@@ -404,8 +423,10 @@ class ROSHandler(object):
         self.mission_on = False
 
 
-    def ros_set_mission_info(self, mission_info):
+    def ros_set_mission_info(self, mission_info, quiet, log_in_file):
         self.mission_info = mission_info
+        self.quiet = quiet
+        self.log_in_file =  log_in_file
 
 class Report(object):
 
@@ -530,7 +551,7 @@ class Mission(object):
 
 
     # Executes mission
-    def execute(self):
+    def execute(self, quiet, log_in_file):
         ros, main = self.initial_check()
         self.check_parameters(self.mission_info)
         mission_action     = self.mission_info['Action']
@@ -539,7 +560,7 @@ class Mission(object):
         failure_flags      = self.mission_info['FailureFlags']
         success_report     = []
         try:
-            ros.ros_set_mission_info(self)
+            ros.ros_set_mission_info(self, quiet, log_in_file)
             thread.start_new_thread(ros.ros_monitor, (quality_attributes, intents, \
                 failure_flags))
             if mission_action['Type'] == 'PTP':
@@ -592,7 +613,7 @@ def check_json(json_file):
     elif not 'FailureFlags' in json_file['MDescription']['Mission']:
         error('Mission - FailrueFlags')
     else:
-        print log('JSON file meets format requirements.')
+        log('JSON file meets format requirements.', False, False)
 
 
 def euclidean(a, b):
@@ -610,15 +631,66 @@ def get_gazebo_model_positon(from_outside_mission = False):
     pose_reality = model_states.pose[model_states.name.index(ROBOT_MODEL_NAME)]
     return pose_reality.position
 
+
+def start_test(mission_description, quiet, log_in_file):
+    check_json(mission_description)
+    mission = Mission(mission_description['MDescription'])
+    mission_results = mission.execute(quiet, log_in_file)
+
+
+def start_random_mission(mission_type, quiet, log_in_file):
+    randomGenerator = RandomMissionGenerator.RandomMissionGenerator('random',\
+        get_gazebo_model_positon(True))
+    start_test(randomGenerator.generate_random_mission(mission_type), quiet, \
+        log_in_file)
+
+
+def start_multiple_random_missions(mission_type, quantity, quiet, log_in_file):
+    for x in range(0, int(quantity)):
+        start_random_mission(mission_type, quiet, log_in_file)
+
+
+def start_json_mission(json_file, quiet, log_in_file):
+    with open(sys.argv[1]) as file:
+        json_file = json.load(file)
+    start_test(json_file, quiet, log_in_file)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+    parser.add_argument('--version', action='version', version='0.0.1')
+    parser.add_argument('-l', '--log_in_file', action='store_true', \
+        required = False)
+    parser.add_argument('-q', '--quiet', action='store_true', required=False, \
+        default = False)
+
+    random_mission_parser = subparsers.add_parser('random-mission')
+    random_mission_parser.add_argument('mission_type', help='Mission type. For example: \
+        PTP - Point to point. MTP - Muliple point to point. EXTR - Extraction.\
+        RDM - Random selection (any of PTP, MTP or EXTR)')
+    random_mission_parser.set_defaults(func = lambda args: start_random_mission(\
+        args.mission_type, args.quiet, args.log_in_file))
+
+    multiple_random_mission_parser = subparsers.add_parser('multiple-random-missions')
+    multiple_random_mission_parser.add_argument('mission_type', help='Mission type.\
+     \nFor example: PTP - Point to point. MTP - Muliple point to point. \
+        EXTR - Extraction\nRDM - Random selection (any of PTP, MTP or EXTR)')
+    multiple_random_mission_parser.add_argument('quantity', help='How many mi\
+        ssions you want to be executed')
+    multiple_random_mission_parser.set_defaults(func = lambda args: \
+        start_multiple_random_missions(args.mission_type, args.quantity, args.quiet,\
+         args.log_in_file))
+
+    json_mission_parser = subparsers.add_parser('json-mission')
+    json_mission_parser.add_argument('json_file', help='Please provide a json\
+         file with mission instructions.')
+    json_mission_parser.set_defaults(func = lambda args: start_json_mission(\
+        args.json_file, args.quiet, args.log_in_file))
+
+    args = parser.parse_args()
+    if 'func' in vars(args):
+        args.func(args)
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print ('Please provide a mission description file. (JSON)')
-        randomGenerator = RandomMissionGenerator.RandomMissionGenerator('random',\
-            get_gazebo_model_positon(True))
-        json_file = randomGenerator.generate_random_mission()
-    else:
-        with open(sys.argv[1]) as file:
-            json_file = json.load(file)
-    check_json(json_file)
-    mission = Mission(json_file['MDescription'])
-    mission_results = mission.execute()
+    main()
