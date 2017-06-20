@@ -459,8 +459,13 @@ class Report(object):
         data_to_dump['Intents'] = self.report_data['Intents']
         data_to_dump['Failure Flags'] = self.report_data['FailureFlags']
 
-        with open('report.json', 'w') as file:
-            json.dump(data_to_dump, file)
+        if os.path.exists('report.json'):
+            a_w = 'a' # append if already exists
+        else:
+             a_w = 'w' # make a new file if not
+         with open('report.json', a_w) as file:
+            json.dump(data_to_dump, file, sort_keys=True, indent=4, separators=\
+             (',', ': '))
 
 
 class Mission(object):
