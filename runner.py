@@ -665,6 +665,7 @@ def main():
     parser.add_argument('-q', '--quiet', action='store_true', required=False, \
         default = False)
 
+    # One random mission, allows to select one mission type with random parameters
     random_mission_parser = subparsers.add_parser('random-mission')
     random_mission_parser.add_argument('mission_type', help='Mission type. For example: \
         PTP - Point to point. MTP - Muliple point to point. EXTR - Extraction.\
@@ -672,6 +673,8 @@ def main():
     random_mission_parser.set_defaults(func = lambda args: start_random_mission(\
         args.mission_type, args.quiet, args.log_in_file))
 
+    # Multiple random missions, allows to select one mission type 
+    # with random parameters
     multiple_random_mission_parser = subparsers.add_parser('multiple-random-missions')
     multiple_random_mission_parser.add_argument('mission_type', help='Mission type.\
      \nFor example: PTP - Point to point. MTP - Muliple point to point. \
@@ -682,6 +685,7 @@ def main():
         start_multiple_random_missions(args.mission_type, args.quantity, args.quiet,\
          args.log_in_file))
 
+    # Gets mission instructions from a json file
     json_mission_parser = subparsers.add_parser('json-mission')
     json_mission_parser.add_argument('json_file', help='Please provide a json\
          file with mission instructions.')
