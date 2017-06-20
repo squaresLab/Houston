@@ -600,10 +600,11 @@ class Mission(object):
         except KeyboardInterrupt:
             ros.ros_set_mission_over()
             log('User KeyboardInterrupt... exiting.')
+            sys.exit(0)
         except Exception:
             raise
         print success_report
-        sys.exit(0)
+
 
 
     def __init__(self, mission_info):
