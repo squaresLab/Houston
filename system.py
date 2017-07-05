@@ -101,16 +101,25 @@ class SystemVariable(object):
 
 class ActionSchema(object):
     """docstring for Action."""
-    def __init__(self, parameters, precondition, invariants, postconditions, dispatch):
-        self.parameters = parameters
-        self.precondition = precondition
-        self.invariants = invariants
-        self.postconditions = postconditions
+    def __init__(self, parameters, precondition, invariants, postconditions):
+        self.__parameters = parameters
+        self.__precondition = precondition
+        self.__invariants = invariants
+        self.__postconditions = postconditions
 
-    def dispatch(parameters):
+
+    def dispatch(self, parameters):
         " do the mission!"
         return
 
+
+    def satisfied(self, action):
+        return all(p.check(action) for p in self.__postconditions)
+
+
+"""
+A description of goto
+"""
 class GoToActionSchema(ActionSchema):
     def __init__(self):
         parameters = [
@@ -146,10 +155,39 @@ class GoToActionSchema(ActionSchema):
                           lambda sv: max_expected_time > time.time() - sv['time'])
         ]
 
-        super().__init__(parameters, preconditions, invariants, postconditions)
+        super().__init__('goto', parameters, preconditions, invariants, postconditions)
+
 
     def dispatch(parameters):
         roscall()
+
+
+"""
+A description of land
+"""
+class 
+    # Preconditions
+    [
+        # get sv from parameters, I think there's no need for lambdas here
+        Precondition('battery', lambda : system_variables['battery'] >= max_expected_battery_usage\
+        (None, None, 0), 'description')
+        Precondition('altitude', lambda : system_variables['altitude'] > 0.3, 'description')
+        Precondition('armed', lambda : system_variables['armed'] == True, 'description')
+    ],
+    # Invariants
+    [
+        Invariants('battery', lambda : system_variables['battery'] > 0)
+    ],
+    # Postconditions
+    [
+        # get sv from parameters
+        Postcondition('altitude', lambda : system_variables['altitude'] < 0.3, 'description')
+        Postcondition('battery', lambda : system_variables['battery'] > 0, 'description')
+        Postcondition('time', lambda : max_expected_time(None, None, 0) > time.time() - system_variables['time'], 'description')
+        Precondition('armed', lambda : system_variables['armed'] == False, 'description')
+    ]
+)
+
 
 
 class Invariant(object):
