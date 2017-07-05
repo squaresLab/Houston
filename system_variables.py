@@ -14,13 +14,32 @@ WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
 system_variables = {}
-system_variables['time']      = time.time()
-system_variables['altitude']  = lambda : rospy.client.wait_for_message('/mavros/local_position/odom', Odometry, timeout=1.0).pose.pose.position.z
-system_variables['latitude']  = lambda : rospy.client.wait_for_message('/mavros/global_position/global', NavSatFix, timeout=1.0).latitude
-system_variables['longitude'] = lambda : rospy.client.wait_for_message('/mavros/global_position/global', NavSatFix, timeout=1.0).longitude
-system_variables['battery']   = lambda : rospy.client.wait_for_message('/mavros/battery', BatteryStatus, timeout=1.0).remaining
-system_variables['arm']       = lambda : rospy.client.wait_for_message('/mavros/state', State, timeout=1.0).armed
-system_variables['mode']      = lambda : rospy.client.wait_for_message('/mavros/state', State, timeout=1.0).mode
+system_variables['time'] = \
+    lambda: time.time()
+system_variables['altitude'] = \
+    lambda: rospy.client.wait_for_message('/mavros/local_position/odom',
+                                           Odometry,
+                                           timeout=1.0).pose.pose.position.z
+system_variables['latitude'] = \
+    lambda: rospy.client.wait_for_message('/mavros/global_position/global',
+                                           NavSatFix,
+                                           timeout=1.0).latitude
+system_variables['longitude'] = \
+    lambda: rospy.client.wait_for_message('/mavros/global_position/global',
+                                          NavSatFix,
+                                          timeout=1.0).longitude
+system_variables['battery'] = \
+    lambda: rospy.client.wait_for_message('/mavros/battery',
+                                          BatteryStatus,
+                                          timeout=1.0).remaining
+system_variables['arm'] = \
+    lambda : rospy.client.wait_for_message('/mavros/state',
+                                           State,
+                                           timeout=1.0).armed
+system_variables['mode'] = \
+    lambda : rospy.client.wait_for_message('/mavros/state',
+                                           State,
+                                           timeout=1.0).mode
 
 action['goto'] = Action(
     # Description
