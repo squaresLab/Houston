@@ -165,7 +165,6 @@ class GoToActionSchema(ActionSchema):
 """
 A description of land
 """
-class 
     # Preconditions
     [
         # get sv from parameters, I think there's no need for lambdas here
@@ -189,8 +188,17 @@ class
 )
 
 
+class Predicate(object):
 
-class Invariant(object):
+    def __init__(self, predicate):
+        self.__predicate = predicate
+
+    
+    def check(self, action):
+        return self.__predicate(action)
+
+
+class Invariant(Predicate):
     """docstring for Postcondition."""
     def __init__(self, name, description, predicate):
         self.__name = name
@@ -198,7 +206,7 @@ class Invariant(object):
         self.__description = description
 
 
-class Postcondition(object):
+class Postcondition(Predicate):
     """docstring for Postcondition."""
     def __init__(self, name, description, predicate):
         self.__name = name
@@ -206,7 +214,7 @@ class Postcondition(object):
         self.__predicate = predicate
 
 
-class Precondition(object):
+class Precondition(Predicate):
     """docstring for Precondition."""
     def __init__(self, name, description, predicate):
         self.__name = name

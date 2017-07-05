@@ -45,38 +45,6 @@ system_variables['mode'] = SystemVariable(
                                            State,
                                            timeout=1.0).mode)
 
-action['goto'] = Action(
-    # Description
-    'Commands the system to go to a specific location.',
-    # Parameters
-    [
-        Parameter('latitude', float, 'description'),
-        Parameter('longitude', float, 'description'),
-        Parameter('altitude', float, 'description')
-    ],
-    # Preconditions
-    [
-        # get sv from parameters, I think there's no need for lambdas here
-        Precondition('battery', lambda sv: system_variables['battery'] >= max_expected_battery_usage\
-        (sv['latitude'], sv['longitude'], sv['altitude']), 'description')
-        Precondition('altitude', lambda : system_variables['altitude'] > 0, 'description')
-    ],
-    # Invariants
-    [
-        Invariants('battery', lambda : system_variables['battery'] > 0)
-        Invariants('system_armed', lambda : system_variables['armed'] == True, 'description')
-        Invariants('altitude', lambda : system_variables['altitude'] > -0.3, 'description')
-    ],
-    # Postconditions
-    [
-        # get sv from parameters
-        Postcondition('altitude', lambda sv: sv['alt'] - 0.3 < system_variables['altitude'] < sv['alt'] + 0.3)
-        Postcondition('battery', lambda : system_variables['battery'] > 0 )
-        Postcondition('time', lambda : max_expected_time > time.time() - system_variables['time'])
-
-    ]
-)
-
 action['land'] = Action(
     # Description
     'Commands the system to go to a specific location.',
