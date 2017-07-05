@@ -153,42 +153,4 @@ def get_standard_deviation_and_mean(sample):
 
 
 
-class Action(object):
-    """docstring for Action."""
-    def __init__(self, parameters, precondition, invariants, postconditions):
-        self.parameters = parameters
-        self.precondition = precondition
-        self.invariants = invariants
-        self.postconditions = postconditions
-        self.arg = arg
 
-class Invariant(object):
-    """docstring for Postcondition."""
-    def __init__(self, _type, value, description):
-        self._type = _type
-        self.value = value
-        self.description
-
-
-class Postcondition(object):
-    """docstring for Postcondition."""
-    def __init__(self, _type, value, description):
-        self._type = _type
-        self.value = value
-        self.description
-
-
-class Precondition(object):
-    """docstring for Precondition."""
-    def __init__(self, _type, value, description):
-        self._type = _type
-        self.value = value
-        self.description
-
-
-class Parameter(object):
-    """docstring for ."""
-    def __init__(self, _type, value, description):
-        self._type = _type
-        self.value = value
-        self.description
