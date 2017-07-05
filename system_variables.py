@@ -15,6 +15,8 @@ SAMPLE_TIME    = []
 WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
+builder = SystemBuilder()
+
 system_variables = {}
 system_variables['time'] = SystemVariable(
     lambda: time.time())
