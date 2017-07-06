@@ -71,18 +71,42 @@ class SystemVariable(object):
         return self.__getter()
 
 
-"""
-
-"""
 class Mission(object):
-    
-    
-    def __init__(self, environment, initial, actions):
+    """
+    A mission is represented as a sequence of actions that are carried out in
+    a given environment and initial state.
+    """
+
+    def __init__(self, environment, internal, external, actions):
+        """
+        Constructs a new Mission description.
+
+        :param  environment:    a description of the environment
+        :param  internal:       a description of the initial internal state
+        :param  external:       a description of the initial external state
+        :param  actions:        a list of actions
+        """
         assert(actions != [])
+        assert(isinstance(environment, Environment) and not environment is None)
+        assert(isinstance(internal, InternalState) and not internal is None)
+        assert(isinstance(external, ExternalState) and not external is None)
+
         self.__environment = environment
-        self.__initial = initial
+        self.__internal = internal
+        self.__external = external
         self.__actions = actions
 
+    def getEnvironment(self):
+        return self.__environment
+
+    def getInitialInternalState(self):
+        return self.__internal
+
+    def getInitialExternalState(self):
+        return self.__external
+
+    def getActions(self):
+        return self.__actions
 
 """
 Hello.
