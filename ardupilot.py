@@ -18,10 +18,14 @@ SAMPLE_TIME    = []
 WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
+"""
+Description of the ArduPilot system
+"""
 class ArduPilot(System):
 
     def __init__(self):
         variables = {}
+        # this should go inside setUp
         rospy.init_node('Ardupilot') # We need a running node to recieve messages
         variables['time'] = SystemVariable('time', lambda: time.time())
         variables['altitude'] = SystemVariable('altitude',

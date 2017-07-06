@@ -7,10 +7,7 @@ class ArduTest(unittest.TestCase):
             actions = [
                 Action("takeoff", {"altitude": -30})
             ]
-            environment = Environment({
-                "map": "someMap" # wind, lighting
-            })
-
+            environment = Environment()
             initial = InitialState({
                 "x": 10.43,
                 "y": 0.5,
