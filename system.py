@@ -36,6 +36,9 @@ class SystemVariable(object):
         return self.__getter()
 
 
+"""
+Hello.
+"""
 class ActionSchema(object):
     def __init__(self, name, parameters, precondition, invariants, postconditions):
         self.__name           = name
@@ -46,8 +49,7 @@ class ActionSchema(object):
 
 
     def dispatch(self, parameters):
-        " do the mission!"
-        return
+        raise UnimplementedError
 
 
     def satisfied(self, action):
