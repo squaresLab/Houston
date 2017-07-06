@@ -8,28 +8,38 @@ class System(object):
         self.__schemas = schemas
 
 
-"""
-Describes the internal state of a robot in terms of its internal state
-variables.
-"""
 class InternalState(object):
- 
+    """
+    Describes the internal state of a robot in terms of its internal state
+    variables.
+    """
 
     def __init__(self, values):
         self.__values = values
 
 
-    """
-    Returns the value for a given (internal) state variable
-    """
     def read(variable):
+        """
+        Returns the value for a given (internal) state variable
+        """
         return self.__values[variable]
 
 
-"""
-Holds a description of an environment in which a mission should be conducted.
-"""
+class InternalStateVariable(object):
+    """
+    Internal variables describe the internal state of a given system.
+    (i.e., they represent a system's knowledge of itself and its surroundings.)
+    """
+
+    def __init__(self, name, getter):
+        pass
+
+
 class Environment(object):
+    """
+    Holds a description of an environment in which a mission should be conducted.
+    """
+
     pass
 
 
