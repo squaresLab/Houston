@@ -8,6 +8,12 @@ class System(object):
         self.__schemas = schemas
 
 
+class SystemState(object):
+
+    def __init__(self, values):
+        
+
+
 """
 Description of system variables goes here!
 
@@ -34,6 +40,19 @@ class SystemVariable(object):
     """
     def read(self):
         return self.__getter()
+
+
+"""
+
+"""
+class Mission(object):
+    
+    
+    def __init__(self, environment, initial, actions):
+        assert(actions != [])
+        self.__environment = environment
+        self.__initial = initial
+        self.__actions = actions
 
 
 """
