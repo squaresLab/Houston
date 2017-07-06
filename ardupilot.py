@@ -53,8 +53,12 @@ class ArduPilot(System):
         super(ArduPilot, self).__init__(variables, schemas)
 
 
+    """
+    Responsible for appropriately configuring and launching the system under
+    test (SUT) for a given mission.
+    """
     def setUp(self, mission):
-         
+        pass         
 
 
 """
