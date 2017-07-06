@@ -32,40 +32,19 @@ class State(object):
         return self.__values[variable]
 
 
-class InternalState(object):
+class InternalState(State):
     """
     Describes the state of the system in terms of its internal state
     variables.
     """
+    pass
 
-    def __init__(self, values):
-        self.__values = values
-
-
-    def read(variable):
-        """
-        Returns the value for a given (internal) state variable
-        """
-        return self.__values[variable]
-
-
-class InternalState(object):
+class ExternalState(State):
     """
-    Describes the state of the system in terms of its internal state
+    Describes the state of the system in terms of its external state
     variables.
     """
-
-    def __init__(self, values):
-        self.__values = values
-
-
-    def read(variable):
-        """
-        Returns the value for a given (internal) state variable
-        """
-        return self.__values[variable]
-
-
+    pass
 
 class StateVariable(object):
 
