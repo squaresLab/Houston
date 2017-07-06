@@ -16,6 +16,12 @@ class State(object):
 
 
     def __init__(self, values):
+        """
+        Constructs a description of the system state.
+
+        :param  values: a dictionary describing the values of the state
+                        variables, indexed by their names.
+        """
         self.__values = values
 
 
@@ -24,7 +30,6 @@ class State(object):
         Returns the value for a given state variable
         """
         return self.__values[variable]
-
 
 
 class InternalState(object):
@@ -42,6 +47,24 @@ class InternalState(object):
         Returns the value for a given (internal) state variable
         """
         return self.__values[variable]
+
+
+class InternalState(object):
+    """
+    Describes the state of the system in terms of its internal state
+    variables.
+    """
+
+    def __init__(self, values):
+        self.__values = values
+
+
+    def read(variable):
+        """
+        Returns the value for a given (internal) state variable
+        """
+        return self.__values[variable]
+
 
 
 class StateVariable(object):
@@ -88,8 +111,20 @@ class Environment(object):
     Holds a description of an environment in which a mission should be conducted.
     """
 
-    pass
+    def __init__(self, values):
+        """
+        Constructs a description of a mission environment.
 
+        :param  values: a dictionary of environment variable values, indexed
+                        by the name of those variables.
+        """
+        self.__values = values
+
+    def read(variable):
+        """
+        Returns the value of a given environment variable.
+        """
+        return self.__variable
 
 """
 Description of system variables goes here!
