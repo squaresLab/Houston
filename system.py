@@ -18,14 +18,16 @@ WINDOW_TIME    = 2
 class System(object):
 
     def __init__(self, variables, schemas):
-        self.__variables = variables
-        self.__schemas = schemas
+        self._variables = variables
+        self._schemas = schemas
+
 
 
 class ArduPilot(System):
 
     def __init__(self):
         variables = {}
+        rospy.init_node('jam')
         variables['time'] = SystemVariable('time', lambda: time.time())
         variables['altitude'] = SystemVariable('altitude',
             lambda: rospy.client.wait_for_message('/mavros/local_position/odom',
@@ -100,7 +102,7 @@ class ActionSchema(object):
 
     def dispatch(self, parameters):
         " do the mission!"
-        return
+        raise NotImplementedError() 
 
 
     def satisfied(self, action):
@@ -143,7 +145,7 @@ class SetModeActionSchema(ActionSchema):
         ]
         postconditions = [
             Postcondition('mode', 'description',
-                          lambda sv: sv['mode'].read() == parameters[0].get_value())
+                          lambda sv: sv['mode'].read() == parameters[0].get_value)
         ]
         invariants = [
             Invariant('battery', 'description',
@@ -153,7 +155,7 @@ class SetModeActionSchema(ActionSchema):
 
     def dispatch(parameters):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
-        set_mode(0, parameters.read())
+        set_mode(0, parameters[0].read())
 
 
 """
@@ -171,9 +173,9 @@ class GoToActionSchema(ActionSchema):
 
             Precondition('battery', 'description',
                          lambda sv: sv['battery'].read() >= max_expected_battery_usage(
-                         parameters[0].get_value(),
-                         parameters[1].get_value(),
-                         parameters[2].get_value())),
+                         parameters[0].get_value,
+                         parameters[1].get_value,
+                         parameters[2].get_value)),
             Precondition('altitude', 'description',
                          lambda sv: sv['altitude'].read() > 0)
         ]
@@ -189,17 +191,17 @@ class GoToActionSchema(ActionSchema):
 
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda sv: sv['alt'].read() - 0.3 < \
-                            parameters[2].get_value() < sv['alt'].read() + 0.3),
+                          lambda sv: sv['altitude'].read() - 0.3 < \
+                            parameters[2].get_value < sv['altitude'].read() + 0.3),
             Postcondition('battery', 'description',
                           lambda sv: sv['battery'].read() > 0 ),
             Postcondition('time', 'description',
                           # we need a "start" time (or an initial state)
                           lambda sv: time.time() - sv['time'].read() <
                           max_expected_time(
-                            parameters[0].get_value(),
-                            parameters[1].get_value(),
-                            parameters[2].get_value()))
+                            parameters[0].get_value,
+                            parameters[1].get_value,
+                            parameters[2].get_value))
         ]
 
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions, invariants, postconditions)
@@ -264,7 +266,7 @@ class TakeoffActionSchema(ActionSchema):
                          max_expected_battery_usage(
                             None,
                             None,
-                            sv['altitude'].get_value())),
+                            sv['altitude'].get_value)),
             Precondition('altitude', 'description',
                          lambda sv: sv['altitude'].read() < 0.3),
             Precondition('armed', 'description',
@@ -279,7 +281,7 @@ class TakeoffActionSchema(ActionSchema):
         postconditions = [
             Postcondition('altitude', 'description',
                           lambda sv: sv['alt'].read() - 0.3 < \
-                          parameters[0].get_value() < sv['alt'].read() + 0.3)
+                          parameters[0].get_value < sv['alt'].read() + 0.3)
         ]
 
     def dispatch(parameters):
@@ -290,11 +292,11 @@ class TakeoffActionSchema(ActionSchema):
 class Predicate(object):
 
     def __init__(self, predicate):
-        self.__predicate = predicate
+        self._predicate = predicate
 
 
     def check(self, action):
-        return self.__predicate(action)
+        return self._predicate(action)
 
 
 class Invariant(Predicate):
@@ -310,7 +312,7 @@ class Postcondition(Predicate):
     def __init__(self, name, description, predicate):
         self.__name = name
         self.__description = description
-        self.__predicate = predicate
+        self._predicate = predicate
 
 
 class Precondition(Predicate):
@@ -318,7 +320,7 @@ class Precondition(Predicate):
     def __init__(self, name, description, predicate):
         self.__name = name
         self.__description = description
-        self.__predicate = predicate
+        self._predicate = predicate
 
 
 class Parameter(object):
@@ -326,7 +328,7 @@ class Parameter(object):
     def __init__(self, typ, value, description):
         self.__type = typ
         self.__value = value
-        self.__description = description
+        self._description = description
 
     def get_value():
         return self.__value
@@ -352,3 +354,5 @@ def get_standard_deviation_and_mean(sample):
 
 if __name__ == "__main__":
     ar = ArduPilot()
+    for schema in ar._schemas:
+        print ar._schemas[schema].satisfied(ar._variables)
