@@ -9,7 +9,7 @@ from nav_msgs.msg      import Odometry
 from mavros_msgs.msg   import BatteryStatus, State
 from sensor_msgs.msg   import NavSatFix
 
-from system            import System, SystemVariable, ActionSchema, Predicate, \
+from system            import System, InternalStateVariable, ActionSchema, Predicate, \
                               Invariant, Postcondition, Precondition, Parameter
 
 
@@ -27,23 +27,23 @@ class ArduPilot(System):
         variables = {}
         # this should go inside setUp
         rospy.init_node('Ardupilot') # We need a running node to recieve messages
-        variables['time'] = SystemVariable('time', lambda: time.time())
-        variables['altitude'] = SystemVariable('altitude',
+        variables['time'] = InternalStateVariable('time', lambda: time.time())
+        variables['altitude'] = InternalStateVariable('altitude',
             lambda: rospy.client.wait_for_message('/mavros/local_position/odom',
                 Odometry, timeout=1.0).pose.pose.position.z)
-        variables['latitude'] = SystemVariable('latitude',
+        variables['latitude'] = InternalStateVariable('latitude',
             lambda: rospy.client.wait_for_message('/mavros/global_position/global',
                 NavSatFix, timeout=1.0).latitude)
-        variables['longitude'] = SystemVariable('longitude',
+        variables['longitude'] = InternalStateVariable('longitude',
             lambda: rospy.client.wait_for_message('/mavros/global_position/global',
                 NavSatFix, timeout=1.0).longitude)
-        variables['battery'] = SystemVariable('battery',
+        variables['battery'] = InternalStateVariable('battery',
             lambda: rospy.client.wait_for_message('/mavros/battery',
                 BatteryStatus, timeout=1.0).remaining)
-        variables['armed'] = SystemVariable('arm',
+        variables['armed'] = InternalStateVariable('arm',
                 lambda : rospy.client.wait_for_message('/mavros/state',
                     State, timeout=1.0).armed)
-        variables['mode'] = SystemVariable('mode',
+        variables['mode'] = InternalStateVariable('mode',
                 lambda : rospy.client.wait_for_message('/mavros/state',
                     State, timeout=1.0).mode)
 
@@ -96,7 +96,7 @@ class SetModeActionSchema(ActionSchema):
         parameters = [
             Parameter('mode', str, 'description')
         ]
-        
+
         preconditions = []
 
         postconditions = [
