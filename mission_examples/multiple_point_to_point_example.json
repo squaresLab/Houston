@@ -1,0 +1,61 @@
+{
+"MDescription":{
+    "RobotType":  "ArduCopter",
+    "LaunchFile": "robotest.launch",
+    "Map":        "Airport.world",
+    "Mission":{
+        "Name":   "VisitingTheFam",
+        "Action":{
+            "Type":      "MPTP",
+            "Locations": [
+           {
+                "alt":  "15.0", 
+                "x":    "5.0",
+                "y":    "10.0",
+                "z":    "15.0",
+                "x_d":  "6.7",
+                "y_d":  "7.9",
+                "z_d":  "0.0"
+            },
+            {
+                "alt":  "15.0",
+                "x":    "-5.0",
+                "y":    "7.0",
+                "z":    "15.0",
+                "x_d":  "3.0",
+                "y_d":  "1.5",
+                "z_d":  "0.0"
+            },
+        	{
+                "alt":  "15.0",
+                "x":    "-3.0",
+                "y":    "-12.0",
+                "z":    "15.0",
+                "x_d":  "3.0",
+                "y_d":  "1.5",
+                "z_d":  "0.0"
+            }]
+        },
+        "QualityAttributes":{
+            "ReportRate":"2",
+            "Time":      "True",
+            "Battery":   "True",
+            "MaxHeight": "True",
+            "MinHeight": "True"
+        },
+        "Intents":{
+            "Time":      "110", 
+            "Battery":   ".6", 
+            "MaxHeight": "20", 
+            "MinHeight": "10"
+        },
+        "FailureFlags":{
+            "Time":           "120",
+            "Battery":        "1",
+            "SystemShutdown": "True",
+            "MaxHeight":      "30",
+            "MinHeight":      "10"	
+        }
+    }
+}
+}

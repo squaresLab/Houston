@@ -1,0 +1,53 @@
+{
+	"MDescription":
+	{
+		"RobotType":	"ArduCopter",
+		"LaunchFile":	"robotest.launch",
+		"Map":	"Airport.world",
+		"Mission":
+		{
+			"Name":"JustARide",
+			"Action":
+			{
+				"Type": "Extraction",
+				"wait": "10.0",
+				"alt" : "5.0",
+				"x":	"5.0",
+				"y":	"5.0",
+				"z":	"5.0",
+				"x_d":	"0.0",
+				"y_d":	"0.0",
+				"z_d":	"0.0"
+			},
+			"QualityAttributes":
+			{
+				"ReportRate":"2",
+				"Time": "True",
+				"Battery": "True",
+				"MaxHeight": "True",
+				"MinHeight": "True",
+				"DistanceTraveled": "True"
+			},
+
+			"Intents":
+			{
+				"Time": "60",  
+				"Battery": ".6",  
+				"MaxHeight": "10",  
+				"MinHeight": "4"
+			},
+
+			"FailureFlags":
+			{
+				"Time":	"120.0",
+				"Battery": "1",
+				"SystemShutdown":"True",
+				"MaxHeight":      "30",
+				"MinHeight": "2"
+			}
+						
+		}
+			
+	}
+}
+
