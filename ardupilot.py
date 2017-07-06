@@ -17,6 +17,7 @@ SAMPLE_BATTERY = []
 SAMPLE_TIME    = []
 WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
+
 class ArduPilot(System):
 
     def __init__(self):
@@ -50,6 +51,10 @@ class ArduPilot(System):
         schemas['mode'] = SetModeActionSchema()
 
         super(ArduPilot, self).__init__(variables, schemas)
+
+
+    def setUp(self, mission):
+         
 
 
 """

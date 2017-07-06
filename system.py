@@ -11,7 +11,14 @@ class System(object):
 class SystemState(object):
 
     def __init__(self, values):
-        
+        pass
+
+
+"""
+Holds a description of an environment in which a mission should be conducted.
+"""
+class Environment(object):
+    pass
 
 
 """
