@@ -1,3 +1,6 @@
+"""
+docstring
+"""
 class System(object):
 
     def __init__(self, variables, schemas):
@@ -34,7 +37,6 @@ class SystemVariable(object):
 
 
 class ActionSchema(object):
-    """docstring for Action."""
     def __init__(self, name, parameters, precondition, invariants, postconditions):
         self.__name           = name
         self.__parameters     = parameters
@@ -51,47 +53,59 @@ class ActionSchema(object):
     def satisfied(self, action):
         return all(p.check(action) for p in self.__postconditions)
 
-
+"""
+Hello.
+"""
 class Predicate(object):
 
     def __init__(self, predicate):
-        self._predicate = predicate
+        self.__predicate = predicate
 
 
     def check(self, action):
-        return self._predicate(action)
+        return self.__predicate(action)
 
 
+"""
+Hello.
+"""
 class Invariant(Predicate):
-    """docstring for Postcondition."""
     def __init__(self, name, description, predicate):
+        super(Predicate, self).__init__(predicate)
         self.__name = name
-        self.__predicate = predicate
         self.__description = description
 
 
+"""
+Hello.
+"""
 class Postcondition(Predicate):
-    """docstring for Postcondition."""
     def __init__(self, name, description, predicate):
+        super(Predicate, self).__init__(predicate)
         self.__name = name
         self.__description = description
-        self._predicate = predicate
 
 
+"""
+Hello.
+"""
 class Precondition(Predicate):
-    """docstring for Precondition."""
     def __init__(self, name, description, predicate):
+        super(Predicate, self).__init__(predicate)
         self.__name = name
         self.__description = description
-        self._predicate = predicate
 
 
+"""
+Hello.
+"""
 class Parameter(object):
     """docstring for ."""
     def __init__(self, typ, value, description):
         self.__type = typ
         self.__value = value
         self._description = description
+
 
     def get_value():
         return self.__value
