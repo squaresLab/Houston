@@ -8,9 +8,28 @@ class System(object):
         self.__schemas = schemas
 
 
+class State(object):
+    """
+    Describes the internal or external state of the system in terms of its
+    internal or external variables.
+    """
+
+
+    def __init__(self, values):
+        self.__values = values
+
+
+    def read(variable):
+        """
+        Returns the value for a given state variable
+        """
+        return self.__values[variable]
+
+
+
 class InternalState(object):
     """
-    Describes the internal state of a robot in terms of its internal state
+    Describes the state of the system in terms of its internal state
     variables.
     """
 
@@ -25,10 +44,39 @@ class InternalState(object):
         return self.__values[variable]
 
 
-class InternalStateVariable(object):
+class StateVariable(object):
+
+    def __init__(self, name, getter):
+        """
+        Constructs a new state variable
+
+        :param  name:   the name of this variable
+        :param  type:   the type of this variable
+        :param  getter: a lambda function, used to obtain the value of this variable
+        """
+        self.__name = name
+        self.__getter = getter
+
+    """
+    Returns the name of this system variable
+    """
+    def name(self):
+        return self.__name
+
+    """
+    Inspects the current state of this system variable
+    """
+    def read(self):
+        return self.__getter()
+
+
+
+class InternalStateVariable(StateVariable):
     """
     Internal variables describe the internal state of a given system.
     (i.e., they represent a system's knowledge of itself and its surroundings.)
+    A user-provided lambda function is used to inspect the value of the state
+    variable at any given time.
     """
 
     def __init__(self, name, getter):
@@ -50,25 +98,6 @@ Description of system variables goes here!
 * What are they for?
 """
 class SystemVariable(object):
-
-    """
-    Constructs a new system variable
-    """
-    def __init__(self, name, getter):
-        self.__name = name
-        self.__getter = getter
-
-    """
-    Returns the name of this system variable
-    """
-    def name(self):
-        return self.__name
-
-    """
-    Inspects the current state of this system variable
-    """
-    def read(self):
-        return self.__getter()
 
 
 class Mission(object):
