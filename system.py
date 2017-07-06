@@ -1,11 +1,20 @@
-"""
-docstring
-"""
 class System(object):
+    """
+    Description of System.
+    """
+
 
     def __init__(self, variables, schemas):
         self.__variables = variables
         self.__schemas = schemas
+
+
+    def setUp(self, mission):
+        """
+        Responsible for appropriately configuring and launching the system,
+        for a given mission.
+        """
+        raise NotImplementedError
 
 
 class State(object):
