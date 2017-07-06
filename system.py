@@ -15,15 +15,12 @@ WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
 
-
-
-
-
 class System(object):
 
     def __init__(self, variables, schemas):
         self.__variables = variables
         self.__schemas = schemas
+
 
 class ArduPilot(System):
 
@@ -61,6 +58,7 @@ class ArduPilot(System):
 
 
         super(ArduPilot, self).__init__(variables, schemas)
+
 
 """
 Description of system variables goes here!
@@ -108,8 +106,9 @@ class ActionSchema(object):
     def satisfied(self, action):
         return all(p.check(action) for p in self.__postconditions)
 
+
 """
-A description of arme
+A description of arm
 """
 class ArmActionSchema(ActionSchema):
     """docstring for ArmActionSchema."""
@@ -132,6 +131,10 @@ class ArmActionSchema(ActionSchema):
         arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
         arm(True)
 
+
+"""
+A description of set mode
+"""
 class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
     def __init__(self):
@@ -151,6 +154,8 @@ class SetModeActionSchema(ActionSchema):
     def dispatch(parameters):
         set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
         set_mode(0, parameters.read())
+
+
 """
 A description of goto
 """
@@ -204,10 +209,11 @@ class GoToActionSchema(ActionSchema):
         return
         #roscall()
         # TODO
+
+
 """
 A description of land
 """
-
 class LandActionSchema(ActionSchema):
     def __init__(self):
         preconditions = [
@@ -246,7 +252,6 @@ class LandActionSchema(ActionSchema):
 """
 A description of takeoff
 """
-
 class TakeoffActionSchema(ActionSchema):
     """docstring for TakeoffActionSchema."""
     def __init__(self):
@@ -281,6 +286,7 @@ class TakeoffActionSchema(ActionSchema):
       takeoff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
       takeoff(0, 0, 0, 0, parameters[0].read())
 
+
 class Predicate(object):
 
     def __init__(self, predicate):
@@ -314,6 +320,7 @@ class Precondition(Predicate):
         self.__description = description
         self.__predicate = predicate
 
+
 class Parameter(object):
     """docstring for ."""
     def __init__(self, typ, value, description):
@@ -323,6 +330,7 @@ class Parameter(object):
 
     def get_value():
         return self.__value
+
 
 def max_expected_battery_usage(prime_latitude, prime_longitude, prime_altitude):
     distance = distance.great_circle((system_variables['latitude'], \
