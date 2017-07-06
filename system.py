@@ -7,65 +7,35 @@ class System(object):
 class ArduPilot(System):
 
     def __init__(self):
-        variables = [
-            SystemVariable('time', 
-                lambda: time.time()),
-            SystemVariable('altitude',
-               lambda: rospy.client.wait_for_message('/mavros/local_position/odom',
-                                                    Odometry,
-                                                    timeout=1.0).pose.pose.position.z),
-            SystemVariable('latitude',
-                lambda: rospy.client.wait_for_message('/mavros/global_position/global',
-                                                       NavSatFix,
-                                                       timeout=1.0).latitude),
-            SystemVariable('longitude',
-                lambda: rospy.client.wait_for_message('/mavros/global_position/global',
-                                                      NavSatFix,
-                                                      timeout=1.0).longitude),
-            SystemVariable('battery',
-                lambda: rospy.client.wait_for_message('/mavros/battery',
-                                                      BatteryStatus,
-                                                      timeout=1.0).remaining),
-            SystemVariable('arm',
+        variables = {}
+        variables['time'] = SystemVariable('time', lambda: time.time())
+        variables['altitude'] = SystemVariable('altitude',
+            lambda: rospy.client.wait_for_message('/mavros/local_position/odom',
+                Odometry, timeout=1.0).pose.pose.position.z)
+        variables['latitude'] = SystemVariable('latitude',
+            lambda: rospy.client.wait_for_message('/mavros/global_position/global',
+                NavSatFix, timeout=1.0).latitude)
+        variables['longitude'] = SystemVariable('longitude',
+            lambda: rospy.client.wait_for_message('/mavros/global_position/global',
+                NavSatFix, timeout=1.0).longitude)
+        variables['battery'] = SystemVariable('battery',
+            lambda: rospy.client.wait_for_message('/mavros/battery',
+                BatteryStatus, timeout=1.0).remaining)
+        variables['armed'] = SystemVariable('arm',
                 lambda : rospy.client.wait_for_message('/mavros/state',
-                                                       State,
-                                                       timeout=1.0).armed),
-            SystemVariable('mode',
+                    State, timeout=1.0).armed)
+        variables['mode'] = SystemVariable('mode',
                 lambda : rospy.client.wait_for_message('/mavros/state',
-                                                       State,
-                                                       timeout=1.0).mode)
-        ]
+                    State, timeout=1.0).mode)
 
-        schemas = []
-        schemas.append(ActionSchema('goto', 'Commands the system to go to a specific location.',
-            # Parameters
-            [
-                Parameter('latitude', float, 'description'),
-                Parameter('longitude', float, 'description'),
-                Parameter('altitude', float, 'description')
-            ],
-            # Preconditions
-            [
-                # get sv from parameters, I think there's no need for lambdas here
-                Precondition('battery', lambda sv: system_variables['battery'] >= max_expected_battery_usage\
-                (sv['latitude'], sv['longitude'], sv['altitude']), 'description')
-                Precondition('altitude', lambda : system_variables['altitude'] > 0, 'description')
-            ],
-            # Invariants
-            [
-                Invariants('battery', lambda : system_variables['battery'] > 0)
-                Invariants('system_armed', lambda : system_variables['armed'] == True, 'description')
-                Invariants('altitude', lambda : system_variables['altitude'] > -0.3, 'description')
-            ],
-            # Postconditions
-            [
-                # get sv from parameters
-                Postcondition('altitude', lambda sv: sv['alt'] - 0.3 < system_variables['altitude'] < sv['alt'] + 0.3)
-                Postcondition('battery', lambda : system_variables['battery'] > 0 )
-                Postcondition('time', lambda : max_expected_time > time.time() - system_variables['time'])
 
-            ]
-        ))
+        schemas = {}
+        schemas['goto'] = GoToActionSchema()
+        schemas['takeoff'] = TakeOffActionSchema()
+        schemas['land'] = LandActionSchema()
+        schemas['arm'] = ArmActionSchema()
+        schemas['mode'] = ModeActionSchema()
+
 
 
 
@@ -116,7 +86,42 @@ class ActionSchema(object):
     def satisfied(self, action):
         return all(p.check(action) for p in self.__postconditions)
 
+"""
+A description of arme
+"""
+class ArmActionSchema(ActionSchema):
+    """docstring for ArmActionSchema."""
+    def __init__(self):
+        preconditions = [
+            Precondition('armed', 'description',
+                         lambda sv: sv['armed'] == False)
+        ]
+        postconditions = [
+            Postcondition('armed', 'description',
+                         lambda sv: sv['armed'] == True)
+        ]
+        invariants = [
+            Invariant('battery', 'description',
+                      lambda sv: sv['battery'] > 0)
+        ]
+    def dispatch():
+        arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
+        arm(True)
 
+class SetModeActionSchema(ActionSchema):
+    """docstring for SetModeActionSchema"""
+    def __init__(self):
+        parameters = [
+            Parameter('mode', str)
+        ]
+        postconditions = [
+            Postcondition('mode', 'description',
+                          lambda sv: sv['mode'] == parameters[0])
+        ]
+        invariants = [
+            Invariant('battery', 'description',
+                      lambda sv: sv['battery'] > 0)
+        ]
 """
 A description of goto
 """
@@ -129,27 +134,27 @@ class GoToActionSchema(ActionSchema):
         ]
 
         preconditions = [
-            # get sv from parameters, I think there's no need for lambdas here
+
             Precondition('battery', 'description',
-                         lambda sv: sv['battery'] >= max_expected_battery_usage(sv['latitude'], sv['longitude'], sv['altitude']))
+                         lambda sv: sv['battery'] >= max_expected_battery_usage(parameters[0], parameters[1], parameters[2])),
             Precondition('altitude', 'description',
                          lambda sv: sv['altitude'] > 0)
         ]
 
         invariants = [
             Invariant('battery', 'description',
-                       lambda sv: sv['battery'] > 0)
+                       lambda sv: sv['battery'] > 0),
             Invariant('system_armed', 'description',
-                       lambda sv: sv['armed'] == True)
+                       lambda sv: sv['armed'] == True),
             Invariant('altitude', 'description',
                        lambda sv: sv['altitude'] > -0.3)
         ]
-        
+
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda sv: sv['alt'] - 0.3 < sv['altitude'] < sv['alt'] + 0.3)
+                          lambda sv: sv['alt'] - 0.3 < parameters[2] < sv['alt'] + 0.3),
             Postcondition('battery', 'description',
-                          lambda sv: sv['battery'] > 0 )
+                          lambda sv: sv['battery'] > 0 ),
             Postcondition('time', 'description',
                           # we need a "start" time (or an initial state)
                           lambda sv: max_expected_time > time.time() - sv['time'])
@@ -161,39 +166,82 @@ class GoToActionSchema(ActionSchema):
     def dispatch(parameters):
         roscall()
 
-
 """
 A description of land
 """
-    # Preconditions
-    [
-        # get sv from parameters, I think there's no need for lambdas here
-        Precondition('battery', lambda : system_variables['battery'] >= max_expected_battery_usage\
-        (None, None, 0), 'description')
-        Precondition('altitude', lambda : system_variables['altitude'] > 0.3, 'description')
-        Precondition('armed', lambda : system_variables['armed'] == True, 'description')
-    ],
-    # Invariants
-    [
-        Invariants('battery', lambda : system_variables['battery'] > 0)
-    ],
-    # Postconditions
-    [
-        # get sv from parameters
-        Postcondition('altitude', lambda : system_variables['altitude'] < 0.3, 'description')
-        Postcondition('battery', lambda : system_variables['battery'] > 0, 'description')
-        Postcondition('time', lambda : max_expected_time(None, None, 0) > time.time() - system_variables['time'], 'description')
-        Precondition('armed', lambda : system_variables['armed'] == False, 'description')
-    ]
-)
 
+class LandActionSchema(ActionSchema):
+    def __init__(self):
+        preconditions = [   # get sv from parameters, I think there's no need for lambdas here
+            Precondition('battery', 'description',
+                lambda sv: sv['battery'] >= max_expected_battery_usage(None, None, 0)),
+            Precondition('altitude', 'description',
+                lambda sv: sv['altitude'] > 0.3),
+            Precondition('armed', 'description',
+                lambda sv: sv['armed'] == True)
+        ]
+        invariants = [
+            Invariant('battery', 'description',
+                       lambda sv: sv['battery'] > 0),
+            Invariant('altitude', 'description',
+                       lambda sv: sv['altitude'] > -0.3)
+        ]
+        postconditions = [
+            Postcondition('altitude', 'description',
+                          lambda sv: sv['altitude'] < 0.3 ),
+            Postcondition('battery', 'description',
+                          lambda sv: sv['battery'] > 0 ),
+            Postcondition('time', 'description',
+                          # we need a "start" time (or an initial state)
+                          lambda sv: max_expected_time > time.time() - sv['time'])
+        ]
+        super().__init__('land', parameters, preconditions, invariants, postconditions)
+
+
+    def dispatch():
+        land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
+        land(0, 0, 0, 0, 0)
+
+
+"""
+A description of takeoff
+"""
+
+class TakeoffActionSchema(ActionSchema):
+    """docstring for TakeoffActionSchema."""
+    def __init__(self):
+        parameters = [
+            Parameter('altitude', float, 'description')
+        ]
+        preconditions = [
+            Precondition('battery', 'description',
+                         lambda sv: sv['battery'] >= max_expected_battery_usage(None, None, sv['altitude'])),
+            Precondition('altitude', 'description',
+                         lambda sv: sv['altitude'] < 0.3),
+            Precondition('armed', 'description',
+                         lambda sv: sv['armed'] == True)
+        ]
+        invariants = [
+            Invariant('armed', 'description',
+                      lambda sv: sv['armed'] == True),
+            Invariant('altitude', 'description',
+                      lambda sv: sv['altitude'] > -0.3)
+        ]
+        postconditions = [
+            Postcondition('altitude', 'description',
+                          lambda sv: sv['alt'] - 0.3 < parameters[0].read() < sv['alt'] + 0.3)
+        ]
+
+    def dispatch(parameters):
+      takeoff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
+      takeoff(0, 0, 0, 0, parameters[0].read())
 
 class Predicate(object):
 
     def __init__(self, predicate):
         self.__predicate = predicate
 
-    
+
     def check(self, action):
         return self.__predicate(action)
 
@@ -220,7 +268,6 @@ class Precondition(Predicate):
         self.__name = name
         self.__description = description
         self.__predicate = predicate
-
 
 class Parameter(object):
     """docstring for ."""
