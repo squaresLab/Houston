@@ -8,10 +8,22 @@ class System(object):
         self.__schemas = schemas
 
 
-class SystemState(object):
+"""
+Describes the internal state of a robot in terms of its internal state
+variables.
+"""
+class InternalState(object):
+ 
 
     def __init__(self, values):
-        pass
+        self.__values = values
+
+
+    """
+    Returns the value for a given (internal) state variable
+    """
+    def read(variable):
+        return self.__values[variable]
 
 
 """
