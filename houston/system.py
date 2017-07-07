@@ -109,11 +109,11 @@ class Environment(object):
         """
         self.__values = values
 
-    def read(variable):
+    def read(self, variable):
         """
         Returns the value of a given environment variable.
         """
-        return self.__variable
+        return self.__values[variable]
 
 
 class Mission(object):
