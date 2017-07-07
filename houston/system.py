@@ -26,6 +26,14 @@ class System(object):
 
     def execute(self, mission):
         setUp(mission)
+            
+        for action in mission.actions():
+            # check for preconditions
+
+            # dispatch action
+            action.dispatch()
+
+            # monitor invariants and post-condition
 
         shutdown(mission)
 
