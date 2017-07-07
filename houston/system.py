@@ -17,6 +17,19 @@ class System(object):
         raise NotImplementedError
 
 
+    def tearDown(self, mission):
+        """
+        Responsible for safely closing the system, following the execution of
+        a given mission.
+        """
+        raise NotImplementedError
+
+    def execute(self, mission):
+        setUp(mission)
+
+        shutdown(mission)
+
+
 class State(object):
     """
     Describes the internal or external state of the system in terms of its
