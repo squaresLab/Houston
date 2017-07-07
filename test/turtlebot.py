@@ -8,8 +8,11 @@ class TurtleTest(unittest.TestCase):
             actions = [
                 Action("goto", [Parameter("x", 5,"x-value"), Parameter("y", 5,"y-value")])
             ]
-            environment = Environment({}, lambda: turtlebot.launch("/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch". {})) #TODO change directory
-            initial = InternalState({
+            environment = Environment({
+                'launch_file': '/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch',
+                'launch_parameters': {}
+            })
+            initialInternalState = InternalState({
                 "x": 10.43,
                 "y": 0.5,
                 "bumper": False, # we could have defaults?
@@ -17,5 +20,8 @@ class TurtleTest(unittest.TestCase):
                 "orientation": 12.0,
                 "battery": 30.0
             })
+            initialExternalState = ExternalState({
 
-            system.setUp(Mission(environment, initial, actions))
+            })
+
+            system.setUp(Mission(environment, initialInternalState, initialExternalState, actions))

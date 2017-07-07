@@ -30,6 +30,17 @@ class TurtleBot(System):
 
         super(TurtleBot, self).__init__(variables, schemas)
 
+    def setUp(self, mission):
+        ephemeral_launch = EphemeralLaunchFile(mission.getEnvironment()['launch_file'], \
+            mission.getEnvironment()['launch_parameters'])
+        # launch ROS
+        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(uuid)
+        launch_files = [ephemeral_launch.path()]
+        launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
+        launch.start()
+        return True #TODO verify that the environment launched correctly
+
 
 """
 A description of goto
@@ -104,15 +115,6 @@ class EphemeralLaunchFile(object):
     def path(self):
         return self.handle.name
 
-def launch(launch_file, launch_parameters):
-    ephemeral_launch = EphemeralLaunchFile(launch_file, launch_parameters)
-    # launch ROS
-    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-    roslaunch.configure_logging(uuid)
-    launch_files = [ephemeral_launch.path()]
-    launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
-    launch.start()
-    return True #TODO verify that the environment launched correctly  
 
 def euclidean(a, b):
     assert isinstance(a, tuple) and isinstance(b, tuple)
