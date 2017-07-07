@@ -15,10 +15,6 @@ class System(object):
         for a given mission.
         """
         raise NotImplementedError
-        self.startEnvironment(mission.getEnvironment)
-
-    def startEnvironment(self, environment):
-        environment.launch()
 
 
 class State(object):
@@ -104,7 +100,7 @@ class Environment(object):
     Holds a description of an environment in which a mission should be conducted.
     """
 
-    def __init__(self, values, getter):
+    def __init__(self, values):
         """
         Constructs a description of a mission environment.
 
@@ -119,9 +115,6 @@ class Environment(object):
         Returns the value of a given environment variable.
         """
         return self.__variable
-
-    def launch(self):
-        return self.__getter()
 
 
 class Mission(object):
