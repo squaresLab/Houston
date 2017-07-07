@@ -4,7 +4,7 @@ import turtlebot
 class TurtleTest(unittest.TestCase):
     def testStraightLine(self):
         system = TurtleBot()
-        with self.assertRaises(Error):
+        with self.assertRaises(TypeError):
             actions = [
                 Action("goto", [Parameter("x", 5,"x-value"), Parameter("y", 5,"y-value")])
             ]
