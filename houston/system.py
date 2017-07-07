@@ -108,7 +108,6 @@ class Environment(object):
                         by the name of those variables.
         """
         self.__values = values
-        self.__getter = getter
 
     def read(variable):
         """
@@ -162,8 +161,8 @@ class Action(object):
     def get_values(self):
         return self.__values
 
-    def get_value(self, value):
         return self.__values[value]
+    def get_value(self, value):
 
 
 """
