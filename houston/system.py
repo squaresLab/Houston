@@ -197,7 +197,7 @@ Hello.
 """
 class Invariant(Predicate):
     def __init__(self, name, description, predicate):
-        super(Predicate, self).__init__(predicate)
+        super(Invariant, self).__init__(predicate)
         self.__name = name
         self.__description = description
 
@@ -207,7 +207,7 @@ Hello.
 """
 class Postcondition(Predicate):
     def __init__(self, name, description, predicate):
-        super(Predicate, self).__init__(predicate)
+        super(Postcondition, self).__init__(predicate)
         self.__name = name
         self.__description = description
 
@@ -217,7 +217,7 @@ Hello.
 """
 class Precondition(Predicate):
     def __init__(self, name, description, predicate):
-        super(Predicate, self).__init__(predicate)
+        super(Precondition, self).__init__(predicate)
         self.__name = name
         self.__description = description
 
