@@ -1,5 +1,6 @@
 
 import actionlib
+import rospy
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from kobuki_msgs.msg    import BumperEvent
 from geometry_msgs.msg import Point, Quaternion
