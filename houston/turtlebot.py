@@ -112,7 +112,7 @@ def launch(launch_file, launch_parameters):
     launch_files = [ephemeral_launch.path()]
     launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
     launch.start()
-    return True
+    return True #TODO verify that the environment launched correctly  
 
 def euclidean(a, b):
     assert isinstance(a, tuple) and isinstance(b, tuple)
