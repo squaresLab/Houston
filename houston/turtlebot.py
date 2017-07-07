@@ -5,7 +5,8 @@ from kobuki_msgs.msg    import BumperEvent
 from geometry_msgs.msg import Point, Quaternion
 import roslaunch
 from system            import System, InternalStateVariable, ActionSchema, Predicate, \
-                              Invariant, Postcondition, Precondition, Parameter
+                              Invariant, Postcondition, Precondition, Parameter,
+                              Action
 
 
 class TurtleBot(System):

@@ -156,8 +156,14 @@ class Mission(object):
 
 class Action(object):
     def __init__(self, _type, values):
-        self._type = _type
-        self.values = values
+        self.__type = _type
+        self.__values = values
+
+    def get_values(self):
+        return self.__values
+
+    def get_value(self, value):
+        return self.__values[value]
 
 
 """
