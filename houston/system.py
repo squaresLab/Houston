@@ -158,11 +158,12 @@ class Action(object):
         self.__type = _type
         self.__values = values
 
+    def get_value(self, value):
+        return self.__values[value]
+        
     def get_values(self):
         return self.__values
 
-        return self.__values[value]
-    def get_value(self, value):
 
 
 """
