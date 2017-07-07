@@ -6,9 +6,9 @@ class TurtleTest(unittest.TestCase):
         system = TurtleBot()
         with self.assertRaises(Error):
             actions = [
-                Action("takeoff", {"altitude": -30})
+                Action("goto", [Parameter("x", 5,"x-value"), Parameter("y", 5,"y-value")])
             ]
-            environment = Environment()
+            environment = Environment({}, lambda: turtlebot.launch("/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch". {})) #TODO change directory
             initial = InternalState({
                 "x": 10.43,
                 "y": 0.5,
@@ -18,4 +18,4 @@ class TurtleTest(unittest.TestCase):
                 "battery": 30.0
             })
 
-            Mission(environment, initial, actions)
+            system.setUp(Mission(environment, initial, actions))

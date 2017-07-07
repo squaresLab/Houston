@@ -15,6 +15,10 @@ class System(object):
         for a given mission.
         """
         raise NotImplementedError
+        self.startEnvironment(mission.getEnvironment)
+
+    def startEnvironment(self, environment):
+        environment.launch()
 
 
 class State(object):
@@ -48,12 +52,14 @@ class InternalState(State):
     """
     pass
 
+
 class ExternalState(State):
     """
     Describes the state of the system in terms of its external state
     variables.
     """
     pass
+
 
 class StateVariable(object):
 
@@ -81,7 +87,6 @@ class StateVariable(object):
         return self.__getter()
 
 
-
 class InternalStateVariable(StateVariable):
     """
     Internal variables describe the internal state of a given system.
@@ -99,7 +104,7 @@ class Environment(object):
     Holds a description of an environment in which a mission should be conducted.
     """
 
-    def __init__(self, values):
+    def __init__(self, values, getter):
         """
         Constructs a description of a mission environment.
 
@@ -107,6 +112,7 @@ class Environment(object):
                         by the name of those variables.
         """
         self.__values = values
+        self.__getter = getter
 
     def read(variable):
         """
@@ -114,13 +120,8 @@ class Environment(object):
         """
         return self.__variable
 
-"""
-Description of system variables goes here!
-
-* How do we use them?
-* What are they for?
-"""
-class SystemVariable(object):
+    def launch(self):
+        return self.__getter()
 
 
 class Mission(object):
@@ -159,6 +160,12 @@ class Mission(object):
 
     def getActions(self):
         return self.__actions
+
+class Action(object):
+    def __init__(self, _type, values):
+        self._type = _type
+        self.values = values
+
 
 """
 Hello.
