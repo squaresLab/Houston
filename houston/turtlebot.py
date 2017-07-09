@@ -3,6 +3,7 @@ import actionlib
 import rospy
 import roslaunch
 import xml.etree.ElementTree as ET
+from tempfile           import NamedTemporaryFile
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from kobuki_msgs.msg    import BumperEvent
 from geometry_msgs.msg  import Point, Quaternion
@@ -15,7 +16,7 @@ class TurtleBot(System):
 
     def __init__(self):
         variables = {}
-        rospy.init_node('TurtleBot')
+        
         variables['time'] = InternalStateVariable('time', lambda: time.time())
         variables['x'] = InternalStateVariable('x',
             lambda: rospy.client.wait_for_message('/odom/', Odometry,
@@ -34,15 +35,16 @@ class TurtleBot(System):
         super(TurtleBot, self).__init__(variables, schemas)
 
     def setUp(self, mission):
-        ephemeral_launch = EphemeralLaunchFile(mission.getEnvironment()['launch_file'], \
-            mission.getEnvironment()['launch_parameters'])
+
+        ephemeral_launch = EphemeralLaunchFile(mission.getEnvironment().read('launch_file'), \
+            mission.getEnvironment().read('launch_parameters'))
         # launch ROS
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         launch_files = [ephemeral_launch.path()]
         launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
         launch.start()
-        return True #TODO verify that the environment launched correctly
+        rospy.init_node('TurtleBot')
 
 
 """

@@ -25,7 +25,7 @@ class System(object):
         raise NotImplementedError
 
     def execute(self, mission):
-        setUp(mission)
+        self.setUp(mission)
 
         for action in mission.actions():
             # check for preconditions
