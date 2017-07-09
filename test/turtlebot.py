@@ -4,9 +4,12 @@ import turtlebot
 class TurtleTest(unittest.TestCase):
     def testStraightLine(self):
         system = TurtleBot()
-        with self.assertRaises(TypeError):
+        with self.assertRaises(Error):
             actions = [
-                Action("goto", 5, 5)
+                Action("goto",{
+                    'x': 5,
+                    'y': 5
+                })
             ]
             environment = Environment({
                 'launch_file': '/catkin_ws/src/turtlebot_simulator/turtlebot_gazebo/launch/robotest.launch',

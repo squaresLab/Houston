@@ -26,11 +26,12 @@ class System(object):
 
     def execute(self, mission):
         setUp(mission)
-            
+
         for action in mission.actions():
             # check for preconditions
 
             # dispatch action
+            self.__schemas[action.get_type()].dispatch(action.get_values())
             action.dispatch()
 
             # monitor invariants and post-condition
@@ -179,13 +180,14 @@ class Action(object):
         self.__type = _type
         self.__values = values
 
+    def get_type(self):
+        return self.__type
+
     def get_value(self, value):
         return self.__values[value]
-        
+
     def get_values(self):
         return self.__values
-
-
 
 """
 Hello.

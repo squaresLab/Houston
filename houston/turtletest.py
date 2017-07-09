@@ -29,7 +29,10 @@ class TurtleTest(unittest.TestCase):
 if __name__ == "__main__":
     system = TurtleBot()
     actions = [
-        Action("goto", [Parameter("x", 5,"x-value"), Parameter("y", 5,"y-value")])
+        Action("goto", {
+            'x': 5,
+            'y': 5
+        })
     ]
     environment = Environment({
         'launch_file': 'robotest.launch',
@@ -46,4 +49,4 @@ if __name__ == "__main__":
     initialExternalState = ExternalState({
     })
 
-    system.setUp(Mission(environment, initialInternalState, initialExternalState, actions))
+    system.execute(Mission(environment, initialInternalState, initialExternalState, actions))

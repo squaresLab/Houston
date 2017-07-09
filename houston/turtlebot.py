@@ -78,8 +78,8 @@ class GoToActionSchema(ActionSchema):
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position = Point(
-            parameters[0].get_value,
-            parameters[1].get_value,
+            parameters['x'],
+            parameters['y'].get_value,
             1)
         goal.target_pose.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         client.send_goal(goal)
