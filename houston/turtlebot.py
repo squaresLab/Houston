@@ -3,6 +3,8 @@ import actionlib
 import rospy
 import roslaunch
 import xml.etree.ElementTree as ET
+import xmlrpclib
+import os
 from tempfile           import NamedTemporaryFile
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from kobuki_msgs.msg    import BumperEvent
@@ -35,17 +37,29 @@ class TurtleBot(System):
         super(TurtleBot, self).__init__(variables, schemas)
 
     def setUp(self, mission):
+        launch = None
 
-        ephemeral_launch = EphemeralLaunchFile(mission.getEnvironment().read('launch_file'), \
-            mission.getEnvironment().read('launch_parameters'))
-        # launch ROS
-        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-        roslaunch.configure_logging(uuid)
-        launch_files = [ephemeral_launch.path()]
-        launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
-        launch.start()
-        rospy.init_node('TurtleBot')
-
+        try:
+            ephemeral_launch = EphemeralLaunchFile(mission.getEnvironment().read('launch_file'), \
+                mission.getEnvironment().read('launch_parameters'))
+            # launch ROS
+            uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+            roslaunch.configure_logging(uuid)
+            launch_files = [ephemeral_launch.path()]
+            launch = roslaunch.parent.ROSLaunchParent(uuid, launch_files, is_core=True)
+            launch.start()
+            rospy.init_node('TurtleBot')
+            while not check_turtlebot_ready():
+                pass
+            print 'MAKING setupTRUEW'
+            self.setupDone = True
+            rate = rospy.Rate(10)
+            
+            while not rospy.is_shutdown():
+                rate.sleep()
+        finally:
+            if launch:
+                launch.shutdown()
 
 """
 A description of goto
@@ -74,15 +88,17 @@ class GoToActionSchema(ActionSchema):
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions, invariants, postconditions)
 
 
-    def dispatch(parameters):
+    def dispatch(self, parameters):
         client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        while not client.wait_for_server():
+            pass
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position = Point(
-            parameters['x'],
-            parameters['y'].get_value,
-            1)
+            float(parameters['x']),
+            float(parameters['y']),
+            0.0)
         goal.target_pose.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         client.send_goal(goal)
 
@@ -127,3 +143,9 @@ def euclidean(a, b):
     assert len(a) == len(b)
     d = sum((x - y) ** 2 for (x, y) in zip(a, b))
     return math.sqrt(d)
+
+def check_turtlebot_ready():
+    m = xmlrpclib.ServerProxy(os.environ['ROS_MASTER_URI'])
+    code, status_message, uri = m.lookupNode('/mobile_base_nodelet_manager',\
+        '/mobile_base_nodelet_manager')
+    return code == 1

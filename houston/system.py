@@ -1,3 +1,5 @@
+import thread
+import time
 class System(object):
     """
     Description of System.
@@ -7,6 +9,7 @@ class System(object):
     def __init__(self, variables, schemas):
         self.__variables = variables
         self.__schemas = schemas
+        self.setupDone = False
 
 
     def setUp(self, mission):
@@ -24,19 +27,24 @@ class System(object):
         """
         raise NotImplementedError
 
+
     def execute(self, mission):
+        thread.start_new_thread(self.executeActions, (mission,))
         self.setUp(mission)
-
-        for action in mission.actions():
-            # check for preconditions
-
-            # dispatch action
-            self.__schemas[action.get_type()].dispatch(action.get_values())
-            action.dispatch()
-
-            # monitor invariants and post-condition
-
+        
         shutdown(mission)
+
+    def executeActions(self, mission):
+        while not self.setupDone:
+            time.sleep(1)
+        for action in mission.getActions():
+            actionType = action.get_type()
+            # check for preconditions
+            if self.__schemas[actionType].satisfiedPreconditions(self.__variables):
+                self.__schemas[actionType].dispatch(action.get_values())  
+            while not self.__schemas[actionType].satisfiedPostConditions and \
+                self.__schemas[actionType].satisfiedInvariants:
+                pass
 
 
 class State(object):
@@ -196,7 +204,7 @@ class ActionSchema(object):
     def __init__(self, name, parameters, precondition, invariants, postconditions):
         self.__name           = name
         self.__parameters     = parameters
-        self.__precondition   = precondition
+        self.__preconditions   = precondition
         self.__invariants     = invariants
         self.__postconditions = postconditions
 
@@ -205,8 +213,14 @@ class ActionSchema(object):
         raise UnimplementedError
 
 
-    def satisfied(self, action):
+    def satisfiedPostConditions(self, action):
         return all(p.check(action) for p in self.__postconditions)
+
+    def satisfiedPreconditions(self, action):
+        return all(p.check(action) for p in self.__preconditions)
+
+    def satisfiedInvariants(self, action):
+        return all(p.check(action) for p in self.__invariants)
 
 """
 Hello.

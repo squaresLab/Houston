@@ -30,13 +30,14 @@ if __name__ == "__main__":
     system = TurtleBot()
     actions = [
         Action("goto", {
-            'x': 5,
-            'y': 5
+            'x': 0.0,
+            'y': 5.0
         })
     ]
     environment = Environment({
         'launch_file': 'robotest.launch',
-        'launch_parameters': {}
+        'launch_parameters': {
+        }
     })
     initialInternalState = InternalState({
         "x": 10.43,
