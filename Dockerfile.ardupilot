@@ -60,7 +60,8 @@ ENV PATH "${PATH}:${HOME}/jsbsim/src"
 ENV PATH "${PATH}:${HOME}/ardupilot/Tools/autotest"
 ENV PATH "${PATH}:/usr/lib/ccache:${PATH}"
 
-RUN sudo apt-get install -y vim
-RUN sudo pip install dronekit-sitl
+RUN sudo apt-get install -y vim && \
+    sudo pip install dronekit-sitl && \
+    sudo pip install pexpect --upgrade
 
 ADD houston /opt/houston
