@@ -37,12 +37,12 @@ class System(object):
             actionType = action.get_type()
             print actionType
             # check for preconditions
-            if self.schemas[actionType].satisfiedPreconditions(self.variables,
+            if self.__schemas[actionType].satisfiedPreconditions(self.__variables,
                 action.get_values()):
-                self.schemas[actionType].dispatch(action.get_values())
-                while not self.schemas[actionType].satisfiedPostConditions(self.variables,
+                self.__schemas[actionType].dispatch(action.get_values())
+                while not self.__schemas[actionType].satisfiedPostConditions(self.__variables,
                     action.get_values()) and \
-                    self.schemas[actionType].satisfiedInvariants(self.variables,
+                    self.__schemas[actionType].satisfiedInvariants(self.__variables,
                     action.get_values()):
                         pass
         self.tearDown(mission)

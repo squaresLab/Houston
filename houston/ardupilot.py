@@ -47,7 +47,6 @@ class ArduPilot(System):
             lambda: self.system.armed)
         variables['mode'] = InternalStateVariable('mode',
             lambda : self.system.mode.name)
-
         schemas = {
             'goto'   : GoToActionSchema(),
             'takeoff': TakeoffActionSchema(),
