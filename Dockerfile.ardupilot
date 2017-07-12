@@ -66,3 +66,4 @@ RUN sudo apt-get install -y vim && \
 
 ADD houston /opt/houston
 ADD test /opt/houston/test
+RUN sudo chown -R $(whoami) /opt/houston
