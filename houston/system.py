@@ -78,6 +78,13 @@ class State(object):
         return self.__values[variable]
 
 
+    def dump():
+        """
+        Prints this state to the standard output.
+        """
+        pass
+
+
 class InternalState(State):
     """
     Describes the state of the system in terms of its internal state
