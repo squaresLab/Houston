@@ -7,9 +7,11 @@ class System(object):
 
 
     def __init__(self, variables, schemas):
-        self.__variables = variables
-        self.__schemas = schemas
-        self.setupDone = False
+
+        self.setupDone      = False
+        self._temp_mavproxy = None
+        self._temp_sitl     = None
+        self.system         = None
 
 
     def setUp(self, mission):
@@ -29,23 +31,38 @@ class System(object):
 
 
     def execute(self, mission):
-        thread.start_new_thread(self.executeActions, (mission,))
         self.setUp(mission)
-        
-        shutdown(mission)
+        self.executeActions(mission)
 
     def executeActions(self, mission):
+        time.sleep(5)
         while not self.setupDone:
             time.sleep(1)
         for action in mission.getActions():
             actionType = action.get_type()
+            print actionType
             # check for preconditions
-            if self.__schemas[actionType].satisfiedPreconditions(self.__variables):
-                self.__schemas[actionType].dispatch(action.get_values())  
-            while not self.__schemas[actionType].satisfiedPostConditions and \
-                self.__schemas[actionType].satisfiedInvariants:
-                pass
+            if self.schemas[actionType].satisfiedPreconditions(self.variables,
+                action.get_values()):
+                self.schemas[actionType].dispatch(action.get_values())
+                while not self.schemas[actionType].satisfiedPostConditions(self.variables,
+                    action.get_values()) and \
+                    self.schemas[actionType].satisfiedInvariants(self.variables,
+                    action.get_values()):
+                        pass
+        self.tearDown(mission)
 
+
+    def getState(self):
+        print '---'
+        print 'Mode: {}'.format(self.variables['mode'].read())
+        print 'Altitude: {}'.format(self.variables['altitude'].read())
+        print 'Longitude: {}'.format(self.variables['longitude'].read())
+        print 'Latitude: {}'.format(self.variables['latitude'].read())
+        print 'Battery: {}'.format(self.variables['battery'].read())
+        print 'Armed: {}'.format(self.variables['armed'].read())
+        print 'Armable: {}'.format(self.variables['armable'].read())
+        print '---'
 
 class State(object):
     """
@@ -122,7 +139,7 @@ class InternalStateVariable(StateVariable):
     """
 
     def __init__(self, name, getter):
-        pass
+        super(InternalStateVariable, self).__init__(name, getter)
 
 
 class Environment(object):
@@ -213,26 +230,29 @@ class ActionSchema(object):
         raise UnimplementedError
 
 
-    def satisfiedPostConditions(self, action):
-        return all(p.check(action) for p in self.__postconditions)
+    def satisfiedPostConditions(self, system_variables, parameters):
+        return all(p.check(system_variables, parameters) for p in self.__postconditions)
 
-    def satisfiedPreconditions(self, action):
-        return all(p.check(action) for p in self.__preconditions)
+    def satisfiedPreconditions(self, system_variables, parameters):
+        print 'Doing precondition params: {} '.format(parameters)
+        print all(p.check(system_variables, parameters) for p in self.__preconditions)
+        return all(p.check(system_variables, parameters) for p in self.__preconditions)
 
-    def satisfiedInvariants(self, action):
-        return all(p.check(action) for p in self.__invariants)
+    def satisfiedInvariants(self, system_variables, parameters):
+        return all(p.check(system_variables, parameters) for p in self.__invariants)
 
 """
 Hello.
 """
 class Predicate(object):
 
-    def __init__(self, predicate):
+    def __init__(self, name, predicate):
+        self.__name = name
         self.__predicate = predicate
 
 
-    def check(self, action):
-        return self.__predicate(action)
+    def check(self, system_variables, parameters):
+        return self.__predicate(system_variables, parameters)
 
 
 """
@@ -240,7 +260,7 @@ Hello.
 """
 class Invariant(Predicate):
     def __init__(self, name, description, predicate):
-        super(Invariant, self).__init__(predicate)
+        super(Invariant, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
@@ -250,7 +270,7 @@ Hello.
 """
 class Postcondition(Predicate):
     def __init__(self, name, description, predicate):
-        super(Postcondition, self).__init__(predicate)
+        super(Postcondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
@@ -260,7 +280,7 @@ Hello.
 """
 class Precondition(Predicate):
     def __init__(self, name, description, predicate):
-        super(Precondition, self).__init__(predicate)
+        super(Precondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 

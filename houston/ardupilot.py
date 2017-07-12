@@ -2,13 +2,12 @@ import statistics
 import rospy
 import time
 import numpy
-
-
+import os
+import subprocess as sub
+import util
 from geopy             import distance
-from nav_msgs.msg      import Odometry
-from mavros_msgs.msg   import BatteryStatus, State
-from sensor_msgs.msg   import NavSatFix
-
+from dronekit_sitl     import SITL
+from dronekit          import connect, VehicleMode, LocationGlobalRelative
 from system            import System, InternalStateVariable, ActionSchema, Predicate, \
                               Invariant, Postcondition, Precondition, Parameter
 
@@ -18,46 +17,84 @@ SAMPLE_TIME    = []
 WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
+
+
 """
 Description of the ArduPilot system
 """
 class ArduPilot(System):
 
     def __init__(self):
-        variables = {}
-        # this should go inside setUp
-        rospy.init_node('Ardupilot') # We need a running node to recieve messages
-        variables['time'] = InternalStateVariable('time', lambda: time.time())
-        variables['altitude'] = InternalStateVariable('altitude',
-            lambda: rospy.client.wait_for_message('/mavros/local_position/odom',
-                Odometry, timeout=1.0).pose.pose.position.z)
-        variables['latitude'] = InternalStateVariable('latitude',
-            lambda: rospy.client.wait_for_message('/mavros/global_position/global',
-                NavSatFix, timeout=1.0).latitude)
-        variables['longitude'] = InternalStateVariable('longitude',
-            lambda: rospy.client.wait_for_message('/mavros/global_position/global',
-                NavSatFix, timeout=1.0).longitude)
-        variables['battery'] = InternalStateVariable('battery',
-            lambda: rospy.client.wait_for_message('/mavros/battery',
-                BatteryStatus, timeout=1.0).remaining)
-        variables['armed'] = InternalStateVariable('arm',
-                lambda : rospy.client.wait_for_message('/mavros/state',
-                    State, timeout=1.0).armed)
-        variables['mode'] = InternalStateVariable('mode',
-                lambda : rospy.client.wait_for_message('/mavros/state',
-                    State, timeout=1.0).mode)
+        self.variables = {}
+        self.schemas   = {}
+        self.setupDone = False
+        self.system    = None
+        self._temp_sitl      = None
+        #self._temp_mavproxy = None
+        #self._temp_sitl    = None
 
-        schemas = {}
-        schemas['goto'] = GoToActionSchema()
-        schemas['takeoff'] = TakeoffActionSchema()
-        schemas['land'] = LandActionSchema()
-        schemas['arm'] = ArmActionSchema()
-        schemas['mode'] = SetModeActionSchema()
+        self.variables['time'] = InternalStateVariable('time', lambda: time.time())
+        self.variables['altitude'] = InternalStateVariable('altitude',
+            lambda: self.system.location.global_relative_frame.alt)
+        self.variables['latitude'] = InternalStateVariable('latitude',
+            lambda: self.system.location.global_relative_frame.lat)
+        self.variables['longitude'] = InternalStateVariable('longitude',
+            lambda: self.system.location.global_relative_frame.lon)
+        self.variables['battery'] = InternalStateVariable('battery',
+            lambda: self.system.battery)
+        self.variables['armable'] = InternalStateVariable('armable',
+            lambda: self.system.is_armable)
+        self.variables['armed'] = InternalStateVariable('armed',
+            lambda: self.system.armed)
+        self.variables['mode'] = InternalStateVariable('mode',
+            lambda : self.system.mode.name)
 
-        super(ArduPilot, self).__init__(variables, schemas)
+        self.schemas = {
+            'goto'   : GoToActionSchema(),
+            'takeoff': TakeoffActionSchema(),
+            'land'   : LandActionSchema(),
+            'arm'    : ArmActionSchema(),
+            'setmode'   : SetModeActionSchema()
+        }
+        super(ArduPilot, self).__init__(self.variables, self.schemas)
 
 
-    def setUp(self, mission):
+    def setUp(self, mission):\
+        # TODO get current directory
+
+        sitl = util.start_SITL('/home/jam/Desktop/Research/2/Houston/binaries/arducopter'\
+            , wipe=True, model='copter', home='-35.362938, 149.165085, 584, 270', speedup=10)
+        mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
+        mavproxy.expect('Received [0-9]+ parameters')
+        mavproxy.send('param load /home/jam/Desktop/Research/2/Houston/houston/binaries/copter.parm')
+        mavproxy.send("param set ARMING_CHECK 0")
+        mavproxy.send("param set LOG_REPLAY 1\n")
+        mavproxy.send("param set LOG_DISARMED 1\n")
+        time.sleep(3)
+        util.pexpect_close(mavproxy)
+        util.pexpect_close(sitl)
+        self._temp_sitl = util.start_SITL('/home/jam/Desktop/Research/2/Houston/binaries/arducopter', \
+            model='copter',
+            home='-35.362938, 149.165085, 584, 270',
+            speedup=10, valgrind=False, gdb=False)
+        options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5 --out=127.0.0.1:14550 --out=127.0.0.1:14551'
+        self._temp_mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
+
+    # the received parameters can come before or after the ready to fly message
+        self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+        self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+        time.sleep(3)
+        for chan in range(1, 9):
+            self._temp_mavproxy.send('rc %u 1500\n' % chan)
+        # zero throttle
+        self._temp_mavproxy.send('rc 3 1000\n')
+
+        self._temp_mavproxy.expect('IMU0 is using GPS')
+        self.system = connect('127.0.0.1:14551', wait_ready=True)
+        self.setupDone = True
+
+
+    def tearDown(self, mission):
         pass
 
 
@@ -70,21 +107,22 @@ class ArmActionSchema(ActionSchema):
         parameters = []
         preconditions = [
             Precondition('armed', 'description',
-                         lambda sv: sv['armed'].read() == False)
+                         lambda sv, params: sv['armed'].read() == False),
+            Precondition('armable', 'description',
+                         lambda sv, params: sv['armable'].read() == True)
         ]
         postconditions = [
             Postcondition('armed', 'description',
-                         lambda sv: sv['armed'].read() == True)
+                         lambda sv, params: sv['armed'].read() == True)
         ]
         invariants = [
             Invariant('battery', 'description',
-                      lambda sv: sv['battery'].read() > 0)
+                      lambda sv, params: sv['battery'].read() > 0)
         ]
         super(ArmActionSchema, self).__init__('arm', parameters, preconditions, invariants, postconditions)
 
-    def dispatch():
-        arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
-        arm(True)
+    def dispatch(self, parameters):
+        safe_command_conection('armed = True')
 
 
 """
@@ -97,21 +135,21 @@ class SetModeActionSchema(ActionSchema):
             Parameter('mode', str, 'description')
         ]
 
-        preconditions = []
+        preconditions = [
+        ]
 
         postconditions = [
             Postcondition('mode', 'description',
-                          lambda sv: sv['mode'].read() == parameters[0].get_value)
+                          lambda sv, params: sv['mode'].read() == params['mode'])
         ]
         invariants = [
             Invariant('battery', 'description',
-                      lambda sv: sv['battery'].read() > 0)
+                      lambda sv, params: sv['battery'].read() > 0)
         ]
         super(SetModeActionSchema, self).__init__('setmode', parameters, preconditions, invariants, postconditions)
 
-    def dispatch(parameters):
-        set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
-        set_mode(0, parameters.read())
+    def dispatch(self, parameters):
+        safe_command_conection('mode = VehicleMode(\'{}\')'.format(parameters['mode']))
 
 
 """
@@ -128,45 +166,46 @@ class GoToActionSchema(ActionSchema):
         preconditions = [
 
             Precondition('battery', 'description',
-                         lambda sv: sv['battery'].read() >= max_expected_battery_usage(
-                         parameters[0].get_value,
-                         parameters[1].get_value,
-                         parameters[2].get_value)),
+                         lambda sv, params: sv['battery'].read() >= max_expected_battery_usage(
+                         params['latitude'],
+                         params['longitude'],
+                         params['altitude'])),
             Precondition('altitude', 'description',
-                         lambda sv: sv['altitude'].read() > 0)
+                         lambda sv, params: sv['altitude'].read() > 0)
         ]
 
         invariants = [
             Invariant('battery', 'description',
-                       lambda sv: sv['battery'].read() > 0),
+                       lambda sv, params: sv['battery'].read() > 0),
             Invariant('system_armed', 'description',
-                       lambda sv: sv['armed'].read() == True),
+                       lambda sv, params: sv['armed'].read() == True),
             Invariant('altitude', 'description',
-                       lambda sv: sv['altitude'].read() > -0.3)
+                       lambda sv, params: sv['altitude'].read() > -0.3)
         ]
 
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda sv: sv['altitude'].read() - 0.3 < \
-                            parameters[2].get_value < sv['altitude'].read() + 0.3),
+                          lambda sv, params: sv['altitude'].read() - 0.3 < \
+                            params['altitude'] < sv['altitude'].read() + 0.3),
             Postcondition('battery', 'description',
-                          lambda sv: sv['battery'].read() > 0 ),
-            Postcondition('time', 'description',
-                          # we need a "start" time (or an initial state)
-                          lambda sv: time.time() - sv['time'].read() <
-                          max_expected_time(
-                            parameters[0].get_value,
-                            parameters[1].get_value,
-                            parameters[2].get_value))
+                          lambda sv, params: sv['battery'].read() > 0 ),
+            Postcondition('distance', 'description',
+                          lambda sv, params:
+                          float(distance.great_circle(
+                          (float(params['latitude']), float(params['longitude'])),
+                          (float(sv['latitude'].read()), float(sv['longitude'].read())))
+                          .meters) < 0.5)
+
         ]
 
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions, invariants, postconditions)
 
 
-    def dispatch(parameters):
-        return
-        #roscall()
-        # TODO
+    def dispatch(self, parameters):
+        safe_command_conection('simple_goto(LocationGlobalRelative({},{},{}))'.format(
+            parameters['latitude'],
+            parameters['longitude'],
+            parameters['altitude']))
 
 
 """
@@ -176,35 +215,34 @@ class LandActionSchema(ActionSchema):
     def __init__(self):
         preconditions = [
             Precondition('battery', 'description',
-                lambda sv: sv['battery'].read() >= \
+                lambda sv, params: sv['battery'].read() >= \
                     max_expected_battery_usage(None, None, 0)),
             Precondition('altitude', 'description',
-                lambda sv: sv['altitude'].read() > 0.3),
+                lambda sv, params: sv['altitude'].read() > 0.3),
             Precondition('armed', 'description',
-                lambda sv: sv['armed'].read() == True)
+                lambda sv, params: sv['armed'].read() == True)
         ]
         invariants = [
             Invariant('battery', 'description',
-                       lambda sv: sv['battery'].read() > 0),
+                       lambda sv, params: sv['battery'].read() > 0),
             Invariant('altitude', 'description',
-                       lambda sv: sv['altitude'].read() > -0.3)
+                       lambda sv, params: sv['altitude'].read() > -0.3)
         ]
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda sv: sv['altitude'].read() < 0.3 ),
+                          lambda sv, params: sv['altitude'].read() < 1 ),
             Postcondition('battery', 'description',
-                          lambda sv: sv['battery'].read() > 0 ),
+                          lambda sv, params: sv['battery'].read() > 0 ),
             Postcondition('time', 'description',
                           # we need a "start" time (or an initial state)
-                          lambda sv: max_expected_time(None, None, 0) > \
-                            time.time() - sv['time'])
+                          lambda sv, params: max_expected_time(None, None, 0) > \
+                            time.time() - sv['time'].read())
         ]
         super(LandActionSchema, self).__init__('land', None, preconditions, invariants, postconditions)
 
 
-    def dispatch():
-        land = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
-        land(0, 0, 0, 0, 0)
+    def dispatch(self, parameters):
+        safe_command_conection('mode = VehicleMode(\'LAND\')')
 
 
 """
@@ -218,45 +256,56 @@ class TakeoffActionSchema(ActionSchema):
         ]
         preconditions = [
             Precondition('battery', 'description',
-                         lambda sv: sv['battery'].read() >= \
+                         lambda sv, params: sv['battery'].read() >= \
                          max_expected_battery_usage(
                             None,
                             None,
-                            sv['altitude'].get_value)),
+                            sv['battery'].read())),
             Precondition('altitude', 'description',
-                         lambda sv: sv['altitude'].read() < 0.3),
+                         lambda sv, params: sv['altitude'].read() < 1),
             Precondition('armed', 'description',
-                         lambda sv: sv['armed'].read() == True)
+                         lambda sv, params: sv['armed'].read() == True)
         ]
         invariants = [
             Invariant('armed', 'description',
-                      lambda sv: sv['armed'].read() == True),
+                      lambda sv, params: sv['armed'].read() == True),
             Invariant('altitude', 'description',
-                      lambda sv: sv['altitude'].read() > -0.3)
+                      lambda sv, params: sv['altitude'].read() > -0.3)
         ]
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda sv: sv['alt'].read() - 0.3 < \
-                          parameters[0].get_value < sv['alt'].read() + 0.3)
+                          lambda sv, params: sv['altitude'].read() - 1 < \
+                          params['altitude'] < sv['altitude'].read() + 1)
         ]
+        super(TakeoffActionSchema, self).__init__('takeoff', None, preconditions, invariants, postconditions)
 
-    def dispatch(parameters):
-      takeoff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
-      takeoff(0, 0, 0, 0, parameters[0].read())
+    def dispatch(self, parameters):
+      safe_command_conection('simple_takeoff({})'.format(parameters['altitude']))
+
+
+def safe_command_conection(value):
+    print 'system.{}'.format(value)
+    system = connect('127.0.0.1:14551', wait_ready=True)
+    exec('system.{}'.format(value))
+    system.close()
+
 
 
 def max_expected_battery_usage(prime_latitude, prime_longitude, prime_altitude):
-    distance = distance.great_circle((system_variables['latitude'], \
+    print prime_altitude
+    return 0.01
+    distance = distance.great_circle((0['latitude'], \
         system_variables['longitude']), (prime_latitude, prime_longitude))
     standard_dev, mean  = get_standard_deviation_and_mean(SAMPLE_BATTERY)
-    return (mean + standard_dev + WINDOW_BATTERY) * distance
+    #return (mean + standard_dev + WINDOW_BATTERY) * distance
 
 
 def max_expected_time(prime_latitude, prime_longitude, prime_altitude):
+    return 10
     distance = distance.great_circle((system_variables['latitude'], \
         system_variables['longitude']), (prime_latitude, prime_longitude))
     standard_dev, mean  = get_standard_deviation_and_mean(SAMPLE_TIME)
-    return (mean + standard_dev + WINDOW_BATTERY) * distance
+    #return (mean + standard_dev + WINDOW_BATTERY) * distance
 
 
 def get_standard_deviation_and_mean(sample):
