@@ -82,7 +82,8 @@ class State(object):
         """
         Prints this state to the standard output.
         """
-        pass
+        for variable in self.__values:
+            print 'Variable: {} - State: {}'.format(variable, self.__variables[variable])
 
 
 class InternalState(State):
