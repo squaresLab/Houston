@@ -65,3 +65,4 @@ RUN sudo apt-get install -y vim && \
     sudo pip install pexpect --upgrade
 
 ADD houston /opt/houston
+ADD test /opt/houston/test
