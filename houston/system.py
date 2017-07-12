@@ -31,6 +31,7 @@ class System(object):
         self.setUp(mission)
         self.executeActions(mission)
 
+
     def executeActions(self, mission):
 
         for action in mission.getActions():
@@ -49,19 +50,9 @@ class System(object):
 
 
     def getInternalState(self):
-        # TODO
-        vals = {}
+        vals = {n: v.read() for (n, v) in self.__variables.items()}
         return InternalState(vals)
 
-#        print '---'
-#        print 'Mode: {}'.format(self.variables['mode'].read())
-#        print 'Altitude: {}'.format(self.variables['altitude'].read())
-#        print 'Longitude: {}'.format(self.variables['longitude'].read())
-#        print 'Latitude: {}'.format(self.variables['latitude'].read())
-#        print 'Battery: {}'.format(self.variables['battery'].read())
-#        print 'Armed: {}'.format(self.variables['armed'].read())
-#        print 'Armable: {}'.format(self.variables['armable'].read())
-#        print '---'
 
 class State(object):
     """
