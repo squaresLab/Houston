@@ -1,3 +1,4 @@
+# check if TurtleBot is installed
 
 import actionlib
 import rospy
@@ -5,6 +6,7 @@ import roslaunch
 import xml.etree.ElementTree as ET
 import xmlrpclib
 import os
+
 from tempfile           import NamedTemporaryFile
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from kobuki_msgs.msg    import BumperEvent

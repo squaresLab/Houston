@@ -49,9 +49,18 @@ RUN sudo pip install  future \
                       statistics \
                       geopy
 
-ADD houston /opt/houston
 
 ENV HOME "/home/robot"
+ENV ARDUPILOT_LOCATION "${HOME}/ardupilot"
+RUN cd "${ARDUPILOT_LOCATION}" && \
+    ./waf configure && \
+    ./waf build -j$(nproc)
+
 ENV PATH "${PATH}:${HOME}/jsbsim/src"
 ENV PATH "${PATH}:${HOME}/ardupilot/Tools/autotest"
 ENV PATH "${PATH}:/usr/lib/ccache:${PATH}"
+
+RUN sudo apt-get install -y vim
+RUN sudo pip install dronekit-sitl
+
+ADD houston /opt/houston

@@ -31,6 +31,7 @@ class ArduPilot(System):
         #self._temp_mavproxy = None
         #self._temp_sitl    = None
 
+        variables = {}
         variables['time'] = InternalStateVariable('time', lambda: time.time())
         variables['altitude'] = InternalStateVariable('altitude',
             lambda: self.system.location.global_relative_frame.alt)
@@ -57,7 +58,7 @@ class ArduPilot(System):
         super(ArduPilot, self).__init__(variables, schemas)
 
 
-    def setUp(self, mission):\
+    def setUp(self, mission):
         ardu_location = '/home/robot/ardupilot'
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
         param_file = os.path.join(ardu_location, 'Tools/autotest/default_params/copter.parm')
@@ -81,7 +82,7 @@ class ArduPilot(System):
         options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5 --out=127.0.0.1:14550 --out=127.0.0.1:14551'
         self._temp_mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
 
-    # the received parameters can come before or after the ready to fly message
+        # the received parameters can come before or after the ready to fly message
         self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
         self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
         time.sleep(3)
