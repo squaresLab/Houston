@@ -4,20 +4,25 @@ import time
 import numpy
 import os
 import subprocess as sub
-import util
+import sys
+import pexpect
+from pymavlink import mavutil, mavwp
 from geopy             import distance
 from dronekit_sitl     import SITL
 from dronekit          import connect, VehicleMode, LocationGlobalRelative
 from system            import System, InternalStateVariable, ActionSchema, Predicate, \
                               Invariant, Postcondition, Precondition, Parameter
+testdir = os.path.abspath("/home/robot/ardupilot/Tools/autotest")
+sys.path.append(testdir)
 
-
+from common import expect_callback, expect_list_clear, expect_list_extend, message_hook, idle_hook
+from pysim import util, vehicleinfo
 SAMPLE_BATTERY = []
 SAMPLE_TIME    = []
 WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
-
+vinfo = vehicleinfo.VehicleInfo()
 
 """
 Description of the ArduPilot system
@@ -28,7 +33,7 @@ class ArduPilot(System):
         # TOOD: rename!
         self.system = None
         self._temp_sitl = None
-        #self._temp_mavproxy = None
+        self._temp_mavproxy = None
         #self._temp_sitl    = None
 
         variables = {}
@@ -40,7 +45,7 @@ class ArduPilot(System):
         variables['longitude'] = InternalStateVariable('longitude',
             lambda: self.system.location.global_relative_frame.lon)
         variables['battery'] = InternalStateVariable('battery',
-            lambda: self.system.battery)
+            lambda: self.system.battery.level)
         variables['armable'] = InternalStateVariable('armable',
             lambda: self.system.is_armable)
         variables['armed'] = InternalStateVariable('armed',
@@ -62,37 +67,62 @@ class ArduPilot(System):
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
         param_file = os.path.join(ardu_location, 'Tools/autotest/default_params/copter.parm')
 
-        sitl = util.start_SITL(binary,
-                               wipe=True, model='copter', home='-35.362938, 149.165085, 584, 270', speedup=10)
-        mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
+        sitl = util.start_SITL(binary, wipe=True, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5)
+        mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
         mavproxy.expect('Received [0-9]+ parameters')
-        mavproxy.send('param load {}'.format(param_file))
-        mavproxy.send("param set ARMING_CHECK 0")
+
+        # setup test parameters
+        params = vinfo.options["ArduCopter"]["frames"]['quad']["default_params_filename"]
+        if not isinstance(params, list):
+            params = [params]
+            for x in params:
+                mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+
+        mavproxy.expect('Loaded [0-9]+ parameters')
         mavproxy.send("param set LOG_REPLAY 1\n")
         mavproxy.send("param set LOG_DISARMED 1\n")
-        time.sleep(3)
+        time.sleep(2)
+
+        # reboot with new parameters
         util.pexpect_close(mavproxy)
         util.pexpect_close(sitl)
 
-        self._temp_sitl = util.start_SITL(binary,
-            model='copter',
-            home='-35.362938, 149.165085, 584, 270',
-            speedup=10, valgrind=False, gdb=False)
-        options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5 --out=127.0.0.1:14550 --out=127.0.0.1:14551'
+        self._temp_sitl = util.start_SITL(binary, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5, valgrind=False, gdb=False)
+        options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --out=127.0.0.1:14551 --quadcopter --streamrate=5'
         self._temp_mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
+        self._temp_mavproxy.expect('Telemetry log: (\S+)')
+        logfile = self._temp_mavproxy.match.group(1)
+        print("LOGFILE %s" % logfile)
 
         # the received parameters can come before or after the ready to fly message
         self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
         self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
-        time.sleep(3)
-        for chan in range(1, 9):
-            self._temp_mavproxy.send('rc %u 1500\n' % chan)
-        # zero throttle
-        self._temp_mavproxy.send('rc 3 1000\n')
 
-        self._temp_mavproxy.expect('IMU0 is using GPS')
-        self.system = connect('127.0.0.1:14551', wait_ready=True)
+        util.expect_setup_callback(self._temp_mavproxy, expect_callback)
 
+        expect_list_clear()
+        expect_list_extend([sitl, self._temp_mavproxy])
+        # get a mavlink connection going
+        try:
+            mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+        except Exception as msg:
+            print("Failed to start mavlink connection on 127.0.0.1:19550 {}".format(msg))
+            raise
+        mav.message_hooks.append(message_hook)
+        mav.idle_hooks.append(idle_hook)
+
+        try:
+            mav.wait_heartbeat()
+            """Setup RC override control."""
+            for chan in range(1, 9):
+                self._temp_mavproxy.send('rc %u 1500\n' % chan)
+            # zero throttle
+            self._temp_mavproxy.send('rc 3 1000\n')
+            self._temp_mavproxy.expect('IMU0 is using GPS')
+            self.system = connect('127.0.0.1:14551', wait_ready=True)
+        except pexpect.TIMEOUT:
+            print("Failed: time out")
+            return False
 
     def tearDown(self, mission):
         pass
@@ -171,7 +201,7 @@ class GoToActionSchema(ActionSchema):
                          params['longitude'],
                          params['altitude'])),
             Precondition('altitude', 'description',
-                         lambda sv, params: sv['altitude'].read() > 0)
+                         lambda sv, params: sv['altitude'].read() > .3)
         ]
 
         invariants = [
@@ -284,7 +314,6 @@ class TakeoffActionSchema(ActionSchema):
 
 
 def safe_command_conection(value):
-    print 'system.{}'.format(value)
     system = connect('127.0.0.1:14551', wait_ready=True)
     exec('system.{}'.format(value))
     system.close()
@@ -292,12 +321,12 @@ def safe_command_conection(value):
 
 
 def max_expected_battery_usage(prime_latitude, prime_longitude, prime_altitude):
-    print prime_altitude
     return 0.01
     distance = distance.great_circle((0['latitude'], \
         system_variables['longitude']), (prime_latitude, prime_longitude))
     standard_dev, mean  = get_standard_deviation_and_mean(SAMPLE_BATTERY)
     #return (mean + standard_dev + WINDOW_BATTERY) * distance
+
 
 
 def max_expected_time(prime_latitude, prime_longitude, prime_altitude):

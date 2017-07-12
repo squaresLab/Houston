@@ -33,19 +33,20 @@ class System(object):
 
 
     def executeActions(self, mission):
-
+        self.getInternalState().dump()
         for action in mission.getActions():
+            self.getInternalState().dump()
             actionType = action.get_type()
             print actionType
+            self.getInternalState().dump()
             # check for preconditions
             if self.__schemas[actionType].satisfiedPreconditions(self.__variables,
                 action.get_values()):
                 self.__schemas[actionType].dispatch(action.get_values())
                 while not self.__schemas[actionType].satisfiedPostConditions(self.__variables,
-                    action.get_values()) and \
-                    self.__schemas[actionType].satisfiedInvariants(self.__variables,
                     action.get_values()):
                         pass
+            self.getInternalState().dump()
         self.tearDown(mission)
 
 
@@ -78,12 +79,12 @@ class State(object):
         return self.__values[variable]
 
 
-    def dump():
+    def dump(self):
         """
         Prints this state to the standard output.
         """
         for variable in self.__values:
-            print 'Variable: {} - State: {}'.format(variable, self.__variables[variable])
+            print 'Variable: {} - State: {}'.format(variable, self.__values[variable])
 
 
 class InternalState(State):
