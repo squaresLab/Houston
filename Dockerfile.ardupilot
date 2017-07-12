@@ -41,18 +41,17 @@ RUN sudo apt-get install -y python-matplotlib \
                             gawk \
                             python-pip \
                             python-pexpect
-RUN sudo pip install future pymavlink MAVProxy
-RUN sudo pip install dronekit
-RUN sudo pip install statistics
-RUN sudo pip install geopy
-RUN mkdir -p /home/robot/test_environment
-ADD houston/system.py /home/robot/test_environment/
-ADD houston/ardupilot.py /home/robot/test_environment/
-ADD test/ardutest.py /home/robot/test_environment/
-ADD binaries/arducopter /home/robot/test_environment/
-ADD params/copter.parm /home/robot/test_envivonment/
+
+RUN sudo pip install  future \
+                      pymavlink \
+                      MAVProxy \
+                      dronekit \
+                      statistics \
+                      geopy
+
+ADD houston /opt/houston
+
 ENV HOME "/home/robot"
 ENV PATH "${PATH}:${HOME}/jsbsim/src"
 ENV PATH "${PATH}:${HOME}/ardupilot/Tools/autotest"
 ENV PATH "${PATH}:/usr/lib/ccache:${PATH}"
-
