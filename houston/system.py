@@ -32,9 +32,7 @@ class System(object):
         self.executeActions(mission)
 
     def executeActions(self, mission):
-        time.sleep(5)
-        while not self.setupDone:
-            time.sleep(1)
+
         for action in mission.getActions():
             actionType = action.get_type()
             print actionType
