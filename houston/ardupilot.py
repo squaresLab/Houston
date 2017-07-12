@@ -25,55 +25,56 @@ Description of the ArduPilot system
 class ArduPilot(System):
 
     def __init__(self):
-        self.variables = {}
-        self.schemas   = {}
-        self.setupDone = False
-        self.system    = None
-        self._temp_sitl      = None
+        # TOOD: rename!
+        self.system = None
+        self._temp_sitl = None
         #self._temp_mavproxy = None
         #self._temp_sitl    = None
 
-        self.variables['time'] = InternalStateVariable('time', lambda: time.time())
-        self.variables['altitude'] = InternalStateVariable('altitude',
+        variables['time'] = InternalStateVariable('time', lambda: time.time())
+        variables['altitude'] = InternalStateVariable('altitude',
             lambda: self.system.location.global_relative_frame.alt)
-        self.variables['latitude'] = InternalStateVariable('latitude',
+        variables['latitude'] = InternalStateVariable('latitude',
             lambda: self.system.location.global_relative_frame.lat)
-        self.variables['longitude'] = InternalStateVariable('longitude',
+        variables['longitude'] = InternalStateVariable('longitude',
             lambda: self.system.location.global_relative_frame.lon)
-        self.variables['battery'] = InternalStateVariable('battery',
+        variables['battery'] = InternalStateVariable('battery',
             lambda: self.system.battery)
-        self.variables['armable'] = InternalStateVariable('armable',
+        variables['armable'] = InternalStateVariable('armable',
             lambda: self.system.is_armable)
-        self.variables['armed'] = InternalStateVariable('armed',
+        variables['armed'] = InternalStateVariable('armed',
             lambda: self.system.armed)
-        self.variables['mode'] = InternalStateVariable('mode',
+        variables['mode'] = InternalStateVariable('mode',
             lambda : self.system.mode.name)
 
-        self.schemas = {
+        schemas = {
             'goto'   : GoToActionSchema(),
             'takeoff': TakeoffActionSchema(),
             'land'   : LandActionSchema(),
             'arm'    : ArmActionSchema(),
             'setmode'   : SetModeActionSchema()
         }
-        super(ArduPilot, self).__init__(self.variables, self.schemas)
+        super(ArduPilot, self).__init__(variables, schemas)
 
 
     def setUp(self, mission):\
-        # TODO get current directory
+        ardu_location = '/home/robot/ardupilot'
+        binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
+        param_file = os.path.join(ardu_location, 'Tools/autotest/default_params/copter.parm')
 
-        sitl = util.start_SITL('/home/jam/Desktop/Research/2/Houston/binaries/arducopter'\
-            , wipe=True, model='copter', home='-35.362938, 149.165085, 584, 270', speedup=10)
+        sitl = util.start_SITL(binary,
+                               wipe=True, model='copter', home='-35.362938, 149.165085, 584, 270', speedup=10)
         mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
         mavproxy.expect('Received [0-9]+ parameters')
-        mavproxy.send('param load /home/jam/Desktop/Research/2/Houston/houston/binaries/copter.parm')
+        mavproxy.send('param load {}'.format(param_file))
         mavproxy.send("param set ARMING_CHECK 0")
         mavproxy.send("param set LOG_REPLAY 1\n")
         mavproxy.send("param set LOG_DISARMED 1\n")
         time.sleep(3)
         util.pexpect_close(mavproxy)
         util.pexpect_close(sitl)
-        self._temp_sitl = util.start_SITL('/home/jam/Desktop/Research/2/Houston/binaries/arducopter', \
+
+        self._temp_sitl = util.start_SITL(binary,
             model='copter',
             home='-35.362938, 149.165085, 584, 270',
             speedup=10, valgrind=False, gdb=False)
@@ -91,7 +92,6 @@ class ArduPilot(System):
 
         self._temp_mavproxy.expect('IMU0 is using GPS')
         self.system = connect('127.0.0.1:14551', wait_ready=True)
-        self.setupDone = True
 
 
     def tearDown(self, mission):

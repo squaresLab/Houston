@@ -7,11 +7,8 @@ class System(object):
 
 
     def __init__(self, variables, schemas):
-
-        self.setupDone      = False
-        self._temp_mavproxy = None
-        self._temp_sitl     = None
-        self.system         = None
+        self.__variables = variables
+        self.__schemas = schemas
 
 
     def setUp(self, mission):
