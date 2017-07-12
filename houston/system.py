@@ -48,16 +48,20 @@ class System(object):
         self.tearDown(mission)
 
 
-    def getState(self):
-        print '---'
-        print 'Mode: {}'.format(self.variables['mode'].read())
-        print 'Altitude: {}'.format(self.variables['altitude'].read())
-        print 'Longitude: {}'.format(self.variables['longitude'].read())
-        print 'Latitude: {}'.format(self.variables['latitude'].read())
-        print 'Battery: {}'.format(self.variables['battery'].read())
-        print 'Armed: {}'.format(self.variables['armed'].read())
-        print 'Armable: {}'.format(self.variables['armable'].read())
-        print '---'
+    def getInternalState(self):
+        # TODO
+        vals = {}
+        return InternalState(vals)
+
+#        print '---'
+#        print 'Mode: {}'.format(self.variables['mode'].read())
+#        print 'Altitude: {}'.format(self.variables['altitude'].read())
+#        print 'Longitude: {}'.format(self.variables['longitude'].read())
+#        print 'Latitude: {}'.format(self.variables['latitude'].read())
+#        print 'Battery: {}'.format(self.variables['battery'].read())
+#        print 'Armed: {}'.format(self.variables['armed'].read())
+#        print 'Armable: {}'.format(self.variables['armable'].read())
+#        print '---'
 
 class State(object):
     """
