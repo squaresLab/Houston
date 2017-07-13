@@ -30,8 +30,12 @@ class System(object):
 
 
     def execute(self, mission):
+        """
+        Executes the mission. Returns mission outcome
+        """
         self.setUp(mission)
         outcomes = []
+        missionPassed = True
         for action in mission.getActions():
             actionKind   = action.getKind()
             actionSchema = self.__schemas[actionKind]
@@ -43,14 +47,16 @@ class System(object):
                 outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
                 outcome.setPostActionSystemState(self.getInternalState())
                 outcomes.append(outcome)
-                return outcomes
+                missionPassed = False
+                break
             # check for preconditions
             result =  actionSchema.satisfiedPreconditions(self.__variables, action)
             if not result[0]:
                 outcome.setActionReturn(False, 'Preconditions : {}'.format(result[1]))
                 outcome.setPostActionSystemState(self.getInternalState())
                 outcomes.append(outcome)
-                return outcomes
+                missionPassed = False
+                break
             # dispatch
             actionSchema.dispatch(action.getValues())
             print 'Doing: {}'.format(actionKind)
@@ -62,12 +68,13 @@ class System(object):
                     outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
                     outcome.setPostActionSystemState(self.getInternalState())
                     outcomes.append(outcome)
-                    return outcomes
+                    missionPassed = False
+                    break
             outcome.setActionReturn(True, 'Postconditions')
             outcome.setPostActionSystemState(self.getInternalState())
             outcomes.append(outcome)
-            print 'Here'
-        return outcomes
+
+        return MissionOutcome(missionPassed, outcomes)
 
 
     def getInternalState(self):
@@ -299,6 +306,21 @@ class Mission(object):
             'actions': [a.toJSON() for a in self.__actions]
         }
 
+class MissionOutcome(object):
+    def __init__(self, passFail, outcomes):
+        self.__passFail  = passFail
+        self.__outcomes  = outcomes
+
+    def toJSON(self):
+        """
+        Returns a JSON description of the mission outcome.
+        """
+        return {
+            'passed': self.__passFail,
+            'actions': self.__outcomes
+        }
+
+
 class ActionOutcome(object):
     def __init__(self, action, preActionSytemSate):
         self.__action                     = action
@@ -306,12 +328,12 @@ class ActionOutcome(object):
         self.__actionReturn               = False
         self.__postActionSystemState      = None
 
-    def getActionOutput(self):
+    def toJSON(self):
         return {
-            'Action': self.__action,
-            'Outcome': self.__actionReurn,
-            'PreActionSystemSate': self.__preActionSytemSate,
-            'PosstActionSystemState': self.__postActionSystemState}
+            'action': self.__action,
+            'outcome': self.__actionReturn,
+            'preActionSystemSate': self.__preActionSytemSate,
+            'postActionSystemState': self.__postActionSystemState}
 
     def setPostActionSystemState(self, postActionSystemState):
         self.__postActionSystemState  = postActionSystemState

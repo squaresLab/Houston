@@ -30,4 +30,4 @@ if __name__ == "__main__":
     initialExternalState = ExternalState({
     })
 
-    print system.execute(Mission(environment, initialInternalState, initialExternalState, actions))
+    system.execute(Mission(environment, initialInternalState, initialExternalState, actions)).toJSON()
