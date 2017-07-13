@@ -1,5 +1,6 @@
 import thread
 import time
+
 class System(object):
     """
     Description of System.
@@ -29,6 +30,7 @@ class System(object):
 
     def execute(self, mission):
         self.setUp(mission)
+        # TODO: do these need to be separated?
         self.executeActions(mission)
 
 
@@ -52,6 +54,11 @@ class System(object):
 
 
     def getInternalState(self):
+        """
+        Returns a description of the current internal state of the system.
+
+        TODO: ensure that the system is actually running!
+        """
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return InternalState(vals)
 
@@ -200,6 +207,7 @@ class Mission(object):
     def getActions(self):
         return self.__actions
 
+
 class Action(object):
     def __init__(self, _type, values):
         self.__type = _type
@@ -214,10 +222,15 @@ class Action(object):
     def get_values(self):
         return self.__values
 
-"""
-Hello.
-"""
+
 class ActionSchema(object):
+    """
+    Action schemas are responsible for describing the kinds of actions that
+    can be performed within a given system. Action schemas describe actions
+    both syntactically, in terms of parameters, and semantically, in terms of
+    preconditions, postconditions, and invariants.
+    """
+
     def __init__(self, name, parameters, precondition, invariants, postconditions):
         self.__name           = name
         self.__parameters     = parameters
