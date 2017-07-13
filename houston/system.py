@@ -92,8 +92,15 @@ class State(object):
         Prints this state to the standard output.
         """
         for variable in self.__values:
-            print 'Variable: {} - State: {}'.format(variable, self.__values[variable])
+            print('Variable: {} - State: {}'.format(variable, self.read(variable)))
 
+    def toJSON(self):
+        """
+        Returns a JSON description of this state.
+        """
+        return {
+            'variables': copy.copy(self.__values)
+        }
 
 
 class InternalState(State):
