@@ -181,10 +181,18 @@ class Mission(object):
         """
         Constructs a mission object from a given JSON description.
         """
-        raise NotImplementedError
+        assert('environment' in jsn)
+        assert('internal' in jsn)
+        assert('external' in jsn)
+        assert('actions' in jsn)
+        assert(isinstance(actions, list))
 
-        # TODO: use Action.fromJSON()
+        env = Environment.fromJSON(jsn['environment'])
+        internal = InternalState.fromJSON(jsn['internal'])
+        external = ExternalState.fromJSON(jsn['external'])
+        actions = [a.fromJSON() for a in actions]
 
+        return Mission(env, internal, external, actions)
 
     def __init__(self, environment, internal, external, actions):
         """
@@ -227,9 +235,12 @@ class Mission(object):
         """
         Returns a JSON description of this mission.
         """
-        raise NotImplementedError
-
-        # TODO: use Action.toJSON()
+        return {
+            'environment': self.__environment.toJSON(),
+            'internal': self.__internal.toJSON(),
+            'external': self.__external.toJSON(),
+            'actions': [a.toJSON() for a in self.__actions]
+        }
 
 
 class Action(object):
