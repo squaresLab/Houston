@@ -289,7 +289,12 @@ class ActionSchema(object):
         self.__postconditions = postconditions
 
 
-    def dispatch(self, parameters):
+    def dispatch(self, action):
+        """
+        Responsible for invoking an action belonging to this schema.
+
+        :param  action  an Action belonging to this schema
+        """
         raise UnimplementedError
 
 
