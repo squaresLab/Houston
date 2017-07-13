@@ -238,27 +238,39 @@ class Action(object):
         """
         Constructs an Action object from its JSON description.
         """
-        raise NotImplementedError
+        assert('kind' in jsn)
+        assert('values' in jsn)
+        return Action(jsn['kind'], jsn['values'])
 
-    # TODO: use camelCase or snake_case consistently
-    def __init__(self, typ, values):
-        self.__type = typ
+    def __init__(self, kind, values):
+        """
+        Constructs an Action description.
+
+        :param  kind    the name of the schema to which the action belongs
+        :param  values  a dictionary of parameter values for the action
+        """
+        assert(isinstance(kind, str))
+        assert(isinstance(values, dict))
+        self.__kind = kind
         self.__values = values
 
-    def get_type(self):
-        return self.__type
+    def getKind(self):
+        return self.__kind
 
-    def get_value(self, value):
+    def getValue(self, value):
         return self.__values[value]
 
-    def get_values(self):
+    def getValues(self):
         return self.__values
 
     def toJSON(self):
         """
         Returns a JSON description of a given Action.
         """
-        raise NotImplementedError
+        return {
+            'kind': self.__kind,
+            'parameters': self.__values
+        }
 
 
 class ActionSchema(object):
