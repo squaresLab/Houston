@@ -315,7 +315,7 @@ class TakeoffActionSchema(ActionSchema):
 
 
 def safe_command_conection(value):
-    system = connect('127.0.0.1:14551', wait_ready=True)
+    system = connect('127.0.0.1:14551', wait_ready=False)
     exec('system.{}'.format(value))
     system.close()
 

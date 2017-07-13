@@ -40,12 +40,13 @@ class System(object):
             print actionType
             self.getInternalState().dump()
             # check for preconditions
-            if self.__schemas[actionType].satisfiedPreconditions(self.__variables,
-                action.get_values()):
+            if self.__schemas[actionType].satisfiedPreconditions(self.__variables,action.get_values()) and \
+                self.__schemas[actionType].satisfiedInvariants(self.__variables,action.get_values()):
                 self.__schemas[actionType].dispatch(action.get_values())
                 while not self.__schemas[actionType].satisfiedPostConditions(self.__variables,
                     action.get_values()):
-                        pass
+                    time.sleep(1)
+                    pass
             self.getInternalState().dump()
         self.tearDown(mission)
 
@@ -230,6 +231,8 @@ class ActionSchema(object):
 
 
     def satisfiedPostConditions(self, system_variables, parameters):
+        print 'Doing postconditions params: {} '.format(parameters)
+        print all(p.check(system_variables, parameters) for p in self.__postconditions)
         return all(p.check(system_variables, parameters) for p in self.__postconditions)
 
     def satisfiedPreconditions(self, system_variables, parameters):
