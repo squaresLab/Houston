@@ -176,6 +176,16 @@ class Mission(object):
     a given environment and initial state.
     """
 
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a mission object from a given JSON description.
+        """
+        raise NotImplementedError
+
+        # TODO: use Action.fromJSON()
+
+
     def __init__(self, environment, internal, external, actions):
         """
         Constructs a new Mission description.
@@ -195,17 +205,31 @@ class Mission(object):
         self.__external = external
         self.__actions = actions
 
+    # TODO: make immutable
     def getEnvironment(self):
         return self.__environment
 
+    # TODO: make immutable
     def getInitialInternalState(self):
         return self.__internal
 
+    # TODO: make immutable
     def getInitialExternalState(self):
         return self.__external
 
+    # TODO: make immutable
     def getActions(self):
+        # TODO: returning the original list might be dangerous? We may want to
+        #       pass a copy, instead.
         return self.__actions
+
+    def toJSON(self):
+        """
+        Returns a JSON description of this mission.
+        """
+        raise NotImplementedError
+
+        # TODO: use Action.toJSON()
 
 
 class Action(object):
@@ -255,6 +279,7 @@ class ActionSchema(object):
 
     def satisfiedInvariants(self, system_variables, parameters):
         return all(p.check(system_variables, parameters) for p in self.__invariants)
+
 
 """
 Hello.
