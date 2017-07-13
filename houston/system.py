@@ -150,6 +150,15 @@ class InternalStateVariable(StateVariable):
 
 
 class Environment(object):
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a description of an environment from its JSON description
+        """
+        assert('variables' in jsn)
+        assert(isinstance(jsn['variables'], dict))
+        return Enviroment(jsn['variables'])
+
     """
     Holds a description of an environment in which a mission should be conducted.
     """
@@ -168,6 +177,14 @@ class Environment(object):
         Returns the value of a given environment variable.
         """
         return self.__values[variable]
+
+    def toJSON(self):
+        """
+        Returns this environment description as a JSON object (i.e., a dict)
+        """
+        return {
+            'variables': self.__values
+        }
 
 
 class Mission(object):
