@@ -1,5 +1,6 @@
 import thread
 import time
+import copy
 
 class System(object):
     """
@@ -69,7 +70,6 @@ class State(object):
     internal or external variables.
     """
 
-
     def __init__(self, values):
         """
         Constructs a description of the system state.
@@ -77,7 +77,7 @@ class State(object):
         :param  values: a dictionary describing the values of the state
                         variables, indexed by their names.
         """
-        self.__values = values
+        self.__values = copy.copy(values)
 
 
     def read(variable):
@@ -95,12 +95,21 @@ class State(object):
             print 'Variable: {} - State: {}'.format(variable, self.__values[variable])
 
 
+
 class InternalState(State):
     """
     Describes the state of the system in terms of its internal state
     variables.
     """
-    pass
+
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs an internal state description from a JSON object
+        """
+        assert('variables' in jsn)
+        assert(isinstance(jsn['variables'], dict))
+        return InternalState(jsn['variables'])
 
 
 class ExternalState(State):
@@ -108,7 +117,15 @@ class ExternalState(State):
     Describes the state of the system in terms of its external state
     variables.
     """
-    pass
+
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs an external state description from a JSON object
+        """
+        assert('variables' in jsn)
+        assert(isinstance(jsn['variables'], dict))
+        return ExternalState(jsn['variables'])
 
 
 class StateVariable(object):
@@ -170,7 +187,7 @@ class Environment(object):
         :param  values: a dictionary of environment variable values, indexed
                         by the name of those variables.
         """
-        self.__values = values
+        self.__values = copy.copy(values)
 
     def read(self, variable):
         """
@@ -183,7 +200,7 @@ class Environment(object):
         Returns this environment description as a JSON object (i.e., a dict)
         """
         return {
-            'variables': self.__values
+            'variables': copy.copy(self.__values)
         }
 
 
@@ -280,7 +297,7 @@ class Action(object):
         assert(isinstance(kind, str))
         assert(isinstance(values, dict))
         self.__kind = kind
-        self.__values = values
+        self.__values = copy.copy(values)
 
     def getKind(self):
         return self.__kind
@@ -289,7 +306,7 @@ class Action(object):
         return self.__values[value]
 
     def getValues(self):
-        return self.__values
+        return copy.copy(self.__values)
 
     def toJSON(self):
         """
@@ -297,7 +314,7 @@ class Action(object):
         """
         return {
             'kind': self.__kind,
-            'parameters': self.__values
+            'parameters': self.getValues()
         }
 
 
