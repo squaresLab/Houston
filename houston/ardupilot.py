@@ -30,28 +30,27 @@ Description of the ArduPilot system
 class ArduPilot(System):
 
     def __init__(self):
-        # TOOD: rename!
-        self.system = None
-        self._temp_sitl = None
-        self._temp_mavproxy = None
-        #self._temp_sitl    = None
+        self.__system_dronekit = None
+        self.__sitl       = None
+        self.__mavproxy   = None
+        self.__mavlink    = None
 
         variables = {}
         variables['time'] = InternalStateVariable('time', lambda: time.time())
         variables['altitude'] = InternalStateVariable('altitude',
-            lambda: self.system.location.global_relative_frame.alt)
+            lambda: self.__system_dronekit.location.global_relative_frame.alt)
         variables['latitude'] = InternalStateVariable('latitude',
-            lambda: self.system.location.global_relative_frame.lat)
+            lambda: self.__system_dronekit.location.global_relative_frame.lat)
         variables['longitude'] = InternalStateVariable('longitude',
-            lambda: self.system.location.global_relative_frame.lon)
+            lambda: self.__system_dronekit.location.global_relative_frame.lon)
         variables['battery'] = InternalStateVariable('battery',
-            lambda: self.system.battery.level)
+            lambda: self.__system_dronekit.battery.level)
         variables['armable'] = InternalStateVariable('armable',
-            lambda: self.system.is_armable)
+            lambda: self.__system_dronekit.is_armable)
         variables['armed'] = InternalStateVariable('armed',
-            lambda: self.system.armed)
+            lambda: self.__system_dronekit.armed)
         variables['mode'] = InternalStateVariable('mode',
-            lambda : self.system.mode.name)
+            lambda : self.__system_dronekit.mode.name)
         schemas = {
             'goto'   : GoToActionSchema(),
             'takeoff': TakeoffActionSchema(),
@@ -87,45 +86,47 @@ class ArduPilot(System):
         util.pexpect_close(mavproxy)
         util.pexpect_close(sitl)
 
-        self._temp_sitl = util.start_SITL(binary, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5, valgrind=False, gdb=False)
+        self.__sitl  = util.start_SITL(binary, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5, valgrind=False, gdb=False)
         options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --out=127.0.0.1:14551 --quadcopter --streamrate=5'
-        self._temp_mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
-        self._temp_mavproxy.expect('Telemetry log: (\S+)')
-        logfile = self._temp_mavproxy.match.group(1)
+        self.__mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
+        self.__mavproxy.expect('Telemetry log: (\S+)')
+        logfile = self.__mavproxy.match.group(1)
         print("LOGFILE %s" % logfile)
 
         # the received parameters can come before or after the ready to fly message
-        self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
-        self._temp_mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+        self.__mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+        self.__mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
 
-        util.expect_setup_callback(self._temp_mavproxy, expect_callback)
+        util.expect_setup_callback(self.__mavproxy, expect_callback)
 
         expect_list_clear()
-        expect_list_extend([sitl, self._temp_mavproxy])
+        expect_list_extend([sitl, self.__mavproxy])
         # get a mavlink connection going
         try:
-            mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+            self.__mavlink = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
         except Exception as msg:
             print("Failed to start mavlink connection on 127.0.0.1:19550 {}".format(msg))
             raise
-        mav.message_hooks.append(message_hook)
-        mav.idle_hooks.append(idle_hook)
+        self.__mavlink.message_hooks.append(message_hook)
+        self.__mavlink.idle_hooks.append(idle_hook)
 
         try:
-            mav.wait_heartbeat()
+            self.__mavlink.wait_heartbeat()
             """Setup RC override control."""
             for chan in range(1, 9):
-                self._temp_mavproxy.send('rc %u 1500\n' % chan)
+                self.__mavproxy.send('rc %u 1500\n' % chan)
             # zero throttle
-            self._temp_mavproxy.send('rc 3 1000\n')
-            self._temp_mavproxy.expect('IMU0 is using GPS')
-            self.system = connect('127.0.0.1:14551', wait_ready=True)
+            self.__mavproxy.send('rc 3 1000\n')
+            self.__mavproxy.expect('IMU0 is using GPS')
+            self.__system_dronekit = connect('127.0.0.1:14551', wait_ready=True)
         except pexpect.TIMEOUT:
             print("Failed: time out")
             return False
 
     def tearDown(self, mission):
-        pass
+        self.__system_dronekit.close()
+        util.pexpect_close(self.__mavproxy)
+        util.pexpect_close(self.__mavlink)
 
 
 """
@@ -201,7 +202,7 @@ class GoToActionSchema(ActionSchema):
                          params['longitude'],
                          params['altitude'])),
             Precondition('altitude', 'description',
-                         lambda sv, params: sv['altitude'].read() > .3)
+                         lambda sv, params: sv['altitude'].read() > 0)
         ]
 
         invariants = [
