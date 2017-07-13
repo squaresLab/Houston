@@ -233,8 +233,16 @@ class Mission(object):
 
 
 class Action(object):
-    def __init__(self, _type, values):
-        self.__type = _type
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs an Action object from its JSON description.
+        """
+        raise NotImplementedError
+
+    # TODO: use camelCase or snake_case consistently
+    def __init__(self, typ, values):
+        self.__type = typ
         self.__values = values
 
     def get_type(self):
@@ -245,6 +253,12 @@ class Action(object):
 
     def get_values(self):
         return self.__values
+
+    def toJSON(self):
+        """
+        Returns a JSON description of a given Action.
+        """
+        raise NotImplementedError
 
 
 class ActionSchema(object):
