@@ -239,8 +239,8 @@ class Action(object):
         Constructs an Action object from its JSON description.
         """
         assert('kind' in jsn)
-        assert('values' in jsn)
-        return Action(jsn['kind'], jsn['values'])
+        assert('parameters' in jsn)
+        return Action(jsn['kind'], jsn['parameters'])
 
     def __init__(self, kind, values):
         """
