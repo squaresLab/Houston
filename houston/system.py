@@ -31,27 +31,43 @@ class System(object):
 
     def execute(self, mission):
         self.setUp(mission)
-        # TODO: do these need to be separated?
-        self.executeActions(mission)
-
-
-    def executeActions(self, mission):
-        self.getInternalState().dump()
+        outcomes = []
         for action in mission.getActions():
-            self.getInternalState().dump()
-            actionType = action.get_type()
-            print actionType
-            self.getInternalState().dump()
+            actionKind   = action.getKind()
+            actionSchema = self.__schemas[actionKind]
+            outcome = ActionOutcome(actionKind, self.getInternalState())
+            # check for invariants
+
+            result = actionSchema.satisfiedInvariants(self.__variables, action)
+            if not result[0]:
+                outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
+                outcome.setPostActionSystemState(self.getInternalState())
+                outcomes.append(outcome)
+                return outcomes
             # check for preconditions
-            if self.__schemas[actionType].satisfiedPreconditions(self.__variables,action.get_values()) and \
-                self.__schemas[actionType].satisfiedInvariants(self.__variables,action.get_values()):
-                self.__schemas[actionType].dispatch(action.get_values())
-                while not self.__schemas[actionType].satisfiedPostConditions(self.__variables,
-                    action.get_values()):
-                    time.sleep(1)
-                    pass
-            self.getInternalState().dump()
-        self.tearDown(mission)
+            result =  actionSchema.satisfiedPreconditions(self.__variables, action)
+            if not result[0]:
+                outcome.setActionReturn(False, 'Preconditions : {}'.format(result[1]))
+                outcome.setPostActionSystemState(self.getInternalState())
+                outcomes.append(outcome)
+                return outcomes
+            # dispatch
+            actionSchema.dispatch(action.getValues())
+            print 'Doing: {}'.format(actionKind)
+            # start looping till action completed or invariant violated
+            while not actionSchema.satisfiedPostConditions(self.__variables, action)[0]:
+                time.sleep(0.5)
+                result = actionSchema.satisfiedInvariants(self.__variables, action)
+                if not result[0]:
+                    outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
+                    outcome.setPostActionSystemState(self.getInternalState())
+                    outcomes.append(outcome)
+                    return outcomes
+            outcome.setActionReturn(True, 'Postconditions')
+            outcome.setPostActionSystemState(self.getInternalState())
+            outcomes.append(outcome)
+            print 'Here'
+        return outcomes
 
 
     def getInternalState(self):
@@ -283,6 +299,26 @@ class Mission(object):
             'actions': [a.toJSON() for a in self.__actions]
         }
 
+class ActionOutcome(object):
+    def __init__(self, action, preActionSytemSate):
+        self.__action                     = action
+        self.__preActionSytemSate         = preActionSytemSate
+        self.__actionReturn               = False
+        self.__postActionSystemState      = None
+
+    def getActionOutput(self):
+        return {
+            'Action': self.__action,
+            'Outcome': self.__actionReurn,
+            'PreActionSystemSate': self.__preActionSytemSate,
+            'PosstActionSystemState': self.__postActionSystemState}
+
+    def setPostActionSystemState(self, postActionSystemState):
+        self.__postActionSystemState  = postActionSystemState
+
+    def setActionReturn(self, actionReturn, statetype):
+        self.__actionReturn = actionReturn
+
 
 class Action(object):
     @staticmethod
@@ -350,18 +386,36 @@ class ActionSchema(object):
         raise UnimplementedError
 
 
-    def satisfiedPostConditions(self, system_variables, parameters):
-        print 'Doing postconditions params: {} '.format(parameters)
-        print all(p.check(system_variables, parameters) for p in self.__postconditions)
-        return all(p.check(system_variables, parameters) for p in self.__postconditions)
+    def satisfiedPostConditions(self, systemVariables, parameters):
+        #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
+        postconditionsFailed = []
+        success               = True
+        for postcondition in self.__postconditions:
+            if not postcondition.check(systemVariables, parameters.getValues()):
+                postconditionsFailed.append(postcondition.getName())
+                success = False
 
-    def satisfiedPreconditions(self, system_variables, parameters):
-        print 'Doing precondition params: {} '.format(parameters)
-        print all(p.check(system_variables, parameters) for p in self.__preconditions)
-        return all(p.check(system_variables, parameters) for p in self.__preconditions)
+        return (success, postconditionsFailed)
 
-    def satisfiedInvariants(self, system_variables, parameters):
-        return all(p.check(system_variables, parameters) for p in self.__invariants)
+    def satisfiedPreconditions(self, systemVariables, parameters):
+        #print 'Doing precondition. Action: {}'.format(parameters.getKind())
+        preconditionsFailed = []
+        success              = True
+        for precondition in self.__preconditions:
+            if not precondition.check(systemVariables, parameters.getValues()):
+                preconditionsFailed.append(precondition.getName())
+                success = False
+        return (success, preconditionsFailed)
+
+    def satisfiedInvariants(self, systemVariables, parameters):
+        #print 'Doing invariants. Action: {}'.format(parameters.getKind())
+        invariantsFailed    = []
+        success             = True
+        for invariant in self.__invariants:
+            if not invariant.check(systemVariables, parameters.getValues()):
+                invariantsFailed.append(invariant.getName())
+                success = False
+        return (success, invariantsFailed)
 
 
 """
@@ -387,6 +441,8 @@ class Invariant(Predicate):
         self.__name = name
         self.__description = description
 
+    def getName(self):
+        return self.__name
 
 """
 Hello.
@@ -397,6 +453,8 @@ class Postcondition(Predicate):
         self.__name = name
         self.__description = description
 
+    def getName(self):
+        return self.__name
 
 """
 Hello.
@@ -406,6 +464,9 @@ class Precondition(Predicate):
         super(Precondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
+
+    def getName(self):
+        return self.__name
 
 
 """
