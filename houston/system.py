@@ -570,16 +570,27 @@ class Invariant(Predicate):
         """
         return self.__name
 
-"""
-Hello.
-"""
+
 class Postcondition(Predicate):
+    """
+    Predicate that should be met after the execution of an action.
+    """
     def __init__(self, name, description, predicate):
+        """
+        Constructs a Postcondition object.
+
+        :param  name            name of the postcondition
+        :param  description     quick description of the postcondition
+        :param  predicate       lambda function that holds the condition to be met.
+        """
         super(Postcondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
     def getName(self):
+        """
+        Returns the name of the Postcondition.
+        """
         return self.__name
 
 """
