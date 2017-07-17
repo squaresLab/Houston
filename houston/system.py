@@ -539,7 +539,7 @@ class Predicate(object):
         self.__predicate = predicate
 
 
-    def check(self, system_variables, parameters):
+    def check(self, systemVariables, parameters):
         """
         Checks for the state (True/False) of the predicate.
 
@@ -547,7 +547,7 @@ class Predicate(object):
         :param  parameters          parameters of the action that is about to be
                                     dispateched or that is currently being executed.
         """
-        return self.__predicate(system_variables, parameters)
+        return self.__predicate(systemVariables, parameters)
 
 
 
