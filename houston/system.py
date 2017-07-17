@@ -312,7 +312,16 @@ class Mission(object):
         }
 
 class MissionOutcome(object):
+
     def __init__(self, passFail, outcomes):
+        """
+        Constructs a MissionOutcome object.
+
+        :param  passFail    holds the outcome of the missions. True for passed
+                            and False for failed.
+        :parma  outcomes    a list that cointains the ActionOutcomes for the
+                            mission. 
+        """
         self.__passFail  = passFail
         self.__outcomes  = outcomes
 
