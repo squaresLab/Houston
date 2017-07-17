@@ -618,16 +618,26 @@ class Precondition(Predicate):
         return self.__name
 
 
-"""
-Hello.
-"""
 class Parameter(object):
-    """docstring for ."""
+    """
+    Parameter holds the values necessary for the completion of an action.
+    """
     def __init__(self, typ, value, description):
+        """
+        Constructs a Parameter object.
+
+        :param  typ                 type of parameter. Basically the name of the
+                                    parameter. (ex. altitude, longitude..)
+        :param  value               the actual value that the parameter carries.
+        :param  description         quick description of the parameter
+        """
         self.__type = typ
         self.__value = value
         self._description = description
 
 
     def get_value():
+        """
+        Returns the value of the parameter. 
+        """
         return self.__value
