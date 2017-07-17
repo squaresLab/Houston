@@ -319,8 +319,8 @@ class MissionOutcome(object):
 
         :param  passFail    holds the outcome of the missions. True for passed
                             and False for failed.
-        :parma  outcomes    a list that cointains the ActionOutcomes for the
-                            mission. 
+        :param  outcomes    a list that cointains the ActionOutcomes for the
+                            mission.
         """
         self.__passFail  = passFail
         self.__outcomes  = outcomes
@@ -337,6 +337,7 @@ class MissionOutcome(object):
 
 class ActionOutcome(object):
     def __init__(self, action, preActionSytemSate):
+
         self.__action                     = action
         self.__preActionSytemSate         = preActionSytemSate
         self.__actionReturn               = False
