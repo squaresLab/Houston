@@ -337,7 +337,13 @@ class MissionOutcome(object):
 
 class ActionOutcome(object):
     def __init__(self, action, preActionSytemSate):
+        """
+        Constructs a ActionOutcome objec that holds the all the information
+        regarding an action outcome.
 
+        param: action               the action type (ex. goto, land..)
+        param: preActionSytemSate   the system state before the action started.
+        """
         self.__action                     = action
         self.__preActionSytemSate         = preActionSytemSate
         self.__actionReturn               = False
@@ -351,9 +357,22 @@ class ActionOutcome(object):
             'postActionSystemState': self.__postActionSystemState}
 
     def setPostActionSystemState(self, postActionSystemState):
+        """
+        Sets the system state after the action was completed.
+
+        param: postActionSystemState    system state after the action is completed
+        """
         self.__postActionSystemState  = postActionSystemState
 
     def setActionReturn(self, actionReturn, statetype):
+        """
+        Sets the action outcome.
+
+        :param  actionReturn    True if the action was successful False otherwise
+        :param  statetype       If if failed in a particual part fo the execution
+                                (ex. preconditions, invariants..) If the action
+                                was successful the default value is postconditions
+        """
         self.__actionReturn = actionReturn
 
 
