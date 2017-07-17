@@ -341,7 +341,7 @@ class ActionOutcome(object):
         Constructs a ActionOutcome objec that holds the all the information
         regarding an action outcome.
 
-        param: action               the action type (ex. goto, land..)
+        param: action               the action kind (ex. goto, land..)
         param: preActionSytemSate   the system state before the action started.
         """
         self.__action                     = action
@@ -399,12 +399,21 @@ class Action(object):
         self.__values = copy.copy(values)
 
     def getKind(self):
+        """
+        Returns the kind of action.
+        """
         return self.__kind
 
     def getValue(self, value):
+        """
+        Returns an specific value from the parameters.
+        """
         return self.__values[value]
 
     def getValues(self):
+        """
+        Returns a vopy of the parameters
+        """
         return copy.copy(self.__values)
 
     def toJSON(self):
