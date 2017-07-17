@@ -497,7 +497,7 @@ class ActionSchema(object):
 
         :param  systemVariables     the system variables.
         :param  parameters          parameters of the action that is about to be
-                                    dispatched or is being executed.
+                                    dispatched or that is currently being executed.
         """
         #print 'Doing invariants. Action: {}'.format(parameters.getKind())
         invariantsFailed    = []
@@ -509,17 +509,29 @@ class ActionSchema(object):
         return (success, invariantsFailed)
 
 
-"""
-Hello.
-"""
+
 class Predicate(object):
+    """
+    A predicate is used to check if a condition is met. It is used for preconditions,
+    postconditions, and invariants.
+    """
 
     def __init__(self, name, predicate):
+        """
+        Constructs a predicate an object that holds a name and a predicate
+        """
         self.__name = name
         self.__predicate = predicate
 
 
     def check(self, system_variables, parameters):
+        """
+        Checks for the state (True/False) of the predicate.
+
+        :param  system_variables    the system variables
+        :param  parameters          parameters of the action that is about to be
+                                    dispateched or that is currently being executed.
+        """
         return self.__predicate(system_variables, parameters)
 
 
