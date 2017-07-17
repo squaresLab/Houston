@@ -452,6 +452,14 @@ class ActionSchema(object):
 
 
     def satisfiedPostConditions(self, systemVariables, parameters):
+        """
+        Checks that the postconditions are met. Returns a tuple, with a boolean
+        holding the success or failure of the check, and a list with the name of
+        the postconditions that were not met (if any).
+
+        :param  systemVariables     the system variables.
+        :param  parameters          parameters of the action that is being executed.
+        """
         #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
         postconditionsFailed = []
         success               = True
@@ -463,6 +471,15 @@ class ActionSchema(object):
         return (success, postconditionsFailed)
 
     def satisfiedPreconditions(self, systemVariables, parameters):
+        """
+        Checks that the preconditions are met. Returns a tuple, with a boolean
+        holding the success or failure of the check, and a list with the name of
+        the preconditions that were not met (if any).
+
+        :param  systemVariables     the system variables.
+        :param  parameters          parameters of the action that is about to be
+                                    dispatched.
+        """
         #print 'Doing precondition. Action: {}'.format(parameters.getKind())
         preconditionsFailed = []
         success              = True
@@ -473,6 +490,15 @@ class ActionSchema(object):
         return (success, preconditionsFailed)
 
     def satisfiedInvariants(self, systemVariables, parameters):
+        """
+        Checks that the invariants are met. Returns a tuple, with a boolean
+        holding the success or failure of the check, and a list with the name of
+        the invariants that were not met (if any).
+
+        :param  systemVariables     the system variables.
+        :param  parameters          parameters of the action that is about to be
+                                    dispatched or is being executed.
+        """
         #print 'Doing invariants. Action: {}'.format(parameters.getKind())
         invariantsFailed    = []
         success             = True
