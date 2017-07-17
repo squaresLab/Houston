@@ -336,10 +336,13 @@ class MissionOutcome(object):
 
 
 class ActionOutcome(object):
+    """
+    ActionOutcome holds the outcome information of an action. This allow us to
+    keep track of the dispatch process.
+    """
     def __init__(self, action, preActionSytemSate):
         """
-        Constructs a ActionOutcome objec that holds the all the information
-        regarding an action outcome.
+        Constructs a ActionOutcome object.
 
         param: action               the action kind (ex. goto, land..)
         param: preActionSytemSate   the system state before the action started.
@@ -638,6 +641,6 @@ class Parameter(object):
 
     def get_value():
         """
-        Returns the value of the parameter. 
+        Returns the value of the parameter.
         """
         return self.__value
