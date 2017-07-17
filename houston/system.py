@@ -442,10 +442,10 @@ class ActionSchema(object):
         :param  parameters      parameters of the action
         :param  precondition    predicates that must be met before the action
                                 can be executed.
-        :param  invariants      predicatesthat should be met at all times during
+        :param  invariants      predicates that should be met at all times during
                                 the execution of an action.
         :param  postconditions  predicates that must be met after the action is
-                                completed. 
+                                completed.
         """
         self.__name           = name
         self.__parameters     = parameters
@@ -547,16 +547,27 @@ class Predicate(object):
         return self.__predicate(system_variables, parameters)
 
 
-"""
-Hello.
-"""
+
 class Invariant(Predicate):
+    """
+    Predicate that should always be true during the dispatch of an action.
+    """
     def __init__(self, name, description, predicate):
+        """
+        Constructs an Invariant object.
+
+        :param  name            name of the invariant.
+        :param  description     quick description of the invariant
+        :param  predicate       lambda function that holds the condition to be met.
+        """
         super(Invariant, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
     def getName(self):
+        """
+        Returns the name of the Invariant
+        """
         return self.__name
 
 """
