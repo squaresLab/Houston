@@ -346,7 +346,7 @@ class ActionOutcome(object):
         """
         self.__action                     = action
         self.__preActionSytemSate         = preActionSytemSate
-        self.__actionReturn               = False
+        self.__actionReturn               = (False, 'Notset')
         self.__postActionSystemState      = None
 
     def toJSON(self):
@@ -373,7 +373,7 @@ class ActionOutcome(object):
                                 (ex. preconditions, invariants..) If the action
                                 was successful the default value is postconditions
         """
-        self.__actionReturn = actionReturn
+        self.__actionReturn = (actionReturn, statetype)
 
 
 class Action(object):
