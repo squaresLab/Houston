@@ -435,6 +435,18 @@ class ActionSchema(object):
     """
 
     def __init__(self, name, parameters, precondition, invariants, postconditions):
+        """
+        Constructs an ActionSchema object.
+
+        :param  name            name of the action
+        :param  parameters      parameters of the action
+        :param  precondition    predicates that must be met before the action
+                                can be executed.
+        :param  invariants      predicatesthat should be met at all times during
+                                the execution of an action.
+        :param  postconditions  predicates that must be met after the action is
+                                completed. 
+        """
         self.__name           = name
         self.__parameters     = parameters
         self.__preconditions   = precondition
