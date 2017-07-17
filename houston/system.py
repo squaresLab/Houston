@@ -554,7 +554,7 @@ class Predicate(object):
         :param  parameters          parameters of the action that is about to be
                                     dispateched or that is currently being executed.
         """
-        return self.__predicate(systemVariables , parameters)
+        return self.__predicate(systemVariables, parameters)
 
 
 
