@@ -31,3 +31,4 @@ if __name__ == "__main__":
     })
 
     missionOutcome = system.execute(Mission(environment, initialInternalState, initialExternalState, actions)).toJSON()
+    print missionOutcome

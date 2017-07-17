@@ -331,8 +331,15 @@ class MissionOutcome(object):
         """
         return {
             'passed': self.__passFail,
-            'actions': self.__outcomes
+            'actions': [outcome.toJSON() for outcome in  self.__outcomes]
         }
+
+    def __str__(self):
+        return str(self.toJSON())
+
+    def __repr__(self):
+        return str(self.toJSON())
+
 
 
 class ActionOutcome(object):
@@ -547,7 +554,7 @@ class Predicate(object):
         :param  parameters          parameters of the action that is about to be
                                     dispateched or that is currently being executed.
         """
-        return self.__predicate(systemVariables, parameters)
+        return self.__predicate(systemVariables , parameters)
 
 
 
