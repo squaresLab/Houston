@@ -593,16 +593,28 @@ class Postcondition(Predicate):
         """
         return self.__name
 
-"""
-Hello.
-"""
+
 class Precondition(Predicate):
+    """
+    Precondition that should be met before the execution of an action.
+    """
     def __init__(self, name, description, predicate):
+        """
+        Constructs a Precondition object
+
+        :param  name                name of the precondition
+        :param  description         quick description of the precondition
+        :param  predicate           lambda function that holds the condition
+                                    to be met.
+        """
         super(Precondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
     def getName(self):
+        """
+        Returns the name of the Precondition.
+        """
         return self.__name
 
 
