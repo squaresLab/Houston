@@ -125,6 +125,12 @@ class State(object):
             'variables': copy.copy(self.__values)
         }
 
+    def __str__(self):
+        return str(self.toJSON())
+
+    def __repr__(self):
+        return str(self.toJSON())
+
 
 class InternalState(State):
     """
@@ -140,7 +146,6 @@ class InternalState(State):
         assert('variables' in jsn)
         assert(isinstance(jsn['variables'], dict))
         return InternalState(jsn['variables'])
-
 
 class ExternalState(State):
     """
