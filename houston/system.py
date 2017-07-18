@@ -129,7 +129,7 @@ class State(object):
         return str(self.toJSON())
 
     def __repr__(self):
-        return str(self.toJSON())
+        return str(self)
 
 
 class InternalState(State):
@@ -338,7 +338,7 @@ class MissionOutcome(object):
         return str(self.toJSON())
 
     def __repr__(self):
-        return str(self.toJSON())
+        return str(self)
 
 
 
