@@ -646,7 +646,7 @@ class Parameter(object):
         self._description = description
 
 
-    def get_value():
+    def getValue():
         """
         Returns the value of the parameter.
         """
