@@ -472,6 +472,13 @@ class ActionSchema(object):
         """
         raise UnimplementedError
 
+    def getParameters(self):
+        """
+        Returns the parameters being hold for the current action schema. This is
+        used to generate actions
+        """
+        return self.__parameters
+
 
     def satisfiedPostConditions(self, systemVariables, parameters):
         """
