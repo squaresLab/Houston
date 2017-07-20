@@ -309,7 +309,7 @@ class TakeoffActionSchema(ActionSchema):
                           lambda sv, params: sv['altitude'].read() - 1 < \
                           params['altitude'] < sv['altitude'].read() + 1)
         ]
-        super(TakeoffActionSchema, self).__init__('takeoff', None, preconditions, invariants, postconditions)
+        super(TakeoffActionSchema, self).__init__('takeoff', parameters, preconditions, invariants, postconditions)
 
     def dispatch(self, parameters):
       safe_command_conection('simple_takeoff({})'.format(parameters['altitude']))
