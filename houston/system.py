@@ -477,7 +477,7 @@ class ActionSchema(object):
         Returns the parameters being hold for the current action schema. This is
         used to generate actions
         """
-        return self.__parameters
+        return copy.deepcopy(self.__parameters)
 
 
     def satisfiedPostConditions(self, systemVariables, parameters):
