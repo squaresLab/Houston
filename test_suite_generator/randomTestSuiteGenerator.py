@@ -8,7 +8,7 @@ FTYPES = {
     'longitude': (-180.0, 180.0)
 }
 STRTYPES = {
-    'mode'     : ('GUIDED')
+    'mode'     : ('GUIDED', 'LOITER', 'RTL')
 }
 
 class RandomTestSuiteGenerator(object):
@@ -27,13 +27,14 @@ class RandomTestSuiteGenerator(object):
 
         testSuiteDumper2.dumpMissionJSON()
 
-    def populateParameters(self, params):
+    def populateParameters(self, paramsInput):
+        params = dict(paramsInput)
         for parameter in params:
             if parameter in FTYPES:
                 params[parameter] = random.uniform(FTYPES[parameter][0],
                     FTYPES[parameter][1])
                 continue
             if parameter in STRTYPES:
-                params[parameter] = STRTYPES[parameter][random.randint(0,
-                    len(STRTYPES[parameter])-1)]
+                params[parameter] = random.choice(STRTYPES[parameter])
+
         return params
