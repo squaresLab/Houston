@@ -3,6 +3,9 @@ import random
 
 MAX_MISSIONS = 20
 MAX_ACTIONS  = 20
+'''
+PISF: Parameter-Initial-State-Format. This is used to bound parameter values. 
+'''
 
 class TestSuiteGenerator(object):
 
