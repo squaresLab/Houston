@@ -239,6 +239,41 @@ class Environment(object):
         }
 
 
+class MissionSet(object):
+    """
+    A mission set is a sequence of missions.
+    """
+    @staticmethod
+    def fromJSONFile(jsnFile):
+        with open(jsnFile, 'r') as inputmissionsFile:
+            missions = json.load(inputmissionsFile)
+        assert('testsuite' in missions)
+
+        return MissionSet([Mission.fromJSON(mission) for mission in missions])
+
+    def __init__(self, missions):
+        assert(isinstance(missions, list))
+        self.__missions = missions
+
+
+    def appendMission(self, mission):
+        """
+        Appends mission to a mission set.
+
+        :param  mission     mission to append
+        """
+        self.__missions.append(mission)
+
+    def removeMission(self, index):
+        """
+        Removes a mission from a given index. Returns the removed mission
+
+        :param  index       index of mission to remove.
+        """
+        assert(0 <= index < len(self.__missions))
+        return self.__missions.pop(index)
+
+
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
@@ -339,7 +374,6 @@ class MissionOutcome(object):
 
     def __repr__(self):
         return str(self)
-
 
 
 class ActionOutcome(object):
