@@ -4,7 +4,7 @@ import random
 MAX_MISSIONS = 20
 MAX_ACTIONS  = 20
 '''
-PISF: Parameter-Initial-State-Format. This is used to bound parameter values. 
+PISF: Parameter-Initial-State-Format. This is used to bound parameter values.
 '''
 
 class TestSuiteGenerator(object):
@@ -81,7 +81,6 @@ class TestSuiteDumper(object):
             self.__missions.append({len(self.__missions): missionInput})
 
     def dumpMissionJSON(self):
-        print 'dumping'
         with open(self.__testSuiteName, 'w') as file:
             json.dump({'testSuite': self.__missions}, file, sort_keys=True,
                 indent=4, separators=(',', ': '))
