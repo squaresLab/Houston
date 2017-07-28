@@ -86,6 +86,12 @@ class System(object):
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return InternalState(vals)
 
+    def getActionSchemas(self):
+        """
+        Returns a copy of action schemas
+        """
+        return copy.deepcopy(self.__schemas)
+
 
 class State(object):
     """
