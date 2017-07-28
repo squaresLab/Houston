@@ -294,7 +294,7 @@ class Mission(object):
         env = Environment.fromJSON(jsn['environment'])
         internal = InternalState.fromJSON(jsn['internal'])
         external = ExternalState.fromJSON(jsn['external'])
-        actions = [Action.fromJSON(action) for action in json['actions']]
+        actions = [Action.fromJSON(action) for action in jsn['actions']]
 
         return Mission(env, internal, external, actions)
 
