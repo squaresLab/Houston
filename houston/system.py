@@ -250,35 +250,49 @@ class MissionSet(object):
     """
     A mission set is a sequence of missions.
     """
-    @staticmethod
-    def fromJSONFile(jsnFile):
-        with open(jsnFile, 'r') as inputmissionsFile:
-            missions = json.load(inputmissionsFile)
-        assert('testSuite' in missions)
 
-        return MissionSet([Mission.fromJSON(mission) for mission in missions])
+    @staticmethod
+    def fromFile(fn):
+        """
+        Loads a set of missions from a file at a specified location.
+
+        :param  fn  The path to the file containing the mission set.
+
+        :returns    The corresponding MissionSet for that file.
+        """
+        with open(fn, 'r') as f:
+            missions = json.load(f)
+        assert('testSuite' in missions) # TODO: why is this named 'testSuite'?
+        missions = missions['testSuite']
+
+        return MissionSet([Mission.fromJSON(m) for m in missions])
+
 
     def __init__(self, missions):
         assert(isinstance(missions, list))
         self.__missions = missions
 
 
-    def appendMission(self, mission):
+    def append(self, mission):
         """
-        Appends mission to a mission set.
+        Appends a mission to the mission set.
 
         :param  mission     mission to append
         """
         self.__missions.append(mission)
 
-    def removeMission(self, index):
+
+    def remove(self, index):
         """
-        Removes a mission from a given index. Returns the removed mission
+        Removes a mission from a given index.
 
         :param  index       index of mission to remove.
+
+        :returns    the removed mission
         """
         assert(0 <= index < len(self.__missions))
         return self.__missions.pop(index)
+
 
     def getMissionList(self):
         """
