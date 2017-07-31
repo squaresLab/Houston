@@ -1,6 +1,7 @@
 import thread
 import time
 import copy
+import json
 
 class System(object):
     """
@@ -253,7 +254,7 @@ class MissionSet(object):
     def fromJSONFile(jsnFile):
         with open(jsnFile, 'r') as inputmissionsFile:
             missions = json.load(inputmissionsFile)
-        assert('testsuite' in missions)
+        assert('testSuite' in missions)
 
         return MissionSet([Mission.fromJSON(mission) for mission in missions])
 
