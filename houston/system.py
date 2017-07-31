@@ -1,6 +1,7 @@
 import thread
 import time
 import copy
+import json
 
 class System(object):
     """
@@ -30,28 +31,51 @@ class System(object):
 
 
     def execute(self, mission):
+        """
+        Executes the mission. Returns mission outcome
+        """
         self.setUp(mission)
-        # TODO: do these need to be separated?
-        self.executeActions(mission)
-
-
-    def executeActions(self, mission):
-        self.getInternalState().dump()
+        outcomes = []
+        missionPassed = True
         for action in mission.getActions():
-            self.getInternalState().dump()
-            actionType = action.get_type()
-            print actionType
-            self.getInternalState().dump()
+            actionKind   = action.getKind()
+            actionSchema = self.__schemas[actionKind]
+            outcome = ActionOutcome(actionKind, self.getInternalState())
+            # check for invariants
+
+            result = actionSchema.satisfiedInvariants(self.__variables, action)
+            if not result[0]:
+                outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
+                outcome.setPostActionSystemState(self.getInternalState())
+                outcomes.append(outcome)
+                missionPassed = False
+                break
             # check for preconditions
-            if self.__schemas[actionType].satisfiedPreconditions(self.__variables,action.get_values()) and \
-                self.__schemas[actionType].satisfiedInvariants(self.__variables,action.get_values()):
-                self.__schemas[actionType].dispatch(action.get_values())
-                while not self.__schemas[actionType].satisfiedPostConditions(self.__variables,
-                    action.get_values()):
-                    time.sleep(1)
-                    pass
-            self.getInternalState().dump()
-        self.tearDown(mission)
+            result =  actionSchema.satisfiedPreconditions(self.__variables, action)
+            if not result[0]:
+                outcome.setActionReturn(False, 'Preconditions : {}'.format(result[1]))
+                outcome.setPostActionSystemState(self.getInternalState())
+                outcomes.append(outcome)
+                missionPassed = False
+                break
+            # dispatch
+            actionSchema.dispatch(action.getValues())
+            print 'Doing: {}'.format(actionKind)
+            # start looping till action completed or invariant violated
+            while not actionSchema.satisfiedPostConditions(self.__variables, action)[0]:
+                time.sleep(0.5)
+                result = actionSchema.satisfiedInvariants(self.__variables, action)
+                if not result[0]:
+                    outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
+                    outcome.setPostActionSystemState(self.getInternalState())
+                    outcomes.append(outcome)
+                    missionPassed = False
+                    break
+            outcome.setActionReturn(True, 'Postconditions')
+            outcome.setPostActionSystemState(self.getInternalState())
+            outcomes.append(outcome)
+
+        return MissionOutcome(missionPassed, outcomes)
 
 
     def getInternalState(self):
@@ -62,6 +86,12 @@ class System(object):
         """
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return InternalState(vals)
+
+    def getActionSchemas(self):
+        """
+        Returns a copy of action schemas
+        """
+        return copy.deepcopy(self.__schemas)
 
 
 class State(object):
@@ -102,6 +132,12 @@ class State(object):
             'variables': copy.copy(self.__values)
         }
 
+    def __str__(self):
+        return str(self.toJSON())
+
+    def __repr__(self):
+        return str(self)
+
 
 class InternalState(State):
     """
@@ -117,7 +153,6 @@ class InternalState(State):
         assert('variables' in jsn)
         assert(isinstance(jsn['variables'], dict))
         return InternalState(jsn['variables'])
-
 
 class ExternalState(State):
     """
@@ -181,7 +216,7 @@ class Environment(object):
         """
         assert('variables' in jsn)
         assert(isinstance(jsn['variables'], dict))
-        return Enviroment(jsn['variables'])
+        return Environment(jsn['variables'])
 
     """
     Holds a description of an environment in which a mission should be conducted.
@@ -211,6 +246,47 @@ class Environment(object):
         }
 
 
+class MissionSet(object):
+    """
+    A mission set is a sequence of missions.
+    """
+    @staticmethod
+    def fromJSONFile(jsnFile):
+        with open(jsnFile, 'r') as inputmissionsFile:
+            missions = json.load(inputmissionsFile)
+        assert('testSuite' in missions)
+
+        return MissionSet([Mission.fromJSON(mission) for mission in missions])
+
+    def __init__(self, missions):
+        assert(isinstance(missions, list))
+        self.__missions = missions
+
+
+    def appendMission(self, mission):
+        """
+        Appends mission to a mission set.
+
+        :param  mission     mission to append
+        """
+        self.__missions.append(mission)
+
+    def removeMission(self, index):
+        """
+        Removes a mission from a given index. Returns the removed mission
+
+        :param  index       index of mission to remove.
+        """
+        assert(0 <= index < len(self.__missions))
+        return self.__missions.pop(index)
+
+    def getMissionList(self):
+        """
+        Returns a copy of the missions in a list.
+        """
+        return copy.deepcopy(self.__missions)
+
+
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
@@ -231,7 +307,7 @@ class Mission(object):
         env = Environment.fromJSON(jsn['environment'])
         internal = InternalState.fromJSON(jsn['internal'])
         external = ExternalState.fromJSON(jsn['external'])
-        actions = [a.fromJSON() for a in actions]
+        actions = [Action.fromJSON(action) for action in jsn['actions']]
 
         return Mission(env, internal, external, actions)
 
@@ -283,6 +359,79 @@ class Mission(object):
             'actions': [a.toJSON() for a in self.__actions]
         }
 
+class MissionOutcome(object):
+
+    def __init__(self, passFail, outcomes):
+        """
+        Constructs a MissionOutcome object.
+
+        :param  passFail    holds the outcome of the missions. True for passed
+                            and False for failed.
+        :param  outcomes    a list that cointains the ActionOutcomes for the
+                            mission.
+        """
+        self.__passFail  = passFail
+        self.__outcomes  = outcomes
+
+    def toJSON(self):
+        """
+        Returns a JSON description of the mission outcome.
+        """
+        return {
+            'passed': self.__passFail,
+            'actions': [outcome.toJSON() for outcome in  self.__outcomes]
+        }
+
+    def __str__(self):
+        return str(self.toJSON())
+
+    def __repr__(self):
+        return str(self)
+
+
+class ActionOutcome(object):
+    """
+    ActionOutcome holds the outcome information of an action. This allow us to
+    keep track of the dispatch process.
+    """
+    def __init__(self, action, preActionSytemSate):
+        """
+        Constructs a ActionOutcome object.
+
+        param: action               the action kind (ex. goto, land..)
+        param: preActionSytemSate   the system state before the action started.
+        """
+        self.__action                     = action
+        self.__preActionSytemSate         = preActionSytemSate
+        self.__actionReturn               = (False, 'Notset')
+        self.__postActionSystemState      = None
+
+    def toJSON(self):
+        return {
+            'action': self.__action,
+            'outcome': self.__actionReturn,
+            'preActionSystemSate': self.__preActionSytemSate,
+            'postActionSystemState': self.__postActionSystemState}
+
+    def setPostActionSystemState(self, postActionSystemState):
+        """
+        Sets the system state after the action was completed.
+
+        param: postActionSystemState    system state after the action is completed
+        """
+        self.__postActionSystemState  = postActionSystemState
+
+    def setActionReturn(self, actionReturn, statetype):
+        """
+        Sets the action outcome.
+
+        :param  actionReturn    True if the action was successful False otherwise
+        :param  statetype       If if failed in a particual part fo the execution
+                                (ex. preconditions, invariants..) If the action
+                                was successful the default value is postconditions
+        """
+        self.__actionReturn = (actionReturn, statetype)
+
 
 class Action(object):
     @staticmethod
@@ -307,12 +456,21 @@ class Action(object):
         self.__values = copy.copy(values)
 
     def getKind(self):
+        """
+        Returns the kind of action.
+        """
         return self.__kind
 
     def getValue(self, value):
+        """
+        Returns an specific value from the parameters.
+        """
         return self.__values[value]
 
     def getValues(self):
+        """
+        Returns a vopy of the parameters
+        """
         return copy.copy(self.__values)
 
     def toJSON(self):
@@ -334,6 +492,18 @@ class ActionSchema(object):
     """
 
     def __init__(self, name, parameters, precondition, invariants, postconditions):
+        """
+        Constructs an ActionSchema object.
+
+        :param  name            name of the action
+        :param  parameters      parameters of the action
+        :param  precondition    predicates that must be met before the action
+                                can be executed.
+        :param  invariants      predicates that should be met at all times during
+                                the execution of an action.
+        :param  postconditions  predicates that must be met after the action is
+                                completed.
+        """
         self.__name           = name
         self.__parameters     = parameters
         self.__preconditions   = precondition
@@ -349,81 +519,195 @@ class ActionSchema(object):
         """
         raise UnimplementedError
 
-
-    def satisfiedPostConditions(self, system_variables, parameters):
-        print 'Doing postconditions params: {} '.format(parameters)
-        print all(p.check(system_variables, parameters) for p in self.__postconditions)
-        return all(p.check(system_variables, parameters) for p in self.__postconditions)
-
-    def satisfiedPreconditions(self, system_variables, parameters):
-        print 'Doing precondition params: {} '.format(parameters)
-        print all(p.check(system_variables, parameters) for p in self.__preconditions)
-        return all(p.check(system_variables, parameters) for p in self.__preconditions)
-
-    def satisfiedInvariants(self, system_variables, parameters):
-        return all(p.check(system_variables, parameters) for p in self.__invariants)
+    def getParameters(self):
+        """
+        Returns the parameters being hold for the current action schema. This is
+        used to generate actions
+        """
+        return copy.deepcopy(self.__parameters)
 
 
-"""
-Hello.
-"""
+    def satisfiedPostConditions(self, systemVariables, parameters):
+        """
+        Checks that the postconditions are met. Returns a tuple, with a boolean
+        holding the success or failure of the check, and a list with the name of
+        the postconditions that were not met (if any).
+
+        :param  systemVariables     the system variables.
+        :param  parameters          parameters of the action that is being executed.
+        """
+        #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
+        postconditionsFailed = []
+        success               = True
+        for postcondition in self.__postconditions:
+            if not postcondition.check(systemVariables, parameters.getValues()):
+                postconditionsFailed.append(postcondition.getName())
+                success = False
+
+        return (success, postconditionsFailed)
+
+    def satisfiedPreconditions(self, systemVariables, parameters):
+        """
+        Checks that the preconditions are met. Returns a tuple, with a boolean
+        holding the success or failure of the check, and a list with the name of
+        the preconditions that were not met (if any).
+
+        :param  systemVariables     the system variables.
+        :param  parameters          parameters of the action that is about to be
+                                    dispatched.
+        """
+        #print 'Doing precondition. Action: {}'.format(parameters.getKind())
+        preconditionsFailed = []
+        success              = True
+        for precondition in self.__preconditions:
+            if not precondition.check(systemVariables, parameters.getValues()):
+                preconditionsFailed.append(precondition.getName())
+                success = False
+        return (success, preconditionsFailed)
+
+    def satisfiedInvariants(self, systemVariables, parameters):
+        """
+        Checks that the invariants are met. Returns a tuple, with a boolean
+        holding the success or failure of the check, and a list with the name of
+        the invariants that were not met (if any).
+
+        :param  systemVariables     the system variables.
+        :param  parameters          parameters of the action that is about to be
+                                    dispatched or that is currently being executed.
+        """
+        #print 'Doing invariants. Action: {}'.format(parameters.getKind())
+        invariantsFailed    = []
+        success             = True
+        for invariant in self.__invariants:
+            if not invariant.check(systemVariables, parameters.getValues()):
+                invariantsFailed.append(invariant.getName())
+                success = False
+        return (success, invariantsFailed)
+
+
+
 class Predicate(object):
+    """
+    A predicate is used to check if a condition is met. It is used for preconditions,
+    postconditions, and invariants.
+    """
 
     def __init__(self, name, predicate):
+        """
+        Constructs a predicate an object that holds a name and a predicate
+        """
         self.__name = name
         self.__predicate = predicate
 
 
-    def check(self, system_variables, parameters):
-        return self.__predicate(system_variables, parameters)
+    def check(self, systemVariables, parameters):
+        """
+        Checks for the state (True/False) of the predicate.
+
+        :param  system_variables    the system variables
+        :param  parameters          parameters of the action that is about to be
+                                    dispateched or that is currently being executed.
+        """
+        return self.__predicate(systemVariables, parameters)
 
 
-"""
-Hello.
-"""
+
 class Invariant(Predicate):
     """
     Invariants are used to express statements about the system in formal logic
-    that always remain true throughout the running of the system. Invariants,
-    together with postconditions and preconditions, are used to form contracts
-    for the actions of a system.
+    that always remain true throughout the execution of an associated action.
     """
     def __init__(self, name, description, predicate):
+        """
+        Constructs an Invariant object.
+
+        :param  name            name of the invariant.
+        :param  description     quick description of the invariant
+        :param  predicate       lambda function that holds the condition to be met.
+        """
         super(Invariant, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
+    def getName(self):
+        """
+        Returns the name of the Invariant
+        """
+        return self.__name
 
-"""
-Hello.
-"""
+
 class Postcondition(Predicate):
+    """
+    Predicate that should be met after the execution of an action.
+    """
     def __init__(self, name, description, predicate):
+        """
+        Constructs a Postcondition object.
+
+        :param  name            name of the postcondition
+        :param  description     quick description of the postcondition
+        :param  predicate       lambda function that holds the condition to be met.
+        """
         super(Postcondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
+    def getName(self):
+        """
+        Returns the name of the Postcondition.
+        """
+        return self.__name
 
-"""
-Hello.
-"""
+
 class Precondition(Predicate):
+    """
+    Precondition that should be met before the execution of an action.
+    """
     def __init__(self, name, description, predicate):
+        """
+        Constructs a Precondition object
+
+        :param  name                name of the precondition
+        :param  description         quick description of the precondition
+        :param  predicate           lambda function that holds the condition
+                                    to be met.
+        """
         super(Precondition, self).__init__(name, predicate)
         self.__name = name
         self.__description = description
 
+    def getName(self):
+        """
+        Returns the name of the Precondition.
+        """
+        return self.__name
 
-"""
-Hello.
-"""
+
 class Parameter(object):
-    """docstring for ."""
+    """
+    Parameter holds the values necessary for the completion of an action.
+    """
     def __init__(self, typ, value, description):
+        """
+        Constructs a Parameter object.
+
+        :param  typ                 type of parameter. Basically the name of the
+                                    parameter. (ex. altitude, longitude..)
+        :param  value               the actual value that the parameter carries.
+        :param  description         quick description of the parameter
+        """
         self.__type = typ
         self.__value = value
         self._description = description
 
+    def getType(self):
+        """
+        Returns the type of the parameter (Basically the name of the parameter)
+        """
+        return self.__type
 
-    def get_value():
+    def getValue(self):
+        """
+        Returns the value of the parameter.
+        """
         return self.__value

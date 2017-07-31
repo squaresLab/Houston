@@ -244,6 +244,7 @@ A description of land
 """
 class LandActionSchema(ActionSchema):
     def __init__(self):
+        parameters = []
         preconditions = [
             Precondition('battery', 'description',
                 lambda sv, params: sv['battery'].read() >= \
@@ -269,7 +270,7 @@ class LandActionSchema(ActionSchema):
                           lambda sv, params: max_expected_time(None, None, 0) > \
                             time.time() - sv['time'].read())
         ]
-        super(LandActionSchema, self).__init__('land', None, preconditions, invariants, postconditions)
+        super(LandActionSchema, self).__init__('land', parameters, preconditions, invariants, postconditions)
 
 
     def dispatch(self, parameters):
@@ -308,7 +309,7 @@ class TakeoffActionSchema(ActionSchema):
                           lambda sv, params: sv['altitude'].read() - 1 < \
                           params['altitude'] < sv['altitude'].read() + 1)
         ]
-        super(TakeoffActionSchema, self).__init__('takeoff', None, preconditions, invariants, postconditions)
+        super(TakeoffActionSchema, self).__init__('takeoff', parameters, preconditions, invariants, postconditions)
 
     def dispatch(self, parameters):
       safe_command_conection('simple_takeoff({})'.format(parameters['altitude']))
