@@ -9,16 +9,16 @@ suite generation approaches.
 
 """
 
-class MissionSetGenerator(object):
+class TestSuiteGenerator(object):
     """
-    MissionSetGenerator defines a common interface for all mission set
+    TestSuiteGenerator defines a common interface for all test suite
     generation approaches.
     """
 
 
     def __init__(self, system):
         """
-        Constructs a mission set generator for a given system.
+        Constructs a test suite generator for a given system.
         """
         self.__system = system
 
@@ -26,7 +26,7 @@ class MissionSetGenerator(object):
     def getSystem(self):
         """
         Returns a description of the system for which this generator should
-        generate set(s) of missions.
+        generate test suites.
         """
         return self.__system
 
@@ -38,24 +38,24 @@ class MissionSetGenerator(object):
         associated with this generator.
 
         :param  characteristics A description of the desired characteristics of the
-                                resulting mission set.
+                                resulting test suite.
         :param  limits          A description of the limited resources
-                                available for the purposes of generating a set
-                                of missions.
+                                available for the purposes of generating the
+                                test suite.
 
-        :return A set of Mission objects
+        :return A TestSuite object.
         """
 
         # ResourceUsage and ResourceLimit objects
         raise NotImplementedError
 
 
-class RandomGenerator(MissionSetGenerator):
+class RandomGenerator(TestSuiteGenerator):
     """
-    The random generator iteratively constructs a set of missions (at random,
-    without any direction) until the resulting set satisfies the
-    characteristics specified by the user (e.g., number of missions, expected
-    running time of mission set).
+    The random generator iteratively constructs a test suite (at random,
+    without any direction) until the resulting suite satisfies the
+    characteristics specified by the user (e.g., number of tests, expected
+    running time).
 
     What if the generator fails to generate such a set within the given time
     limits? Should it return the current state of its set, or should it just
@@ -64,23 +64,23 @@ class RandomGenerator(MissionSetGenerator):
 
 
     def generate(self, characteristics, limits):
-        missions = MissionSet()
+        tests = TestSuite()
 
-        while not missions.satisfies(characteristics):
-            m = self.__generate_one()
-            missions.add(m)
+        while not tests.satisfies(characteristics):
+            t = self.__generate_one()
+            tests.add(t)
 
-        return missions
+        return tests 
 
 
     def __generate_one(self):
         """
-        Generates a single mission at random.
+        Generates a single test at random.
 
-        :returns    A randomly-generated Mission instance
+        :returns    A randomly-generated Test instance
         """
         raise NotImplementedError
 
 
-class DirectedGenerator(MissionSetGenerator):
+class DirectedGenerator(TestSuiteGenerator):
     pass
