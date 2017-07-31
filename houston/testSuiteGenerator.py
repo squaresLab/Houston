@@ -17,16 +17,14 @@ class TestSuiteGenerator(object):
     def generateRandomTest(self):
         tsd = TestSuiteDumper(self.__fileOutput)
         for numMission in range(MAX_MISSIONS):
-            tempMission = [self.populateInitialState(initialState) for initialState in [
-                'initialInternalState',
-                'initialExternalState',
-                'environment'
-            ]]
-            actions = {'actions': []}
+            tempMission = {}
+            tempMission['environment'] = self.populateInitialState('environment')
+            tempMission['initialInternalState'] = self.populateInitialState('initialInternalState')
+            tempMission['initialExternalState'] = self.populateInitialState('initialExternalState')
+            tempMission['actions'] = []
             for numAction in range(MAX_ACTIONS):
                 action, schema = random.choice(list(self.__actionSchemas.items()))
-                actions['actions'].append(self.populateAction(action, schema))
-            tempMission.append(actions)
+                tempMission['actions'].append(self.populateAction(action, schema))
             tsd.appendMission(tempMission)
         tsd.dumpMissionJSON()
 
@@ -35,7 +33,7 @@ class TestSuiteGenerator(object):
         initialState = {'variables': {}}
         PISFState = self.__pisf[state]
         if not PISFState:
-            return {state:initialState}
+            return initialState
 
         for variable in PISFState:
             if len(PISFState[variable]) > 1:
@@ -47,7 +45,7 @@ class TestSuiteGenerator(object):
                 randomChoice = random.choice(PISFState[variable])
                 initialState['variables'][variable] = randomChoice
 
-        return {state:initialState}
+        return initialState
 
     def populateAction(self, action, schema):
         actionParameters = schema.getParameters()
@@ -72,13 +70,13 @@ class TestSuiteGenerator(object):
 class TestSuiteDumper(object):
     def __init__(self, testSuiteName):
         self.__testSuiteName = testSuiteName
-        self.__missions      = []
+        self.__missions      = {}
 
     def appendMission(self, missionInput):
         if len(self.__missions) == 0:
-            self.__missions.append({0:missionInput})
+            self.__missions[0] = missionInput
         else:
-            self.__missions.append({len(self.__missions): missionInput})
+            self.__missions[len(self.__missions)] = missionInput
 
     def dumpMissionJSON(self):
         with open(self.__testSuiteName, 'w') as file:
