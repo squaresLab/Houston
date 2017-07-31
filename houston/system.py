@@ -382,6 +382,12 @@ class Predicate(object):
 Hello.
 """
 class Invariant(Predicate):
+    """
+    Invariants are used to express statements about the system in formal logic
+    that always remain true throughout the running of the system. Invariants,
+    together with postconditions and preconditions, are used to form contracts
+    for the actions of a system.
+    """
     def __init__(self, name, description, predicate):
         super(Invariant, self).__init__(name, predicate)
         self.__name = name
