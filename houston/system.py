@@ -216,7 +216,7 @@ class Environment(object):
         """
         assert('variables' in jsn)
         assert(isinstance(jsn['variables'], dict))
-        return Enviroment(jsn['variables'])
+        return Environment(jsn['variables'])
 
     """
     Holds a description of an environment in which a mission should be conducted.
