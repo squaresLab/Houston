@@ -698,13 +698,13 @@ class Parameter(object):
         self.__value = value
         self._description = description
 
-    def getType():
+    def getType(self):
         """
         Returns the type of the parameter (Basically the name of the parameter)
         """
         return self.__type
 
-    def getValue():
+    def getValue(self):
         """
         Returns the value of the parameter.
         """
