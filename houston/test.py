@@ -2,7 +2,7 @@ class Test(object):
     """
     Describe difference between missions and tests.
     """
-    
+
 
     @staticmethod
     def fromJSON(jsn):
@@ -15,7 +15,7 @@ class Test(object):
         self.__mission = mission
         self.__context = context
 
-    
+
     def toJSON(self):
         """
         Returns a JSON description (in the form of a dictionary) of this test.
@@ -42,7 +42,7 @@ class TestSuite(object):
         :returns    the corresponding TestSuite for that file
         """
         with open(fn, "r") as f:
-            jsn = json.load(fn)
+            jsn = json.load(f)
         return TestSuite.fromJSON(jsn)
 
 
@@ -59,7 +59,7 @@ class TestSuite(object):
         Executes the tests contained within this suite.
 
         :param  system  the system-under-test
-        
+
         :returns    A summary of the test suite execution, given as a
                     TestSuiteSummary object.
         """
@@ -93,7 +93,7 @@ class TestSuiteSummary(object):
         """
         return self.__wallTime
 
-    
+
     def toJSON(jsn):
         """
         Returns a serialised form of this summary as a JSON-ready dictionary.
