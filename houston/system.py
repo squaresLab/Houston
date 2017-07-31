@@ -279,6 +279,12 @@ class MissionSet(object):
         assert(0 <= index < len(self.__missions))
         return self.__missions.pop(index)
 
+    def getMissionList(self):
+        """
+        Returns a copy of the missions in a list.
+        """
+        return copy.deepcopy(self.__missions)
+
 
 class Mission(object):
     """
