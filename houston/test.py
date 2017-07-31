@@ -54,6 +54,20 @@ class TestSuite(object):
         pass
 
 
+    def execute(self, system):
+        """
+        Executes the tests contained within this suite.
+
+        :param  system  the system-under-test
+        
+        :returns    A summary of the test suite execution, given as a
+                    TestSuiteSummary object.
+        """
+
+        # TODO: this is a super important method!
+        raise NotImplementedError
+
+
 class TestSuiteSummary(object):
     """
     Contains a summary of the execution of a test suite.
