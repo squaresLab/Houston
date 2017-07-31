@@ -19,8 +19,8 @@ class TestSuiteGenerator(object):
         for numMission in range(MAX_MISSIONS):
             tempMission = {}
             tempMission['environment'] = self.populateInitialState('environment')
-            tempMission['initialInternalState'] = self.populateInitialState('initialInternalState')
-            tempMission['initialExternalState'] = self.populateInitialState('initialExternalState')
+            tempMission['internal'] = self.populateInitialState('internal')
+            tempMission['external'] = self.populateInitialState('external')
             tempMission['actions'] = []
             for numAction in range(MAX_ACTIONS):
                 action, schema = random.choice(list(self.__actionSchemas.items()))
