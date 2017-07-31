@@ -47,11 +47,20 @@ class MissionSetGenerator(object):
         """
 
         # ResourceUsage and ResourceLimit objects
-
-        pass
+        raise NotImplementedError
 
 
 class RandomGenerator(MissionSetGenerator):
+    """
+    The random generator iteratively constructs a set of missions (at random,
+    without any direction) until the resulting set satisfies the
+    characteristics specified by the user (e.g., number of missions, expected
+    running time of mission set).
+
+    What if the generator fails to generate such a set within the given time
+    limits? Should it return the current state of its set, or should it just
+    throw an exception?
+    """
 
 
     def generate(self, limits):
