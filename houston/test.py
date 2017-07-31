@@ -52,3 +52,21 @@ class TestSuite(object):
         Constructs a test suite from its associated JSON description.
         """
         pass
+
+
+class TestSuiteSummary(object):
+    """
+    Contains a summary of the execution of a test suite.
+    """
+
+
+    def __init__(self):
+        self.__wallTime = 0.0
+
+
+    def getWallClockTime(self):
+        """
+        Returns the wall-clock running time taken to execute the test suite,
+        measured in seconds.
+        """
+        return self.__wallTime
