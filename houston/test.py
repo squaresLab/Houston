@@ -62,6 +62,14 @@ class TestSuiteSummary(object):
 
     def __init__(self):
         self.__wallTime = 0.0
+        self.__outcomes = []
+
+
+    def hasFailures(self):
+        """
+        Determines whether any tests within the suite failed.
+        """
+        raise NotImplementedError
 
 
     def getWallClockTime(self):
@@ -70,3 +78,10 @@ class TestSuiteSummary(object):
         measured in seconds.
         """
         return self.__wallTime
+
+    
+    def toJSON(jsn):
+        """
+        Returns a serialised form of this summary as a JSON-ready dictionary.
+        """
+        raise NotImplementedError
