@@ -16,6 +16,21 @@ class MissionSetGenerator(object):
     """
 
 
+    def __init__(self, system):
+        """
+        Constructs a mission set generator for a given system.
+        """
+        self.__system = system
+
+
+    def getSystem(self):
+        """
+        Returns a description of the system for which this generator should
+        generate set(s) of missions.
+        """
+        return self.__system
+
+
     def generate(self, characteristics, limits):
         """
         Using no more than a specified set of resources, this method generates
