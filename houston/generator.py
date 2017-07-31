@@ -63,9 +63,23 @@ class RandomGenerator(MissionSetGenerator):
     """
 
 
-    def generate(self, limits):
-        missions = set()
+    def generate(self, characteristics, limits):
+        missions = MissionSet()
+
+        while not missions.satisfies(characteristics):
+            m = self.__generate_one()
+            missions.add(m)
+
         return missions
+
+
+    def __generate_one(self):
+        """
+        Generates a single mission at random.
+
+        :returns    A randomly-generated Mission instance
+        """
+        raise NotImplementedError
 
 
 class DirectedGenerator(MissionSetGenerator):
