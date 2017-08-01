@@ -5,25 +5,35 @@ The server script should be run from within the container of the system-under-te
 """
 import time
 import sys
+import flask
+import json
+
+app = Flask(__name__)
+api = App(app)
+
 
 # the current system-under-test
 SYSTEM = None
 
-# We need to interact with a registered (named) system
 
-@app.route("/executeMission")
-def executeMission(mission):
+@app.route("/executeMission", methods=["POST"])
+def executeMission():
     """
     Executes a specified mission.
 
-    param:  mission:    a JSON-based description of the mission that should be
-                        performed
+
+    ## Request Parameters
+
+        * mission: a JSON-based description of the mission that should be
+            performed
 
     returns:    a summary of the outcome of the mission, in a JSON format
     """
+    mission = json.loads(request.form['mission'])
     mission = Mission.fromJSON(mission)
     outcome = SYSTEM.execute(mission)
-    return outcome.toJSON()
+    outcome = outcome.toJSON()
+    return json.dumps(outcome)
 
 
 def main():
@@ -46,11 +56,7 @@ def main():
     portNumber = int(sys.argv[2])
 
     # launch the server on the specified port
-    pass
-
-    # spin!
-    while True:
-        time.sleep(0.5)
+    app.run(port=portNumber)
 
 
 if __name__ == "__main__":
