@@ -1,3 +1,4 @@
+import random
 """
 The generator module is responsible for providing a number of different test
 suite generation approaches.
