@@ -42,7 +42,10 @@ def main():
     systemName = sys.argv[1]
     SYSTEM = DO_SOMETHING(systemName)
 
-    # launch the server
+    # we also need to accept a port number
+    portNumber = int(sys.argv[2])
+
+    # launch the server on the specified port
     pass
 
     # spin!
