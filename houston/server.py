@@ -8,8 +8,8 @@ import sys
 import flask
 import json
 
-app = Flask(__name__)
-api = App(app)
+app = flask.Flask(__name__)
+#api = App(app)
 
 
 # the current system-under-test
@@ -42,7 +42,7 @@ def main():
 
 
     Usage:
-        
+
         houstonserver ardupilot &
     """
     global SYSTEM
@@ -50,7 +50,7 @@ def main():
     # fetch the system!
     # we will probably need to have some sort of registry global variable
     systemName = sys.argv[1]
-    SYSTEM = DO_SOMETHING(systemName)
+    exec('SYSTEM = {}()'.format(systemName)) #TODO How safe is this????
 
     # we also need to accept a port number
     portNumber = int(sys.argv[2])
