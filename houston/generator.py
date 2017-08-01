@@ -90,5 +90,43 @@ class RandomGenerator(TestSuiteGenerator):
         raise NotImplementedError
 
 
+    def populateInitialState(self, state):
+        initialState = {'variables': {}}
+        PISFState = self.__pisf[state]
+        if not PISFState:
+            return initialState
+
+        for variable in PISFState:
+            if len(PISFState[variable]) > 1:
+                minVal = PISFState[variable]['min']
+                maxVal = PISFState[variable]['max']
+                initialState['variables'][variable] = random.uniform(minVal, maxVal)
+            else:
+
+                randomChoice = random.choice(PISFState[variable])
+                initialState['variables'][variable] = randomChoice
+
+        return initialState
+
+
+    def populateAction(self, action, schema):
+        actionParameters = schema.getParameters()
+        populatedAction = {action:{}}
+        if not actionParameters:
+            return populatedAction
+        for parameterObject in actionParameters:
+            parameter = parameterObject.getType()
+            if parameter not in self.__pisf['parameters']:
+                exit()
+            if len(self.__pisf['parameters'][parameter])>1:
+                minVal = self.__pisf['parameters'][parameter]['min']
+                maxVal = self.__pisf['parameters'][parameter]['max']
+                populatedAction[action][parameter] = random.uniform(minVal, maxVal)
+            else:
+                randomChoice = random.choice(
+                    self.__pisf['parameters'][parameter]["options"])
+                populatedAction[action][parameter] = randomChoice
+        return populatedAction
+
 class DirectedGenerator(TestSuiteGenerator):
     pass
