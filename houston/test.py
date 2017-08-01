@@ -111,7 +111,23 @@ class TestSuiteCharacteristics(object):
     """
     Used to describe the desired characteristics of a test suite.
     """
-    pass
+    def __init__(self, maxMissions, maxActionsPerMission, maxTime):
+        self.__maxMissions           = maxMissions
+        self.__maxActionsPerMission  = maxActionsPerMission
+        self.__maxTime               = maxTime
+
+
+    def getMaxMissions(self):
+        return copy.copy(self.__maxMissions)
+
+
+    def getMaxActionsPerMission(self):
+        return copy.copy(self.__maxActions)
+
+
+    def getMaxTime(self):
+        return copy.copy(self.__maxTime)
+
 
 
 class TestSuiteSummary(object):

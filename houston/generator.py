@@ -16,7 +16,8 @@ class TestSuiteGenerator(object):
     generation approaches.
     """
 
-
+    # Would it be better to pass the pisf file as the object is generated or
+    # in the generate function?
     def __init__(self, system, pisf):
         """
         Constructs a test suite generator for a given system.
