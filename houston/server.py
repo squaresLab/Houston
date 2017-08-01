@@ -14,16 +14,16 @@ SYSTEM = None
 @app.route("/executeMission")
 def executeMission(mission):
     """
-
+    Executes a specified mission.
 
     param:  mission:    a JSON-based description of the mission that should be
                         performed
 
     returns:    a summary of the outcome of the mission, in a JSON format
     """
-
-
-    pass
+    mission = Mission.fromJSON(mission)
+    outcome = SYSTEM.execute(mission)
+    return outcome.toJSON()
 
 
 def main():
