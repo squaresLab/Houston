@@ -66,6 +66,7 @@ class Mission(object):
         """
         Constructs a mission object from a given JSON description.
         """
+        assert(isinstance(jsn, dict))
         assert('environment' in jsn)
         assert('internal' in jsn)
         assert('external' in jsn)
@@ -78,6 +79,7 @@ class Mission(object):
         actions = [Action.fromJSON(action) for action in jsn['actions']]
 
         return Mission(env, internal, external, actions)
+
 
     def __init__(self, environment, internal, external, actions):
         """
@@ -98,23 +100,22 @@ class Mission(object):
         self.__external = external
         self.__actions = actions
 
-    # TODO: make immutable
+
     def getEnvironment(self):
         return self.__environment
 
-    # TODO: make immutable
+
     def getInitialInternalState(self):
         return self.__internal
 
-    # TODO: make immutable
+
     def getInitialExternalState(self):
         return self.__external
 
-    # TODO: make immutable
+
     def getActions(self):
-        # TODO: returning the original list might be dangerous? We may want to
-        #       pass a copy, instead.
-        return self.__actions
+        return copy.copy(self.__actions)
+
 
     def toJSON(self):
         """
@@ -126,6 +127,7 @@ class Mission(object):
             'external': self.__external.toJSON(),
             'actions': [a.toJSON() for a in self.__actions]
         }
+
 
 class MissionOutcome(object):
 
