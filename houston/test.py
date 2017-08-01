@@ -27,7 +27,7 @@ class TestSuite(object):
         """
         Constructs a test suite from its associated JSON description.
         """
-        tests = [Test.fromJSON(t) for t in jsn['tests']]
+        tests = [Mission.fromJSON(t) for t in jsn['tests']]
         return TestSuite(tests)
 
 
