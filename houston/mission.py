@@ -66,7 +66,7 @@ class Mission(object):
         """
         Constructs a mission object from a given JSON description.
         """
-        assert(isinstance(jsn, dict))
+        assert(isinstance(jsn, dict) and not jsn is None)
         assert('environment' in jsn)
         assert('internal' in jsn)
         assert('external' in jsn)
@@ -102,6 +102,10 @@ class Mission(object):
 
 
     def getEnvironment(self):
+        """
+        Returns a description of the (initial) state of the environment
+        in which this mission should be executed.
+        """
         return self.__environment
 
 
@@ -234,7 +238,7 @@ class Action(object):
         self.__values = copy.copy(values)
 
 
-    def getKind(self):
+    def getSchemaName(self):
         """
         Returns the name of the schema to which this action belongs.
         """
