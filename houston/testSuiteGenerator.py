@@ -66,20 +66,3 @@ class TestSuiteGenerator(object):
                     self.__pisf['parameters'][parameter]["options"])
                 populatedAction[action][parameter] = randomChoice
         return populatedAction
-
-
-class TestSuiteDumper(object):
-    def __init__(self, testSuiteName):
-        self.__testSuiteName = testSuiteName
-        self.__missions      = {}
-
-    def appendMission(self, missionInput):
-        if len(self.__missions) == 0:
-            self.__missions[0] = missionInput
-        else:
-            self.__missions[len(self.__missions)] = missionInput
-
-    def dumpMissionJSON(self):
-        with open(self.__testSuiteName, 'w') as file:
-            json.dump({'testSuite': self.__missions}, file, sort_keys=True,
-                indent=4, separators=(',', ': '))

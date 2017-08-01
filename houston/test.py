@@ -54,6 +54,10 @@ class TestSuite(object):
         pass
 
 
+    def __init__(self):
+        self.__contents = []
+
+
     def execute(self, system):
         """
         Executes the tests contained within this suite.
@@ -66,6 +70,23 @@ class TestSuite(object):
 
         # TODO: this is a super important method!
         raise NotImplementedError
+
+    def toJSON(self):
+        """
+        Returns a JSON-based description of this test suite.
+        """
+        return [t.toJSON() for t in self.__contents]
+
+
+    def toFile(self, fn):
+        """
+        Saves the contents of this test suite to a file on disk.
+
+        :param  fn  the path to the file.
+        """
+        jsn = self.toJSON()
+        with open(fn, "w") as f:
+            json.dump(jsn, f)
 
 
 class TestSuiteSummary(object):
