@@ -89,6 +89,10 @@ class TestSuite(object):
             container.stop()
 
 
+    def satisfies(self):
+        pass 
+
+
     def toJSON(self):
         """
         Returns a JSON-based description of this test suite.
