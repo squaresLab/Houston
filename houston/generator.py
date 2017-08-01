@@ -79,13 +79,13 @@ class RandomGenerator(TestSuiteGenerator):
         tests = TestSuite()
 
         while not tests.satisfies(characteristics):
-            m = self.__generate_mission(limits)
+            m = self.__generate_mission(characteristics.getMaxActionsPerMission())
             tests.add(m)
 
         return tests 
 
 
-    def __generate_mission(self, limits):
+    def __generate_mission(self, maxActions):
         """
         Generates a single Mission at random.
 
@@ -99,7 +99,7 @@ class RandomGenerator(TestSuiteGenerator):
         tempMission['external'] = self.populateInitialState('external')
         tempMission['actions'] = []
         actionSchemas = self.__system.getActionSchemas()
-        for numAction in range(limits['maxActions']):
+        for numAction in range(maxActions):
             action, schema = random.choice(list(actionSchemas.items()))
         tempMission['actions'].append(self.populateAction(action, schema))
 
