@@ -1,3 +1,5 @@
+import time
+
 class Test(object):
     """
     Tests are comprised of a mission, and a context (i.e., the state of the
@@ -21,6 +23,17 @@ class Test(object):
         assert(isinstance(context, MissionContext) and not context is None)
         self.__mission = mission
         self.__context = context
+
+
+    def execute(self, system):
+        """
+        Executes this test.
+
+        :param  system  A description of the system-under-test (SUT)
+
+        :returns    a summary of the test, in the form of a TestOutcome object
+        """
+        raise NotImplementedError
 
 
     def toJSON(self):
@@ -69,7 +82,8 @@ class TestSuite(object):
 
         :param  tests   the (initial) contents of the test suite.
         """
-        self.__contents = []
+        assert(isinstance(tests, list) and not tests is None)
+        self.__contents = tests
 
 
     def execute(self, system):
@@ -81,9 +95,21 @@ class TestSuite(object):
         :returns    A summary of the test suite execution, given as a
                     TestSuiteSummary object.
         """
+        startTime = time.time()
 
-        # TODO: this is a super important method!
-        raise NotImplementedError
+        # TODO for now, we execute tests sequentially
+        outcomes = []
+        for test in self.__contents:
+            outcome = test.execute(system)
+
+        # measure the wall clock running-time
+        endTime = time.time()
+        runningTime = endTime - startTime
+
+        # return a summary
+        summary = TestSuiteSummary(runningTime)
+        return summary
+
 
     def toJSON(self):
         """
@@ -115,9 +141,9 @@ class TestSuiteSummary(object):
     Contains a summary of the execution of a test suite.
     """
 
-
-    def __init__(self):
-        self.__wallTime = 0.0
+    def __init__(self, wallTime):
+        assert(isinstance(wallTime, float) and not wallTime is None)
+        self.__wallTime = wallTime
         self.__outcomes = []
 
 
