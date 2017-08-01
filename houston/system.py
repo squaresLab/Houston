@@ -45,18 +45,7 @@ class System(object):
             outcomes = []
             for action in mission.getActions():
                 schema = self.__schemas[action.getSchemaName()]
-
                 stateBefore = self.getInternalState()
-
-                # TODO: why are we checking for invariants here? We can avoid
-                # repeating code by changing the While loop into a Do-While.
-                (satisfied, violations) = \
-                    schema.satisfiedInvariants(self.__variables, action)
-                if not satisfied:
-                    stateAfter = self.getInternalState()
-                    outcome = ActionOutcome(action, False, stateBefore, stateAfter)
-                    outcomes.append(outcome)
-                    return MissionOutcome(False, outcomes)
 
                 # check for precondition violations
                 (satisfied, violations) = \
@@ -72,21 +61,29 @@ class System(object):
                 print('Doing: {}'.format(action.getSchemaName()))
 
                 # loop until postconditions are satisfied, or an invariant is violated
-                while not schema.satisfiedPostConditions(self.__variables, action)[0]:
-                    time.sleep(0.5) # TODO: parameterise
-                    result = schema.satisfiedInvariants(self.__variables, action)
-                    if not result[0]:
-                        outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
-                        outcome.setPostActionSystemState(self.getInternalState())
+                while True:
+
+                    # check for invariant violations
+                    (satisfied, violations) = \
+                        schema.satisfiedInvariants(self.__variables, action)
+                    if not satisfied:
+                        stateAfter = self.getInternalState()
+                        outcome = ActionOutcome(action, False, stateBefore, stateAfter)
                         outcomes.append(outcome)
-                        missionPassed = False
-                        break
+                        return MissionOutcome(False, outcomes)
 
-                outcome.setActionReturn(True, 'Postconditions')
-                outcome.setPostActionSystemState(self.getInternalState())
-                outcomes.append(outcome)
+                    # check if postconditions are satisfied
+                    (satisfied, violations) = \
+                        schema.satisfiedPostConditions(self.__variables, action)
+                    if satisfied:
+                        stateAfter = self.getInternalState()
+                        outcome = ActionOutcome(action, False, stateBefore, stateAfter)
+                        outcomes.append(outcome)
+                        return MissionOutcome(True, outcomes)
 
-            return MissionOutcome(missionPassed, outcomes)
+                    time.sleep(0.5) # TODO: parameterise
+
+                    # TODO: enforce a time-out!
 
         finally:
             self.tearDown(mission)
@@ -100,6 +97,7 @@ class System(object):
         """
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return InternalState(vals)
+
 
     def getActionSchemas(self):
         """
@@ -138,6 +136,7 @@ class State(object):
         for variable in self.__values:
             print('Variable: {} - State: {}'.format(variable, self.read(variable)))
 
+
     def toJSON(self):
         """
         Returns a JSON description of this state.
@@ -146,8 +145,10 @@ class State(object):
             'variables': copy.copy(self.__values)
         }
 
+
     def __str__(self):
         return str(self.toJSON())
+
 
     def __repr__(self):
         return str(self)
