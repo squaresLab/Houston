@@ -130,33 +130,37 @@ class Mission(object):
 
 
 class MissionOutcome(object):
+    """
+    Mission outcomes are used to summarise and record the outcome of performing
+    a mission.
+    """
 
-    def __init__(self, passFail, outcomes):
+    def __init__(self, passed, outcomes):
         """
         Constructs a MissionOutcome object.
 
-        :param  passFail    holds the outcome of the missions. True for passed
-                            and False for failed.
-        :param  outcomes    a list that cointains the ActionOutcomes for the
-                            mission.
+        :param  passed      indicates the success (or failure) of the mission.
+                            True if successful, False if not.
+        :param  outcomes    a list containing the ActionOutcomes for the
+                            each of the actions in the mission.
         """
-        self.__passFail  = passFail
+        self.__passed = passed
         self.__outcomes  = outcomes
+
 
     def toJSON(self):
         """
         Returns a JSON description of the mission outcome.
         """
         return {
-            'passed': self.__passFail,
+            'passed': self.__passed,
             'actions': [outcome.toJSON() for outcome in  self.__outcomes]
         }
+
 
     def __str__(self):
         return str(self.toJSON())
 
+
     def __repr__(self):
         return str(self)
-
-
-
