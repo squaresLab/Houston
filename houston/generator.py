@@ -70,18 +70,23 @@ class RandomGenerator(TestSuiteGenerator):
         tests = TestSuite()
 
         while not tests.satisfies(characteristics):
-            t = self.__generate_one()
+            t = self.__generate_test()
             tests.add(t)
 
         return tests 
 
 
-    def __generate_one(self):
+    def __generate_test(self):
         """
         Generates a single test at random.
 
         :returns    A randomly-generated Test instance
         """
+
+        # generate a mission context
+
+        # generate a mission
+        
         raise NotImplementedError
 
 

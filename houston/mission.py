@@ -1,60 +1,3 @@
-class MissionSet(object):
-    """
-    A mission set is a sequence of missions.
-
-    @deprecated
-    """
-
-    @staticmethod
-    def fromFile(fn):
-        """
-        Loads a set of missions from a file at a specified location.
-
-        :param  fn  The path to the file containing the mission set.
-
-        :returns    The corresponding MissionSet for that file.
-        """
-        with open(fn, 'r') as f:
-            missions = json.load(f)
-        assert('testSuite' in missions) # TODO: why is this named 'testSuite'?
-        missions = missions['testSuite']
-
-        return MissionSet([Mission.fromJSON(m) for m in missions])
-
-
-    def __init__(self, missions):
-        assert(isinstance(missions, list))
-        self.__missions = missions
-
-
-    def append(self, mission):
-        """
-        Appends a mission to the mission set.
-
-        :param  mission     mission to append
-        """
-        self.__missions.append(mission)
-
-
-    def remove(self, index):
-        """
-        Removes a mission from a given index.
-
-        :param  index       index of mission to remove.
-
-        :returns    the removed mission
-        """
-        assert(0 <= index < len(self.__missions))
-        return self.__missions.pop(index)
-
-
-    def getMissionList(self):
-        """
-        Returns a copy of the missions in a list.
-        """
-        return copy.deepcopy(self.__missions)
-
-
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
@@ -133,13 +76,12 @@ class Mission(object):
         }
 
 
-class MissionContext(object):
-    """
-    Mission contexts are used to describe a context in which a mission should
-    take place. Context is given by the initial state of the environment, and
-    the initial values of the internal and external system variables.
-    """
-
+#class MissionContext(object):
+#    """
+#    Mission contexts are used to describe a context in which a mission should
+#    take place. Context is given by the initial state of the environment, and
+#    the initial values of the internal and external system variables.
+#    """
     
 
 class MissionOutcome(object):

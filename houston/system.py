@@ -198,11 +198,13 @@ class StateVariable(object):
         self.__name = name
         self.__getter = getter
 
+
     """
     Returns the name of this system variable
     """
     def name(self):
         return self.__name
+
 
     """
     Inspects the current state of this system variable
@@ -246,11 +248,13 @@ class Environment(object):
         """
         self.__values = copy.copy(values)
 
+
     def read(self, variable):
         """
         Returns the value of a given environment variable.
         """
         return self.__values[variable]
+
 
     def toJSON(self):
         """
@@ -269,13 +273,13 @@ class ActionSchema(object):
     preconditions, postconditions, and invariants.
     """
 
-    def __init__(self, name, parameters, precondition, invariants, postconditions):
+    def __init__(self, name, parameters, preconditions, invariants, postconditions):
         """
         Constructs an ActionSchema object.
 
         :param  name            name of the action
         :param  parameters      parameters of the action
-        :param  precondition    predicates that must be met before the action
+        :param  preconditions   predicates that must be met before the action
                                 can be executed.
         :param  invariants      predicates that should be met at all times during
                                 the execution of an action.
@@ -284,7 +288,7 @@ class ActionSchema(object):
         """
         self.__name           = name
         self.__parameters     = parameters
-        self.__preconditions   = precondition
+        self.__preconditions  = preconditions
         self.__invariants     = invariants
         self.__postconditions = postconditions
 

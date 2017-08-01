@@ -1,4 +1,5 @@
 import time
+import docker
 
 class TestSuite(object):
     """
@@ -54,7 +55,7 @@ class TestSuite(object):
         # TODO for now, we execute tests sequentially
         outcomes = []
         for test in self.__contents:
-            outcome = test.execute(system)
+            outcome = self.executeTest(test, system)
 
         # measure the wall clock running-time
         endTime = time.time()
@@ -63,6 +64,29 @@ class TestSuite(object):
         # return a summary
         summary = TestSuiteSummary(runningTime)
         return summary
+
+    def executeTest(self, system, test):
+
+        # launch container
+        # systemContainer = system.launchContainer()
+        client = docker.from_env()
+
+        # TODO: mount Houston, and expose ports
+        container = client.containers.run("ardupilot", "LAUNCH SERVER", detach=True)
+        try:
+
+            # wait until server is running
+            while True:
+                time.sleep(0.1)
+                # is the server ready?
+
+            # communicate with server
+            system.
+
+            return MissionOutcome()
+        
+        finally:
+            container.stop()
 
 
     def toJSON(self):
