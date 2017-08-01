@@ -11,13 +11,16 @@ class Test(object):
         """
         Constructs a given test from a JSON description.
         """
-
+        mission = Mission.fromJSON(jsn['mission'])
+        context = MissionContext.fromJSON(jsn['context'])
+        return Test(mission, context)
 
 
     def __init__(self, mission, context):
-        assert(isinstance(mission, Mission))
+        assert(isinstance(mission, Mission) and not mission is None)
+        assert(isinstance(context, MissionContext) and not context is None)
         self.__mission = mission
-        self.__context = context # TODO: TestContext or MissionContext
+        self.__context = context
 
 
     def toJSON(self):
