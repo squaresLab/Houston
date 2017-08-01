@@ -1,5 +1,7 @@
 """
 The server script should be run from within the container of the system-under-test
+
+- implements a very simple RESTful server
 """
 import time
 import sys
@@ -25,6 +27,14 @@ def executeMission(mission):
 
 
 def main():
+    """
+    The entrypoint for the `houstonserver` executable.
+
+
+    Usage:
+        
+        houstonserver ardupilot &
+    """
     global SYSTEM
 
     # fetch the system!
