@@ -70,13 +70,13 @@ class RandomGenerator(TestSuiteGenerator):
         tests = TestSuite()
 
         while not tests.satisfies(characteristics):
-            t = self.__generate_test()
-            tests.add(t)
+            m = self.__generate_mission()
+            tests.add(m)
 
         return tests 
 
 
-    def __generate_test(self):
+    def __generate_mission(self):
         """
         Generates a single test at random.
 
