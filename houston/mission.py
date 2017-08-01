@@ -206,14 +206,20 @@ class ActionOutcome(object):
 
 
 class Action(object):
+    """
+    Description of the concept of "Actions".
+    """
+
     @staticmethod
     def fromJSON(jsn):
         """
         Constructs an Action object from its JSON description.
         """
+        assert(isinstance(jsn, dict) and not jsn is None)
         assert('kind' in jsn)
         assert('parameters' in jsn)
         return Action(jsn['kind'], jsn['parameters'])
+
 
     def __init__(self, kind, values):
         """
@@ -222,36 +228,38 @@ class Action(object):
         :param  kind    the name of the schema to which the action belongs
         :param  values  a dictionary of parameter values for the action
         """
-        assert(isinstance(kind, str))
-        assert(isinstance(values, dict))
+        assert(isinstance(kind, str) and not kind is None)
+        assert(isinstance(values, dict) and not values is None)
         self.__kind = kind
         self.__values = copy.copy(values)
 
+
     def getKind(self):
         """
-        Returns the kind of action.
+        Returns the name of the schema to which this action belongs.
         """
         return self.__kind
 
+
     def getValue(self, value):
         """
-        Returns an specific value from the parameters.
+        Returns an value of a specific parameter for this action.
         """
         return self.__values[value]
 
+
     def getValues(self):
         """
-        Returns a vopy of the parameters
+        Returns a copy of the parameters for this action.
         """
         return copy.copy(self.__values)
 
+
     def toJSON(self):
         """
-        Returns a JSON description of a given Action.
+        Returns a JSON description of this action.
         """
         return {
             'kind': self.__kind,
             'parameters': self.getValues()
         }
-
-
