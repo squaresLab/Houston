@@ -70,27 +70,43 @@ class RandomGenerator(TestSuiteGenerator):
         tests = TestSuite()
 
         while not tests.satisfies(characteristics):
-            m = self.__generate_mission()
+            m = self.__generate_mission(limits)
             tests.add(m)
 
         return tests 
 
 
-    def __generate_mission(self):
+    def __generate_mission(self, limits):
         """
-        Generates a single test at random.
+        Generates a single Mission at random.
 
-        :returns    A randomly-generated Test instance
+        :returns    A randomly-generated Mission instance
         """
 
         # generate a mission context
+        tempMission = {}
+        tempMission['environment'] = self.populateInitialState('environment')
+        tempMission['internal'] = self.populateInitialState('internal')
+        tempMission['external'] = self.populateInitialState('external')
+        tempMission['actions'] = []
+        actionSchemas = self.__system.getActionSchemas()
+        for numAction in range(limits['maxActions']):
+            action, schema = random.choice(list(actionSchemas.items()))
+        tempMission['actions'].append(self.populateAction(action, schema))
 
         # generate a mission
-        
-        raise NotImplementedError
+        return Mission.fromJSON(tempMission)
+         
 
 
     def populateInitialState(self, state):
+        """
+        Populates a given initial state
+
+        :param      state       state to populate
+
+        :returns a dictionary with randomly generated values
+        """
         initialState = {'variables': {}}
         PISFState = self.__pisf[state]
         if not PISFState:
@@ -110,6 +126,14 @@ class RandomGenerator(TestSuiteGenerator):
 
 
     def populateAction(self, action, schema):
+        """
+        Populates a given action 
+
+        :param      action       action to populate
+        :param      schema       schema of the given action
+
+        :returns a dictionary with randomly generated parameters
+        """
         actionParameters = schema.getParameters()
         populatedAction = {action:{}}
         if not actionParameters:
