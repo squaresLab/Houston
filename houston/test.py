@@ -1,51 +1,5 @@
 import time
 
-class Test(object):
-    """
-    Tests are comprised of a mission, and a context (i.e., the state of the
-    environment, and the internal and external variables) in which the mission
-    should be executed.
-    """
-
-
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs a given test from a JSON description.
-        """
-        mission = Mission.fromJSON(jsn['mission'])
-        context = MissionContext.fromJSON(jsn['context'])
-        return Test(mission, context)
-
-
-    def __init__(self, mission, context):
-        assert(isinstance(mission, Mission) and not mission is None)
-        assert(isinstance(context, MissionContext) and not context is None)
-        self.__mission = mission
-        self.__context = context
-
-
-    def execute(self, system):
-        """
-        Executes this test.
-
-        :param  system  A description of the system-under-test (SUT)
-
-        :returns    a summary of the test, in the form of a TestOutcome object
-        """
-        raise NotImplementedError
-
-
-    def toJSON(self):
-        """
-        Returns a JSON description (in the form of a dictionary) of this test.
-        """
-        return {
-            'mission': self.__mission.toJSON(),
-            'context': self.__context.toJSON()
-        }
-
-
 class TestSuite(object):
     """
     A test suite is an ordered set (i.e., a sequence with no repeated elements)
