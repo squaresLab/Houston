@@ -129,6 +129,15 @@ class Mission(object):
         }
 
 
+class MissionContext(object):
+    """
+    Mission contexts are used to describe a context in which a mission should
+    take place. Context is given by the initial state of the environment, and
+    the initial values of the internal and external system variables.
+    """
+
+    
+
 class MissionOutcome(object):
     """
     Mission outcomes are used to summarise and record the outcome of performing
