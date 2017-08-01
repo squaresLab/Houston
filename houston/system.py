@@ -32,50 +32,64 @@ class System(object):
 
     def execute(self, mission):
         """
-        Executes the mission. Returns mission outcome
+        Executes a given mission.
+
+        :param  mission:    the mission that should be executed.
+
+        :return A summary of the outcome of the mission, in the form of a
+                MissionOutcome
         """
         self.setUp(mission)
-        outcomes = []
-        missionPassed = True
-        for action in mission.getActions():
-            actionKind   = action.getKind()
-            actionSchema = self.__schemas[actionKind]
-            outcome = ActionOutcome(actionKind, self.getInternalState())
-            # check for invariants
+        try:
 
-            result = actionSchema.satisfiedInvariants(self.__variables, action)
-            if not result[0]:
-                outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
-                outcome.setPostActionSystemState(self.getInternalState())
-                outcomes.append(outcome)
-                missionPassed = False
-                break
-            # check for preconditions
-            result =  actionSchema.satisfiedPreconditions(self.__variables, action)
-            if not result[0]:
-                outcome.setActionReturn(False, 'Preconditions : {}'.format(result[1]))
-                outcome.setPostActionSystemState(self.getInternalState())
-                outcomes.append(outcome)
-                missionPassed = False
-                break
-            # dispatch
-            actionSchema.dispatch(action.getValues())
-            print 'Doing: {}'.format(actionKind)
-            # start looping till action completed or invariant violated
-            while not actionSchema.satisfiedPostConditions(self.__variables, action)[0]:
-                time.sleep(0.5)
-                result = actionSchema.satisfiedInvariants(self.__variables, action)
-                if not result[0]:
-                    outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
-                    outcome.setPostActionSystemState(self.getInternalState())
+            outcomes = []
+            for action in mission.getActions():
+                schema = self.__schemas[action.getSchemaName()]
+
+                stateBefore = self.getInternalState()
+
+                # TODO: why are we checking for invariants here? We can avoid
+                # repeating code by changing the While loop into a Do-While.
+                (satisfied, violations) = \
+                    schema.satisfiedInvariants(self.__variables, action)
+                if not satisfied:
+                    stateAfter = self.getInternalState()
+                    outcome = ActionOutcome(action, False, stateBefore, stateAfter)
                     outcomes.append(outcome)
-                    missionPassed = False
-                    break
-            outcome.setActionReturn(True, 'Postconditions')
-            outcome.setPostActionSystemState(self.getInternalState())
-            outcomes.append(outcome)
+                    return MissionOutcome(False, outcomes)
 
-        return MissionOutcome(missionPassed, outcomes)
+                # check for precondition violations
+                (satisfied, violations) = \
+                    schema.satisfiedPreconditions(self.__variables, action)
+                if not satisfied:
+                    stateAfter = self.getInternalState()
+                    outcome = ActionOutcome(action, False, stateBefore, stateAfter)
+                    outcomes.append(outcome)
+                    return MissionOutcome(False, outcomes)
+
+                # dispatch
+                schema.dispatch(action.getValues())
+                print('Doing: {}'.format(action.getSchemaName()))
+
+                # loop until postconditions are satisfied, or an invariant is violated
+                while not schema.satisfiedPostConditions(self.__variables, action)[0]:
+                    time.sleep(0.5) # TODO: parameterise
+                    result = schema.satisfiedInvariants(self.__variables, action)
+                    if not result[0]:
+                        outcome.setActionReturn(False, 'Invariants : {}'.format(result[1]))
+                        outcome.setPostActionSystemState(self.getInternalState())
+                        outcomes.append(outcome)
+                        missionPassed = False
+                        break
+
+                outcome.setActionReturn(True, 'Postconditions')
+                outcome.setPostActionSystemState(self.getInternalState())
+                outcomes.append(outcome)
+
+            return MissionOutcome(missionPassed, outcomes)
+
+        finally:
+            self.tearDown(mission)
 
 
     def getInternalState(self):
