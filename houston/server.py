@@ -7,6 +7,7 @@ import time
 import sys
 import flask
 import json
+import ardupilot
 
 app = flask.Flask(__name__)
 #api = App(app)

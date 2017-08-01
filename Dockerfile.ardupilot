@@ -47,8 +47,8 @@ RUN sudo pip install  future \
                       MAVProxy \
                       dronekit \
                       statistics \
-                      geopy
-
+                      geopy \
+		      flask
 
 ENV HOME "/home/robot"
 ENV ARDUPILOT_LOCATION "${HOME}/ardupilot"
