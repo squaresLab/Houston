@@ -173,3 +173,85 @@ class MissionOutcome(object):
 
     def __repr__(self):
         return str(self)
+
+
+class ActionOutcome(object):
+    """
+    Used to describe the outcome of an action execution in terms of system state.
+    """
+    def __init__(self, action, successful, stateBefore, stateAfter):
+        """
+        Constructs a ActionOutcome.
+
+        :param  action      the action that was performed
+        :param  stateBefore the state of the system immediately prior to execution
+        :param  stateAfter  the state of the system immediately after execution
+        """
+        assert(isinstance(action, Action) and not action is None)
+        assert(isinstance(successful, bool) and not successful is None)
+
+        self.__action = action
+        self.__successful = successful
+        self.__stateBefore = stateBefore # TODO: type checking
+        self.__stateAfter = stateAfter # TODO: type checking
+
+
+    def toJSON(self):
+        return {
+            'action': self.__action,
+            'successful': self.__successful,
+            'stateBefore': self.__stateBefore,
+            'stateAfter': self.__stateAfter
+        }
+
+
+class Action(object):
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs an Action object from its JSON description.
+        """
+        assert('kind' in jsn)
+        assert('parameters' in jsn)
+        return Action(jsn['kind'], jsn['parameters'])
+
+    def __init__(self, kind, values):
+        """
+        Constructs an Action description.
+
+        :param  kind    the name of the schema to which the action belongs
+        :param  values  a dictionary of parameter values for the action
+        """
+        assert(isinstance(kind, str))
+        assert(isinstance(values, dict))
+        self.__kind = kind
+        self.__values = copy.copy(values)
+
+    def getKind(self):
+        """
+        Returns the kind of action.
+        """
+        return self.__kind
+
+    def getValue(self, value):
+        """
+        Returns an specific value from the parameters.
+        """
+        return self.__values[value]
+
+    def getValues(self):
+        """
+        Returns a vopy of the parameters
+        """
+        return copy.copy(self.__values)
+
+    def toJSON(self):
+        """
+        Returns a JSON description of a given Action.
+        """
+        return {
+            'kind': self.__kind,
+            'parameters': self.getValues()
+        }
+
+

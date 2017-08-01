@@ -246,100 +246,6 @@ class Environment(object):
         }
 
 
-class ActionOutcome(object):
-    """
-    ActionOutcome holds the outcome information of an action. This allow us to
-    keep track of the dispatch process.
-    """
-    def __init__(self, action, preActionSytemSate):
-        """
-        Constructs a ActionOutcome object.
-
-        param: action               the action kind (ex. goto, land..)
-        param: preActionSytemSate   the system state before the action started.
-        """
-        self.__action                     = action
-        self.__preActionSytemSate         = preActionSytemSate
-        self.__actionReturn               = (False, 'Notset')
-        self.__postActionSystemState      = None
-
-    def toJSON(self):
-        return {
-            'action': self.__action,
-            'outcome': self.__actionReturn,
-            'preActionSystemSate': self.__preActionSytemSate,
-            'postActionSystemState': self.__postActionSystemState}
-
-    def setPostActionSystemState(self, postActionSystemState):
-        """
-        Sets the system state after the action was completed.
-
-        param: postActionSystemState    system state after the action is completed
-        """
-        self.__postActionSystemState  = postActionSystemState
-
-    def setActionReturn(self, actionReturn, statetype):
-        """
-        Sets the action outcome.
-
-        :param  actionReturn    True if the action was successful False otherwise
-        :param  statetype       If if failed in a particual part fo the execution
-                                (ex. preconditions, invariants..) If the action
-                                was successful the default value is postconditions
-        """
-        self.__actionReturn = (actionReturn, statetype)
-
-
-class Action(object):
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs an Action object from its JSON description.
-        """
-        assert('kind' in jsn)
-        assert('parameters' in jsn)
-        return Action(jsn['kind'], jsn['parameters'])
-
-    def __init__(self, kind, values):
-        """
-        Constructs an Action description.
-
-        :param  kind    the name of the schema to which the action belongs
-        :param  values  a dictionary of parameter values for the action
-        """
-        assert(isinstance(kind, str))
-        assert(isinstance(values, dict))
-        self.__kind = kind
-        self.__values = copy.copy(values)
-
-    def getKind(self):
-        """
-        Returns the kind of action.
-        """
-        return self.__kind
-
-    def getValue(self, value):
-        """
-        Returns an specific value from the parameters.
-        """
-        return self.__values[value]
-
-    def getValues(self):
-        """
-        Returns a vopy of the parameters
-        """
-        return copy.copy(self.__values)
-
-    def toJSON(self):
-        """
-        Returns a JSON description of a given Action.
-        """
-        return {
-            'kind': self.__kind,
-            'parameters': self.getValues()
-        }
-
-
 class ActionSchema(object):
     """
     Action schemas are responsible for describing the kinds of actions that
@@ -376,6 +282,7 @@ class ActionSchema(object):
         """
         raise UnimplementedError
 
+
     def getParameters(self):
         """
         Returns the parameters being hold for the current action schema. This is
@@ -403,6 +310,7 @@ class ActionSchema(object):
 
         return (success, postconditionsFailed)
 
+
     def satisfiedPreconditions(self, systemVariables, parameters):
         """
         Checks that the preconditions are met. Returns a tuple, with a boolean
@@ -421,6 +329,7 @@ class ActionSchema(object):
                 preconditionsFailed.append(precondition.getName())
                 success = False
         return (success, preconditionsFailed)
+
 
     def satisfiedInvariants(self, systemVariables, parameters):
         """
