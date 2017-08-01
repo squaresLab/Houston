@@ -64,6 +64,9 @@ class RandomGenerator(TestSuiteGenerator):
 
 
     def generate(self, characteristics, limits):
+        assert(isinstance(characteristics, TestSuiteCharacteristics))
+        assert(not characteristics is None)
+
         tests = TestSuite()
 
         while not tests.satisfies(characteristics):

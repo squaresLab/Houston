@@ -103,6 +103,13 @@ class TestSuite(object):
             json.dump(jsn, f)
 
 
+class TestSuiteCharacteristics(object):
+    """
+    Used to describe the desired characteristics of a test suite.
+    """
+    pass
+
+
 class TestSuiteSummary(object):
     """
     Contains a summary of the execution of a test suite.
