@@ -1,6 +1,8 @@
 class Test(object):
     """
-    Describe difference between missions and tests.
+    Tests are comprised of a mission, and a context (i.e., the state of the
+    environment, and the internal and external variables) in which the mission
+    should be executed.
     """
 
 
@@ -11,9 +13,11 @@ class Test(object):
         """
 
 
+
     def __init__(self, mission, context):
+        assert(isinstance(mission, Mission))
         self.__mission = mission
-        self.__context = context
+        self.__context = context # TODO: TestContext or MissionContext
 
 
     def toJSON(self):
@@ -21,7 +25,8 @@ class Test(object):
         Returns a JSON description (in the form of a dictionary) of this test.
         """
         return {
-            'mission': self.__mission.toJSON()
+            'mission': self.__mission.toJSON(),
+            'context': self.__context.toJSON()
         }
 
 
@@ -51,10 +56,16 @@ class TestSuite(object):
         """
         Constructs a test suite from its associated JSON description.
         """
-        pass
+        tests = [Test.fromJSON(t) for t in jsn['tests']]
+        return TestSuite(tests)
 
 
-    def __init__(self):
+    def __init__(self, tests=[]):
+        """
+        Constructs a test suite.
+
+        :param  tests   the (initial) contents of the test suite.
+        """
         self.__contents = []
 
 
