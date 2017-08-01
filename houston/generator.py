@@ -16,11 +16,18 @@ class TestSuiteGenerator(object):
     """
 
 
-    def __init__(self, system):
+    def __init__(self, system, pisf):
         """
         Constructs a test suite generator for a given system.
+
+        :param      system          system-under-test
+        :param      pisf            JSON file that contains the limitations
+                                    and options for parameters and other values
+                                    used for initial, external states and 
+                                    environment. 
         """
         self.__system = system
+        self.__pisf   = pisf
 
 
     def getSystem(self):
