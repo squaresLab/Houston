@@ -105,11 +105,20 @@ class TestSuite(object):
             json.dump(jsn, f)
 
 
-class TestSuiteCharacteristics(object):
+class MissionSuiteCharacteristics(object):
     """
-    Used to describe the desired characteristics of a test suite.
+    Used to describe the desired characteristics of a mission suite.
     """
-    def __init__(self, maxMissions, maxActionsPerMission, maxTime):
+    def __init__(self, maxNumMissions, maxNumActionsPerMission, maxTime):
+        """
+        Constructs a set of desired mission suite characteristics
+
+        :param  maxNumMissions: the maximum number of missions that should be\
+                                contained within the suite.
+        :param  maxNumActionsPerMission: the maximum number of actions that\
+                                each mission can contain.
+        :param  maxTime: the maximum running time of the entire mission suite.
+        """
         self.__maxMissions           = maxMissions
         self.__maxActionsPerMission  = maxActionsPerMission
         self.__maxTime               = maxTime
@@ -124,13 +133,18 @@ class TestSuiteCharacteristics(object):
 
 
     def getMaxTime(self):
+        """
+        Returns the desired maximum running time of the test suite.
+
+        TODO: a desired `maximum' doesn't entirely make sense?
+        """
         return self.__maxTime
 
 
 
-class TestSuiteSummary(object):
+class MissionSuiteSummary(object):
     """
-    Contains a summary of the execution of a test suite.
+    Contains a summary of the execution of a mission suite.
     """
 
     def __init__(self, wallTime):
@@ -141,14 +155,14 @@ class TestSuiteSummary(object):
 
     def hasFailures(self):
         """
-        Determines whether any tests within the suite failed.
+        Determines whether any missions within the suite failed.
         """
         raise NotImplementedError
 
 
     def getWallClockTime(self):
         """
-        Returns the wall-clock running time taken to execute the test suite,
+        Returns the wall-clock running time taken to execute the mission suite,
         measured in seconds.
         """
         return self.__wallTime
