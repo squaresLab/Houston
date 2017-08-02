@@ -28,9 +28,17 @@ def executeMission():
 
     returns:    a summary of the outcome of the mission, in a JSON format
     """
+    assert('system' in flask.request.args)
+    assert('mission' in flask.request.args)
+
+    # TODO: need to ensure that the system is actually imported
+    system = flask.request.args['system']
+    system = houston.getSystem(system)
+
     mission = json.loads(flask.request.args['mission'])
     mission = Mission.fromJSON(mission)
-    outcome = SYSTEM.execute(mission)
+
+    outcome = system.execute(mission)
     outcome = outcome.toJSON()
     return flask.jsonify(outcome)
 
