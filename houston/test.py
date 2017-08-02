@@ -65,6 +65,7 @@ class TestSuite(object):
         summary = TestSuiteSummary(runningTime)
         return summary
 
+
     def executeTest(self, system, test):
 
         # launch container
@@ -84,10 +85,6 @@ class TestSuite(object):
         
         finally:
             container.stop()
-
-
-    def satisfies(self):
-        pass 
 
 
     def toJSON(self):
