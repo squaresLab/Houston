@@ -6,12 +6,14 @@ import os
 import subprocess as sub
 import sys
 import pexpect
+import houston
 from pymavlink import mavutil, mavwp
 from geopy             import distance
 from dronekit_sitl     import SITL
 from dronekit          import connect, VehicleMode, LocationGlobalRelative
 from system            import System, InternalStateVariable, ActionSchema, Predicate, \
                               Invariant, Postcondition, Precondition, Parameter
+
 testdir = os.path.abspath("/home/robot/ardupilot/Tools/autotest")
 sys.path.append(testdir)
 
@@ -330,7 +332,6 @@ def max_expected_battery_usage(prime_latitude, prime_longitude, prime_altitude):
     #return (mean + standard_dev + WINDOW_BATTERY) * distance
 
 
-
 def max_expected_time(prime_latitude, prime_longitude, prime_altitude):
     return 10
     distance = distance.great_circle((system_variables['latitude'], \
@@ -341,3 +342,7 @@ def max_expected_time(prime_latitude, prime_longitude, prime_altitude):
 
 def get_standard_deviation_and_mean(sample):
     return statistics.stdev(sample), numpy.mean(sample)
+
+
+# Register the ArduPilot system
+houston.registerSystem(ArduPilot())
