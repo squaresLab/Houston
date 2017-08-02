@@ -12,7 +12,6 @@ import ardupilot
 app = flask.Flask(__name__)
 #api = App(app)
 
-
 # the current system-under-test
 SYSTEM = None
 
@@ -51,7 +50,7 @@ def main():
     # fetch the system!
     # we will probably need to have some sort of registry global variable
     systemName = sys.argv[1]
-    exec('SYSTEM = {}()'.format(systemName)) #TODO How safe is this????
+    system = FETCH_SYSTEM(systemName)
 
     # we also need to accept a port number
     portNumber = int(sys.argv[2])
