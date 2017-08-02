@@ -10,7 +10,6 @@ import flask
 import json
 
 app = flask.Flask(__name__)
-#api = App(app)
 
 # the current system-under-test
 SYSTEM = None
@@ -29,11 +28,11 @@ def executeMission():
 
     returns:    a summary of the outcome of the mission, in a JSON format
     """
-    mission = json.loads(request.form['mission'])
+    mission = json.loads(flask.request.args['mission'])
     mission = Mission.fromJSON(mission)
     outcome = SYSTEM.execute(mission)
     outcome = outcome.toJSON()
-    return json.dumps(outcome)
+    return flask.jsonify(outcome)
 
 
 def main():
@@ -43,20 +42,20 @@ def main():
 
     Usage:
 
-        houstonserver ardupilot &
+        houstonserver ardupilot 2700 &
     """
     global SYSTEM
 
     # fetch the system!
     # we will probably need to have some sort of registry global variable
     systemName = sys.argv[1]
-    SYSTEM = FETCH_SYSTEM(systemName)
+    # SYSTEM = FETCH_SYSTEM(systemName)
 
     # we also need to accept a port number
     portNumber = int(sys.argv[2])
 
     # launch the server on the specified port
-    app.run(port=portNumber)
+    app.run(port=portNumber, debug=True)
 
 
 if __name__ == "__main__":
