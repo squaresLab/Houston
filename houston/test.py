@@ -71,8 +71,6 @@ class TestSuite(object):
         # systemContainer = system.launchContainer()
         client = docker.from_env()
 
-        # TODO: mount Houston, and expose ports
-        container = client.containers.run("ardupilot", "LAUNCH SERVER", detach=True)
         try:
 
             # wait until server is running
@@ -81,7 +79,6 @@ class TestSuite(object):
                 # is the server ready?
 
             # communicate with server
-            system.
 
             return MissionOutcome()
         
@@ -121,16 +118,16 @@ class TestSuiteCharacteristics(object):
         self.__maxTime               = maxTime
 
 
-    def getMaxMissions(self):
-        return copy.copy(self.__maxMissions)
+    def getMaxNumMissions(self):
+        return self.__maxMissions
 
 
-    def getMaxActionsPerMission(self):
-        return copy.copy(self.__maxActions)
+    def getMaxNumActionsPerMission(self):
+        return self.__maxActions
 
 
     def getMaxTime(self):
-        return copy.copy(self.__maxTime)
+        return self.__maxTime
 
 
 
