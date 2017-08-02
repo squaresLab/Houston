@@ -25,6 +25,13 @@ class System(object):
         self.__schemas = schemas
 
 
+    def identifier(self):
+        """
+        Returns the unique identifier (i.e., the name) for this system.
+        """
+        return self.__identifier
+
+
     def setUp(self, mission):
         """
         Responsible for appropriately configuring and launching the system,
