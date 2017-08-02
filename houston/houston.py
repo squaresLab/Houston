@@ -27,8 +27,20 @@ def getSystem(identifier):
     """
     Returns the system associated with a given identifier.
     """
+    assert(isinstance(identifier, str))
     return __systems[identifier]
 
 
 def createContainer(system):
-    pass
+    """
+    Constructs a fresh, ephemeral container for a given system.
+    
+    :param  system: the System object
+
+    :returns    A new SystemContainer for the given system
+    """
+    assert(isinstance(system, system.System))
+    assert(not system is None)
+    assert(system.identifier() in __systems)
+
+
