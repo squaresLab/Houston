@@ -16,8 +16,9 @@ def registerSystem(system):
     @TODO   we could perform this automatically using magic methods / class hooks
     """
     global __systems
+    assert(isinstance(system, system.System) and not system is None)
     iden = system.identifier()
-    if iden in self.__systems:
+    if iden in __systems:
         raise Error("system already registered with name: {}".format(iden))
     __systems[iden] = system
 
