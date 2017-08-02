@@ -89,6 +89,19 @@ class MissionOutcome(object):
     Mission outcomes are used to summarise and record the outcome of performing
     a mission.
     """
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a MissionOutcome from a JSON description.
+        """
+        assert(isinstance(jsn, dict) and not jsn is None)
+        assert('passed' in jsn)
+        assert('actions' in jsn)
+        assert(isinstance(jsn['passed'], bool))
+        assert(isinstance(jsn['actions'], list))
+        actions = [ActionOutcome.fromJSON(a) for a in jsn['actions']]
+        return MissionOutcome(jsn['passed'], actions)
+
 
     def __init__(self, passed, outcomes):
         """
