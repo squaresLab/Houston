@@ -8,7 +8,16 @@ class SystemContainer(object):
     - ensures clean-up
     """
     @staticmethod
-    def create(port):
+    def create(iden, image, port):
+        """
+        Constructs a new SystemContainer
+
+        :param  iden:   the identifier of the system to which this container\
+                        belongs
+        :param  image:  the name of the Docker image to use for this container
+        :param  port:   the number of the port that the Houston server should\
+                        run on
+        """
         assert(isinstance(port, int) and not port is None)
         systemIdentifier = "ardupilot"
         image = "ardupilot" # TODO hardcoded, for now
@@ -38,6 +47,13 @@ class SystemContainer(object):
         """
         if not self.__container is None:
             self.destroy()
+
+
+    def port(self):
+        """
+        Returns the port in use by this container.
+        """
+        return self.__port
 
     
     def container(self):
