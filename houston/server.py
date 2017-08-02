@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 """
-The server script should be run from within the container of the system-under-test
-
-- implements a very simple RESTful server
+This server script is run inside system containers. The server implements a
+single endpoint that accepts the name of a system (i.e., its identifier), and
+a description of a mission that should be executed; the server proceeds to
+execute this mission, and returns a summary of its outcome in a JSON format.
 """
-import time
 import sys
 import flask
 import json
+import houston
+
 
 app = flask.Flask(__name__)
-
-# the current system-under-test
-SYSTEM = None
 
 
 @app.route("/executeMission", methods=["POST"])
@@ -23,7 +22,8 @@ def executeMission():
 
     ## Request Parameters
 
-        * mission: a JSON-based description of the mission that should be
+        * system:   the identifier of the system-under-test
+        * mission:  a JSON-based description of the mission that should be\
             performed
 
     returns:    a summary of the outcome of the mission, in a JSON format
@@ -39,22 +39,19 @@ def main():
     """
     The entrypoint for the `houstonserver` executable.
 
+    Command-Line Parameters:
+
+        * port: the number of the port that the server should run on.
 
     Usage:
 
-        houstonserver ardupilot 2700 &
+        houstonserver 2700 &
     """
-    global SYSTEM
+    if len(sys.argv) != 2:
+        print("ERROR: unspecified port number")
+        exit(1)
 
-    # fetch the system!
-    # we will probably need to have some sort of registry global variable
-    systemName = sys.argv[1]
-    # SYSTEM = FETCH_SYSTEM(systemName)
-
-    # we also need to accept a port number
-    portNumber = int(sys.argv[2])
-
-    # launch the server on the specified port
+    portNumber = int(sys.argv[1])
     app.run(port=portNumber, debug=True)
 
 
