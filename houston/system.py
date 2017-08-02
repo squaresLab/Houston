@@ -6,10 +6,21 @@ import json
 class System(object):
     """
     Description of System.
+
+    TODO: where are external state parameters?
     """
 
 
-    def __init__(self, variables, schemas):
+    def __init__(self, identifier, variables, schemas):
+        """
+        Constructs a new System.
+
+        :param  identifier: a unique string identifier (i.e., a name) for this\
+                            system
+        :param  variables:  a dictionary of system variables, indexed by name
+        :param  schemas:    a dictionary of action schemas, indexed by name
+        """
+        self.__identifier = identifier
         self.__variables = variables
         self.__schemas = schemas
 
