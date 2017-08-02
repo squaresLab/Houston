@@ -45,6 +45,13 @@ class SystemContainer(object):
         """
         return self.__container
 
+    
+    def execute(self, mission):
+        """
+        Executes a given mission inside this container and returns the result.
+        """
+        raise NotImplementedError
+
 
     def destroy(self):
         """
