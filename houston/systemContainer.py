@@ -7,8 +7,7 @@ class SystemContainer(object):
 
     - ensures clean-up
     """
-    @staticmethod
-    def create(iden, image, port):
+    def __init__(self, iden, image, port):
         """
         Constructs a new SystemContainer
 
@@ -19,25 +18,17 @@ class SystemContainer(object):
                         run on
         """
         assert(isinstance(port, int) and not port is None)
-        systemIdentifier = "ardupilot"
-        image = "ardupilot" # TODO hardcoded, for now
-        command = 'houstonserver {}, {}'.format(systemIdentifier, port)
+        command = 'houstonserver {}, {}'.format(iden, port)
         ports = {
             ('{}/tcp'.format(port)): ('127.0.0.1', port)
         }
-        container = docker.containers.run(image,
-                                          command,
-                                          ports=ports,
-                                          auto_remove=True,
-                                          detach=True)
-        return SystemContainer(container, port)
-
-
-    def __init__(self, container, port):
-        assert(isinstance(container, docker.Container))
-        assert(not container is None)
-        self.__container = container
+        self.__systemIdentifier = iden
         self.__port = port
+        self.__container = docker.containers.run(image,
+                                                 command,
+                                                 ports=ports,
+                                                 auto_remove=True,
+                                                 detach=True)
 
     
     def __del__(self):
@@ -47,6 +38,13 @@ class SystemContainer(object):
         """
         if not self.__container is None:
             self.destroy()
+
+
+    def systemIdentifier(self):
+        """
+        Returns the identifier of the system to which this container belongs.
+        """
+        return self.__systemIdentifier
 
 
     def port(self):
