@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 The server script should be run from within the container of the system-under-test
 
@@ -50,7 +51,7 @@ def main():
     # fetch the system!
     # we will probably need to have some sort of registry global variable
     systemName = sys.argv[1]
-    system = FETCH_SYSTEM(systemName)
+    SYSTEM = FETCH_SYSTEM(systemName)
 
     # we also need to accept a port number
     portNumber = int(sys.argv[2])
