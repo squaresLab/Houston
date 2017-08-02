@@ -13,13 +13,13 @@ class SystemContainer(object):
         image = "ardupilot" # TODO hardcoded, for now
         command = 'houstonserver {}, {}'.format(systemIdentifier, port)
         ports = {
-
+            ('{}/tcp'.format(port)): ('127.0.0.1', port)
         }
         container = docker.containers.run(image,
                                           command,
+                                          ports=ports,
                                           auto_remove=True,
                                           detach=True)
-
         return SystemContainer(container, port)
 
 
