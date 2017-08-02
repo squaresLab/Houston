@@ -1,4 +1,5 @@
 import docker
+import requests
 
 class SystemContainer(object):
     """
@@ -50,11 +51,19 @@ class SystemContainer(object):
         """
         Executes a given mission inside this container and returns the result.
         """
-        raise NotImplementedError
+        assert(isinstance(mission, mission.Mission), mission)
+        assert(not mission is None)
+        jsn = mission.toJSON()
+        url = 'http://127.0.0.1:{}/executeMission'.format(port)
+        r = requests.post(url, jsn)
+
+        # TODO: add timeout
+        # TODO: handle unexpected responses
+        return mission.MissionOutcome.fromJSON(r.json())
 
 
     def destroy(self):
         """
         Destroys the attached Docker container.
         """
-        container.kill()
+        self.__container.kill()
