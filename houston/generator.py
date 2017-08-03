@@ -18,20 +18,15 @@ class TestSuiteGenerator(object):
     generation approaches.
     """
 
-    # Would it be better to pass the pisf file as the object is generated or
-    # in the generate function?
-    def __init__(self, system, pisf):
+    def __init__(self, systm):
         """
         Constructs a test suite generator for a given system.
 
-        :param      system          system-under-test
-        :param      pisf            JSON file that contains the limitations
-                                    and options for parameters and other values
-                                    used for initial, external states and 
-                                    environment. 
+        :param      systm           system-under-test
         """
-        self.__system = system
-        self.__pisf   = pisf
+        assert(isinstance(systm, system.System) and not systm is None)
+
+        self.__system = systm
 
 
     def getSystem(self):
