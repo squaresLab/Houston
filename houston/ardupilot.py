@@ -53,22 +53,24 @@ class ArduPilot(System):
         self.__mavproxy   = None
         self.__mavlink    = None
 
-        variables = {}
-        variables['time'] = InternalStateVariable('time', lambda: time.time())
-        variables['altitude'] = InternalStateVariable('altitude',
+        internals = {}
+        # TODO: this is very tricky; we'll need to do something clever here
+        internals['time'] = InternalStateVariable('time', lambda: time.time())
+        internals['altitude'] = InternalStateVariable('altitude',
             lambda: self.__system_dronekit.location.global_relative_frame.alt)
-        variables['latitude'] = InternalStateVariable('latitude',
+        internals['latitude'] = InternalStateVariable('latitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lat)
-        variables['longitude'] = InternalStateVariable('longitude',
+        internals['longitude'] = InternalStateVariable('longitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lon)
-        variables['battery'] = InternalStateVariable('battery',
+        internals['battery'] = InternalStateVariable('battery',
             lambda: self.__system_dronekit.battery.level)
-        variables['armable'] = InternalStateVariable('armable',
+        internals['armable'] = InternalStateVariable('armable',
             lambda: self.__system_dronekit.is_armable)
-        variables['armed'] = InternalStateVariable('armed',
+        internals['armed'] = InternalStateVariable('armed',
             lambda: self.__system_dronekit.armed)
-        variables['mode'] = InternalStateVariable('mode',
+        internals['mode'] = InternalStateVariable('mode',
             lambda : self.__system_dronekit.mode.name)
+
         schemas = {
             'goto'   : GoToActionSchema(),
             'takeoff': TakeoffActionSchema(),
@@ -77,7 +79,7 @@ class ArduPilot(System):
             'setmode'   : SetModeActionSchema()
         }
 
-        super(ArduPilot, self).__init__('ardupilot', variables, schemas)
+        super(ArduPilot, self).__init__('ardupilot', internals, schemas)
 
 
     def installed(self):
