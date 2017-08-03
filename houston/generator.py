@@ -80,13 +80,13 @@ class RandomGenerator(TestSuiteGenerator):
         missions = MissionSuite()
 
         while not missions.satisfies(characteristics):
-            m = self.__generate_mission(characteristics)
+            m = self.generateMission(characteristics)
             tests.add(m)
 
         return tests 
 
 
-    def __generate_mission(self, characteristics):
+    def generateMission(self, characteristics):
         """
         Generates a single Mission at random.
 
@@ -103,13 +103,17 @@ class RandomGenerator(TestSuiteGenerator):
         tempMission['internal'] = self.populateInitialState('internal')
         tempMission['external'] = self.populateInitialState('external')
         tempMission['actions'] = []
-        actionSchemas = self.__system.getActionSchemas()
-        for numAction in range(maxActions):
-            action, schema = random.choice(list(actionSchemas.items()))
-        tempMission['actions'].append(self.populateAction(action, schema))
 
-        # generate a mission
-        return Mission.fromJSON(tempMission)
+        actions = []
+        schemas = self.__system.getActionSchemas()
+        maxNumActions = characteristics.getMaxNumActions()
+        for numAction in range(maxNumActions):
+            schema = random.choice(schemas)
+            action = self.generateAction(schema)
+            actions.append(action)
+
+        mission = mission.Mission(env, internal, external, actions)
+        return mission
 
 
     def populateInitialState(self, state):
@@ -142,31 +146,15 @@ class RandomGenerator(TestSuiteGenerator):
         """
         Generates an action at random
 
-        :param      schema: the schema to which this action belongs
+        :param      schema: the schema to which this action belongs, given as\
+                            an ActionSchema instance
 
         :returns    A randomly-generated Action instance
         """
-        action = {}
-        params = schema.getParameters()
-
+        assert(isinstance(schema, system.ActionSchema) and not schema is None)
+        params = {}
         for parameter in schema.getParameters():
-            name = parameter.
+            name = parameter.getName()
+            params[name] = VALUE
 
-        for parameterObject in actionParameters:
-            parameter = parameterObject.getType()
-            if parameter not in self.__pisf['parameters']:
-                exit()
-            if len(self.__pisf['parameters'][parameter])>1:
-                minVal = self.__pisf['parameters'][parameter]['min']
-                maxVal = self.__pisf['parameters'][parameter]['max']
-                populatedAction[action][parameter] = random.uniform(minVal, maxVal)
-            else:
-                randomChoice = random.choice(
-                    self.__pisf['parameters'][parameter]["options"])
-                populatedAction[action][parameter] = randomChoice
-
-        return mission.Action(schema.getName(), action)
-
-
-class DirectedGenerator(TestSuiteGenerator):
-    pass
+        return mission.Action(schema.getName(), params)
