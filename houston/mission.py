@@ -229,24 +229,32 @@ class Parameter(object):
     Docstring.
     """
 
-    def __init__(self, name, typ, description):
+    def __init__(self, name, valueRange, description):
         """
         Constructs a Parameter object.
 
         :param  name:           the name of this parameter
-        :param  typ:            the type of this parameter (e.g., string, list, float).
+        :param  valueRange:     the range of possible values for this parameter,\
+                                given as a ValueRange object.
         :param  description:    a short description of the parameter
         """
         self.__name = name
-        self.__typ = typ
+        self.__valueRange = valueRange
         self.__description = description
+
+    
+    def getValueRange(self):
+        """
+        Returns the range of possible values for this parameter.
+        """
+        return self.__valueRange
 
 
     def getType(self):
         """
         Returns the type of this parameter
         """
-        return self.__typ
+        return self.__valueRange.getType()
 
 
     def getDescription(self):
@@ -261,9 +269,3 @@ class Parameter(object):
         Returns the name of this parameter.
         """
         return self.__name
-
-    
-    def getValueRange(self):
-        """
-        Returns a range of
-        """
