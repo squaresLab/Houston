@@ -1,0 +1,2 @@
+DiscreteParameter(name, values, description) // ensure all values share the same type
+ContinuousParameter(name, min_value, max_value, inclusive, description)
