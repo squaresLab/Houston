@@ -303,8 +303,8 @@ class ActionSchema(object):
         """
         Constructs an ActionSchema object.
 
-        :param  name            name of the action
-        :param  parameters      parameters of the action
+        :param  name            name of the action schema
+        :param  parameters      a list of the parameters for this action schema
         :param  preconditions   predicates that must be met before the action
                                 can be executed.
         :param  invariants      predicates that should be met at all times during
@@ -312,11 +312,25 @@ class ActionSchema(object):
         :param  postconditions  predicates that must be met after the action is
                                 completed.
         """
+        assert(isinstance(name, str) and not name is None)
+        assert(len(name) > 0)
+        assert(isinstance(parameters, list) and not parameters is None)
+        assert(isinstance(preconditions, list) and not preconditions is None)
+        assert(isinstance(postconditions, list) and not postconditions is None)
+        assert(isinstance(invariants, list) and not invariants is None)
+
         self.__name           = name
         self.__parameters     = parameters
         self.__preconditions  = preconditions
         self.__invariants     = invariants
         self.__postconditions = postconditions
+
+    
+    def getName(self):
+        """
+        Returns the name of this schema.
+        """
+        return self.__name
 
 
     def dispatch(self, action):
