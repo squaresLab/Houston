@@ -120,6 +120,7 @@ class System(object):
 
         TODO: ensure that the system is actually running!
         """
+        assert(self.installed())
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return InternalState(vals)
 
