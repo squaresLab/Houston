@@ -152,9 +152,6 @@ class ArduPilot(System):
         util.pexpect_close(self.__mavlink)
 
 
-"""
-A description of arm
-"""
 class ArmActionSchema(ActionSchema):
     """docstring for ArmActionSchema."""
     def __init__(self):
@@ -179,9 +176,6 @@ class ArmActionSchema(ActionSchema):
         safe_command_conection('armed = True')
 
 
-"""
-A description of set mode
-"""
 class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
     def __init__(self):
@@ -206,9 +200,6 @@ class SetModeActionSchema(ActionSchema):
         safe_command_conection('mode = VehicleMode(\'{}\')'.format(parameters['mode']))
 
 
-"""
-A description of goto
-"""
 class GoToActionSchema(ActionSchema):
     def __init__(self):
         parameters = [
@@ -262,9 +253,6 @@ class GoToActionSchema(ActionSchema):
             parameters['altitude']))
 
 
-"""
-A description of land
-"""
 class LandActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
@@ -300,9 +288,6 @@ class LandActionSchema(ActionSchema):
         safe_command_conection('mode = VehicleMode(\'LAND\')')
 
 
-"""
-A description of takeoff
-"""
 class TakeoffActionSchema(ActionSchema):
     """docstring for TakeoffActionSchema."""
     def __init__(self):
