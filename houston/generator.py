@@ -99,11 +99,9 @@ class RandomGenerator(TestSuiteGenerator):
 
         # generate a mission context
         # TODO: avoid generating JSON -- no type-checking
-        tempMission = {}
-        tempMission['environment'] = self.populateInitialState('environment')
-        tempMission['internal'] = self.populateInitialState('internal')
-        tempMission['external'] = self.populateInitialState('external')
-        tempMission['actions'] = []
+        env = self.populateInitialState('environment')
+        internal = self.populateInitialState('internal')
+        external = self.populateInitialState('external')
 
         actions = []
         schemas = self.__system.getActionSchemas()
