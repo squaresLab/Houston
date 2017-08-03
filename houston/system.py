@@ -63,6 +63,7 @@ class System(object):
         :return A summary of the outcome of the mission, in the form of a
                 MissionOutcome
         """
+        assert(self.installed())
         self.setUp(mission)
         try:
 
