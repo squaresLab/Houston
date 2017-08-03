@@ -1,3 +1,5 @@
+import random
+
 class ValueRange(object):
     """
     Used to represent a range of possible values for a variable, parameter,
@@ -40,12 +42,27 @@ class DiscreteValueRange(ValueRange):
 
     
     def sample(self):
-        raise NotImplementedError
+        return random.choice(self.__values)
 
 
 class ContinuousValueRange(ValueRange):
 
-    def __init__(self, min_value, max_value, inclusive):
+    def __init__(self, min_value, max_value, inclusive=False):
+        """
+        Constructs a continuous value range.
+
+        :param  min_value:  the minimum value within the range
+        :param  max_value:  the maximum value within the range
+        :param  inclusive:  a flag indicating whether the range should be\
+                            half-open or full-open.
+        """
+        assert(min_value is not None)
+        assert(max_value is not None)
+        assert(inclusive is not None)
+        assert(isinstance(min_value, float))
+        assert(isinstance(max_value, float))
+        assert(isinstance(inclusive, bool))
+
         self.__min_value = min_value
         self.__max_value = max_value
         self.__inclusive = inclusive
