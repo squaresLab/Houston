@@ -8,12 +8,22 @@ class ValueRange(object):
 
     def sample(self):
         """
-        Returns a 
+        Uses uniform selection to sample a single value from this range.
         """
+        raise NotImplementedError
+
+    
+    """
+    Returns the type of values within this range.
+    """
+    def type(self):
         raise NotImplementedError
 
 
 class DiscreteValueRange(ValueRange):
+    """
+    Covers both discrete numbers and enumerations.
+    """
 
     def __init__(self, values):
         assert(values is not None)
@@ -45,6 +55,10 @@ class DiscreteValueRange(ValueRange):
         return random.choice(self.__values)
 
 
+    def type(self):
+        return self.__typ
+
+
 class ContinuousValueRange(ValueRange):
 
     def __init__(self, min_value, max_value, inclusive=False):
@@ -70,3 +84,7 @@ class ContinuousValueRange(ValueRange):
 
     def sample(self):
         raise NotImplementedError
+
+
+    def type(self):
+        return float
