@@ -408,36 +408,3 @@ class ActionSchema(object):
                 invariantsFailed.append(invariant.getName())
                 success = False
         return (success, invariantsFailed)
-
-
-class Parameter(object):
-    """
-    Parameter holds the values necessary for the completion of an action.
-    """
-
-    def __init__(self, typ, value, description):
-        """
-        Constructs a Parameter object.
-
-        :param  typ                 type of parameter. Basically the name of the
-                                    parameter. (ex. altitude, longitude..)
-        :param  value               the actual value that the parameter carries.
-        :param  description         quick description of the parameter
-        """
-        self.__type = typ
-        self.__value = value
-        self._description = description
-
-
-    def getType(self):
-        """
-        Returns the type of the parameter (Basically the name of the parameter)
-        """
-        return self.__type
-
-
-    def getValue(self):
-        """
-        Returns the value of the parameter.
-        """
-        return self.__value

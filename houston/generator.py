@@ -1,4 +1,6 @@
 import random
+import mission
+
 """
 The generator module is responsible for providing a number of different test
 suite generation approaches.
@@ -71,28 +73,31 @@ class RandomGenerator(TestSuiteGenerator):
     throw an exception?
     """
 
-
     def generate(self, characteristics, limits):
         assert(isinstance(characteristics, TestSuiteCharacteristics))
         assert(not characteristics is None)
 
-        tests = TestSuite()
+        missions = MissionSuite()
 
-        while not tests.satisfies(characteristics):
-            m = self.__generate_mission(characteristics.getMaxActionsPerMission())
+        while not missions.satisfies(characteristics):
+            m = self.__generate_mission(characteristics)
             tests.add(m)
 
         return tests 
 
 
-    def __generate_mission(self, maxActions):
+    def __generate_mission(self, characteristics):
         """
         Generates a single Mission at random.
+
+        :param  characteristics:    the desired characteristics of the mission\
+                                    suite to which this test will belong.
 
         :returns    A randomly-generated Mission instance
         """
 
         # generate a mission context
+        # TODO: avoid generating JSON -- no type-checking
         tempMission = {}
         tempMission['environment'] = self.populateInitialState('environment')
         tempMission['internal'] = self.populateInitialState('internal')
@@ -105,7 +110,6 @@ class RandomGenerator(TestSuiteGenerator):
 
         # generate a mission
         return Mission.fromJSON(tempMission)
-         
 
 
     def populateInitialState(self, state):
@@ -134,19 +138,20 @@ class RandomGenerator(TestSuiteGenerator):
         return initialState
 
 
-    def populateAction(self, action, schema):
+    def generateAction(self, schema):
         """
-        Populates a given action 
+        Generates an action at random
 
-        :param      action       action to populate
-        :param      schema       schema of the given action
+        :param      schema: the schema to which this action belongs
 
-        :returns a dictionary with randomly generated parameters
+        :returns    A randomly-generated Action instance
         """
-        actionParameters = schema.getParameters()
-        populatedAction = {action:{}}
-        if not actionParameters:
-            return populatedAction
+        action = {}
+        params = schema.getParameters()
+
+        for parameter in schema.getParameters():
+            name = parameter.
+
         for parameterObject in actionParameters:
             parameter = parameterObject.getType()
             if parameter not in self.__pisf['parameters']:
@@ -159,7 +164,9 @@ class RandomGenerator(TestSuiteGenerator):
                 randomChoice = random.choice(
                     self.__pisf['parameters'][parameter]["options"])
                 populatedAction[action][parameter] = randomChoice
-        return populatedAction
+
+        return mission.Action(schema.getName(), action)
+
 
 class DirectedGenerator(TestSuiteGenerator):
     pass
