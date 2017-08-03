@@ -1,44 +1,45 @@
 # These should be conditional imports
-import statistics
-import rospy
 import time
 import os
-
 import sys
 import subprocess as sub
 
 import houston
-from system            import System, InternalStateVariable, ActionSchema, Parameter
-from predicate         import Invariant, Postcondition, Precondition
+from system     import System, InternalStateVariable, ActionSchema, Parameter
+from predicate  import Invariant, Postcondition, Precondition
 
-# TODO always prefer "import" over "from"
 
-## -- CONDITIONAL
-ARDUPILOT_INSTALLED = True
-import pexpect
-import numpy
+# Attempt to import the modules necessary to interact with ArduPilot. If the
+# necessary modules can't be imported, we report ArduPilot as uninstalled and
+# prevent any interaction attempts.
+try:
+    # TODO always prefer "import" over "from"
+    import pexpect
+    import numpy
+    import rospy
+    import statistics
+    from pymavlink      import mavutil, mavwp
+    from geopy          import distance
+    from dronekit_sitl  import SITL
+    from dronekit       import connect, VehicleMode, LocationGlobalRelative
 
-from pymavlink import mavutil, mavwp
-from geopy             import distance
-from dronekit_sitl     import SITL
-from dronekit          import connect, VehicleMode, LocationGlobalRelative
-## -- CONDITIONAL
+    testdir = os.path.abspath("/home/robot/ardupilot/Tools/autotest")
+    sys.path.append(testdir)
 
-# -- CONDITIONAL
-testdir = os.path.abspath("/home/robot/ardupilot/Tools/autotest")
-sys.path.append(testdir)
+    from common import expect_callback, expect_list_clear, expect_list_extend, message_hook, idle_hook
+    from pysim import util, vehicleinfo
 
-from common import expect_callback, expect_list_clear, expect_list_extend, message_hook, idle_hook
-from pysim import util, vehicleinfo
+    SAMPLE_BATTERY = []
+    SAMPLE_TIME    = []
+    WINDOW_BATTERY = .025
+    WINDOW_TIME    = 2
 
-SAMPLE_BATTERY = []
-SAMPLE_TIME    = []
-WINDOW_BATTERY = .025
-WINDOW_TIME    = 2
+    vinfo = vehicleinfo.VehicleInfo()
 
-vinfo = vehicleinfo.VehicleInfo()
+    ARDUPILOT_INSTALLED = True
+except ImportError:
+    ARDUPILOT_INSTALLED = False
 
-# -- CONDITIONAL
 
 """
 Description of the ArduPilot system
@@ -76,6 +77,10 @@ class ArduPilot(System):
         }
 
         super(ArduPilot, self).__init__('ardupilot', variables, schemas)
+
+
+    def installed(self):
+        return ARDUPILOT_INSTALLED
 
 
     def setUp(self, mission):

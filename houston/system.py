@@ -25,6 +25,12 @@ class System(object):
         self.__schemas = schemas
 
 
+    def installed(self):
+        """
+        Returns true if this system is installed on this machine.
+        """
+        raise NotImplementedError
+
     def identifier(self):
         """
         Returns the unique identifier (i.e., the name) for this system.
