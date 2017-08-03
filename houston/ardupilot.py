@@ -5,6 +5,7 @@ import sys
 import subprocess as sub
 
 import houston
+from valueRange import DiscreteValueRange, ContinuousValueRange
 from system     import System, InternalStateVariable, ActionSchema, Parameter
 from predicate  import Invariant, Postcondition, Precondition
 
@@ -180,7 +181,8 @@ class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
     def __init__(self):
         parameters = [
-            Parameter('mode', str, 'description')
+            Parameter('mode', DiscreteValueRange(['GUIDED', 'LOITER', 'RTL']),\
+                      'description')
         ]
 
         preconditions = [
@@ -203,9 +205,12 @@ class SetModeActionSchema(ActionSchema):
 class GoToActionSchema(ActionSchema):
     def __init__(self):
         parameters = [
-            Parameter('latitude', float, 'description'),
-            Parameter('longitude', float, 'description'),
-            Parameter('altitude', float, 'description')
+            Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True),\
+                      'description'),
+            Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True),\
+                      'description'),
+            Parameter('altitude', ContinousValueRange(0.3, 100.0),\
+                      'description')
         ]
 
         preconditions = [
@@ -292,7 +297,8 @@ class TakeoffActionSchema(ActionSchema):
     """docstring for TakeoffActionSchema."""
     def __init__(self):
         parameters = [
-            Parameter('altitude', float, range(0.3, 100.0), 'description')
+            Parameter('altitude', ContinuousValueRange(0.3, 100.0),\
+                      'description')
         ]
         preconditions = [
             Precondition('battery', 'description',
@@ -318,6 +324,7 @@ class TakeoffActionSchema(ActionSchema):
                           params['altitude'] < sv['altitude'].read() + 1)
         ]
         super(TakeoffActionSchema, self).__init__('takeoff', parameters, preconditions, invariants, postconditions)
+
 
     def dispatch(self, parameters):
       safe_command_conection('simple_takeoff({})'.format(parameters['altitude']))
