@@ -74,16 +74,15 @@ class RandomGenerator(TestSuiteGenerator):
     """
 
     def generate(self, characteristics, limits):
-        assert(isinstance(characteristics, TestSuiteCharacteristics))
+        assert(isinstance(characteristics, mission.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
         missions = MissionSuite()
-
         while not missions.satisfies(characteristics):
             m = self.generateMission(characteristics)
-            tests.add(m)
+            missions.add(m)
 
-        return tests 
+        return missions
 
 
     def generateMission(self, characteristics):
@@ -95,6 +94,8 @@ class RandomGenerator(TestSuiteGenerator):
 
         :returns    A randomly-generated Mission instance
         """
+        assert(isinstance(characteristics, mission.MissionSuiteCharacteristics))
+        assert(not characteristics is None)
 
         # generate a mission context
         # TODO: avoid generating JSON -- no type-checking
@@ -152,6 +153,7 @@ class RandomGenerator(TestSuiteGenerator):
         :returns    A randomly-generated Action instance
         """
         assert(isinstance(schema, system.ActionSchema) and not schema is None)
+
         params = {}
         for parameter in schema.getParameters():
             name = parameter.getName()
