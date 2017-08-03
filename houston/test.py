@@ -1,6 +1,9 @@
 import time
 import docker
+import json
 import houston
+
+
 
 class MissionSuite(object):
     """
@@ -22,15 +25,13 @@ class MissionSuite(object):
             jsn = json.load(f)
         return MissionSuite.fromJSON(jsn)
 
-
     @staticmethod
     def fromJSON(jsn):
         """
         Constructs a mission suite from its associated JSON description.
         """
-        missions = [Mission.fromJSON(t) for t in jsn['missions']]
+        missions = [houston.mission.Mission.fromJSON(t) for t in jsn['missions']]
         return MissionSuite(missions)
-
 
     def __init__(self, missions=[]):
         """
@@ -38,9 +39,8 @@ class MissionSuite(object):
 
         :param  missions    the (initial) contents of the mission suite.
         """
-        assert(isinstance(missions, list) and not missions is None)
+        assert (isinstance(missions, list) and not missions is None)
         self.__contents = missions
-
 
     def execute(self, system):
         """
@@ -63,9 +63,8 @@ class MissionSuite(object):
         runningTime = endTime - startTime
 
         # return a summary
-        summary = TestSuiteSummary(runningTime)
+        summary = MissionSuiteSummary(runningTime)
         return summary
-
 
     def executeTest(self, system, test):
 
@@ -83,17 +82,15 @@ class MissionSuite(object):
             # communicate with server
 
             return MissionOutcome()
-        
+
         finally:
             container.stop()
-
 
     def toJSON(self):
         """
         Returns a JSON-based description of this test suite.
         """
         return [t.toJSON() for t in self.__contents]
-
 
     def toFile(self, fn):
         """
@@ -110,7 +107,8 @@ class MissionSuiteCharacteristics(object):
     """
     Used to describe the desired characteristics of a mission suite.
     """
-    def __init__(self, maxNumMissions, maxNumActionsPerMission, maxTime):
+
+    def __init__(self, maxMissions, maxActionsPerMission, maxTime):
         """
         Constructs a set of desired mission suite characteristics
 
@@ -120,18 +118,15 @@ class MissionSuiteCharacteristics(object):
                                 each mission can contain.
         :param  maxTime: the maximum running time of the entire mission suite.
         """
-        self.__maxMissions           = maxMissions
-        self.__maxActionsPerMission  = maxActionsPerMission
-        self.__maxTime               = maxTime
-
+        self.__maxMissions = maxMissions
+        self.__maxActionsPerMission = maxActionsPerMission
+        self.__maxTime = maxTime
 
     def getMaxNumMissions(self):
         return self.__maxMissions
 
-
     def getMaxNumActionsPerMission(self):
-        return self.__maxActions
-
+        return self.__maxActionsPerMission
 
     def getMaxTime(self):
         """
@@ -142,17 +137,15 @@ class MissionSuiteCharacteristics(object):
         return self.__maxTime
 
 
-
 class MissionSuiteSummary(object):
     """
     Contains a summary of the execution of a mission suite.
     """
 
     def __init__(self, wallTime):
-        assert(isinstance(wallTime, float) and not wallTime is None)
+        assert (isinstance(wallTime, float) and not wallTime is None)
         self.__wallTime = wallTime
         self.__outcomes = []
-
 
     def hasFailures(self):
         """
@@ -160,14 +153,12 @@ class MissionSuiteSummary(object):
         """
         raise NotImplementedError
 
-
     def getWallClockTime(self):
         """
         Returns the wall-clock running time taken to execute the mission suite,
         measured in seconds.
         """
         return self.__wallTime
-
 
     def toJSON(jsn):
         """
