@@ -35,7 +35,7 @@ def executeMission():
     system = houston.getSystem(system)
 
     mission = json.loads(flask.request.args['mission'])
-    mission = Mission.fromJSON(mission)
+    mission = houston.mission.Mission.fromJSON(mission)
 
     outcome = system.execute(mission)
     outcome = outcome.toJSON()
