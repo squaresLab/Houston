@@ -1,44 +1,45 @@
 import time
 import docker
+import houston
 
-class TestSuite(object):
+class MissionSuite(object):
     """
-    A test suite is an ordered set (i.e., a sequence with no repeated elements)
-    of tests.
+    A mission suite is an ordered set (i.e., a sequence with no repeated elements)
+    of missions.
     """
 
     @staticmethod
     def fromFile(fn):
         """
-        Constructs a test suite from a given file, containing a JSON-based
+        Constructs a mission suite from a given file, containing a JSON-based
         description of its contents.
 
-        :param  fn  the path to the test suite description file
+        :param  fn  the path to the mission suite description file
 
-        :returns    the corresponding TestSuite for that file
+        :returns    the corresponding MissionSuite for that file
         """
         with open(fn, "r") as f:
             jsn = json.load(f)
-        return TestSuite.fromJSON(jsn)
+        return MissionSuite.fromJSON(jsn)
 
 
     @staticmethod
     def fromJSON(jsn):
         """
-        Constructs a test suite from its associated JSON description.
+        Constructs a mission suite from its associated JSON description.
         """
-        tests = [Mission.fromJSON(t) for t in jsn['tests']]
-        return TestSuite(tests)
+        missions = [Mission.fromJSON(t) for t in jsn['missions']]
+        return MissionSuite(missions)
 
 
-    def __init__(self, tests=[]):
+    def __init__(self, missions=[]):
         """
-        Constructs a test suite.
+        Constructs a mission suite.
 
-        :param  tests   the (initial) contents of the test suite.
+        :param  missions    the (initial) contents of the mission suite.
         """
-        assert(isinstance(tests, list) and not tests is None)
-        self.__contents = tests
+        assert(isinstance(missions, list) and not missions is None)
+        self.__contents = missions
 
 
     def execute(self, system):

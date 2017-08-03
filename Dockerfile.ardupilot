@@ -48,7 +48,7 @@ RUN sudo pip install  future \
                       dronekit \
                       statistics \
                       geopy \
-		      flask
+		                  flask
 
 ENV HOME "/home/robot"
 ENV ARDUPILOT_LOCATION "${HOME}/ardupilot"

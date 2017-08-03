@@ -65,7 +65,7 @@ class SystemContainer(object):
         """
         Executes a given mission inside this container and returns the result.
         """
-        assert(isinstance(mission, mission.Mission), mission)
+        assert(isinstance(mission, mission.Mission))
         assert(not mission is None)
         jsn = mission.toJSON()
         url = 'http://127.0.0.1:{}/executeMission'.format(port)
