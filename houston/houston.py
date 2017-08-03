@@ -18,18 +18,18 @@ The set of containers that are actively in use.
 __containers = set()
 
 
-def registerSystem(system):
+def registerSystem(systm):
     """
     Registers a system with Houston.
 
     @TODO   we could perform this automatically using magic methods / class hooks
     """
     global __systems
-    assert(isinstance(system, system.System) and not system is None)
-    iden = system.identifier()
+    assert(isinstance(systm, system.System) and not systm is None)
+    iden = systm.identifier()
     if iden in __systems:
         raise Error("system already registered with name: {}".format(iden))
-    __systems[iden] = system
+    __systems[iden] = systm
 
 
 def getSystem(identifier):
@@ -40,12 +40,12 @@ def getSystem(identifier):
     return __systems[identifier]
 
 
-def createContainer(system, image):
+def createContainer(systm, image):
     """
     Constructs a fresh, ephemeral container for a given system using a
     specified Docker image.
     
-    :param  system: the System object
+    :param  systm:  the System object
     :param  image:  the name of the Docker image that should be used to spawn\
                     the container
 
@@ -54,10 +54,10 @@ def createContainer(system, image):
     global __port_pool
     global __containers
     
-    assert(isinstance(system, system.System))
+    assert(isinstance(systm, systm.System))
     assert(not system is None)
 
-    iden = system.identifier()
+    iden = systm.identifier()
     assert(iden in __systems)
 
 

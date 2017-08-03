@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 This server script is run inside system containers. The server implements a
 single endpoint that accepts the name of a system (i.e., its identifier), and

@@ -1,30 +1,44 @@
+# These should be conditional imports
 import statistics
 import rospy
 import time
-import numpy
 import os
-import subprocess as sub
+
 import sys
-import pexpect
+import subprocess as sub
+
 import houston
+from system            import System, InternalStateVariable, ActionSchema, Parameter
+from predicate         import Invariant, Postcondition, Precondition
+
+# TODO always prefer "import" over "from"
+
+## -- CONDITIONAL
+ARDUPILOT_INSTALLED = True
+import pexpect
+import numpy
+
 from pymavlink import mavutil, mavwp
 from geopy             import distance
 from dronekit_sitl     import SITL
 from dronekit          import connect, VehicleMode, LocationGlobalRelative
-from system            import System, InternalStateVariable, ActionSchema, Predicate, \
-                              Invariant, Postcondition, Precondition, Parameter
+## -- CONDITIONAL
 
+# -- CONDITIONAL
 testdir = os.path.abspath("/home/robot/ardupilot/Tools/autotest")
 sys.path.append(testdir)
 
 from common import expect_callback, expect_list_clear, expect_list_extend, message_hook, idle_hook
 from pysim import util, vehicleinfo
+
 SAMPLE_BATTERY = []
 SAMPLE_TIME    = []
 WINDOW_BATTERY = .025
 WINDOW_TIME    = 2
 
 vinfo = vehicleinfo.VehicleInfo()
+
+# -- CONDITIONAL
 
 """
 Description of the ArduPilot system
@@ -60,11 +74,13 @@ class ArduPilot(System):
             'arm'    : ArmActionSchema(),
             'setmode'   : SetModeActionSchema()
         }
-        super(ArduPilot, self).__init__(variables, schemas)
+
+        super(ArduPilot, self).__init__('ardupilot', variables, schemas)
 
 
     def setUp(self, mission):
-        ardu_location = '/home/robot/ardupilot'
+        # TODO lots of hardcoded paths
+        ardu_location = '/home/robot/ardupilot' # TODO: hardcoded!
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
         param_file = os.path.join(ardu_location, 'Tools/autotest/default_params/copter.parm')
 
@@ -318,10 +334,10 @@ class TakeoffActionSchema(ActionSchema):
 
 
 def safe_command_conection(value):
+    # TODO: what is this? Do we need to use an exec call?
     system = connect('127.0.0.1:14551', wait_ready=False)
     exec('system.{}'.format(value))
     system.close()
-
 
 
 def max_expected_battery_usage(prime_latitude, prime_longitude, prime_altitude):

@@ -64,6 +64,10 @@ RUN sudo apt-get install -y vim nano && \
     sudo pip install dronekit-sitl && \
     sudo pip install pexpect --upgrade
 
-ADD houston /opt/houston
+RUN sudo mkdir -p /opt/houston
+ADD houston /opt/houston/houston
 ADD test /opt/houston/test
+ADD setup.py /opt/houston/setup.py
 RUN sudo chown -R $(whoami) /opt/houston
+RUN cd /opt/houston && \
+    sudo ./setup.py install
