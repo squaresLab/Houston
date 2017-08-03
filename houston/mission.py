@@ -226,32 +226,38 @@ class Action(object):
 
 class Parameter(object):
     """
-    Parameter holds the values necessary for the completion of an action.
+    Docstring.
     """
 
-    def __init__(self, typ, value, description):
+    def __init__(self, name, typ, description):
         """
         Constructs a Parameter object.
 
-        :param  typ                 type of parameter. Basically the name of the
-                                    parameter. (ex. altitude, longitude..)
-        :param  value               the actual value that the parameter carries.
-        :param  description         quick description of the parameter
+        :param  name:           the name of this parameter
+        :param  typ:            the type of this parameter (e.g., string, list, float).
+        :param  description:    a short description of the parameter
         """
-        self.__type = typ #TODO what?! Is this a name or a type? Confusing.
-        self.__value = value
+        self.__name = name
+        self.__typ = typ
         self.__description = description
 
 
     def getType(self):
         """
-        Returns the type of the parameter (Basically the name of the parameter)
+        Returns the type of this parameter
         """
-        return self.__type
+        return self.__typ
 
 
-    def getValue(self):
+    def getDescription(self):
         """
-        Returns the value of the parameter.
+        Returns a description of this parameter
         """
-        return self.__value
+        return self.__description
+
+
+    def getName(self):
+        """
+        Returns the name of this parameter.
+        """
+        return self.__name
