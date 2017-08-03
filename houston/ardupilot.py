@@ -292,7 +292,7 @@ class TakeoffActionSchema(ActionSchema):
     """docstring for TakeoffActionSchema."""
     def __init__(self):
         parameters = [
-            Parameter('altitude', float, 'description')
+            Parameter('altitude', float, range(0.3, 100.0), 'description')
         ]
         preconditions = [
             Precondition('battery', 'description',

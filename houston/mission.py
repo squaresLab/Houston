@@ -261,3 +261,9 @@ class Parameter(object):
         Returns the name of this parameter.
         """
         return self.__name
+
+    
+    def getValueRange(self):
+        """
+        Returns a range of
+        """

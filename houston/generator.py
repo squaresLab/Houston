@@ -49,7 +49,7 @@ class TestSuiteGenerator(object):
                                 available for the purposes of generating the
                                 test suite.
 
-        :return A TestSuite object.
+        :return A MissionSuite object.
         """
 
         # ResourceUsage and ResourceLimit objects
@@ -80,7 +80,7 @@ class RandomGenerator(TestSuiteGenerator):
         return missions
 
 
-    def generateMission(self, characteristics):
+    def generateMission(self, stateBefore, characteristics):
         """
         Generates a single Mission at random.
 
@@ -93,18 +93,25 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not characteristics is None)
 
         # generate a mission context
-        # TODO: avoid generating JSON -- no type-checking
         env = self.populateInitialState('environment')
         internal = self.populateInitialState('internal')
         external = self.populateInitialState('external')
+
+        # generate a state object
+        state = PUT_EVERYTHING_TOGETHER()
+
+        # need to ensure that precondition is satisfied
 
         actions = []
         schemas = self.__system.getActionSchemas()
         maxNumActions = characteristics.getMaxNumActions()
         for numAction in range(maxNumActions):
             schema = random.choice(schemas)
-            action = self.generateAction(schema)
+            action = self.generateAction(schema, state)
             actions.append(action)
+
+            # figure out what the next state will look like
+            state = NEXT_STATE(schema, action, state)
 
         mission = mission.Mission(env, internal, external, actions)
         return mission
@@ -136,12 +143,24 @@ class RandomGenerator(TestSuiteGenerator):
         return initialState
 
 
-    def generateAction(self, schema):
+    def generateInternalState(self):
+        pass
+
+
+    def generateEnvironment(self):
+    
+        return Environment()
+
+
+    def generateAction(self, schema, stateBefore):
         """
         Generates an action at random
 
         :param      schema: the schema to which this action belongs, given as\
                             an ActionSchema instance
+        :param      stateBefore:    the state of the system immediately before\
+                                    the start of the action
+
 
         :returns    A randomly-generated Action instance
         """
@@ -150,6 +169,10 @@ class RandomGenerator(TestSuiteGenerator):
         params = {}
         for parameter in schema.getParameters():
             name = parameter.getName()
-            params[name] = VALUE
+
+            # if a generator was supplied, use that to generate a suitable
+            # value, otherwise use the default generator
+            value = parameter.generate()
+            params[name] = value
 
         return mission.Action(schema.getName(), params)
