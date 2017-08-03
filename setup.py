@@ -12,7 +12,7 @@ setup(
     url='https://github.com/ChrisTimperley/Houston',
     license='mit',
     #dependency_links=['https://hg.python.org/cpython/raw-file/2.7/Lib/xmlrpclib.py#egg=xmlrpclib-2.7'],
-    #install_required=['xmlrpclib'],
+    install_required=['flask'],
     packages=['houston'],
     entry_points = {
         'console_scripts': [ 'houstonserver = houston.server:main' ]
