@@ -10,6 +10,22 @@ suite generation approaches.
 - maximise mutant score
 - minimise expected time to cause failure (obtained via use of mutants)
 
+
+TODO: We need something to define legal initial states (and that gets
+      around the time problem)
+
+
+      Perhaps the state should be constructed in stages?
+
+      * environment
+      * external state (uses environment state as an argument)
+      * internal state (uses env., and external states as arguments)
+
+    OR, we don't try to generate these things directly, but rather we allow
+    systems to define "InitialParameters" (perhaps something with a better
+    name). Each "System" implements a method "generateContext", which builds
+    a MissionContext (i.e., internal, external, env.) using a set of initial
+    parameters.
 """
 
 class TestSuiteGenerator(object):
@@ -92,16 +108,17 @@ class RandomGenerator(TestSuiteGenerator):
         assert(isinstance(characteristics, mission.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
-        # generate a mission context
-        env = self.populateInitialState('environment')
-        internal = self.populateInitialState('internal')
-        external = self.populateInitialState('external')
+        env = self.generateEnvironment()
 
-        # generate a state object
-        state = PUT_EVERYTHING_TOGETHER()
+        # most of the internal variables should be fixed, except for
+        # long./lat..
+        internal = {}
+        internal = InternalState(internal)
+
+        external = {}
+        external = ExternalState(external)
 
         # need to ensure that precondition is satisfied
-
         actions = []
         schemas = self.__system.getActionSchemas()
         maxNumActions = characteristics.getMaxNumActions()
@@ -117,38 +134,17 @@ class RandomGenerator(TestSuiteGenerator):
         return mission
 
 
-    def populateInitialState(self, state):
-        """
-        Populates a given initial state
-
-        :param      state       state to populate
-
-        :returns a dictionary with randomly generated values
-        """
-        initialState = {'variables': {}}
-        PISFState = self.__pisf[state]
-        if not PISFState:
-            return initialState
-
-        for variable in PISFState:
-            if len(PISFState[variable]) > 1:
-                minVal = PISFState[variable]['min']
-                maxVal = PISFState[variable]['max']
-                initialState['variables'][variable] = random.uniform(minVal, maxVal)
-            else:
-
-                randomChoice = random.choice(PISFState[variable])
-                initialState['variables'][variable] = randomChoice
-
-        return initialState
+    def generateExternalState(self):
+        return ExternalState()
 
 
-    def generateInternalState(self):
-        pass
+    def generateInternalState(self, env, ext):
+        # this may have to be defined for each system 
+
+        return InternalState({})
 
 
     def generateEnvironment(self):
-    
         return Environment()
 
 
