@@ -19,9 +19,9 @@ class Mission(object):
         assert('actions' in jsn)
         assert(isinstance(jsn['actions'], list))
 
-        env = Environment.fromJSON(jsn['environment'])
-        internal = InternalState.fromJSON(jsn['internal'])
-        external = ExternalState.fromJSON(jsn['external'])
+        env = system.Environment.fromJSON(jsn['environment'])
+        internal = system.InternalState.fromJSON(jsn['internal'])
+        external = system.ExternalState.fromJSON(jsn['external'])
         actions = [Action.fromJSON(action) for action in jsn['actions']]
 
         return Mission(env, internal, external, actions)
