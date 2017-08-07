@@ -139,9 +139,8 @@ class RandomGenerator(TestSuiteGenerator):
             # - find preconditions that DO NOT interact with parameters
             # - does the current state satisfy those preconditions? If not, we
             #   can't generate an action of that schema! Discard.
-
             legalSchemas = set()
-            for schema in schemas: # TODO what's the type?
+            for key, schema in schemas.iteritems(): # TODO what's the type?
 
                 # is it impossible to satisfy this schema in the current state?
                 for precondition in schema.getPreconditions():
