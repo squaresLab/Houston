@@ -40,6 +40,14 @@ class SystemContainer(object):
             self.destroy()
 
 
+    def ready(self):
+        """
+        Returns true if the server running inside this system container is
+        ready to accept requests.
+        """
+        pass
+
+
     def systemIdentifier(self):
         """
         Returns the identifier of the system to which this container belongs.
