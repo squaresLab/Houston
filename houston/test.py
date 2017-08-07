@@ -42,6 +42,14 @@ class MissionSuite(object):
         assert (isinstance(missions, list) and not missions is None)
         self.__contents = missions
 
+    def add(self, mission):
+        """
+        Appends a mission to contents
+
+        :param  mission     mission to append
+        """
+        self.__contents.append(mission)
+
     def execute(self, system):
         """
         Executes the tests contained within this suite.
