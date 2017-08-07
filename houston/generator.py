@@ -152,14 +152,13 @@ class RandomGenerator(TestSuiteGenerator):
         # schema
         for attempt in range(limits.getMaxNumRetries()):
             schema = random.choice(legalSchemas)
-            (action, nextState) = self.generateActionOfSchema(schema, env, stateBefore)
+            action  = self.generateActionOfSchema(schema, env, stateBefore)
 
-            # do these parameters satisfy the precondition?
+            # 1. do these parameters satisfy the precondition? If not, we need
+            #    to generate a new action
 
-
-            # 1. find parameters which satisfy the precondition
             # 2. determine the resulting state separately
-            
+            nextState = schema.estimateState(action, currentState, environment)
 
             return (action, nextState)
 
