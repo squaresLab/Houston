@@ -141,7 +141,7 @@ class RandomGenerator(TestSuiteGenerator):
         # schema
         for attempt in range(limits.getMaxNumRetries()):
             schema = random.choice(legalSchemas)
-            (action, nextState) = self.generateActionOfSchema(schema, currentState)
+            (action, nextState) = self.generateActionOfSchema(schema, env, stateBefore)
 
             # TODO: error checking
 
@@ -152,23 +152,21 @@ class RandomGenerator(TestSuiteGenerator):
             raise Exception('exhausted max. num. retries when generating action.')
 
 
-    def generateActionOfSchema(self, schema, stateBefore):
+    def generateActionOfSchema(self, schema, env, stateBefore):
         """
         Generates an action at random
 
-        :param      schema: the schema to which this action belongs, given as\
-                            an ActionSchema instance
-        :param      stateBefore:    the state of the system immediately before\
-                                    the start of the action
-
+        :param  schema: the schema to which this action belongs, given as\
+                    an ActionSchema instance.
+        :param  env: TODO
+        :param  stateBefore: the state of the system immediately before\
+                    the start of the action
 
         :returns    A randomly-generated Action instance
         """
-        assert(isinstance(schema, system.ActionSchema) and not schema is None)
-
-
-
-
+        assert (isinstance(schema, system.ActionSchema) and not schema is None)
+        assert (isinstance(env, state.Environment) and not env is None)
+        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
 
         params = {}
         for parameter in schema.getParameters():
@@ -178,6 +176,5 @@ class RandomGenerator(TestSuiteGenerator):
             # value, otherwise use the default generator
             value = parameter.generate()
             params[name] = value
-            stateBefore.updateInternalState(name, value)
 
-        return mission.Action(schema.getName(), params), stateBefore
+        return mission.Action(schema.getName(), params)
