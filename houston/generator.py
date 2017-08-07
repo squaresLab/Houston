@@ -91,7 +91,7 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not characteristics is None)
 
         missions = test.MissionSuite()
-        while not missions.satisfies(characteristics):
+        while not missions.satisfiesMissionNumber(characteristics):
             m = self.generateMission(characteristics, limits)
             missions.add(m)
 
@@ -160,7 +160,7 @@ class RandomGenerator(TestSuiteGenerator):
                 pass # TODO
 
             # we have an action!
-            # figure out what the next state will be 
+            # figure out what the next state will be
             currentState = NEXT_STATE(schema, env, internal, external, action)
 
         return mission.Mission(env, startState, actions)

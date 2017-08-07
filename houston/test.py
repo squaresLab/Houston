@@ -48,14 +48,24 @@ class MissionSuite(object):
         """
         self.__contents.append(mission)
 
-    def satisfies(self, characteristics):
+    def satisfiesMissionNumber(self, characteristics):
         """
-        Checks if the state of the missiosuite satisfies the characteristics given.
+        Checks if the state of the mission suite satisfies the characteristics given.
+
+        :param    characteristics       MissionSuiteCharacteristics
         """
         if len(self.__contents) < characteristics.getMaxNumMissions():
             return False
         #TODO How to check expected running time?
         return True
+
+    def satisfiesActionsNumber(self, characteristics):
+        """
+        Checks the number of actions per mission is met.
+
+        :param    characteristics       MissionSuiteCharacteristics
+        """
+        pass
 
     def execute(self, system):
         """
@@ -202,7 +212,7 @@ class MissionSuiteLimits(object):
     def getMaxNumRetries(self):
         """
         Returns the maximum number of tries that the generator has to come up
-        with a valid action. 
+        with a valid action.
         """
         return self.__maxNumRetries
 
