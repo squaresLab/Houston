@@ -1,3 +1,5 @@
+import copy
+
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
@@ -82,7 +84,7 @@ class Mission(object):
 #    take place. Context is given by the initial state of the environment, and
 #    the initial values of the internal and external system variables.
 #    """
-    
+
 
 class MissionOutcome(object):
     """
@@ -242,7 +244,7 @@ class Parameter(object):
         self.__valueRange = valueRange
         self.__description = description
 
-    
+
     def getValueRange(self):
         """
         Returns the range of possible values for this parameter.
