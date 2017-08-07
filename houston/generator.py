@@ -111,7 +111,7 @@ class RandomGenerator(TestSuiteGenerator):
 
 
         env = self.generateEnvironment({'variables':{}})
-
+        state = []
         # most of the internal variables should be fixed, except for
         # long./lat..
         internal = self.generateInternalState({'variables':{}})
@@ -120,10 +120,10 @@ class RandomGenerator(TestSuiteGenerator):
         # need to ensure that precondition is satisfied
         actions = []
         schemas = self.getSystem().getActionSchemas()
-        
+
         maxNumActions = characteristics.getMaxNumActionsPerMission()
         for numAction in range(maxNumActions):
-            schema = random.choice(schemas.keys())
+            schema = schemas[random.choice(schemas.keys())]
             action = self.generateAction(schema, state)
             actions.append(action)
 
