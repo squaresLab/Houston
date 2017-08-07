@@ -12,7 +12,7 @@ class ValueRange(object):
         """
         raise NotImplementedError
 
-    
+
     """
     Returns the type of values within this range.
     """
@@ -27,10 +27,9 @@ class DiscreteValueRange(ValueRange):
 
     def __init__(self, values):
         assert(values is not None)
-        assert(isinstance(values, list) or isinstance(values, range))
-
+        assert(isinstance(values, list) or isinstance(values, type(range)))
         self.__values = values
-        if isinstance(values, range):
+        if isinstance(values, type(range)):
             self.__typ = int
             if values.step() > 0:
                 self.__size = (values.stop() - values.start()) / values.step()
@@ -43,14 +42,14 @@ class DiscreteValueRange(ValueRange):
             self.__typ = type(values[0])
             assert(all(type(v) == self.__typ for v in values))
 
-    
+
     def size(self):
         """
         Returns the number of values within this range.
         """
         return self.__size
 
-    
+
     def sample(self):
         return random.choice(self.__values)
 
