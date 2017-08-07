@@ -104,9 +104,11 @@ class RandomGenerator(TestSuiteGenerator):
         assert (not characteristics is None)
 
         # generate an initial state
-        startState = self.generateInitialState()
+        env = self.generateEnvironment()
+        startState = self.generateInitialState(env)
         currentState = startState
         nextState = None
+
         actions = []
         schemas = self.getSystem().getActionSchemas()
 
