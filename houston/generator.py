@@ -140,15 +140,13 @@ class RandomGenerator(TestSuiteGenerator):
                             continue
                 legalSchemas.add(schema)
 
-            # TODO: implement!
-            # try to generate an action (belonging to
             action = None
             for attempt in range(limits.getMaxNumRetries()):
                 schema = random.choice(legalSchemas)
 
-                # generate parameter values (and create an Action)
-                params = {} # TODO!
-                action = Action(schema.getName(), params)
+                # generate action using generateAction
+                action = self.generateAction(schema, stateBefore)
+
 
                 # check that preconditions and invariants are satisfied
                 predicates = schema.getPreconditions() + schema.getInvariants()
@@ -160,6 +158,7 @@ class RandomGenerator(TestSuiteGenerator):
                 pass # TODO
 
             # we have an action!
+            actions.append(action)
             # figure out what the next state will be
             currentState = NEXT_STATE(schema, env, internal, external, action)
 
