@@ -133,9 +133,15 @@ class MissionSuiteCharacteristics(object):
         self.__maxTime = maxTime
 
     def getMaxNumMissions(self):
+        """
+        Returns the maximum number of missions inside the mission suite
+        """
         return self.__maxMissions
 
     def getMaxNumActionsPerMission(self):
+        """
+        Returns the maximum number of actions per mission
+        """
         return self.__maxActionsPerMission
 
     def getMaxTime(self):
