@@ -1,4 +1,5 @@
 import copy
+import system
 
 class Mission(object):
     """
@@ -36,9 +37,9 @@ class Mission(object):
         :param  actions:        a list of actions
         """
         assert(actions != [])
-        assert(isinstance(environment, Environment) and not environment is None)
-        assert(isinstance(internal, InternalState) and not internal is None)
-        assert(isinstance(external, ExternalState) and not external is None)
+        assert(isinstance(environment, system.Environment) and not environment is None)
+        assert(isinstance(internal, system.InternalState) and not internal is None)
+        assert(isinstance(external, system.ExternalState) and not external is None)
 
         self.__environment = environment
         self.__internal = internal
