@@ -82,7 +82,7 @@ class ContinuousValueRange(ValueRange):
 
 
     def sample(self):
-        raise NotImplementedError
+        return random.uniform(self.__min_value, self.__max_value)
 
 
     def type(self):
