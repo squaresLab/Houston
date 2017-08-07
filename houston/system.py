@@ -131,11 +131,6 @@ class System(object):
         """
         return copy.deepcopy(self.__schemas)
 
-    
-    def generateMissionContext(self, args):
-        # TODO: stub!
-        pass
-
 
 class State(object):
     """

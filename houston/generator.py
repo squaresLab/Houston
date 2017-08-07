@@ -2,6 +2,7 @@ import random
 import mission
 import system
 import test
+
 """
 The generator module is responsible for providing a number of different test
 suite generation approaches.
@@ -91,57 +92,86 @@ class RandomGenerator(TestSuiteGenerator):
 
         missions = test.MissionSuite()
         while not missions.satisfies(characteristics):
-            m = self.generateMission(characteristics)
+            m = self.generateMission(characteristics, limits)
             missions.add(m)
 
         return missions
 
         #stateBefore
-    def generateMission(self, characteristics):
+
+
+    def generateMission(self, characteristics, limits):
         """
         Generates a single Mission at random.
 
         :param  characteristics:    the desired characteristics of the mission\
                                     suite to which this test will belong.
+        :param  limits              TODO
 
         :returns    A randomly-generated Mission instance
         """
         assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
-
-        env = self.generateEnvironment({})
-        state = []
-        # most of the internal variables should be fixed, except for
-        # long./lat..
-        internal = self.generateInternalState({})
-        external = self.generateExternalState({})
+        # generate an initial state
+        (env, startState) = self.generateInitialState()
+        currentState = startState
 
         # need to ensure that precondition is satisfied
         actions = []
         schemas = self.getSystem().getActionSchemas()
 
+        # TODO: change to while loop
         maxNumActions = characteristics.getMaxNumActionsPerMission()
         for numAction in range(maxNumActions):
-            schema = schemas[random.choice(schemas.keys())]
-            action = self.generateAction(schema, state)
-            actions.append(action)
 
-            # figure out what the next state will look like
-            state = NEXT_STATE(schema, action, state)
+            # which schemas can we *possibly* satisfy?
+            # - find preconditions that DO NOT interact with parameters
+            # - does the current state satisfy those preconditions? If not, we
+            #   can't generate an action of that schema! Discard.
 
-        missionReturn = mission.Mission(env, internal, external, actions)
-        return missionReturn
+            legalSchemas = set()
+            for schema in schemas: # TODO what's the type?
+
+                # is it impossible to satisfy this schema in the current state?
+                for precondition in schema.getPreconditions():
+                    if not precondition.usesParameters():
+                        if not precondition.satisfiedBy(env, internal, external, {}):
+                            continue
+                legalSchemas.add(schema)
+
+            # TODO: implement!
+            # try to generate an action (belonging to
+            action = None
+            for attempt in range(limits.getMaxNumRetries()):
+                schema = random.choice(legalSchemas)
+
+                # generate parameter values (and create an Action)
+                params = {} # TODO!
+                action = Action(schema.getName(), params)
+
+                # check that preconditions and invariants are satisfied
+                predicates = schema.getPreconditions() + schema.getInvariants()
+                if all(p.satisfiedBy(env, internal, external, params) for p in predicates):
+                    break
+
+            # have we exhausted the max. num. retries? Throw an error.
+            if attempt == (limits.getMaxNumRetries() - 1):
+                pass # TODO
+
+            # we have an action!
+            # figure out what the next state will be 
+            currentState = NEXT_STATE(schema, env, internal, external, action)
+
+        return mission.Mission(env, startState, actions)
 
 
-    def generateExternalState(self, variables):
-        return system.ExternalState(variables)
-
-
-    def generateInternalState(self, variables):
-        # this may have to be defined for each system
-
-        return system.InternalState(variables)
+    def generateInitialState(self):
+        # TODO: add these to the constructor
+        initial = (self.__initialEnvironment, \
+                   self.__initialInternal, \
+                   self.__initialExternal)
+        return initial
 
 
     def generateEnvironment(self, variables):

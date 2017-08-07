@@ -98,3 +98,18 @@ class Precondition(Predicate):
         Returns the name of the Precondition.
         """
         return self.__name
+
+
+    def usesParameters(self):
+        """
+        Returns true if this precondition
+        """
+        return
+
+    
+    def getUsedParameters(self):
+        pass
+
+    
+    def getUsedVariables(self):
+        pass
