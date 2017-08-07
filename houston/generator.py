@@ -173,7 +173,10 @@ class RandomGenerator(TestSuiteGenerator):
         :param  stateBefore: the state of the system immediately before\
                     the start of the action
 
-        :returns    A randomly-generated Action instance
+        :returns    A tuple containing a randomly-generated Action instance \
+                    and a description of the state of the system immediately \
+                    after executing that action in the given initial state and \
+                    environment.
         """
         assert (isinstance(schema, system.ActionSchema) and not schema is None)
         assert (isinstance(env, state.Environment) and not env is None)
@@ -188,4 +191,7 @@ class RandomGenerator(TestSuiteGenerator):
             value = parameter.generate()
             params[name] = value
 
-        return mission.Action(schema.getName(), params)
+        action = mission.Action(schema.getName(), params)
+        stateAfter = schema.estimateState(action, stateBefore, env)
+
+        return (action, stateAfter)
