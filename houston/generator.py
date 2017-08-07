@@ -11,23 +11,6 @@ suite generation approaches.
 - maximise (behavioural) diversity
 - maximise mutant score
 - minimise expected time to cause failure (obtained via use of mutants)
-
-
-TODO: We need something to define legal initial states (and that gets
-      around the time problem)
-
-
-      Perhaps the state should be constructed in stages?
-
-      * environment
-      * external state (uses environment state as an argument)
-      * internal state (uses env., and external states as arguments)
-
-    OR, we don't try to generate these things directly, but rather we allow
-    systems to define "InitialParameters" (perhaps something with a better
-    name). Each "System" implements a method "generateContext", which builds
-    a MissionContext (i.e., internal, external, env.) using a set of initial
-    parameters.
 """
 
 class TestSuiteGenerator(object):
@@ -36,21 +19,21 @@ class TestSuiteGenerator(object):
     generation approaches.
     """
 
-    def __init__(self, systm, env, internalState, externalState):
+    def __init__(self, systm, environment, initialState):
         """
         Constructs a test suite generator for a given system.
 
         :param      systm           system-under-test
-        :param      initialState    initialState of the missionsuite, this is
-                                    basically environment, internal and external
-                                    states wrapped up for convenience.
+        :param      environment     the environment in which the missions \
+                                    should be conducted
+        :param      initialState    the initial state of the system for each \
+                                    mission
         """
-        assert(isinstance(systm, system.System) and not systm is None)
-        assert(isinstance(env, system.Environment)
+        assert (isinstance(systm, system.System) and not systm is None)
+        assert (isinstance(environment, system.Environment) and not environment is None)
         self.__system = systm
-        self.__env = env
-        self.__internalState = internalState
-        self.__externalState = externalState
+        self.__environment = environment
+        self.__initialState = initialState
 
 
     def getSystem(self):
@@ -59,6 +42,7 @@ class TestSuiteGenerator(object):
         generate test suites.
         """
         return self.__system
+
 
     def generate(self, characteristics, limits):
         """
@@ -116,13 +100,13 @@ class RandomGenerator(TestSuiteGenerator):
 
         :returns    A randomly-generated Mission instance
         """
-        assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
-        assert(not characteristics is None)
+        assert (isinstance(characteristics, test.MissionSuiteCharacteristics))
+        assert (not characteristics is None)
 
         # generate an initial state
         startState = self.generateInitialState()
-
-        # need to ensure that precondition is satisfied
+        currentState = startState
+        nextState = None
         actions = []
         schemas = self.getSystem().getActionSchemas()
 
@@ -142,43 +126,34 @@ class RandomGenerator(TestSuiteGenerator):
                         if not precondition.satisfiedBy(startState, {}):
                             continue
                 legalSchemas.add(schema)
-
-            action = None
-            newState = None
+            
+            # attempt to generate an action belonging to any of the legal
+            # schemas
             for attempt in range(limits.getMaxNumRetries()):
                 schema = random.choice(legalSchemas)
+                (action, nextState) = self.generateAction(schema, currentState)
 
-                # generate action using generateAction
-                action, newState = self.generateAction(schema, \
-                    startState)
-                params = action.getValues() # TODO is this what we are going to use?
-
+                # TODO: error checking
 
                 # check that preconditions and invariants are satisfied
                 predicates = schema.getPreconditions() + schema.getInvariants()
                 if all(p.satisfiedBy(newState, params) for p in predicates):
-                    break
+                    actions.append(action)
+                    currentState = nextState
 
             # have we exhausted the max. num. retries? Throw an error.
             if attempt == (limits.getMaxNumRetries() - 1):
-                pass # TODO
-
-            # we have an action!
-            actions.append(action)
-            # figure out what the next state will be
-            startState = newState
+                raise Exception('exhausted max. num. retries when generating action.')
 
         return mission.Mission(env, startState, actions)
 
+    
+    def generateEnvironment(self):
+        return self.__environment
 
-    def generateEnvironment(self, variables):
-        return system.Environment(variables)
 
-    def generateInitialState(self):
-        initial = (self.__env, \
-                   self.__internalState, \
-                    self.__externalState)
-         return initial
+    def generateInitialState(self, env):
+        return self.__initialState
 
 
     def generateAction(self, schema, stateBefore):
