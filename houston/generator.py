@@ -36,7 +36,7 @@ class TestSuiteGenerator(object):
     generation approaches.
     """
 
-    def __init__(self, systm, mutableInitialState):
+    def __init__(self, systm, env, internalState, externalState):
         """
         Constructs a test suite generator for a given system.
 
@@ -46,9 +46,11 @@ class TestSuiteGenerator(object):
                                     states wrapped up for convenience.
         """
         assert(isinstance(systm, system.System) and not systm is None)
-        assert(isinstance(mutableInitialState, system.MutableInitialState)
+        assert(isinstance(env, system.Environment)
         self.__system = systm
-        self.__mutableInitialState = mutableInitialState
+        self.__env = env
+        self.__internalState = internalState
+        self.__externalState = externalState
 
 
     def getSystem(self):
@@ -57,13 +59,6 @@ class TestSuiteGenerator(object):
         generate test suites.
         """
         return self.__system
-
-    def getMutableInitialState(self):
-        """
-        Returns the initial state (environment, itnernal, and external)  of the
-        missionsuite
-        """
-        return self.__mutableInitialState
 
     def generate(self, characteristics, limits):
         """
@@ -125,8 +120,7 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not characteristics is None)
 
         # generate an initial state
-        startState          = self.getMutableInitialState()
-        mutableInitialState = self.getMutableInitialState()
+        startState = self.generateInitialState()
 
         # need to ensure that precondition is satisfied
         actions = []
@@ -140,29 +134,29 @@ class RandomGenerator(TestSuiteGenerator):
             # - does the current state satisfy those preconditions? If not, we
             #   can't generate an action of that schema! Discard.
             legalSchemas = set()
-            for key, schema in schemas.iteritems(): # TODO what's the type?
+            for schema in schemas.iteritems(): # TODO what's the type?
 
                 # is it impossible to satisfy this schema in the current state?
                 for precondition in schema.getPreconditions():
                     if not precondition.usesParameters():
-                        if not precondition.satisfiedBy(mutableInitialState, {}):
+                        if not precondition.satisfiedBy(startState, {}):
                             continue
                 legalSchemas.add(schema)
 
             action = None
-            updatedMutableState = None
+            newState = None
             for attempt in range(limits.getMaxNumRetries()):
                 schema = random.choice(legalSchemas)
 
                 # generate action using generateAction
-                action, updatedMutableState = self.generateAction(schema, \
-                    mutableInitialState)
+                action, newState = self.generateAction(schema, \
+                    startState)
                 params = action.getValues() # TODO is this what we are going to use?
 
 
                 # check that preconditions and invariants are satisfied
                 predicates = schema.getPreconditions() + schema.getInvariants()
-                if all(p.satisfiedBy(updatedMutableState, params) for p in predicates):
+                if all(p.satisfiedBy(newState, params) for p in predicates):
                     break
 
             # have we exhausted the max. num. retries? Throw an error.
@@ -172,13 +166,19 @@ class RandomGenerator(TestSuiteGenerator):
             # we have an action!
             actions.append(action)
             # figure out what the next state will be
-            mutableInitialState = updatedMutableState
+            startState = newState
 
         return mission.Mission(env, startState, actions)
 
 
     def generateEnvironment(self, variables):
         return system.Environment(variables)
+
+    def generateInitialState(self):
+        initial = (self.__env, \
+                   self.__internalState, \
+                    self.__externalState)
+         return initial
 
 
     def generateAction(self, schema, stateBefore):
