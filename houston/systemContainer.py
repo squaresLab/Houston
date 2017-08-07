@@ -45,7 +45,7 @@ class SystemContainer(object):
         Returns true if the server running inside this system container is
         ready to accept requests.
         """
-        pass
+        return DOCKER_CHECK(server.READY_FILE)
 
 
     def systemIdentifier(self):
