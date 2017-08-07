@@ -86,11 +86,11 @@ class MissionSuite(object):
 
 
     def executeMission(self, systm, image, mission):
+        # TODO we could block on construction, or require user to block
         cntr = houston.createContainer(systm.getIdentifier(), image)
 
         try:
-            # block until server is running
-            while True:
+            while not cntr.ready():
                 time.sleep(0.1)
 
             return cntr.execute(mission)
