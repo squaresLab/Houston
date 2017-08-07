@@ -251,6 +251,11 @@ class Parameter(object):
         """
         return self.__valueRange
 
+    def generate(self):
+        """
+        Returns a sample (random)
+        """
+        return self.__valueRange.sample()
 
     def getType(self):
         """
