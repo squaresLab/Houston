@@ -65,7 +65,9 @@ class MissionSuite(object):
 
         :param    characteristics       MissionSuiteCharacteristics
         """
-        pass
+        return not len(self.__contents[-1].getActions()) < \
+            characteristics.getMaxNumActionsPerMission()
+
 
     def execute(self, system):
         """
