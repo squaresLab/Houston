@@ -50,6 +50,15 @@ class MissionSuite(object):
         """
         self.__contents.append(mission)
 
+    def satisfies(self, characteristics):
+        """
+        Checks if the state of the missiosuite satisfies the characteristics given.
+        """
+        if len(self.__contents) < characteristics.getMaxNumMissions():
+            return False
+        #TODO How to check expected running time?
+        return True
+
     def execute(self, system):
         """
         Executes the tests contained within this suite.
