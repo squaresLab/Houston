@@ -120,9 +120,10 @@ class RandomGenerator(TestSuiteGenerator):
         # need to ensure that precondition is satisfied
         actions = []
         schemas = self.getSystem().getActionSchemas()
+        
         maxNumActions = characteristics.getMaxNumActionsPerMission()
         for numAction in range(maxNumActions):
-            schema = random.choice(schemas)
+            schema = random.choice(schemas.keys())
             action = self.generateAction(schema, state)
             actions.append(action)
 
