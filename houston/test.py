@@ -178,16 +178,19 @@ class MissionSuiteLimits(object):
         Constructs a mission suite limits  from its associated JSON
         description.
         """
-        return MissionSuiteLimits(jsn['maxTime'])
+        return MissionSuiteLimits(jsn['maxTime'], jsn['maxNumRetries'])
 
-    def __init__(self, maxTime):
+    def __init__(self, maxTime, maxNumRetries):
         """
         Constructs a set of limitations for the missionSuiteGenerator.
 
         :param  maxTime:       the maximum time that the generator can take to
                                generate a mission suite
+        :param  maxNumRetries  the maximum number of tries that the generator
+                               has to come up with a valid action
         """
         self.__maxTime = maxTime
+        self.__maxNumRetries = maxNumRetries
 
     def getMaxTime(self):
         """
@@ -195,6 +198,13 @@ class MissionSuiteLimits(object):
         suite.
         """
         return self.__maxTime
+
+    def getMaxNumRetries(self):
+        """
+        Returns the maximum number of tries that the generator has to come up
+        with a valid action. 
+        """
+        return self.__maxNumRetries
 
 class MissionSuiteSummary(object):
     """
