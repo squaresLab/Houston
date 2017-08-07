@@ -59,7 +59,8 @@ class MissionSuite(object):
         #TODO How to check expected running time?
         return True
 
-    def execute(self, system):
+
+    def execute(self, systm, image):
         """
         Executes the tests contained within this suite.
 
@@ -72,8 +73,8 @@ class MissionSuite(object):
 
         # TODO for now, we execute tests sequentially
         outcomes = []
-        for test in self.__contents:
-            outcome = self.executeTest(test, system)
+        for tst in self.__contents:
+            outcome = self.executeMission(systm, image, tst)
 
         # measure the wall clock running-time
         endTime = time.time()
@@ -83,31 +84,27 @@ class MissionSuite(object):
         summary = MissionSuiteSummary(runningTime)
         return summary
 
-    def executeTest(self, system, test):
 
-        # launch container
-        # systemContainer = system.launchContainer()
-        client = docker.from_env()
+    def executeMission(self, systm, image, mission):
+        cntr = houston.createContainer(sysm.getIdentifier(), image)
 
         try:
-
-            # wait until server is running
+            # block until server is running
             while True:
                 time.sleep(0.1)
-                # is the server ready?
 
-            # communicate with server
-
-            return MissionOutcome()
+            return cntr.execute(mission)
 
         finally:
-            container.stop()
+            cntr.stop()
+
 
     def toJSON(self):
         """
         Returns a JSON-based description of this test suite.
         """
         return {'missions': [t.toJSON() for t in self.__contents]}
+
 
     def toFile(self, fn):
         """
@@ -208,6 +205,7 @@ class MissionSuiteLimits(object):
         """
         return self.__maxNumRetries
 
+
 class MissionSuiteSummary(object):
     """
     Contains a summary of the execution of a mission suite.
@@ -218,11 +216,13 @@ class MissionSuiteSummary(object):
         self.__wallTime = wallTime
         self.__outcomes = []
 
+
     def hasFailures(self):
         """
         Determines whether any missions within the suite failed.
         """
         raise NotImplementedError
+
 
     def getWallClockTime(self):
         """
@@ -230,6 +230,7 @@ class MissionSuiteSummary(object):
         measured in seconds.
         """
         return self.__wallTime
+
 
     def toJSON(jsn):
         """
