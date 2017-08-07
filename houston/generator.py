@@ -96,7 +96,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         return missions
 
-
+        #stateBefore
     def generateMission(self, characteristics):
         """
         Generates a single Mission at random.
@@ -119,7 +119,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         # need to ensure that precondition is satisfied
         actions = []
-        schemas = self.__system.getActionSchemas()
+        schemas = self.getSystem().getActionSchemas()
         maxNumActions = characteristics.getMaxNumActions()
         for numAction in range(maxNumActions):
             schema = random.choice(schemas)
