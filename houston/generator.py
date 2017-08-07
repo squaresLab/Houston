@@ -122,6 +122,17 @@ class RandomGenerator(TestSuiteGenerator):
 
 
     def generateAction(self, env, stateBefore):
+        """
+        Generates a legal action based on the current state of the system and
+        the (fixed) state of the environment.
+
+        :param  env:    a description of the environment in which the action \
+                        should be conducted.
+        :param  stateBefore:    the state of the system immediately prior to \
+                                execution of the action that is to be generated
+
+        :returns    A randomly-generated Action instance
+        """
         # which schemas can we *possibly* satisfy?
         # - find preconditions that DO NOT interact with parameters
         # - does the current state satisfy those preconditions? If not, we
