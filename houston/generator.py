@@ -172,3 +172,6 @@ class RandomGenerator(TestSuiteGenerator):
             params[name] = value
 
         return mission.Action(schema.getName(), params)
+
+class DirectedGenerator(TestSuiteGenerator):
+    pass

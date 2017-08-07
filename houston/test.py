@@ -108,6 +108,16 @@ class MissionSuiteCharacteristics(object):
     Used to describe the desired characteristics of a mission suite.
     """
 
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a mission characteristics suite from its associated JSON
+        description.
+        """
+        return MissionSuiteCharacteristics(jsn['maxMissions'],
+            jsn['maxActionsPerMission', jsn['maxTime']])
+
+
     def __init__(self, maxMissions, maxActionsPerMission, maxTime):
         """
         Constructs a set of desired mission suite characteristics
