@@ -83,10 +83,7 @@ class RandomGenerator(TestSuiteGenerator):
         while not missions.satisfiesMissionNumber(characteristics):
             m = self.generateMission(characteristics, limits)
             missions.add(m)
-
         return missions
-
-        #stateBefore
 
 
     def generateMission(self, missions, characteristics, limits):
@@ -107,45 +104,11 @@ class RandomGenerator(TestSuiteGenerator):
         env = self.generateEnvironment()
         startState = self.generateInitialState(env)
         currentState = startState
-        nextState = None
 
         actions = []
-        schemas = self.getSystem().getActionSchemas()
-
-        maxNumActions = characteristics.getMaxNumActionsPerMission()
-        while not len(actions) <= maxNumActions:
-
-            # which schemas can we *possibly* satisfy?
-            # - find preconditions that DO NOT interact with parameters
-            # - does the current state satisfy those preconditions? If not, we
-            #   can't generate an action of that schema! Discard.
-            legalSchemas = set()
-            for schema in schemas.iteritems(): # TODO what's the type?
-
-                # is it impossible to satisfy this schema in the current state?
-                for precondition in schema.getPreconditions():
-                    if not precondition.usesParameters():
-                        if not precondition.satisfiedBy(startState, {}):
-                            continue
-                legalSchemas.add(schema)
-            
-            # attempt to generate an action belonging to any of the legal
-            # schemas
-            for attempt in range(limits.getMaxNumRetries()):
-                schema = random.choice(legalSchemas)
-                (action, nextState) = self.generateAction(schema, currentState)
-
-                # TODO: error checking
-
-                # check that preconditions and invariants are satisfied
-                predicates = schema.getPreconditions() + schema.getInvariants()
-                if all(p.satisfiedBy(newState, params) for p in predicates):
-                    actions.append(action)
-                    currentState = nextState
-
-            # have we exhausted the max. num. retries? Throw an error.
-            if attempt == (limits.getMaxNumRetries() - 1):
-                raise Exception('exhausted max. num. retries when generating action.')
+        for _ in range(characteristics.getMaxNumActionsPerMission()):
+            (action, currentState) = self.generateAction(env, currentState)
+            actions.append(action)
 
         return mission.Mission(env, startState, actions)
 
@@ -158,7 +121,41 @@ class RandomGenerator(TestSuiteGenerator):
         return self.__initialState
 
 
-    def generateAction(self, schema, stateBefore):
+    def generateAction(self):
+        # which schemas can we *possibly* satisfy?
+        # - find preconditions that DO NOT interact with parameters
+        # - does the current state satisfy those preconditions? If not, we
+        #   can't generate an action of that schema! Discard.
+        legalSchemas = set()
+        for schema in schemas.iteritems(): # TODO what's the type?
+
+            # is it impossible to satisfy this schema in the current state?
+            for precondition in schema.getPreconditions():
+                if not precondition.usesParameters():
+                    if not precondition.satisfiedBy(startState, {}):
+                        continue
+            legalSchemas.add(schema)
+        
+        # attempt to generate an action belonging to any of the legal
+        # schemas
+        for attempt in range(limits.getMaxNumRetries()):
+            schema = random.choice(legalSchemas)
+            (action, nextState) = self.generateAction(schema, currentState)
+
+            # TODO: error checking
+
+            # check that preconditions and invariants are satisfied
+            predicates = schema.getPreconditions() + schema.getInvariants()
+            if all(p.satisfiedBy(newState, params) for p in predicates):
+                actions.append(action)
+                currentState = nextState
+
+        # have we exhausted the max. num. retries? Throw an error.
+        if attempt == (limits.getMaxNumRetries() - 1):
+            raise Exception('exhausted max. num. retries when generating action.')
+
+
+    def generateActionOfSchema(self, schema, stateBefore):
         """
         Generates an action at random
 
@@ -172,6 +169,10 @@ class RandomGenerator(TestSuiteGenerator):
         """
         assert(isinstance(schema, system.ActionSchema) and not schema is None)
 
+
+
+
+
         params = {}
         for parameter in schema.getParameters():
             name = parameter.getName()
@@ -183,6 +184,3 @@ class RandomGenerator(TestSuiteGenerator):
             stateBefore.updateInternalState(name, value)
 
         return mission.Action(schema.getName(), params), stateBefore
-
-class DirectedGenerator(TestSuiteGenerator):
-    pass
