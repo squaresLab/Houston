@@ -86,7 +86,7 @@ class MissionSuite(object):
 
 
     def executeMission(self, systm, image, mission):
-        cntr = houston.createContainer(sysm.getIdentifier(), image)
+        cntr = houston.createContainer(systm.getIdentifier(), image)
 
         try:
             # block until server is running
