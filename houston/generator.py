@@ -100,7 +100,7 @@ class RandomGenerator(TestSuiteGenerator):
         #stateBefore
 
 
-    def generateMission(self, characteristics, limits):
+    def generateMission(self, missions, characteristics, limits):
         """
         Generates a single Mission at random.
 
@@ -124,7 +124,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         # TODO: change to while loop
         maxNumActions = characteristics.getMaxNumActionsPerMission()
-        for numAction in range(maxNumActions):
+        while not len(actions) <= maxNumActions:
 
             # which schemas can we *possibly* satisfy?
             # - find preconditions that DO NOT interact with parameters

@@ -59,16 +59,6 @@ class MissionSuite(object):
         #TODO How to check expected running time?
         return True
 
-    def satisfiesActionsNumber(self, characteristics):
-        """
-        Checks the number of actions per mission is met.
-
-        :param    characteristics       MissionSuiteCharacteristics
-        """
-        return not len(self.__contents[-1].getActions()) < \
-            characteristics.getMaxNumActionsPerMission()
-
-
     def execute(self, system):
         """
         Executes the tests contained within this suite.
