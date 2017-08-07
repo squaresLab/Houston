@@ -3,8 +3,6 @@ import docker
 import json
 import houston
 
-
-
 class MissionSuite(object):
     """
     A mission suite is an ordered set (i.e., a sequence with no repeated elements)
@@ -197,8 +195,6 @@ class MissionSuiteLimits(object):
         suite.
         """
         return self.__maxTime
-
-
 
 class MissionSuiteSummary(object):
     """

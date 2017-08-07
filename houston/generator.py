@@ -110,12 +110,12 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not characteristics is None)
 
 
-        env = self.generateEnvironment({'variables':{}})
+        env = self.generateEnvironment({})
         state = []
         # most of the internal variables should be fixed, except for
         # long./lat..
-        internal = self.generateInternalState({'variables':{}})
-        external = self.generateExternalState({'variables':{}})
+        internal = self.generateInternalState({})
+        external = self.generateExternalState({})
 
         # need to ensure that precondition is satisfied
         actions = []
