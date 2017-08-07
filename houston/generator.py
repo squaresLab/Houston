@@ -121,57 +121,68 @@ class RandomGenerator(TestSuiteGenerator):
         return self.__initialState
 
 
-    def generateAction(self):
+    def generateAction(self, env, stateBefore):
+        """
+        Generates a legal action based on the current state of the system and
+        the (fixed) state of the environment.
+
+        :param  env:    a description of the environment in which the action \
+                        should be conducted.
+        :param  stateBefore:    the state of the system immediately prior to \
+                                execution of the action that is to be generated
+
+        :returns    A randomly-generated Action instance
+        """
         # which schemas can we *possibly* satisfy?
         # - find preconditions that DO NOT interact with parameters
         # - does the current state satisfy those preconditions? If not, we
         #   can't generate an action of that schema! Discard.
         legalSchemas = set()
         for schema in schemas.iteritems(): # TODO what's the type?
-
-            # is it impossible to satisfy this schema in the current state?
             for precondition in schema.getPreconditions():
                 if not precondition.usesParameters():
                     if not precondition.satisfiedBy(startState, {}):
                         continue
             legalSchemas.add(schema)
+
+        if legalSchemas.empty():
+            raise Exception('failed to generate action: no legal schemas available')
         
-        # attempt to generate an action belonging to any of the legal
-        # schemas
+        # attempt to generate an action belonging to a randomly selected legal
+        # schema
         for attempt in range(limits.getMaxNumRetries()):
             schema = random.choice(legalSchemas)
-            (action, nextState) = self.generateAction(schema, currentState)
+            (action, nextState) = self.generateActionOfSchema(schema, env, stateBefore)
 
-            # TODO: error checking
+            # do these parameters satisfy the precondition?
 
-            # check that preconditions and invariants are satisfied
-            predicates = schema.getPreconditions() + schema.getInvariants()
-            if all(p.satisfiedBy(newState, params) for p in predicates):
-                actions.append(action)
-                currentState = nextState
+
+            # 1. find parameters which satisfy the precondition
+            # 2. determine the resulting state separately
+            
+
+            return (action, nextState)
 
         # have we exhausted the max. num. retries? Throw an error.
         if attempt == (limits.getMaxNumRetries() - 1):
             raise Exception('exhausted max. num. retries when generating action.')
 
 
-    def generateActionOfSchema(self, schema, stateBefore):
+    def generateActionOfSchema(self, schema, env, stateBefore):
         """
         Generates an action at random
 
-        :param      schema: the schema to which this action belongs, given as\
-                            an ActionSchema instance
-        :param      stateBefore:    the state of the system immediately before\
-                                    the start of the action
+        :param  schema: the schema to which this action belongs, given as\
+                    an ActionSchema instance.
+        :param  env: TODO
+        :param  stateBefore: the state of the system immediately before\
+                    the start of the action
 
-
-        :returns    A randomly-generated Action instance
+        :returns    A randomly-generated Action instance.
         """
-        assert(isinstance(schema, system.ActionSchema) and not schema is None)
-
-
-
-
+        assert (isinstance(schema, system.ActionSchema) and not schema is None)
+        assert (isinstance(env, state.Environment) and not env is None)
+        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
 
         params = {}
         for parameter in schema.getParameters():
@@ -181,6 +192,5 @@ class RandomGenerator(TestSuiteGenerator):
             # value, otherwise use the default generator
             value = parameter.generate()
             params[name] = value
-            stateBefore.updateInternalState(name, value)
 
-        return mission.Action(schema.getName(), params), stateBefore
+        return mission.Action(schema.getName(), params)
