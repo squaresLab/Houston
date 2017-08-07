@@ -121,34 +121,31 @@ class RandomGenerator(TestSuiteGenerator):
         return self.__initialState
 
 
-    def generateAction(self):
+    def generateAction(self, env, stateBefore):
         # which schemas can we *possibly* satisfy?
         # - find preconditions that DO NOT interact with parameters
         # - does the current state satisfy those preconditions? If not, we
         #   can't generate an action of that schema! Discard.
         legalSchemas = set()
         for schema in schemas.iteritems(): # TODO what's the type?
-
-            # is it impossible to satisfy this schema in the current state?
             for precondition in schema.getPreconditions():
                 if not precondition.usesParameters():
                     if not precondition.satisfiedBy(startState, {}):
                         continue
             legalSchemas.add(schema)
+
+        if legalSchemas.empty():
+            raise Exception('failed to generate action: no legal schemas available')
         
-        # attempt to generate an action belonging to any of the legal
-        # schemas
+        # attempt to generate an action belonging to a randomly selected legal
+        # schema
         for attempt in range(limits.getMaxNumRetries()):
             schema = random.choice(legalSchemas)
-            (action, nextState) = self.generateAction(schema, currentState)
+            (action, nextState) = self.generateActionOfSchema(schema, currentState)
 
             # TODO: error checking
 
-            # check that preconditions and invariants are satisfied
-            predicates = schema.getPreconditions() + schema.getInvariants()
-            if all(p.satisfiedBy(newState, params) for p in predicates):
-                actions.append(action)
-                currentState = nextState
+            return (action, nextState)
 
         # have we exhausted the max. num. retries? Throw an error.
         if attempt == (limits.getMaxNumRetries() - 1):
