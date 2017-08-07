@@ -1,3 +1,5 @@
+import copy
+
 class State(object):
     """
     Describes the state of the system at a given moment in time, in terms of
@@ -14,7 +16,15 @@ class State(object):
         self.__values = copy.copy(values)
 
 
-    def read(variable):
+    def getValues(self):
+        """
+        Returns the values of each of the state variables as a dictionary,
+        indexed by name.
+        """
+        return copy.copy(self.__values)
+
+
+    def read(self, variable):
         """
         Returns the value for a given state variable
         """
