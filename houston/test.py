@@ -115,7 +115,7 @@ class MissionSuite(object):
         """
         jsn = self.toJSON()
         with open(fn, "w") as f:
-            json.dump(jsn, f)
+            json.dump({'missions':jsn}, f)
 
 
 class MissionSuiteCharacteristics(object):
