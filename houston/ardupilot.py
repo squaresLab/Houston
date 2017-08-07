@@ -212,7 +212,7 @@ class GoToActionSchema(ActionSchema):
                       'description'),
             Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True),\
                       'description'),
-            Parameter('altitude', ContinousValueRange(0.3, 100.0),\
+            Parameter('altitude', ContinuousValueRange(0.3, 100.0),\
                       'description')
         ]
 
