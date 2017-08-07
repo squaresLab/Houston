@@ -115,7 +115,7 @@ class MissionSuiteCharacteristics(object):
         description.
         """
         return MissionSuiteCharacteristics(jsn['maxMissions'],
-            jsn['maxActionsPerMission', jsn['maxTime']])
+            jsn['maxActionsPerMission'], jsn['maxTime'])
 
 
     def __init__(self, maxMissions, maxActionsPerMission, maxTime):
