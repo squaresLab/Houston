@@ -112,7 +112,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         return mission.Mission(env, startState, actions)
 
-    
+
     def generateEnvironment(self):
         return self.__environment
 
@@ -147,7 +147,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         if legalSchemas.empty():
             raise Exception('failed to generate action: no legal schemas available')
-        
+
         # attempt to generate an action belonging to a randomly selected legal
         # schema
         for attempt in range(limits.getMaxNumRetries()):
@@ -156,15 +156,16 @@ class RandomGenerator(TestSuiteGenerator):
 
             # 1. do these parameters satisfy the precondition? If not, we need
             #    to generate a new action
+            if not schema.satisfiedPreconditions(action, stateBefore, env):
+                continue
 
             # 2. determine the resulting state separately
-            nextState = schema.estimateState(action, currentState, environment)
+            nextState = schema.estimateState(action, stateBefore, env)
 
             return (action, nextState)
 
         # have we exhausted the max. num. retries? Throw an error.
-        if attempt == (limits.getMaxNumRetries() - 1):
-            raise Exception('exhausted max. num. retries when generating action.')
+        raise Exception('exhausted max. num. retries when generating action.')
 
 
     def generateActionOfSchema(self, schema, env, stateBefore):

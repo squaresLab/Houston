@@ -205,61 +205,68 @@ class ActionSchema(object):
         return copy.deepcopy(self.__preconditions)
 
 
-    def satisfiedPostConditions(self, systemVariables, parameters):
+    def satisfiedPostConditions(self, action, currentState, env):
         """
         Checks that the postconditions are met. Returns a tuple, with a boolean
         holding the success or failure of the check, and a list with the name of
         the postconditions that were not met (if any).
 
-        :param  systemVariables     the system variables.
-        :param  parameters          parameters of the action that is being executed.
+        :param  action              the action that is to be executed.
+        :param  currentState        the state of the system immediately prior to
+                                    the execution of the action.
+        :param  env                 the environment in which the action will be
+                                    executed.
         """
         #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
+
         postconditionsFailed = []
         success               = True
         for postcondition in self.__postconditions:
-            if not postcondition.check(systemVariables, parameters.getValues()):
+            if not postcondition.check(currentState, action.getValues()):
                 postconditionsFailed.append(postcondition.getName())
                 success = False
-
         return (success, postconditionsFailed)
 
 
-    def satisfiedPreconditions(self, systemVariables, parameters):
+    def satisfiedPreconditions(self, action, currentState, env):
         """
         Checks that the preconditions are met. Returns a tuple, with a boolean
         holding the success or failure of the check, and a list with the name of
         the preconditions that were not met (if any).
 
-        :param  systemVariables     the system variables.
-        :param  parameters          parameters of the action that is about to be
-                                    dispatched.
+        :param  action              the action that is to be executed.
+        :param  currentState        the state of the system immediately prior to
+                                    the execution of the action.
+        :param  env                 the environment in which the action will be
+                                    executed.
         """
         #print 'Doing precondition. Action: {}'.format(parameters.getKind())
         preconditionsFailed = []
         success              = True
         for precondition in self.__preconditions:
-            if not precondition.check(systemVariables, parameters.getValues()):
+            if not precondition.check(currentState, action.getValues()):
                 preconditionsFailed.append(precondition.getName())
                 success = False
         return (success, preconditionsFailed)
 
 
-    def satisfiedInvariants(self, systemVariables, parameters):
+    def satisfiedInvariants(self, action, currentState, env):
         """
         Checks that the invariants are met. Returns a tuple, with a boolean
         holding the success or failure of the check, and a list with the name of
         the invariants that were not met (if any).
 
-        :param  systemVariables     the system variables.
-        :param  parameters          parameters of the action that is about to be
-                                    dispatched or that is currently being executed.
+        :param  action              the action that is to be executed.
+        :param  currentState        the state of the system immediately prior to
+                                    the execution of the action.
+        :param  env                 the environment in which the action will be
+                                    executed.
         """
         #print 'Doing invariants. Action: {}'.format(parameters.getKind())
         invariantsFailed    = []
         success             = True
         for invariant in self.__invariants:
-            if not invariant.check(systemVariables, parameters.getValues()):
+            if not invariant.check(currentState, action.getValues()):
                 invariantsFailed.append(invariant.getName())
                 success = False
         return (success, invariantsFailed)
