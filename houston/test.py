@@ -107,7 +107,7 @@ class MissionSuite(object):
         """
         Returns a JSON-based description of this test suite.
         """
-        return [t.toJSON() for t in self.__contents]
+        return {'missions': [t.toJSON() for t in self.__contents]}
 
     def toFile(self, fn):
         """
@@ -117,7 +117,7 @@ class MissionSuite(object):
         """
         jsn = self.toJSON()
         with open(fn, "w") as f:
-            json.dump({'missions':jsn}, f)
+            json.dump(jsn, f)
 
 
 class MissionSuiteCharacteristics(object):
