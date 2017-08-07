@@ -112,7 +112,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         return mission.Mission(env, startState, actions)
 
-    
+
     def generateEnvironment(self):
         return self.__environment
 
@@ -147,7 +147,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         if legalSchemas.empty():
             raise Exception('failed to generate action: no legal schemas available')
-        
+
         # attempt to generate an action belonging to a randomly selected legal
         # schema
         for attempt in range(limits.getMaxNumRetries()):
