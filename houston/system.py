@@ -132,6 +132,54 @@ class System(object):
         return copy.deepcopy(self.__schemas)
 
 
+class MutableInitialState(object):
+    """
+    Wraps up Environment, InternalState, ExternalState. This is meant to be
+    mutable and used for generating valid actions. Environment is not mutable
+    but is added here for convinience.
+    """
+    def __init__(self, interal, external, env):
+        """
+        Constructs a InitialState that holds temporary values for Environment,
+        InternalState, ExternalState.
+        """
+        assert(isinstance(interal, dict))
+        assert(isinstance(external, dict))
+        assert(isinstance(env, Environment))
+        self.__internal = interal
+        self.__external = external
+        self.__env      = env
+
+    def getInternalState(self):
+        """
+        Returns a copy of the temporary internalState
+        """
+        return InternalState.fromJSON(self.__internal)
+
+    def getExternalState(self):
+        """
+        Returns a copy of the temporary externalSate
+        """
+        return ExternalState.fromJSON(self.__external)
+
+    def getEnvironment(self):
+        """
+        Returns a copy of environment. (Environment is not mutable)
+        """
+        return copy.copy(self.__env)
+
+    def updateInternalState(self, variable, value):
+        """
+        Updates the current internalState
+        """
+        self.__internal[variable] = value
+
+    def updateExternalState(self, variable, value):
+        """
+        Updates the current externalSate
+        """
+        self.__external[variable] = value
+
 class State(object):
     """
     Describes the internal or external state of the system in terms of its

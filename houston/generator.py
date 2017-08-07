@@ -36,15 +36,19 @@ class TestSuiteGenerator(object):
     generation approaches.
     """
 
-    def __init__(self, systm):
+    def __init__(self, systm, mutableInitialState):
         """
         Constructs a test suite generator for a given system.
 
         :param      systm           system-under-test
+        :param      initialState    initialState of the missionsuite, this is
+                                    basically environment, internal and external
+                                    states wrapped up for convenience.
         """
         assert(isinstance(systm, system.System) and not systm is None)
-
+        assert(isinstance(mutableInitialState, system.MutableInitialState)
         self.__system = systm
+        self.__mutableInitialState = mutableInitialState
 
 
     def getSystem(self):
@@ -54,6 +58,12 @@ class TestSuiteGenerator(object):
         """
         return self.__system
 
+    def getMutableInitialState(self):
+        """
+        Returns the initial state (environment, itnernal, and external)  of the
+        missionsuite
+        """
+        return self.__mutableInitialState
 
     def generate(self, characteristics, limits):
         """
@@ -115,8 +125,8 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not characteristics is None)
 
         # generate an initial state
-        (env, startState) = self.generateInitialState()
-        currentState = startState
+        startState          = self.getMutableInitialState()
+        mutableInitialState = self.getMutableInitialState()
 
         # need to ensure that precondition is satisfied
         actions = []
@@ -136,21 +146,24 @@ class RandomGenerator(TestSuiteGenerator):
                 # is it impossible to satisfy this schema in the current state?
                 for precondition in schema.getPreconditions():
                     if not precondition.usesParameters():
-                        if not precondition.satisfiedBy(env, internal, external, {}):
+                        if not precondition.satisfiedBy(mutableInitialState, {}):
                             continue
                 legalSchemas.add(schema)
 
             action = None
+            updatedMutableState = None
             for attempt in range(limits.getMaxNumRetries()):
                 schema = random.choice(legalSchemas)
 
                 # generate action using generateAction
-                action = self.generateAction(schema, stateBefore)
+                action, updatedMutableState = self.generateAction(schema, \
+                    mutableInitialState)
+                params = action.getValues() # TODO is this what we are going to use?
 
 
                 # check that preconditions and invariants are satisfied
                 predicates = schema.getPreconditions() + schema.getInvariants()
-                if all(p.satisfiedBy(env, internal, external, params) for p in predicates):
+                if all(p.satisfiedBy(updatedMutableState, params) for p in predicates):
                     break
 
             # have we exhausted the max. num. retries? Throw an error.
@@ -160,17 +173,9 @@ class RandomGenerator(TestSuiteGenerator):
             # we have an action!
             actions.append(action)
             # figure out what the next state will be
-            currentState = NEXT_STATE(schema, env, internal, external, action)
+            mutableInitialState = updatedMutableState
 
         return mission.Mission(env, startState, actions)
-
-
-    def generateInitialState(self):
-        # TODO: add these to the constructor
-        initial = (self.__initialEnvironment, \
-                   self.__initialInternal, \
-                   self.__initialExternal)
-        return initial
 
 
     def generateEnvironment(self, variables):
@@ -199,8 +204,9 @@ class RandomGenerator(TestSuiteGenerator):
             # value, otherwise use the default generator
             value = parameter.generate()
             params[name] = value
+            stateBefore.updateInternalState(name, value)
 
-        return mission.Action(schema.getName(), params)
+        return mission.Action(schema.getName(), params), stateBefore
 
 class DirectedGenerator(TestSuiteGenerator):
     pass
