@@ -122,7 +122,6 @@ class RandomGenerator(TestSuiteGenerator):
         actions = []
         schemas = self.getSystem().getActionSchemas()
 
-        # TODO: change to while loop
         maxNumActions = characteristics.getMaxNumActionsPerMission()
         while not len(actions) <= maxNumActions:
 
