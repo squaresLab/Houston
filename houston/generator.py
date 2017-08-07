@@ -1,6 +1,7 @@
 import random
 import mission
 import system
+import test
 """
 The generator module is responsible for providing a number of different test
 suite generation approaches.
@@ -85,10 +86,10 @@ class RandomGenerator(TestSuiteGenerator):
     """
 
     def generate(self, characteristics, limits):
-        assert(isinstance(characteristics, mission.MissionSuiteCharacteristics))
+        assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
-        missions = MissionSuite()
+        missions = test.MissionSuite()
         while not missions.satisfies(characteristics):
             m = self.generateMission(characteristics)
             missions.add(m)
@@ -105,7 +106,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         :returns    A randomly-generated Mission instance
         """
-        assert(isinstance(characteristics, mission.MissionSuiteCharacteristics))
+        assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
         env = self.generateEnvironment()
