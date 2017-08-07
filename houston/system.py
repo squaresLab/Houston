@@ -2,12 +2,11 @@ import thread
 import time
 import copy
 import json
+import state
 
 class System(object):
     """
     Description of System.
-
-    TODO: where are external state parameters?
     """
 
 
@@ -20,6 +19,8 @@ class System(object):
         :param  variables:  a dictionary of system variables, indexed by name
         :param  schemas:    a dictionary of action schemas, indexed by name
         """
+        assert (isinstance(identifier, str) and not None)
+        assert (isinstance(variables, list) and not None)
         self.__identifier = identifier
         self.__variables = variables
         self.__schemas = schemas
@@ -30,6 +31,7 @@ class System(object):
         Returns true if this system is installed on this machine.
         """
         raise NotImplementedError
+
 
     def identifier(self):
         """
@@ -63,7 +65,7 @@ class System(object):
         :return A summary of the outcome of the mission, in the form of a
                 MissionOutcome
         """
-        assert(self.installed())
+        assert (self.installed())
         self.setUp(mission)
         try:
 
@@ -114,15 +116,15 @@ class System(object):
             self.tearDown(mission)
 
 
-    def getInternalState(self):
+    def getState(self):
         """
-        Returns a description of the current internal state of the system.
+        Returns a description of the current state of the system.
 
         TODO: ensure that the system is actually running!
         """
-        assert(self.installed())
+        assert (self.installed())
         vals = {n: v.read() for (n, v) in self.__variables.items()}
-        return InternalState(vals)
+        return state.State(vals)
 
 
     def getActionSchemas(self):
@@ -130,214 +132,6 @@ class System(object):
         Returns a copy of action schemas
         """
         return copy.deepcopy(self.__schemas)
-
-
-class MutableInitialState(object):
-    """
-    Wraps up Environment, InternalState, ExternalState. This is meant to be
-    mutable and used for generating valid actions. Environment is not mutable
-    but is added here for convinience.
-    """
-    def __init__(self, interal, external, env):
-        """
-        Constructs a InitialState that holds temporary values for Environment,
-        InternalState, ExternalState.
-        """
-        assert(isinstance(interal, dict))
-        assert(isinstance(external, dict))
-        assert(isinstance(env, Environment))
-        self.__internal = interal
-        self.__external = external
-        self.__env      = env
-
-    def getInternalState(self):
-        """
-        Returns a copy of the temporary internalState
-        """
-        return InternalState.fromJSON(self.__internal)
-
-    def getExternalState(self):
-        """
-        Returns a copy of the temporary externalSate
-        """
-        return ExternalState.fromJSON(self.__external)
-
-    def getEnvironment(self):
-        """
-        Returns a copy of environment. (Environment is not mutable)
-        """
-        return copy.copy(self.__env)
-
-    def updateInternalState(self, variable, value):
-        """
-        Updates the current internalState
-        """
-        self.__internal[variable] = value
-
-    def updateExternalState(self, variable, value):
-        """
-        Updates the current externalSate
-        """
-        self.__external[variable] = value
-
-class State(object):
-    """
-    Describes the internal or external state of the system in terms of its
-    internal or external variables.
-    """
-
-    def __init__(self, values):
-        """
-        Constructs a description of the system state.
-
-        :param  values: a dictionary describing the values of the state
-                        variables, indexed by their names.
-        """
-        self.__values = copy.copy(values)
-
-
-    def read(variable):
-        """
-        Returns the value for a given state variable
-        """
-        return self.__values[variable]
-
-
-    def dump(self):
-        """
-        Prints this state to the standard output.
-        """
-        for variable in self.__values:
-            print('Variable: {} - State: {}'.format(variable, self.read(variable)))
-
-
-    def toJSON(self):
-        """
-        Returns a JSON description of this state.
-        """
-        return {
-            'variables': copy.copy(self.__values)
-        }
-
-
-    def __str__(self):
-        return str(self.toJSON())
-
-
-    def __repr__(self):
-        return str(self)
-
-
-class InternalState(State):
-    """
-    Describes the state of the system in terms of its internal state
-    variables.
-    """
-
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs an internal state description from a JSON object
-        """
-        assert('variables' in jsn)
-        assert(isinstance(jsn['variables'], dict))
-        return InternalState(jsn['variables'])
-
-
-class ExternalState(State):
-    """
-    Describes the state of the system in terms of its external state
-    variables.
-    """
-
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs an external state description from a JSON object
-        """
-        assert('variables' in jsn)
-        assert(isinstance(jsn['variables'], dict))
-        return ExternalState(jsn['variables'])
-
-
-class StateVariable(object):
-
-    def __init__(self, name, getter):
-        """
-        Constructs a new state variable
-
-        :param  name:   the name of this variable
-        :param  type:   the type of this variable
-        :param  getter: a lambda function, used to obtain the value of this variable
-        """
-        self.__name = name
-        self.__getter = getter
-
-
-    """
-    Returns the name of this system variable
-    """
-    def name(self):
-        return self.__name
-
-
-    """
-    Inspects the current state of this system variable
-    """
-    def read(self):
-        return self.__getter()
-
-
-class InternalStateVariable(StateVariable):
-    """
-    Internal variables describe the internal state of a given system.
-    (i.e., they represent a system's knowledge of itself and its surroundings.)
-    A user-provided lambda function is used to inspect the value of the state
-    variable at any given time.
-    """
-
-    def __init__(self, name, getter):
-        super(InternalStateVariable, self).__init__(name, getter)
-
-
-class Environment(object):
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs a description of an environment from its JSON description
-        """
-        assert('variables' in jsn)
-        assert(isinstance(jsn['variables'], dict))
-        return Environment(jsn['variables'])
-
-    """
-    Holds a description of an environment in which a mission should be conducted.
-    """
-
-    def __init__(self, values):
-        """
-        Constructs a description of a mission environment.
-
-        :param  values: a dictionary of environment variable values, indexed
-                        by the name of those variables.
-        """
-        self.__values = copy.copy(values)
-
-
-    def read(self, variable):
-        """
-        Returns the value of a given environment variable.
-        """
-        return self.__values[variable]
-
-
-    def toJSON(self):
-        """
-        Returns this environment description as a JSON object (i.e., a dict)
-        """
-        return {
-            'variables': copy.copy(self.__values)
-        }
 
 
 class ActionSchema(object):
@@ -360,19 +154,22 @@ class ActionSchema(object):
                                 the execution of an action.
         :param  postconditions  predicates that must be met after the action is
                                 completed.
+        :param  estimator       a list of state estimators.
         """
-        assert(isinstance(name, str) and not name is None)
-        assert(len(name) > 0)
-        assert(isinstance(parameters, list) and not parameters is None)
-        assert(isinstance(preconditions, list) and not preconditions is None)
-        assert(isinstance(postconditions, list) and not postconditions is None)
-        assert(isinstance(invariants, list) and not invariants is None)
+        assert (isinstance(name, str) and not name is None)
+        assert (len(name) > 0)
+        assert (isinstance(parameters, list) and not parameters is None)
+        assert (isinstance(preconditions, list) and not preconditions is None)
+        assert (isinstance(postconditions, list) and not postconditions is None)
+        assert (isinstance(invariants, list) and not invariants is None)
+        assert (isinstance(estimators, list) and not estimators is None)
 
         self.__name           = name
         self.__parameters     = parameters
         self.__preconditions  = preconditions
         self.__invariants     = invariants
         self.__postconditions = postconditions
+        self.__estimators     = estimators
 
 
     def getName(self):
@@ -398,12 +195,14 @@ class ActionSchema(object):
         """
         return copy.deepcopy(self.__parameters)
 
+
     def getPreconditions(self):
         """
         Returns the preconditions being hold for the current action schema. This
         is used to generate and validate actions.
         """
         return copy.deepcopy(self.__preconditions)
+
 
     def satisfiedPostConditions(self, systemVariables, parameters):
         """
@@ -463,3 +262,17 @@ class ActionSchema(object):
                 invariantsFailed.append(invariant.getName())
                 success = False
         return (success, invariantsFailed)
+
+
+    def estimateState(action, state):
+        """
+        Estimates the resulting system state after executing an action
+        belonging to this schema in a given initial state.
+
+        :param  action: the action for which an outcome should be estimated.
+        :param  state:  the initial state of the system, immediately prior to \
+                        executing the action.
+
+        :return An estimate of the resulting system state
+        """
+        pass
