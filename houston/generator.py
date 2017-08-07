@@ -1,6 +1,6 @@
 import random
 import mission
-
+import system
 """
 The generator module is responsible for providing a number of different test
 suite generation approaches.
@@ -139,7 +139,7 @@ class RandomGenerator(TestSuiteGenerator):
 
 
     def generateInternalState(self, env, ext):
-        # this may have to be defined for each system 
+        # this may have to be defined for each system
 
         return InternalState({})
 
