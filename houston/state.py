@@ -140,3 +140,35 @@ class Environment(object):
         return {
             'constants': copy.copy(self.__values)
         }
+
+class Estimator(object):
+    """
+    Estimates the expected state after the execution of an action.
+    """
+    def __init__(self, variable, func):
+        """
+        Constructs an estimator for a given state variable.
+
+        :param   variable       stateVariable to be estimated
+        :param   func           lambda function that holds the operation to
+                                calculate the expected state after the execution
+                                of an action.
+        """
+        self.__variable = variable
+        self.__func     = func
+
+    def getVariableName(self):
+        """
+        Returns the name of the systemVariable
+        """
+        return self.__variable
+
+    def estimate(self, action, state, environment):
+        """
+        Returns the expected value for the stateVariable.
+
+        :param    action        action used to calculate the expected state.
+        :param    state         current state of the system.
+        :param    environment   current environment of the system.
+        """
+        return self.__func(action.getParameters(), state, environment)
