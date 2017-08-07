@@ -5,7 +5,7 @@ import sys
 import subprocess as sub
 
 import houston
-from valueRange import ContinuousValueRange, DiscreteValueRange
+from valueRange import DiscreteValueRange, ContinuousValueRange
 from system     import System, InternalStateVariable, ActionSchema
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
