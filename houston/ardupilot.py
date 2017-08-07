@@ -9,7 +9,7 @@ from valueRange import DiscreteValueRange, ContinuousValueRange
 from system     import System, InternalStateVariable, ActionSchema
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
-
+from state      import Estimator
 
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
@@ -160,6 +160,9 @@ class ArmActionSchema(ActionSchema):
     """docstring for ArmActionSchema."""
     def __init__(self):
         parameters = []
+
+        estimators = []
+
         preconditions = [
             Precondition('armed', 'description',
                          lambda sv, params: sv['armed'].read() == False),
@@ -174,10 +177,11 @@ class ArmActionSchema(ActionSchema):
             Invariant('battery', 'description',
                       lambda sv, params: sv['battery'].read() > 0)
         ]
-        super(ArmActionSchema, self).__init__('arm', parameters, preconditions, invariants, postconditions)
+        super(ArmActionSchema, self).__init__('arm', parameters, preconditions,\
+            invariants, postconditions, estimators)
 
     def dispatch(self, parameters):
-        safe_command_conection('armed = True')
+        safeCommandConnection('armed = True')
 
 
 class SetModeActionSchema(ActionSchema):
@@ -186,6 +190,9 @@ class SetModeActionSchema(ActionSchema):
         parameters = [
             Parameter('mode', DiscreteValueRange(['GUIDED', 'LOITER', 'RTL']),\
                       'description')
+        ]
+
+        estimators = [
         ]
 
         preconditions = [
@@ -199,10 +206,11 @@ class SetModeActionSchema(ActionSchema):
             Invariant('battery', 'description',
                       lambda sv, params: sv['battery'].read() > 0)
         ]
-        super(SetModeActionSchema, self).__init__('setmode', parameters, preconditions, invariants, postconditions)
+        super(SetModeActionSchema, self).__init__('setmode', parameters, \
+            preconditions, invariants, postconditions, estimators)
 
     def dispatch(self, parameters):
-        safe_command_conection('mode = VehicleMode(\'{}\')'.format(parameters['mode']))
+        safeCommandConnection('mode = VehicleMode(\'{}\')'.format(parameters['mode']))
 
 
 class GoToActionSchema(ActionSchema):
@@ -216,9 +224,17 @@ class GoToActionSchema(ActionSchema):
                       'description')
         ]
 
+        estimators = [
+            Estimator('battery',
+                lambda sv, params: sv['battery'] - maxExpectedBatteryUsage(
+                params['latitude'],
+                params['longitude'],
+                params['altitude']))
+        ]
+
         preconditions = [
             Precondition('battery', 'description',
-                         lambda sv, params: sv['battery'].read() >= max_expected_battery_usage(
+                         lambda sv, params: sv['battery'].read() >= maxExpectedBatteryUsage(
                          params['latitude'],
                          params['longitude'],
                          params['altitude'])),
@@ -250,11 +266,12 @@ class GoToActionSchema(ActionSchema):
 
         ]
 
-        super(GoToActionSchema, self).__init__('goto',parameters, preconditions, invariants, postconditions)
+        super(GoToActionSchema, self).__init__('goto',parameters, preconditions,\
+            invariants, postconditions, estimators)
 
 
     def dispatch(self, parameters):
-        safe_command_conection('simple_goto(LocationGlobalRelative({},{},{}))'.format(
+        safeCommandConnection('simple_goto(LocationGlobalRelative({},{},{}))'.format(
             parameters['latitude'],
             parameters['longitude'],
             parameters['altitude']))
@@ -266,12 +283,21 @@ class LandActionSchema(ActionSchema):
         preconditions = [
             Precondition('battery', 'description',
                 lambda sv, params: sv['battery'].read() >= \
-                    max_expected_battery_usage(None, None, 0)),
+                    maxExpectedBatteryUsage(sv['latitude'], sv['longitude'], 0.0)),
             Precondition('altitude', 'description',
                 lambda sv, params: sv['altitude'].read() > 0.3),
             Precondition('armed', 'description',
                 lambda sv, params: sv['armed'].read() == True)
         ]
+        estimators = [
+            Estimator('battery',
+                lambda sv, params: sv['battery'] - maxExpectedBatteryUsage(
+                sv['latitude'],
+                sv['longitude'],
+                0.0
+                ))
+        ]
+
         invariants = [
             Invariant('battery', 'description',
                        lambda sv, params: sv['battery'].read() > 0),
@@ -285,14 +311,15 @@ class LandActionSchema(ActionSchema):
                           lambda sv, params: sv['battery'].read() > 0 ),
             Postcondition('time', 'description',
                           # we need a "start" time (or an initial state)
-                          lambda sv, params: max_expected_time(None, None, 0) > \
+                          lambda sv, params: maxExpectedTime(None, None, 0) > \
                             time.time() - sv['time'].read())
         ]
-        super(LandActionSchema, self).__init__('land', parameters, preconditions, invariants, postconditions)
+        super(LandActionSchema, self).__init__('land', parameters, preconditions,\
+            invariants, postconditions, estimators)
 
 
     def dispatch(self, parameters):
-        safe_command_conection('mode = VehicleMode(\'LAND\')')
+        safeCommandConnection('mode = VehicleMode(\'LAND\')')
 
 
 class TakeoffActionSchema(ActionSchema):
@@ -302,10 +329,20 @@ class TakeoffActionSchema(ActionSchema):
             Parameter('altitude', ContinuousValueRange(0.3, 100.0),\
                       'description')
         ]
+
+        estimators = [
+            Estimator('battery',
+                lambda sv, params: sv['battery'] - maxExpectedBatteryUsage(
+                sv['latitude'],
+                sv['longitude'],
+                params['altitude']
+                ))
+        ]
+
         preconditions = [
             Precondition('battery', 'description',
                          lambda sv, params: sv['battery'].read() >= \
-                         max_expected_battery_usage(
+                         maxExpectedBatteryUsage(
                             None,
                             None,
                             sv['battery'].read())),
@@ -325,37 +362,39 @@ class TakeoffActionSchema(ActionSchema):
                           lambda sv, params: sv['altitude'].read() - 1 < \
                           params['altitude'] < sv['altitude'].read() + 1)
         ]
-        super(TakeoffActionSchema, self).__init__('takeoff', parameters, preconditions, invariants, postconditions)
+        super(TakeoffActionSchema, self).__init__('takeoff', parameters, \
+            preconditions, invariants, postconditions, estimators)
 
 
     def dispatch(self, parameters):
-      safe_command_conection('simple_takeoff({})'.format(parameters['altitude']))
+      safeCommandConnection('simple_takeoff({})'.format(parameters['altitude']))
 
 
-def safe_command_conection(value):
+def safeCommandConnection(value):
     # TODO: what is this? Do we need to use an exec call?
     system = connect('127.0.0.1:14551', wait_ready=False)
     exec('system.{}'.format(value))
     system.close()
 
 
-def max_expected_battery_usage(prime_latitude, prime_longitude, prime_altitude):
+def maxExpectedBatteryUsage(prime_latitude, prime_longitude, prime_altitude):
     return 0.01
     distance = distance.great_circle((0['latitude'], \
         system_variables['longitude']), (prime_latitude, prime_longitude))
-    standard_dev, mean  = get_standard_deviation_and_mean(SAMPLE_BATTERY)
+    standard_dev, mean  = getStandardDeaviationAndMean(SAMPLE_BATTERY)
     #return (mean + standard_dev + WINDOW_BATTERY) * distance
 
 
-def max_expected_time(prime_latitude, prime_longitude, prime_altitude):
+def maxExpectedTime(prime_latitude, prime_longitude, prime_altitude):
     return 10
     distance = distance.great_circle((system_variables['latitude'], \
         system_variables['longitude']), (prime_latitude, prime_longitude))
-    standard_dev, mean  = get_standard_deviation_and_mean(SAMPLE_TIME)
+    standard_dev, mean  = getStandardDeaviationAndMean(SAMPLE_TIME)
     #return (mean + standard_dev + WINDOW_BATTERY) * distance
 
 
-def get_standard_deviation_and_mean(sample):
+
+def getStandardDeaviationAndMean(sample):
     return statistics.stdev(sample), numpy.mean(sample)
 
 
