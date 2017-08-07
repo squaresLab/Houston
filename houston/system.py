@@ -195,6 +195,7 @@ class InternalState(State):
         assert(isinstance(jsn['variables'], dict))
         return InternalState(jsn['variables'])
 
+
 class ExternalState(State):
     """
     Describes the state of the system in terms of its external state
@@ -325,7 +326,7 @@ class ActionSchema(object):
         self.__invariants     = invariants
         self.__postconditions = postconditions
 
-    
+
     def getName(self):
         """
         Returns the name of this schema.
