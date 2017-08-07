@@ -97,7 +97,7 @@ class RandomGenerator(TestSuiteGenerator):
         return missions
 
 
-    def generateMission(self, stateBefore, characteristics):
+    def generateMission(self, characteristics):
         """
         Generates a single Mission at random.
 
@@ -109,15 +109,13 @@ class RandomGenerator(TestSuiteGenerator):
         assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
-        env = self.generateEnvironment()
+
+        env = self.generateEnvironment({'variables':{}})
 
         # most of the internal variables should be fixed, except for
         # long./lat..
-        internal = {}
-        internal = InternalState(internal)
-
-        external = {}
-        external = ExternalState(external)
+        internal = self.generateInternalState({'variables':{}})
+        external = self.generateExternalState({'variables':{}})
 
         # need to ensure that precondition is satisfied
         actions = []
@@ -135,18 +133,18 @@ class RandomGenerator(TestSuiteGenerator):
         return mission
 
 
-    def generateExternalState(self):
-        return ExternalState()
+    def generateExternalState(self, variables):
+        return system.ExternalState(variables)
 
 
-    def generateInternalState(self, env, ext):
+    def generateInternalState(self, variables):
         # this may have to be defined for each system
 
-        return InternalState({})
+        return system.InternalState(variables)
 
 
-    def generateEnvironment(self):
-        return Environment()
+    def generateEnvironment(self, variables):
+        return system.Environment(variables)
 
 
     def generateAction(self, schema, stateBefore):
