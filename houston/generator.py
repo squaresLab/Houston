@@ -130,8 +130,8 @@ class RandomGenerator(TestSuiteGenerator):
             # figure out what the next state will look like
             state = NEXT_STATE(schema, action, state)
 
-        mission = mission.Mission(env, internal, external, actions)
-        return mission
+        missionReturn = mission.Mission(env, internal, external, actions)
+        return missionReturn
 
 
     def generateExternalState(self, variables):
