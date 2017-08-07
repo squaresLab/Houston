@@ -20,7 +20,7 @@ class System(object):
         :param  schemas:    a dictionary of action schemas, indexed by name
         """
         assert (isinstance(identifier, str) and not None)
-        assert (isinstance(variables, list) and not None)
+        assert (isinstance(variables, dict) and not None)
         self.__identifier = identifier
         self.__variables = variables
         self.__schemas = schemas
