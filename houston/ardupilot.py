@@ -6,11 +6,11 @@ import subprocess as sub
 
 import houston
 from valueRange import DiscreteValueRange, ContinuousValueRange
-from system     import System, InternalStateVariable, ActionSchema
+from system     import System, ActionSchema
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
 from state      import Estimator
-
+from state      import InternalVariable, ExternalVariable
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
 # prevent any interaction attempts.
@@ -56,20 +56,20 @@ class ArduPilot(System):
 
         internals = {}
         # TODO: this is very tricky; we'll need to do something clever here
-        internals['time'] = InternalStateVariable('time', lambda: time.time())
-        internals['altitude'] = InternalStateVariable('altitude',
+        internals['time'] = InternalVariable('time', lambda: time.time())
+        internals['altitude'] = InternalVariable('altitude',
             lambda: self.__system_dronekit.location.global_relative_frame.alt)
-        internals['latitude'] = InternalStateVariable('latitude',
+        internals['latitude'] = InternalVariable('latitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lat)
-        internals['longitude'] = InternalStateVariable('longitude',
+        internals['longitude'] = InternalVariable('longitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lon)
-        internals['battery'] = InternalStateVariable('battery',
+        internals['battery'] = ('battery',
             lambda: self.__system_dronekit.battery.level)
-        internals['armable'] = InternalStateVariable('armable',
+        internals['armable'] = InternalVariable('armable',
             lambda: self.__system_dronekit.is_armable)
-        internals['armed'] = InternalStateVariable('armed',
+        internals['armed'] = InternalVariable('armed',
             lambda: self.__system_dronekit.armed)
-        internals['mode'] = InternalStateVariable('mode',
+        internals['mode'] = InternalVariable('mode',
             lambda : self.__system_dronekit.mode.name)
 
         schemas = {
@@ -377,7 +377,7 @@ def safeCommandConnection(value):
     system.close()
 
 
-def maxExpectedBatteryUsage(prime_latitude, prime_longitude, prime_altitude):
+def maxExpectedBatteryUsage(latitude, longitude, altitude):
     return 0.01
     distance = distance.great_circle((0['latitude'], \
         system_variables['longitude']), (prime_latitude, prime_longitude))
