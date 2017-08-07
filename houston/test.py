@@ -111,7 +111,7 @@ class MissionSuiteCharacteristics(object):
     @staticmethod
     def fromJSON(jsn):
         """
-        Constructs a mission characteristics suite from its associated JSON
+        Constructs a mission suite characteristics from its associated JSON
         description.
         """
         return MissionSuiteCharacteristics(jsn['maxMissions'],
@@ -151,6 +151,36 @@ class MissionSuiteCharacteristics(object):
         TODO: a desired `maximum' doesn't entirely make sense?
         """
         return self.__maxTime
+
+class MissionSuiteLimits(object):
+    """
+    Used to describe the limits that the generator has when generating a mission
+    suite.
+    """
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a mission suite limits  from its associated JSON
+        description.
+        """
+        return MissionSuiteLimits(jsn['maxTime'])
+
+    def __init__(self, maxTime):
+        """
+        Constructs a set of limitations for the missionSuiteGenerator.
+
+        :param  maxTime:       the maximum time that the generator can take to
+                               generate a mission suite
+        """
+        self.__maxTime = maxTime
+
+    def getMaxTime(self):
+        """
+        Returns the maximum time that the generator can take to generate a mission
+        suite.
+        """
+        return self.__maxTime
+
 
 
 class MissionSuiteSummary(object):
