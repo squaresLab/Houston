@@ -350,6 +350,12 @@ class ActionSchema(object):
         """
         return copy.deepcopy(self.__parameters)
 
+    def getPreconditions(self):
+        """
+        Returns the preconditions being hold for the current action schema. This
+        is used to generate and validate actions.
+        """
+        return copy.deepcopy(self.__preconditions)
 
     def satisfiedPostConditions(self, systemVariables, parameters):
         """
