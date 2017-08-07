@@ -154,7 +154,12 @@ class RandomGenerator(TestSuiteGenerator):
             schema = random.choice(legalSchemas)
             (action, nextState) = self.generateActionOfSchema(schema, env, stateBefore)
 
-            # TODO: error checking
+            # do these parameters satisfy the precondition?
+
+
+            # 1. find parameters which satisfy the precondition
+            # 2. determine the resulting state separately
+            
 
             return (action, nextState)
 
@@ -173,10 +178,7 @@ class RandomGenerator(TestSuiteGenerator):
         :param  stateBefore: the state of the system immediately before\
                     the start of the action
 
-        :returns    A tuple containing a randomly-generated Action instance \
-                    and a description of the state of the system immediately \
-                    after executing that action in the given initial state and \
-                    environment.
+        :returns    A randomly-generated Action instance.
         """
         assert (isinstance(schema, system.ActionSchema) and not schema is None)
         assert (isinstance(env, state.Environment) and not env is None)
@@ -191,7 +193,4 @@ class RandomGenerator(TestSuiteGenerator):
             value = parameter.generate()
             params[name] = value
 
-        action = mission.Action(schema.getName(), params)
-        stateAfter = schema.estimateState(action, stateBefore, env)
-
-        return (action, stateAfter)
+        return mission.Action(schema.getName(), params)
