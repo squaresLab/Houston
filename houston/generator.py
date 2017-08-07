@@ -106,7 +106,8 @@ class RandomGenerator(TestSuiteGenerator):
 
         :param  characteristics:    the desired characteristics of the mission\
                                     suite to which this test will belong.
-        :param  limits              TODO
+        :param  limits              limit of the avaliable resources to generate
+                                    the missionsuite
 
         :returns    A randomly-generated Mission instance
         """
