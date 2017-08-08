@@ -117,11 +117,13 @@ class RandomGenerator(TestSuiteGenerator):
         # generate an initial state
         env = self.generateEnvironment()
         startState = self.generateInitialState(env)
+        schemas = self.getSystem().getActionSchemas()
         currentState = startState
 
         actions = []
         for _ in range(characteristics.getMaxNumActionsPerMission()):
-            (action, currentState) = self.generateAction(env, currentState)
+            (action, currentState) = self.generateAction(env, currentState, \
+                                                                        schemas)
             actions.append(action)
 
         return mission.Mission(env, startState, actions)
@@ -135,7 +137,7 @@ class RandomGenerator(TestSuiteGenerator):
         return self.getInitialState()
 
 
-    def generateAction(self, env, stateBefore):
+    def generateAction(self, env, stateBefore, schemas):
         """
         Generates a legal action based on the current state of the system and
         the (fixed) state of the environment.
