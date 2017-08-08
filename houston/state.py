@@ -18,6 +18,7 @@ class State(object):
         """
         with open(fn, "r") as f:
             jsn = json.load(f)
+        print jsn.keys()
         return State.fromJSON(jsn)
 
     @staticmethod
@@ -53,7 +54,7 @@ class State(object):
         Returns the value for a given state variable
         """
         return self.__values[variable]
-
+        
 
     def dump(self):
         """
@@ -135,7 +136,7 @@ class Environment(object):
 
         :param  fn  the path to the state description file
 
-        :returns    the corresponding environment for that file
+        :returns    the corresponding en for that file
         """
         with open(fn, "r") as f:
             jsn = json.load(f)

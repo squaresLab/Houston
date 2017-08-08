@@ -106,10 +106,10 @@ class Precondition(Predicate):
         """
         return
 
-    
+
     def getUsedParameters(self):
         pass
 
-    
+
     def getUsedVariables(self):
         pass

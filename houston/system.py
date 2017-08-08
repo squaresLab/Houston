@@ -240,6 +240,9 @@ class ActionSchema(object):
         :param  env                 the environment in which the action will be
                                     executed.
         """
+        print action
+        print currentState
+
         #print 'Doing precondition. Action: {}'.format(parameters.getKind())
         preconditionsFailed = []
         success              = True

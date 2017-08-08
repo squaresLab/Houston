@@ -123,7 +123,7 @@ class RandomGenerator(TestSuiteGenerator):
         actions = []
         for _ in range(characteristics.getMaxNumActionsPerMission()):
             (action, currentState) = self.generateAction(env, currentState, \
-                                                                        schemas)
+                                                                schemas, limits)
             actions.append(action)
 
         return mission.Mission(env, startState, actions)
@@ -137,7 +137,7 @@ class RandomGenerator(TestSuiteGenerator):
         return self.getInitialState()
 
 
-    def generateAction(self, env, stateBefore, schemas):
+    def generateAction(self, env, stateBefore, schemas, limits):
         """
         Generates a legal action based on the current state of the system and
         the (fixed) state of the environment.
@@ -157,7 +157,7 @@ class RandomGenerator(TestSuiteGenerator):
         for key, schema in schemas.iteritems(): # TODO what's the type?
             for precondition in schema.getPreconditions():
                 if not precondition.usesParameters():
-                    if not precondition.satisfiedBy(startState, {}):
+                    #if not precondition.satisfiedBy(startState, {}):
                         continue
             legalSchemas.add(schema)
 
@@ -167,7 +167,7 @@ class RandomGenerator(TestSuiteGenerator):
         # attempt to generate an action belonging to a randomly selected legal
         # schema
         for attempt in range(limits.getMaxNumRetries()):
-            schema = random.choice(legalSchemas)
+            schema = random.choice(list(legalSchemas))
             action  = self.generateActionOfSchema(schema, env, stateBefore)
 
             # 1. do these parameters satisfy the precondition? If not, we need
