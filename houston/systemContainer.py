@@ -78,7 +78,7 @@ class SystemContainer(object):
         jsn = mission.toJSON()
         url = 'http://127.0.0.1:{}/executeMission'.format(port)
         r = requests.post(url, jsn)
-        print r
+
         # TODO: add timeout
         # TODO: handle unexpected responses
         return mission.MissionOutcome.fromJSON(r.json())
