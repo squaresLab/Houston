@@ -161,7 +161,10 @@ class ArmActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
 
-        estimators = []
+        estimators = [
+            Estimator('armed',
+                        lambda action, state, env: True)
+        ]
 
         preconditions = [
             Precondition('armed', 'description',
@@ -193,6 +196,8 @@ class SetModeActionSchema(ActionSchema):
         ]
 
         estimators = [
+            Estimator('mode',
+                lambda action, state, env: state.read('mode'))
         ]
 
         preconditions = [
@@ -229,7 +234,13 @@ class GoToActionSchema(ActionSchema):
                 lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
                 action.getValues()['latitude'],
                 action.getValues()['longitude'],
-                action.getValues()['altitude']))
+                action.getValues()['altitude'])),
+            Estimator('latitude',
+                lambda action, state, env: action.getValues()['latitude']),
+            Estimator('longitude',
+                lambda action, state, env: action.getValues()['longitude']),
+            Estimator('altitude',
+                lambda action, state, env: action.getValues()['altitude'])
         ]
 
         preconditions = [
@@ -299,7 +310,9 @@ class LandActionSchema(ActionSchema):
                 )),
             Estimator('armed',
                 lambda action, state, env: \
-                    False if state.read('mode') == 'GUIDED' else state.read('armed'))
+                    False if state.read('mode') == 'GUIDED' else state.read('armed')),
+            Estimator('altitude',
+                lambda action, state, env: 0.0)
         ]
 
         invariants = [
@@ -342,7 +355,9 @@ class TakeoffActionSchema(ActionSchema):
                 state.read('latitude'),
                 state.read('longitude'),
                 action.getValues()['altitude']
-                ))
+                )),
+            Estimator('altitude',
+                lambda action, state, env: action.getValues()['altitude'])
         ]
 
         preconditions = [
@@ -353,7 +368,7 @@ class TakeoffActionSchema(ActionSchema):
                             None,
                             state.read('battery'))),
             Precondition('altitude', 'description',
-                         lambda action, state, env: state.read('altitude') < 1),
+                         lambda action, state, env: state.read('altitude') < 1.0),
             Precondition('armed', 'description',
                          lambda action, state, env: state.read('armed'))
         ]
