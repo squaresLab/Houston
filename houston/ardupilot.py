@@ -66,7 +66,7 @@ class ArduPilot(System):
             lambda: self.__system_dronekit.location.global_relative_frame.lat)
         variables['longitude'] = InternalVariable('longitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lon)
-        variables['battery'] = ('battery',
+        variables['battery'] = InternalVariable('battery',
             lambda: self.__system_dronekit.battery.level)
         variables['armable'] = InternalVariable('armable',
             lambda: self.__system_dronekit.is_armable)
