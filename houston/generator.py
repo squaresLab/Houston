@@ -125,7 +125,6 @@ class RandomGenerator(TestSuiteGenerator):
             (action, currentState) = self.generateAction(env, currentState, \
                                                                 schemas, limits)
             actions.append(action)
-
         return mission.Mission(env, startState, actions)
 
 
@@ -157,7 +156,7 @@ class RandomGenerator(TestSuiteGenerator):
         for key, schema in schemas.iteritems(): # TODO what's the type?
             for precondition in schema.getPreconditions():
                 if not precondition.usesParameters():
-                    #if not precondition.satisfiedBy(startState, {}):
+                    if not precondition.satisfiedBy(startState, {}):
                         continue
             legalSchemas.add(schema)
 
@@ -208,5 +207,4 @@ class RandomGenerator(TestSuiteGenerator):
             # value, otherwise use the default generator
             value = parameter.generate()
             params[name] = value
-
         return mission.Action(schema.getName(), params)

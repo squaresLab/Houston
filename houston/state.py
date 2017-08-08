@@ -54,7 +54,7 @@ class State(object):
         Returns the value for a given state variable
         """
         return self.__values[variable]
-        
+
 
     def dump(self):
         """
@@ -217,4 +217,4 @@ class Estimator(object):
                                 performing the given action.
         :param    environment   the environment in which the action takes place.
         """
-        return self.__func(action.getParameters(), state, environment)
+        return self.__func(action, state, environment)

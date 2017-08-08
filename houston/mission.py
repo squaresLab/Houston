@@ -1,5 +1,6 @@
 import copy
 import system
+import state
 
 class Mission(object):
     """
@@ -14,20 +15,18 @@ class Mission(object):
         """
         assert(isinstance(jsn, dict) and not jsn is None)
         assert('environment' in jsn)
-        assert('internal' in jsn)
-        assert('external' in jsn)
+        assert('initialState' in jsn)
         assert('actions' in jsn)
         assert(isinstance(jsn['actions'], list))
 
-        env = system.Environment.fromJSON(jsn['environment'])
-        internal = system.InternalState.fromJSON(jsn['internal'])
-        external = system.ExternalState.fromJSON(jsn['external'])
+        env = state.Environment.fromJSON(jsn['environment'])
+        initialState = state.State.fromJSON(jsn['initialState'])
         actions = [Action.fromJSON(action) for action in jsn['actions']]
 
         return Mission(env, internal, external, actions)
 
 
-    def __init__(self, environment, internal, external, actions):
+    def __init__(self, environment, initialState, actions):
         """
         Constructs a new Mission description.
 
@@ -37,13 +36,11 @@ class Mission(object):
         :param  actions:        a list of actions
         """
         assert(actions != [])
-        assert(isinstance(environment, system.Environment) and not environment is None)
-        assert(isinstance(internal, system.InternalState) and not internal is None)
-        assert(isinstance(external, system.ExternalState) and not external is None)
+        assert(isinstance(environment, state.Environment) and not environment is None)
+        assert(isinstance(initialState, state.State) and not initialState is None)
 
         self.__environment = environment
-        self.__internal = internal
-        self.__external = external
+        self.__initialState = initialState
         self.__actions = actions
 
 
@@ -55,12 +52,8 @@ class Mission(object):
         return self.__environment
 
 
-    def getInitialInternalState(self):
-        return self.__internal
-
-
-    def getInitialExternalState(self):
-        return self.__external
+    def getInitialState(self):
+        return self.__initialState
 
 
     def getActions(self):
@@ -73,8 +66,7 @@ class Mission(object):
         """
         return {
             'environment': self.__environment.toJSON(),
-            'internal': self.__internal.toJSON(),
-            'external': self.__external.toJSON(),
+            'initialState': self.__initialState.toJSON(),
             'actions': [a.toJSON() for a in self.__actions]
         }
 
@@ -190,8 +182,8 @@ class Action(object):
         :param  kind    the name of the schema to which the action belongs
         :param  values  a dictionary of parameter values for the action
         """
-        assert(isinstance(kind, str) and not kind is None)
-        assert(isinstance(values, dict) and not values is None)
+        assert (isinstance(kind, str) and not kind is None)
+        assert (isinstance(values, dict) and not values is None)
         self.__kind = kind
         self.__values = copy.copy(values)
 

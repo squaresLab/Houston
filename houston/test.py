@@ -114,7 +114,8 @@ class MissionSuite(object):
         """
         jsn = self.toJSON()
         with open(fn, "w") as f:
-            json.dump(jsn, f)
+            json.dump(jsn, f,sort_keys=True, indent=4, separators=\
+        (',', ': '))
 
 
 class MissionSuiteCharacteristics(object):

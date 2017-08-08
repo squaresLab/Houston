@@ -293,4 +293,4 @@ class ActionSchema(object):
             var = estimator.getVariableName()
             values[var] = estimator.estimate(action, initialState, environment)
 
-        return State(values)
+        return state.State(values)
