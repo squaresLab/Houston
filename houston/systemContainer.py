@@ -19,17 +19,17 @@ class SystemContainer(object):
         """
         assert(isinstance(port, int) and not port is None)
         command = 'houstonserver {}, {}'.format(iden, port)
-
         ports = {
             ('{}/tcp'.format(port)): ('127.0.0.1', port)
         }
+
         self.__systemIdentifier = iden
         self.__port = port
-        self.__client = docker.from_env()
-        print image
-        self.__container = self.__client.containers.run(image,
+        client = docker.from_env()
+        self.__container = client.containers.run(image,
                                                  command,
                                                  ports=ports,
+                                                 auto_remove=True,
                                                  detach=True)
                                                  
 
@@ -50,7 +50,7 @@ class SystemContainer(object):
         try:
             self.__container.get_archive('/.ready.houston')
             return True
-        except:
+        except docker.errors.APIError:
             return False
 
 
@@ -95,3 +95,4 @@ class SystemContainer(object):
         Destroys the attached Docker container.
         """
         self.__container.kill()
+        self.__container.remove(force=True)
