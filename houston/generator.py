@@ -161,7 +161,7 @@ class RandomGenerator(TestSuiteGenerator):
                         continue
             legalSchemas.add(schema)
 
-        if legalSchemas.empty():
+        if not legalSchemas:
             raise Exception('failed to generate action: no legal schemas available')
 
         # attempt to generate an action belonging to a randomly selected legal
