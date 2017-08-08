@@ -26,7 +26,7 @@ def registerSystem(systm):
     """
     global __systems
     assert (isinstance(systm, system.System) and not systm is None)
-    iden = systm.identifier()
+    iden = systm.getIdentifier()
     if iden in __systems:
         raise Error("system already registered with name: {}".format(iden))
     __systems[iden] = systm
@@ -44,7 +44,7 @@ def createContainer(systm, image):
     """
     Constructs a fresh, ephemeral container for a given system using a
     specified Docker image.
-    
+
     :param  systm:  the System object
     :param  image:  the name of the Docker image that should be used to spawn\
                     the container
