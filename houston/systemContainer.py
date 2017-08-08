@@ -1,4 +1,7 @@
-import docker
+try:
+    import docker
+except ImportError:
+    pass
 import requests
 
 class SystemContainer(object):
@@ -18,7 +21,7 @@ class SystemContainer(object):
                         run on
         """
         assert(isinstance(port, int) and not port is None)
-        command = 'houstonserver {}, {}'.format(iden, port)
+        command = 'sudo houstonserver {}'.format(port)
         ports = {
             ('{}/tcp'.format(port)): ('127.0.0.1', port)
         }
@@ -29,8 +32,14 @@ class SystemContainer(object):
         self.__container = client.containers.run(image,
                                                  command,
                                                  ports=ports,
-                                                 auto_remove=True,
                                                  detach=True)
+
+        # TODO: enforce time-out
+        # blocks until server is running
+        for line in self.__container.logs(stream=True):
+            line = line.strip()
+            if line.startswith('* Running on http://'):
+                break
                                                  
 
     def __del__(self):
@@ -47,11 +56,12 @@ class SystemContainer(object):
         Returns true if the server running inside this system container is
         ready to accept requests.
         """
-        try:
-            self.__container.get_archive('/.ready.houston')
-            return True
-        except docker.errors.APIError:
-            return False
+        # try:
+        #     self.__container.get_archive('/.ready.houston')
+        #     return True
+        # except docker.errors.APIError:
+        #     return False
+        return True
 
 
     def systemIdentifier(self):
