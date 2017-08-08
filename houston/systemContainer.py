@@ -94,7 +94,7 @@ class SystemContainer(object):
         jsn = msn.toJSON()
         jsn = {'system': self.systemIdentifier(), 'mission': jsn}
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
-        r = requests.post(url, jsn)
+        r = requests.post(url, json=jsn)
 
         print(r.json())
 

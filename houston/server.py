@@ -8,8 +8,6 @@ import sys
 import flask
 import json
 import houston
-
-# TODO
 import ardupilot
 
 

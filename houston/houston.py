@@ -37,7 +37,7 @@ def getSystem(identifier):
     """
     Returns the system associated with a given identifier.
     """
-    assert (isinstance(identifier, str))
+    assert (isinstance(identifier, str) or isinstance(identifier, unicode))
     return __systems[identifier]
 
 
