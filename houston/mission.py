@@ -182,7 +182,7 @@ class Action(object):
         :param  kind    the name of the schema to which the action belongs
         :param  values  a dictionary of parameter values for the action
         """
-        assert (isinstance(kind, str) and not kind is None)
+        assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
         assert (isinstance(values, dict) and not values is None)
         self.__kind = kind
         self.__values = copy.copy(values)
