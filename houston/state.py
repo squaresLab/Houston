@@ -128,6 +128,20 @@ class ExternalVariable(StateVariable):
 
 class Environment(object):
     @staticmethod
+    def fromFile(fn):
+        """
+        Constructs a system environment from a given file, containing a JSON-based
+        description of its contents.
+
+        :param  fn  the path to the state description file
+
+        :returns    the corresponding environment for that file
+        """
+        with open(fn, "r") as f:
+            jsn = json.load(f)
+        return Environment.fromJSON(jsn)
+
+    @staticmethod
     def fromJSON(jsn):
         """
         Constructs a description of an environment from its JSON description.
