@@ -27,19 +27,20 @@ def executeMission():
 
     returns:    a summary of the outcome of the mission, in a JSON format
     """
-    assert('system' in flask.request.args)
-    assert('mission' in flask.request.args)
+    #assert('system' in flask.request.args)
+    #assert('mission' in flask.request.args)
 
     # TODO: need to ensure that the system is actually imported
-    system = flask.request.args['system']
-    system = houston.getSystem(system)
+    # system = flask.request.args['system']
+    return flask.jsonify({'hello':'olleh'})
+    # system = houston.getSystem(system)
 
-    mission = json.loads(flask.request.args['mission'])
-    mission = houston.mission.Mission.fromJSON(mission)
+    # mission = json.loads(flask.request.args['mission'])
+    # mission = houston.mission.Mission.fromJSON(mission)
 
-    outcome = system.execute(mission)
-    outcome = outcome.toJSON()
-    return flask.jsonify(outcome)
+    # outcome = system.execute(mission)
+    # outcome = outcome.toJSON()
+    #return flask.jsonify(outcome)
 
 
 def main():
@@ -59,7 +60,7 @@ def main():
         exit(1)
 
     portNumber = int(sys.argv[1])
-    app.run(port=portNumber, use_reloader=True, debug=True)
+    app.run(port=portNumber, use_reloader=False, debug=True)
 
 if __name__ == "__main__":
     main()

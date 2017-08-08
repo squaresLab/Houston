@@ -98,6 +98,8 @@ class SystemContainer(object):
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
         r = requests.post(url, jsn)
 
+        print(r.json())
+
         # TODO: add timeout
         # TODO: handle unexpected responses
         return mission.MissionOutcome.fromJSON(r.json())
@@ -110,7 +112,6 @@ class SystemContainer(object):
         print("Destroying container...")
         print(self.__container.logs(stdout=True, stderr=True))
 
-        sys.exit(1)
-        #self.__container.kill()
-        #self.__container.remove(force=True)
-        #self.__container = None
+        self.__container.kill()
+        self.__container.remove(force=True)
+        self.__container = None
