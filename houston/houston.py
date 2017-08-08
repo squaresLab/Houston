@@ -1,6 +1,7 @@
 import random
 import system
 import mission
+import systemContainer
 
 """
 A registry of systems known to Houston, indexed by their identifiers.
@@ -65,7 +66,7 @@ def createContainer(systm, image):
     port = random.choice(list(__port_pool))
     __port_pool.remove(port)
 
-    container = system.SystemContainer(iden, image, port)
+    container = systemContainer.SystemContainer(iden, image, port)
     __containers.add(container)
 
     return container
