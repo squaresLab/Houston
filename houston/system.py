@@ -33,7 +33,7 @@ class System(object):
         raise NotImplementedError
 
 
-    def identifier(self):
+    def getIdentifier(self):
         """
         Returns the unique identifier (i.e., the name) for this system.
         """
