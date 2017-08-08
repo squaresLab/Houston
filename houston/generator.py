@@ -154,7 +154,7 @@ class RandomGenerator(TestSuiteGenerator):
         # - does the current state satisfy those preconditions? If not, we
         #   can't generate an action of that schema! Discard.
         legalSchemas = set()
-        for schema in schemas.iteritems(): # TODO what's the type?
+        for key, schema in schemas.iteritems(): # TODO what's the type?
             for precondition in schema.getPreconditions():
                 if not precondition.usesParameters():
                     if not precondition.satisfiedBy(startState, {}):
