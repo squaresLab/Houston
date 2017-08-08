@@ -19,15 +19,15 @@ class SystemContainer(object):
         """
         assert(isinstance(port, int) and not port is None)
         command = 'houstonserver {}, {}'.format(iden, port)
+        client = docker.from_env()
         ports = {
             ('{}/tcp'.format(port)): ('127.0.0.1', port)
         }
         self.__systemIdentifier = iden
         self.__port = port
-        self.__container = docker.containers.run(image,
+        self.__container = client.containers.run(image,
                                                  command,
                                                  ports=ports,
-                                                 auto_remove=True,
                                                  detach=True)
 
 
