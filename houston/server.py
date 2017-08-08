@@ -10,10 +10,6 @@ import json
 import houston
 
 
-READY_FILE = "/.ready.houston"
-READY_MESSAGE = "Houston is ready for launch!"
-
-
 app = flask.Flask(__name__)
 
 
@@ -63,11 +59,7 @@ def main():
         exit(1)
 
     portNumber = int(sys.argv[1])
-    app.run(port=portNumber)
-
-    with open(READY_FILE, "w") as f:
-        f.write('Houston, we have lift-off!')
-        f.flush()
+    app.run(port=portNumber, use_reloader=True, debug=True)
 
 if __name__ == "__main__":
     main()

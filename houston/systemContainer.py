@@ -2,7 +2,10 @@ try:
     import docker
 except ImportError:
     pass
+
+import sys
 import requests
+import mission
 
 class SystemContainer(object):
     """
@@ -85,14 +88,14 @@ class SystemContainer(object):
         return self.__container
 
 
-    def execute(self, mission):
+    def execute(self, msn):
         """
         Executes a given mission inside this container and returns the result.
         """
-        assert(isinstance(mission, mission.Mission))
-        assert(not mission is None)
-        jsn = mission.toJSON()
-        url = 'http://127.0.0.1:{}/executeMission'.format(port)
+        assert(isinstance(msn, mission.Mission))
+        assert(not msn is None)
+        jsn = msn.toJSON()
+        url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
         r = requests.post(url, jsn)
 
         # TODO: add timeout
@@ -104,5 +107,10 @@ class SystemContainer(object):
         """
         Destroys the attached Docker container.
         """
-        self.__container.kill()
-        self.__container.remove(force=True)
+        print("Destroying container...")
+        print(self.__container.logs(stdout=True, stderr=True))
+
+        sys.exit(1)
+        #self.__container.kill()
+        #self.__container.remove(force=True)
+        #self.__container = None
