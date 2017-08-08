@@ -273,24 +273,24 @@ class ActionSchema(object):
         return (success, invariantsFailed)
 
 
-    def estimateState(self, action, state, environment):
+    def estimateState(self, action, initialState, environment):
         """
         Estimates the resulting system state after executing an action
         belonging to this schema in a given initial state.
 
         :param  action:         the action for which an outcome should be \
                                 estimated.
-        :param  state:          the initial state of the system, immediately \
+        :param  initialState:   the initial state of the system, immediately \
                                 prior to executing the action.
         :param  environment:    a description of the environment in which the \
                                 action should take place.
 
         :return An estimate of the resulting system state
         """
-        values = state.getValues()
+        values = initialState.getValues()
 
         for estimator in self.__estimators:
             var = estimator.getVariableName()
-            values[var] = estimator.estimate(action, state, environment)
+            values[var] = estimator.estimate(action, initialState, environment)
 
         return State(values)
