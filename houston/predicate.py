@@ -12,15 +12,18 @@ class Predicate(object):
         self.__predicate = predicate
 
 
-    def check(self, systemVariables, parameters):
+    def check(self, action, currentState, env):
         """
-        Checks for the state (True/False) of the predicate.
+        Determines whether this predicate is satisfied by a given action, \
+        state, and environment.
 
-        :param  systemVariables     the system variables (TODO: what is the type of this argument?)
-        :param  parameters          parameters of the action that is about to be
-                                    dispatched, or that is currently being executed.
+        :param  action              a description of the action being performed
+        :param  currentState        a description of the state of the system
+        :param  env                 a description of the environment
+
+        :returns    True if satisified, false if not.
         """
-        return self.__predicate(systemVariables, parameters)
+        return self.__predicate(action, currentState, env)
 
 
 class Invariant(Predicate):
@@ -59,7 +62,7 @@ class Postcondition(Predicate):
         Constructs a Postcondition object.
 
         :param  name            name of the postcondition
-        :param  description     quick description of the postcondition
+        :param  description     a short description of the postcondition
         :param  predicate       lambda function that holds the condition to be met.
         """
         super(Postcondition, self).__init__(name, predicate)
@@ -84,7 +87,7 @@ class Precondition(Predicate):
         Constructs a Precondition object
 
         :param  name                name of the precondition
-        :param  description         quick description of the precondition
+        :param  description         a short description of the precondition
         :param  predicate           lambda function that holds the condition
                                     to be met.
         """
