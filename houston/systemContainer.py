@@ -3,7 +3,7 @@ import requests
 
 class SystemContainer(object):
     """
-    System proxies are used to 
+    System proxies are used to
 
     - ensures clean-up
     """
@@ -30,7 +30,7 @@ class SystemContainer(object):
                                                  auto_remove=True,
                                                  detach=True)
 
-    
+
     def __del__(self):
         """
         Ensures the associated Docker container is discarded once this
@@ -61,14 +61,14 @@ class SystemContainer(object):
         """
         return self.__port
 
-    
+
     def container(self):
         """
         Returns a handle for the associated Docker container
         """
         return self.__container
 
-    
+
     def execute(self, mission):
         """
         Executes a given mission inside this container and returns the result.
@@ -78,7 +78,7 @@ class SystemContainer(object):
         jsn = mission.toJSON()
         url = 'http://127.0.0.1:{}/executeMission'.format(port)
         r = requests.post(url, jsn)
-
+        print r
         # TODO: add timeout
         # TODO: handle unexpected responses
         return mission.MissionOutcome.fromJSON(r.json())

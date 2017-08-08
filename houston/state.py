@@ -1,10 +1,20 @@
 import copy
+import jsn
 
 class State(object):
     """
     Describes the state of the system at a given moment in time, in terms of
     its internal and external variables.
     """
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a description of a state from its JSON description.
+        """
+        assert ('variables' in jsn)
+        assert (isinstance(jsn['variables'], dict))
+        return State(jsn['variables'])
+
 
     def __init__(self, values):
         """
