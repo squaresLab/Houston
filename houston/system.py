@@ -220,9 +220,9 @@ class ActionSchema(object):
         #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
 
         postconditionsFailed = []
-        success               = True
+        success = True
         for postcondition in self.__postconditions:
-            if not postcondition.check(currentState, action.getValues()):
+            if not postcondition.check(action, currentState, env):
                 postconditionsFailed.append(postcondition.getName())
                 success = False
         return (success, postconditionsFailed)
@@ -240,14 +240,12 @@ class ActionSchema(object):
         :param  env                 the environment in which the action will be
                                     executed.
         """
-        print action
-        print currentState
-
         #print 'Doing precondition. Action: {}'.format(parameters.getKind())
+
         preconditionsFailed = []
-        success              = True
+        success = True
         for precondition in self.__preconditions:
-            if not precondition.check(currentState, action.getValues()):
+            if not precondition.check(action, currentState, env):
                 preconditionsFailed.append(precondition.getName())
                 success = False
         return (success, preconditionsFailed)
@@ -269,7 +267,7 @@ class ActionSchema(object):
         invariantsFailed    = []
         success             = True
         for invariant in self.__invariants:
-            if not invariant.check(currentState, action.getValues()):
+            if not invariant.check(action, currentState, env):
                 invariantsFailed.append(invariant.getName())
                 success = False
         return (success, invariantsFailed)
