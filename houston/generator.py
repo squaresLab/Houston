@@ -171,7 +171,10 @@ class RandomGenerator(TestSuiteGenerator):
 
             # 1. do these parameters satisfy the precondition? If not, we need
             #    to generate a new action
-            if not schema.satisfiedPreconditions(action, stateBefore, env):
+            #  outcome returns a list of the preconditions that failed. Useful
+            #  for debugging.
+            passed, outcome = schema.satisfiedPreconditions(action, stateBefore, env)
+            if not passed:
                 continue
 
             # 2. determine the resulting state separately
