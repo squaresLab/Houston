@@ -45,6 +45,12 @@ class TestSuiteGenerator(object):
         """
         return self.__system
 
+    def getEnvironment(self):
+        """
+        Returns the mission suite environment
+        """
+        return self.__environment
+
 
     def generate(self, characteristics, limits):
         """
