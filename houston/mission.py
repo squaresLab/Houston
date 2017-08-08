@@ -23,7 +23,7 @@ class Mission(object):
         initialState = state.State.fromJSON(jsn['initialState'])
         actions = [Action.fromJSON(action) for action in jsn['actions']]
 
-        return Mission(env, internal, external, actions)
+        return Mission(env, initialState, actions)
 
 
     def __init__(self, environment, initialState, actions):
