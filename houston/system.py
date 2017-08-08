@@ -67,23 +67,27 @@ class System(object):
         """
         assert (self.installed())
         self.setUp(mission)
+
+        env = mission.getEnvironment()
+
         try:
 
             outcomes = []
             for action in mission.getActions():
                 schema = self.__schemas[action.getSchemaName()]
-                stateBefore = self.getInternalState()
+                stateStart = self.getState()
+                stateCurrent = stateStart
 
                 # check for precondition violations
                 (satisfied, violations) = \
-                    schema.satisfiedPreconditions(self.__variables, action)
+                    schema.satisfiedPreconditions(action, stateStart, env)
                 if not satisfied:
-                    stateAfter = self.getInternalState()
-                    outcome = ActionOutcome(action, False, stateBefore, stateAfter)
+                    outcome = ActionOutcome(action, False, stateStart, stateStart)
                     outcomes.append(outcome)
                     return MissionOutcome(False, outcomes)
 
                 # dispatch
+                # TODO: just pass the action object?
                 schema.dispatch(action.getValues())
                 print('Doing: {}'.format(action.getSchemaName()))
 
@@ -92,10 +96,9 @@ class System(object):
 
                     # check for invariant violations
                     (satisfied, violations) = \
-                        schema.satisfiedInvariants(self.__variables, action)
+                        schema.satisfiedInvariants(action, stateCurrent, env)
                     if not satisfied:
-                        stateAfter = self.getInternalState()
-                        outcome = ActionOutcome(action, False, stateBefore, stateAfter)
+                        outcome = ActionOutcome(action, False, stateStart, stateCurrent)
                         outcomes.append(outcome)
                         return MissionOutcome(False, outcomes)
 
@@ -103,14 +106,16 @@ class System(object):
                     (satisfied, violations) = \
                         schema.satisfiedPostConditions(self.__variables, action)
                     if satisfied:
-                        stateAfter = self.getInternalState()
-                        outcome = ActionOutcome(action, False, stateBefore, stateAfter)
+                        outcome = ActionOutcome(action, False, stateStart, stateCurrent)
                         outcomes.append(outcome)
-                        return MissionOutcome(True, outcomes)
+                        break
 
                     time.sleep(0.5) # TODO: parameterise
 
-                    # TODO: enforce a time-out!
+                    # TODO: enforce a time-out!\
+
+
+            return MissionOutcome(True, outcomes)
 
         finally:
             self.tearDown(mission)
