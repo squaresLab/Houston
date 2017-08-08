@@ -156,7 +156,7 @@ class RandomGenerator(TestSuiteGenerator):
         for key, schema in schemas.iteritems(): # TODO what's the type?
             for precondition in schema.getPreconditions():
                 if not precondition.usesParameters():
-                    if not precondition.satisfiedBy(startState, {}):
+                    #if not precondition.satisfiedBy(startState, {}):
                         continue
             legalSchemas.add(schema)
 
