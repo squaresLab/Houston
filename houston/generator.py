@@ -88,7 +88,7 @@ class RandomGenerator(TestSuiteGenerator):
         return missions
 
 
-    def generateMission(self, missions, characteristics, limits):
+    def generateMission(self, characteristics, limits):
         """
         Generates a single Mission at random.
 
