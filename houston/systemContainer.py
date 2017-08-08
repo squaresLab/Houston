@@ -93,6 +93,7 @@ class SystemContainer(object):
         assert(not msn is None)
         jsn = msn.toJSON()
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
+        print(jsn)
         r = requests.post(url, jsn)
 
         print(r.json())
