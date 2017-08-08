@@ -167,15 +167,15 @@ class ArmActionSchema(ActionSchema):
             Precondition('armed', 'description',
                          lambda action, state, env: state.read('armed') == False),
             Precondition('armable', 'description',
-                         lambda state, params, env: state.read('armable') == True)
+                         lambda action, state, env: state.read('armable') == True)
         ]
         postconditions = [
             Postcondition('armed', 'description',
-                         lambda state, params, env: state.read('armed') == True)
+                         lambda action, state, env: state.read('armed') == True)
         ]
         invariants = [
             Invariant('battery', 'description',
-                      lambda state, params, env: state.read('battery') > 0)
+                      lambda action, state, env: state.read('battery') > 0)
         ]
         super(ArmActionSchema, self).__init__('arm', parameters, preconditions,\
             invariants, postconditions, estimators)
@@ -200,11 +200,11 @@ class SetModeActionSchema(ActionSchema):
 
         postconditions = [
             Postcondition('mode', 'description',
-                          lambda state, params, env: state.read('mode') == params['mode'])
+                          lambda action, state, env: state.read('mode') == params['mode'])
         ]
         invariants = [
             Invariant('battery', 'description',
-                      lambda state, params, env: state.read('battery') > 0)
+                      lambda action, state, env: state.read('battery') > 0)
         ]
         super(SetModeActionSchema, self).__init__('setmode', parameters, \
             preconditions, invariants, postconditions, estimators)
@@ -226,7 +226,7 @@ class GoToActionSchema(ActionSchema):
 
         estimators = [
             Estimator('battery',
-                lambda state, params, env: state.read('battery') - maxExpectedBatteryUsage(
+                lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
                 params['latitude'],
                 params['longitude'],
                 params['altitude']))
@@ -234,31 +234,31 @@ class GoToActionSchema(ActionSchema):
 
         preconditions = [
             Precondition('battery', 'description',
-                         lambda state, params, env: state.read('battey') >= maxExpectedBatteryUsage(
+                         lambda action, state, env: state.read('battey') >= maxExpectedBatteryUsage(
                          params['latitude'],
                          params['longitude'],
                          params['altitude'])),
             Precondition('altitude', 'description',
-                         lambda state, params, env: state.read('altitude') > 0)
+                         lambda action, state, env: state.read('altitude') > 0)
         ]
 
         invariants = [
             Invariant('battery', 'description',
-                       lambda state, params, env: state.read('battery') > 0),
-            Invariant('system_armed', 'description',
-                       lambda state, params, env: state.read('armed')== True),
+                       lambda action, state, env: state.read('battery') > 0),
+            Invariant('armed', 'description',
+                       lambda action, state, env: state.read('armed')== True),
             Invariant('altitude', 'description',
-                       lambda state, params, env: state.read('altitude') > -0.3)
+                       lambda action, state, env: state.read('altitude') > -0.3)
         ]
 
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda state, params, env: state.read('altitude') - 0.3 < \
+                          lambda action, state, env: state.read('altitude') - 0.3 < \
                             params['altitude'] < state.read('altitude') + 0.3),
             Postcondition('battery', 'description',
-                          lambda state, params, env: state.read('battery') > 0 ),
+                          lambda action, state, env: state.read('battery') > 0 ),
             Postcondition('distance', 'description',
-                          lambda state, params, env:
+                          lambda action, state, env:
                           float(distance.great_circle(
                           (float(params['latitude']), float(params['longitude'])),
                           (float(state.read('latitude')), float(state.read('longitude'))))
@@ -282,16 +282,16 @@ class LandActionSchema(ActionSchema):
         parameters = []
         preconditions = [
             Precondition('battery', 'description',
-                lambda state, params, env: state.read('battery') >= \
+                lambda action, state, env: state.read('battery') >= \
                     maxExpectedBatteryUsage(state.read('latitude'), state.read('longitude'), 0.0)),
             Precondition('altitude', 'description',
-                lambda state, params, env: state.read('altitude') > 0.3),
+                lambda action, state, env: state.read('altitude') > 0.3),
             Precondition('armed', 'description',
-                lambda state, params, env: state.read('armed') == True)
+                lambda action, state, env: state.read('armed') == True)
         ]
         estimators = [
             Estimator('battery',
-                lambda state, params, env: state.read('battery') - maxExpectedBatteryUsage(
+                lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
                 state.read('latitude'),
                 state.read('longitude'),
                 0.0
@@ -300,18 +300,18 @@ class LandActionSchema(ActionSchema):
 
         invariants = [
             Invariant('battery', 'description',
-                       lambda state, params, env: state.read('battery') > 0),
+                       lambda action, state, env: state.read('battery') > 0),
             Invariant('altitude', 'description',
-                       lambda state, params, env: state.read('altitude') > -0.3)
+                       lambda action, state, env: state.read('altitude') > -0.3)
         ]
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda state, params, env: state.read('altitude') < 1 ),
+                          lambda action, state, env: state.read('altitude') < 1 ),
             Postcondition('battery', 'description',
-                          lambda state, params, env: state.read('battery') > 0 ),
+                          lambda action, state, env: state.read('battery') > 0 ),
             Postcondition('time', 'description',
                           # we need a "start" time (or an initial state)
-                          lambda state, params, env: maxExpectedTime(None, None, 0) > \
+                          lambda action, state, env: maxExpectedTime(None, None, 0) > \
                             time.time() - state.read('time'))
         ]
         super(LandActionSchema, self).__init__('land', parameters, preconditions,\
@@ -332,7 +332,7 @@ class TakeoffActionSchema(ActionSchema):
 
         estimators = [
             Estimator('battery',
-                lambda state, params, env: state.read('battery') - maxExpectedBatteryUsage(
+                lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
                 state['latitude'],
                 state['longitude'],
                 params['altitude']
@@ -341,25 +341,25 @@ class TakeoffActionSchema(ActionSchema):
 
         preconditions = [
             Precondition('battery', 'description',
-                         lambda state, params, env: state.read('battery') >= \
+                         lambda action, state, env: state.read('battery') >= \
                          maxExpectedBatteryUsage(
                             None,
                             None,
-                            state['battery'].read())),
+                            state.read('battery'))),
             Precondition('altitude', 'description',
-                         lambda state, params, env: state.read('altitude') < 1),
+                         lambda action, state, env: state.read('altitude') < 1),
             Precondition('armed', 'description',
-                         lambda state, params, env: state.read('armed') == True)
+                         lambda action, state, env: state.read('armed') == True)
         ]
         invariants = [
             Invariant('armed', 'description',
-                      lambda state, params, env: state.read('armed') == True),
+                      lambda action, state, env: state.read('armed') == True),
             Invariant('altitude', 'description',
-                      lambda state, params, env: state.read('altitude') > -0.3)
+                      lambda action, state, env: state.read('altitude') > -0.3)
         ]
         postconditions = [
             Postcondition('altitude', 'description',
-                          lambda state, params, env: state.read('altitude')- 1 < \
+                          lambda action, state, env: state.read('altitude')- 1 < \
                           params['altitude'] < state.read('altitude') + 1)
         ]
         super(TakeoffActionSchema, self).__init__('takeoff', parameters, \
