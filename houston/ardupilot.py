@@ -165,9 +165,9 @@ class ArmActionSchema(ActionSchema):
 
         preconditions = [
             Precondition('armed', 'description',
-                         lambda sv, params: sv['armed'].read() == False),
+                         lambda action, state, env: state.read('armed') == False),
             Precondition('armable', 'description',
-                         lambda sv, params: sv['armable'].read() == True)
+                         lambda state, params: sv['armable'].read() == True)
         ]
         postconditions = [
             Postcondition('armed', 'description',
