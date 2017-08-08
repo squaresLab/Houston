@@ -57,8 +57,10 @@ class ArduPilot(System):
         variables = {}
         # TODO: this is very tricky; we'll need to do something clever here
         variables['time'] = InternalVariable('time', lambda: time.time())
-        variables['homeLocation'] = InternalVariable('homeLocation',
-            lambda: self.__system_dronekit.home_location)
+        variables['homeLatitude'] = InternalVariable('homeLatitude',
+            lambda: self.__system_dronekit.home_location.lat),
+        variables['homeLongitude'] = InternalVariable('homeLongitude',
+            lambda: self.__system_dronekit.home_location.lon),
         variables['altitude'] = InternalVariable('altitude',
             lambda: self.__system_dronekit.location.global_relative_frame.alt)
         variables['latitude'] = InternalVariable('latitude',
