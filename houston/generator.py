@@ -128,11 +128,11 @@ class RandomGenerator(TestSuiteGenerator):
 
 
     def generateEnvironment(self):
-        return self.__environment
+        return self.getEnvironment()
 
 
     def generateInitialState(self, env):
-        return self.__initialState
+        return self.getInitialState()
 
 
     def generateAction(self, env, stateBefore):
