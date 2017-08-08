@@ -54,15 +54,15 @@ def createContainer(systm, image):
     global __port_pool
     global __containers
 
-    assert (isinstance(systm, systm.System))
+    assert (isinstance(systm, system.System))
     assert (not system is None)
 
-    iden = systm.identifier()
+    iden = systm.getIdentifier()
     assert (iden in __systems)
 
     # TODO: ensure the port is returned to the pool once we're done with the
     #       container
-    port = random.choice(__port_pool)
+    port = random.choice(list(__port_pool))
     __port_pool.remove(port)
 
     container = system.SystemContainer(iden, image, port)

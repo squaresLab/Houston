@@ -87,7 +87,7 @@ class MissionSuite(object):
 
     def executeMission(self, systm, image, mission):
         # TODO we could block on construction, or require user to block
-        cntr = houston.createContainer(systm.getIdentifier(), image)
+        cntr = houston.createContainer(systm, image)
 
         try:
             while not cntr.ready():
