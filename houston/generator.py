@@ -51,6 +51,12 @@ class TestSuiteGenerator(object):
         """
         return self.__environment
 
+    def getInitialState(self):
+        """
+        Returns the mission suite initial state
+        """
+        return self.__initialState
+
 
     def generate(self, characteristics, limits):
         """
