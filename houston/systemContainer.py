@@ -32,8 +32,10 @@ class SystemContainer(object):
         self.__systemIdentifier = iden
         self.__port = port
         client = docker.from_env()
+        # TODO: I'm not too happy about the network_mode setting
         self.__container = client.containers.run(image,
                                                  command,
+                                                 network_mode='host',
                                                  ports=ports,
                                                  detach=True)
 
