@@ -1,4 +1,5 @@
 # These should be conditional imports
+import sys
 import time
 import os
 import sys
@@ -17,8 +18,6 @@ from state      import InternalVariable, ExternalVariable
 try:
     # TODO always prefer "import" over "from"
     import pexpect
-    import numpy
-    import rospy
     import statistics
     from pymavlink      import mavutil, mavwp
     from geopy          import distance
@@ -39,7 +38,7 @@ try:
     vinfo = vehicleinfo.VehicleInfo()
 
     ARDUPILOT_INSTALLED = True
-except ImportError:
+except ImportError as e:
     ARDUPILOT_INSTALLED = False
 
 
