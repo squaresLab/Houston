@@ -55,25 +55,26 @@ class ArduPilot(System):
 
         variables = {}
         # TODO: this is very tricky; we'll need to do something clever here
-        variables['time'] = InternalVariable('time', lambda: time.time())
-        variables['homeLatitude'] = InternalVariable('homeLatitude',
-            lambda: self.__system_dronekit.home_location.lat),
-        variables['homeLongitude'] = InternalVariable('homeLongitude',
-            lambda: self.__system_dronekit.home_location.lon),
-        variables['altitude'] = InternalVariable('altitude',
-            lambda: self.__system_dronekit.location.global_relative_frame.alt)
-        variables['latitude'] = InternalVariable('latitude',
-            lambda: self.__system_dronekit.location.global_relative_frame.lat)
-        variables['longitude'] = InternalVariable('longitude',
-            lambda: self.__system_dronekit.location.global_relative_frame.lon)
-        variables['battery'] = InternalVariable('battery',
-            lambda: self.__system_dronekit.battery.level)
-        variables['armable'] = InternalVariable('armable',
-            lambda: self.__system_dronekit.is_armable)
-        variables['armed'] = InternalVariable('armed',
-            lambda: self.__system_dronekit.armed)
-        variables['mode'] = InternalVariable('mode',
-            lambda : self.__system_dronekit.mode.name)
+        variables['time'] = \
+            InternalVariable('time', lambda: time.time())
+        variables['homeLatitude'] = \
+            InternalVariable('homeLatitude', lambda: self.__system_dronekit.home_location.lat)
+        variables['homeLongitude'] = \
+            InternalVariable('homeLongitude', lambda: self.__system_dronekit.home_location.lon)
+        variables['altitude'] = \
+            InternalVariable('altitude', lambda: self.__system_dronekit.location.global_relative_frame.alt)
+        variables['latitude'] = \
+            InternalVariable('latitude', lambda: self.__system_dronekit.location.global_relative_frame.lat)
+        variables['longitude'] = \
+            InternalVariable('longitude', lambda: self.__system_dronekit.location.global_relative_frame.lon)
+        variables['battery'] = \
+            InternalVariable('battery', lambda: self.__system_dronekit.battery.level)
+        variables['armable'] = \
+            InternalVariable('armable', lambda: self.__system_dronekit.is_armable)
+        variables['armed'] = \
+            InternalVariable('armed', lambda: self.__system_dronekit.armed)
+        variables['mode'] = \
+            InternalVariable('mode', lambda : self.__system_dronekit.mode.name)
 
         schemas = {
             'goto'   : GoToActionSchema(),
