@@ -210,7 +210,10 @@ class SetModeActionSchema(ActionSchema):
                 if action.getValues()['mode'] == 'RTL' else state.read('longitude')),
             Estimator('altitude',
                 lambda action, state, env: 0.0 \
-                if action.getValues()['mode'] == 'RTL' else state.read('altitude'))
+                if action.getValues()['mode'] == 'RTL' else state.read('altitude')),
+            Estimator('armed',
+                lambda action, state, env: False \
+                if action.getValues()['mode'] == 'RTL' else state.read('armed'))
         ]
 
         preconditions = [
