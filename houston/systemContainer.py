@@ -61,11 +61,6 @@ class SystemContainer(object):
         Returns true if the server running inside this system container is
         ready to accept requests.
         """
-        # try:
-        #     self.__container.get_archive('/.ready.houston')
-        #     return True
-        # except docker.errors.APIError:
-        #     return False
         return True
 
 
