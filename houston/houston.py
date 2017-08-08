@@ -41,6 +41,21 @@ def getSystem(identifier):
     return __systems[identifier]
 
 
+def destroyContainer(cntr):
+    """
+    Safely destroys a container by deallocating all attached resources
+    (i.e., Docker containers, ports).
+    """
+    global __port_pool
+    global __containers
+
+    assert (isinstance(cntr, systemContainer.SystemContainer) and not cntr is None)
+
+    __port_pool.add(cntr.port())
+    __containers.remove(cntr)
+    cntr.destroy()
+
+
 def createContainer(systm, image):
     """
     Constructs a fresh, ephemeral container for a given system using a

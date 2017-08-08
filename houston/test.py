@@ -86,9 +86,7 @@ class MissionSuite(object):
 
 
     def executeMission(self, systm, image, mission):
-        # TODO we could block on construction, or require user to block
         cntr = houston.createContainer(systm, image)
-
         try:
             while not cntr.ready():
                 time.sleep(0.1)
@@ -96,7 +94,7 @@ class MissionSuite(object):
             return cntr.execute(mission)
 
         finally:
-            cntr.destroy()
+            houston.destroyContainer(cntr)
 
 
     def toJSON(self):
