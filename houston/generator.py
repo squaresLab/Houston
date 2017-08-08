@@ -1,6 +1,7 @@
 import random
 import mission
 import system
+import state
 import test
 
 """
@@ -30,7 +31,8 @@ class TestSuiteGenerator(object):
                                     mission
         """
         assert (isinstance(systm, system.System) and not systm is None)
-        assert (isinstance(environment, system.Environment) and not environment is None)
+        assert (isinstance(environment, state.Environment) and not environment is None)
+        assert (isinstance(initialState, state.State) and not initialState is None)
         self.__system = systm
         self.__environment = environment
         self.__initialState = initialState
