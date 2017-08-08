@@ -54,22 +54,22 @@ class ArduPilot(System):
         self.__mavproxy   = None
         self.__mavlink    = None
 
-        internals = {}
+        variables = {}
         # TODO: this is very tricky; we'll need to do something clever here
-        internals['time'] = InternalVariable('time', lambda: time.time())
-        internals['altitude'] = InternalVariable('altitude',
+        variables['time'] = InternalVariable('time', lambda: time.time())
+        variables['altitude'] = InternalVariable('altitude',
             lambda: self.__system_dronekit.location.global_relative_frame.alt)
-        internals['latitude'] = InternalVariable('latitude',
+        variables['latitude'] = InternalVariable('latitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lat)
-        internals['longitude'] = InternalVariable('longitude',
+        variables['longitude'] = InternalVariable('longitude',
             lambda: self.__system_dronekit.location.global_relative_frame.lon)
-        internals['battery'] = ('battery',
+        variables['battery'] = ('battery',
             lambda: self.__system_dronekit.battery.level)
-        internals['armable'] = InternalVariable('armable',
+        variables['armable'] = InternalVariable('armable',
             lambda: self.__system_dronekit.is_armable)
-        internals['armed'] = InternalVariable('armed',
+        variables['armed'] = InternalVariable('armed',
             lambda: self.__system_dronekit.armed)
-        internals['mode'] = InternalVariable('mode',
+        variables['mode'] = InternalVariable('mode',
             lambda : self.__system_dronekit.mode.name)
 
         schemas = {
@@ -80,7 +80,7 @@ class ArduPilot(System):
             'setmode'   : SetModeActionSchema()
         }
 
-        super(ArduPilot, self).__init__('ardupilot', internals, schemas)
+        super(ArduPilot, self).__init__('ardupilot', variables, schemas)
 
 
     def installed(self):
