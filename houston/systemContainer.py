@@ -19,17 +19,19 @@ class SystemContainer(object):
         """
         assert(isinstance(port, int) and not port is None)
         command = 'houstonserver {}, {}'.format(iden, port)
-        client = docker.from_env()
+
         ports = {
             ('{}/tcp'.format(port)): ('127.0.0.1', port)
         }
         self.__systemIdentifier = iden
         self.__port = port
-        self.__container = client.containers.run(image,
+        self.__client = docker.from_env()
+        print image
+        self.__container = self.__client.containers.run(image,
                                                  command,
                                                  ports=ports,
                                                  detach=True)
-
+                                                 
 
     def __del__(self):
         """
@@ -45,7 +47,11 @@ class SystemContainer(object):
         Returns true if the server running inside this system container is
         ready to accept requests.
         """
-        return DOCKER_CHECK(server.READY_FILE)
+        try:
+            self.__container.get_archive('/.ready.houston')
+            return True
+        except:
+            return False
 
 
     def systemIdentifier(self):

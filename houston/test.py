@@ -96,7 +96,7 @@ class MissionSuite(object):
             return cntr.execute(mission)
 
         finally:
-            cntr.stop()
+            cntr.destroy()
 
 
     def toJSON(self):
