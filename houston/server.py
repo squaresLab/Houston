@@ -9,6 +9,9 @@ import flask
 import json
 import houston
 
+# TODO
+import ardupilot
+
 
 app = flask.Flask(__name__)
 
@@ -27,17 +30,16 @@ def executeMission():
 
     returns:    a summary of the outcome of the mission, in a JSON format
     """
-    assert('system' in flask.request.args)
-    assert('mission' in flask.request.args)
+    assert('system' in flask.request.json)
+    assert('mission' in flask.request.json)
 
-    # TODO: need to ensure that the system is actually imported
-    system = flask.request.args['system']
-    system = houston.getSystem(system)
+    systm = flask.request.json['system']
+    systm = houston.getSystem(systm)
 
-    mission = json.loads(flask.request.args['mission'])
-    mission = houston.mission.Mission.fromJSON(mission)
+    msn = flask.request.json['mission']
+    msn = houston.mission.Mission.fromJSON(msn)
 
-    outcome = system.execute(mission)
+    outcome = systm.execute(msn)
     outcome = outcome.toJSON()
     return flask.jsonify(outcome)
 
