@@ -165,13 +165,13 @@ class ArmActionSchema(ActionSchema):
 
         preconditions = [
             Precondition('armed', 'description',
-                         lambda action, state, env: state.read('armed') == False),
+                         lambda action, state, env: not state.read('armed')),
             Precondition('armable', 'description',
-                         lambda action, state, env: state.read('armable') == True)
+                         lambda action, state, env: state.read('armable'))
         ]
         postconditions = [
             Postcondition('armed', 'description',
-                         lambda action, state, env: state.read('armed') == True)
+                         lambda action, state, env: state.read('armed'))
         ]
         invariants = [
             Invariant('battery', 'description',
@@ -246,7 +246,7 @@ class GoToActionSchema(ActionSchema):
             Invariant('battery', 'description',
                        lambda action, state, env: state.read('battery') > 0),
             Invariant('armed', 'description',
-                       lambda action, state, env: state.read('armed')== True),
+                       lambda action, state, env: state.read('armed')),
             Invariant('altitude', 'description',
                        lambda action, state, env: state.read('altitude') > -0.3)
         ]
@@ -288,7 +288,7 @@ class LandActionSchema(ActionSchema):
             Precondition('altitude', 'description',
                 lambda action, state, env: state.read('altitude') > 0.3),
             Precondition('armed', 'description',
-                lambda action, state, env: state.read('armed') == True)
+                lambda action, state, env: state.read('armed'))
         ]
         estimators = [
             Estimator('battery',
@@ -355,11 +355,11 @@ class TakeoffActionSchema(ActionSchema):
             Precondition('altitude', 'description',
                          lambda action, state, env: state.read('altitude') < 1),
             Precondition('armed', 'description',
-                         lambda action, state, env: state.read('armed') == True)
+                         lambda action, state, env: state.read('armed'))
         ]
         invariants = [
             Invariant('armed', 'description',
-                      lambda action, state, env: state.read('armed') == True),
+                      lambda action, state, env: state.read('armed')),
             Invariant('altitude', 'description',
                       lambda action, state, env: state.read('altitude') > -0.3)
         ]
