@@ -7,6 +7,20 @@ class State(object):
     its internal and external variables.
     """
     @staticmethod
+    def fromFile(fn):
+        """
+        Constructs a system state from a given file, containing a JSON-based
+        description of its contents.
+
+        :param  fn  the path to the state description file
+
+        :returns    the corresponding State for that file
+        """
+        with open(fn, "r") as f:
+            jsn = json.load(f)
+        return State.fromJSON(jsn)
+
+    @staticmethod
     def fromJSON(jsn):
         """
         Constructs a description of a state from its JSON description.
