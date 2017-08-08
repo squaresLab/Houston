@@ -234,7 +234,7 @@ class GoToActionSchema(ActionSchema):
 
         preconditions = [
             Precondition('battery', 'description',
-                         lambda action, state, env: state.read('battey') >= maxExpectedBatteryUsage(
+                         lambda action, state, env: state.read('battery') >= maxExpectedBatteryUsage(
                          params['latitude'],
                          params['longitude'],
                          params['altitude'])),
