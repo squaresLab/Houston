@@ -2,6 +2,7 @@ import time
 import docker
 import json
 import houston
+from pprint import pprint as pp
 
 class MissionSuite(object):
     """
@@ -74,14 +75,13 @@ class MissionSuite(object):
         # TODO for now, we execute tests sequentially
         outcomes = []
         for tst in self.__contents:
-            outcome = self.executeMission(systm, image, tst)
-
+            outcomes.append(self.executeMission(systm, image, tst))
         # measure the wall clock running-time
         endTime = time.time()
         runningTime = endTime - startTime
 
         # return a summary
-        summary = MissionSuiteSummary(runningTime)
+        summary = MissionSuiteSummary(runningTime, outcomes)
         return summary
 
 
@@ -209,10 +209,10 @@ class MissionSuiteSummary(object):
     Contains a summary of the execution of a mission suite.
     """
 
-    def __init__(self, wallTime):
+    def __init__(self, wallTime, outcomes):
         assert (isinstance(wallTime, float) and not wallTime is None)
         self.__wallTime = wallTime
-        self.__outcomes = []
+        self.__outcomes = outcomes
 
 
     def hasFailures(self):
@@ -230,8 +230,11 @@ class MissionSuiteSummary(object):
         return self.__wallTime
 
 
-    def toJSON(jsn):
+    def toJSON(self):
         """
         Returns a serialised form of this summary as a JSON-ready dictionary.
         """
-        raise NotImplementedError
+        return {
+            "wallTime": self.__wallTime,
+            "outcomes": [outcome.toJSON() for outcome in self.__outcomes]
+        }
