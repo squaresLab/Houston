@@ -3,6 +3,7 @@ import time
 import copy
 import json
 import state
+import mission
 
 class System(object):
     """
@@ -62,24 +63,24 @@ class System(object):
         raise NotImplementedError
 
 
-    def execute(self, mission):
+    def execute(self, msn):
         """
         Executes a given mission.
 
-        :param  mission:    the mission that should be executed.
+        :param  msn:    the mission that should be executed.
 
         :return A summary of the outcome of the mission, in the form of a
                 MissionOutcome
         """
         assert (self.installed())
-        self.setUp(mission)
+        self.setUp(msn)
 
-        env = mission.getEnvironment()
+        env = msn.getEnvironment()
 
         try:
 
             outcomes = []
-            for action in mission.getActions():
+            for action in msn.getActions():
                 schema = self.__schemas[action.getSchemaName()]
                 stateStart = self.getState()
                 stateCurrent = stateStart
@@ -88,9 +89,9 @@ class System(object):
                 (satisfied, violations) = \
                     schema.satisfiedPreconditions(action, stateStart, env)
                 if not satisfied:
-                    outcome = ActionOutcome(action, False, stateStart, stateStart)
+                    outcome = mission.ActionOutcome(action, False, stateStart, stateStart)
                     outcomes.append(outcome)
-                    return MissionOutcome(False, outcomes)
+                    return mission.MissionOutcome(False, outcomes)
 
                 # dispatch
                 # TODO: just pass the action object?
@@ -105,15 +106,15 @@ class System(object):
                     (satisfied, violations) = \
                         schema.satisfiedInvariants(action, stateCurrent, env)
                     if not satisfied:
-                        outcome = ActionOutcome(action, False, stateStart, stateCurrent)
+                        outcome = mission.ActionOutcome(action, False, stateStart, stateCurrent)
                         outcomes.append(outcome)
-                        return MissionOutcome(False, outcomes)
+                        return mission.MissionOutcome(False, outcomes)
 
                     # check if postconditions are satisfied
                     (satisfied, violations) = \
                         schema.satisfiedPostConditions(action, stateCurrent, env)
                     if satisfied:
-                        outcome = ActionOutcome(action, False, stateStart, stateCurrent)
+                        outcome = mission.ActionOutcome(action, False, stateStart, stateCurrent)
                         outcomes.append(outcome)
                         break
 
@@ -122,10 +123,10 @@ class System(object):
                     # TODO: enforce a time-out!\
 
 
-            return MissionOutcome(True, outcomes)
+            return mission.MissionOutcome(True, outcomes)
 
         finally:
-            self.tearDown(mission)
+            self.tearDown(msn)
 
 
     def getState(self):
