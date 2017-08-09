@@ -130,6 +130,24 @@ class MissionOutcome(object):
 
 
 class ActionOutcome(object):
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        TODO
+        """
+        assert (isinstance(jsn, dict) and not jsn is None)
+        assert ('successful' in jsn)
+        assert ('action' in jsn)
+        assert ('stateBefore' in jsn)
+        assert ('stateAfter' in jsn)
+        assert (isinstance(jsn['action'], bool) and not jsn['action'] is None)
+
+        return ActionOutcome(Action.fromJSON(jsn['action']),
+                             jsn['successful'],
+                             state.State.fromJSON(jsn['stateBefore']),
+                             state.State.fromJSON(jsn['stateAfter']))
+
+
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
