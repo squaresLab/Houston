@@ -23,23 +23,21 @@ class SystemContainer(object):
         :param  port:   the number of the port that the Houston server should\
                         run on
         """
-        assert(isinstance(port, int) and not port is None)
-        command = 'sudo houstonserver {}'.format(port)
-        ports = {
-            ('{}/tcp'.format(port)): ('127.0.0.1', port)
-        }
+        assert (isinstance(port, int) and not port is None)
+        assert (port >= 1024 and port < 65535)
 
         self.__systemIdentifier = iden
         self.__port = port
+
+        command = 'houstonserver {}'.format(port)
+        ports = {port: port}
         client = docker.from_env()
-        # TODO: I'm not too happy about the network_mode setting
         self.__container = client.containers.run(image,
                                                  command,
-                                                 network_mode='host',
+                                                 network_mode='bridge',
                                                  ports=ports,
                                                  detach=True)
 
-        # TODO: enforce time-out
         # blocks until server is running
         for line in self.__container.logs(stream=True):
             line = line.strip()
