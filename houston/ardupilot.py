@@ -41,6 +41,7 @@ try:
 except ImportError as e:
     ARDUPILOT_INSTALLED = False
 
+DRONEKIT_SYSTEM = None
 
 """
 Description of the ArduPilot system
@@ -48,7 +49,6 @@ Description of the ArduPilot system
 class ArduPilot(System):
 
     def __init__(self):
-        self.__system_dronekit = None
         self.__sitl       = None
         self.__mavproxy   = None
         self.__mavlink    = None
@@ -60,23 +60,23 @@ class ArduPilot(System):
         variables['alive'] = \
             InternalVariable('alive', lambda: self.systemAlive())
         variables['homeLatitude'] = \
-            InternalVariable('homeLatitude', lambda: self.__system_dronekit.home_location.lat)
+            InternalVariable('homeLatitude', lambda: 149.165085) # Fixed
         variables['homeLongitude'] = \
-            InternalVariable('homeLongitude', lambda: self.__system_dronekit.home_location.lon)
+            InternalVariable('homeLongitude', lambda: -35.362938) # Fixed
         variables['altitude'] = \
-            InternalVariable('altitude', lambda: self.__system_dronekit.location.global_relative_frame.alt)
+            InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt)
         variables['latitude'] = \
-            InternalVariable('latitude', lambda: self.__system_dronekit.location.global_relative_frame.lat)
+            InternalVariable('latitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lat)
         variables['longitude'] = \
-            InternalVariable('longitude', lambda: self.__system_dronekit.location.global_relative_frame.lon)
+            InternalVariable('longitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lon)
         variables['battery'] = \
-            InternalVariable('battery', lambda: self.__system_dronekit.battery.level)
+            InternalVariable('battery', lambda: DRONEKIT_SYSTEM.battery.level)
         variables['armable'] = \
-            InternalVariable('armable', lambda: self.__system_dronekit.is_armable)
+            InternalVariable('armable', lambda: DRONEKIT_SYSTEM.is_armable)
         variables['armed'] = \
-            InternalVariable('armed', lambda: self.__system_dronekit.armed)
+            InternalVariable('armed', lambda: DRONEKIT_SYSTEM.armed)
         variables['mode'] = \
-            InternalVariable('mode', lambda : self.__system_dronekit.mode.name)
+            InternalVariable('mode', lambda : DRONEKIT_SYSTEM.mode.name)
 
         schemas = {
             'goto'   : GoToActionSchema(),
@@ -98,6 +98,7 @@ class ArduPilot(System):
 
 
     def setUp(self, mission):
+    	global DRONEKIT_SYSTEM
         # TODO lots of hardcoded paths
         ardu_location = '/home/robot/ardupilot' # TODO: hardcoded!
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
@@ -155,13 +156,13 @@ class ArduPilot(System):
             # zero throttle
             self.__mavproxy.send('rc 3 1000\n')
             self.__mavproxy.expect('IMU0 is using GPS')
-            self.__system_dronekit = connect('127.0.0.1:14551', wait_ready=True)
+            DRONEKIT_SYSTEM = connect('127.0.0.1:14551', wait_ready=True)
         except pexpect.TIMEOUT:
             print("Failed: time out")
             return False
 
     def tearDown(self, mission):
-        self.__system_dronekit.close()
+        DRONEKIT_SYSTEM.close()
         util.pexpect_close(self.__mavproxy)
         util.pexpect_close(self.__mavlink)
 
@@ -196,8 +197,7 @@ class ArmActionSchema(ActionSchema):
             invariants, postconditions, estimators)
 
     def dispatch(self, parameters):
-        safeCommandConnection('armed = True')
-
+        DRONEKIT_SYSTEM.armed = True
 
 class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
@@ -242,7 +242,7 @@ class SetModeActionSchema(ActionSchema):
             preconditions, invariants, postconditions, estimators)
 
     def dispatch(self, parameters):
-        safeCommandConnection('mode = VehicleMode(\'{}\')'.format(parameters['mode']))
+        DRONEKIT_SYSTEM.mode = VehicleMode(parameters['mode'])
 
 
 class GoToActionSchema(ActionSchema):
@@ -310,11 +310,11 @@ class GoToActionSchema(ActionSchema):
 
 
     def dispatch(self, parameters):
-        safeCommandConnection('simple_goto(LocationGlobalRelative({},{},{}))'.format(
+        DRONEKIT_SYSTEM.simple_goto(LocationGlobalRelative(
             parameters['latitude'],
             parameters['longitude'],
-            parameters['altitude']))
-
+            parameters['altitude']
+        ))
 
 class LandActionSchema(ActionSchema):
     def __init__(self):
@@ -370,7 +370,7 @@ class LandActionSchema(ActionSchema):
 
 
     def dispatch(self, parameters):
-        safeCommandConnection('mode = VehicleMode(\'LAND\')')
+        DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
 
 
 class TakeoffActionSchema(ActionSchema):
@@ -422,14 +422,7 @@ class TakeoffActionSchema(ActionSchema):
 
 
     def dispatch(self, parameters):
-      safeCommandConnection('simple_takeoff({})'.format(parameters['altitude']))
-
-
-def safeCommandConnection(value):
-    # TODO: what is this? Do we need to use an exec call?
-    system = connect('127.0.0.1:14551', wait_ready=False)
-    exec('system.{}'.format(value))
-    system.close()
+        DRONEKIT_SYSTEM.simple_takeoff(parameters['altitude'])
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
