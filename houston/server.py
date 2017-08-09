@@ -59,7 +59,7 @@ def main():
         exit(1)
 
     portNumber = int(sys.argv[1])
-    app.run(port=portNumber, use_reloader=False, debug=True)
+    app.run(host='0.0.0.0', port=portNumber, use_reloader=False, debug=True)
 
 if __name__ == "__main__":
     main()
