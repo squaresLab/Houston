@@ -260,11 +260,6 @@ class GoToActionSchema(ActionSchema):
         ]
 
         preconditions = [
-            Precondition('battery', 'description',
-                         lambda action, state, env: state.read('battery') >= maxExpectedBatteryUsage(
-                         action.getValues()['latitude'],
-                         action.getValues()['longitude'],
-                         action.getValues()['altitude'])),
             Precondition('altitude', 'description',
                          lambda action, state, env: state.read('altitude') > 0)
         ]
@@ -308,10 +303,6 @@ class LandActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
         preconditions = [
-            Precondition('battery', 'description',
-                lambda action, state, env: state.read('battery') >= \
-                    maxExpectedBatteryUsage(state.read('latitude'), \
-                    state.read('longitude'), 0.0)),
             Precondition('altitude', 'description',
                 lambda action, state, env: state.read('altitude') > 0.3),
             Precondition('armed', 'description',
@@ -377,12 +368,6 @@ class TakeoffActionSchema(ActionSchema):
         ]
 
         preconditions = [
-            Precondition('battery', 'description',
-                         lambda action, state, env: state.read('battery') >= \
-                         maxExpectedBatteryUsage(
-                            None,
-                            None,
-                            state.read('battery'))),
             Precondition('altitude', 'description',
                          lambda action, state, env: state.read('altitude') < 1.0),
             Precondition('armed', 'description',
