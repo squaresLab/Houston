@@ -93,6 +93,7 @@ class System(object):
 
                 # loop until postconditions are satisfied, or an invariant is violated
                 while True:
+                    stateCurrent = self.getState()
 
                     # check for invariant violations
                     (satisfied, violations) = \
