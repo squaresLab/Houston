@@ -11,7 +11,7 @@ __systems = {}
 """
 The pool of ports that are open and available to be used.
 """
-__port_pool = set(i for i in range(500, 1000))
+__port_pool = set(i for i in range(3000, 3500))
 
 """
 The set of containers that are actively in use.
