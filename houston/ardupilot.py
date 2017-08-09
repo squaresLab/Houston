@@ -57,6 +57,8 @@ class ArduPilot(System):
         # TODO: this is very tricky; we'll need to do something clever here
         variables['time'] = \
             InternalVariable('time', lambda: time.time())
+        variables['alive'] = \
+            InternalVariable('alive', lambda: self.systemAlive())
         variables['homeLatitude'] = \
             InternalVariable('homeLatitude', lambda: self.__system_dronekit.home_location.lat)
         variables['homeLongitude'] = \
@@ -89,6 +91,10 @@ class ArduPilot(System):
 
     def installed(self):
         return ARDUPILOT_INSTALLED
+
+
+    def systemAlive(self):
+        return True #TODO
 
 
     def setUp(self, mission):
@@ -182,7 +188,9 @@ class ArmActionSchema(ActionSchema):
         ]
         invariants = [
             Invariant('battery', 'description',
-                      lambda action, state, env: state.read('battery') > 0)
+                      lambda action, state, env: state.read('battery') > 0),
+            Invariant('alive', 'description',
+                       lambda action, state, env: state.read('alive'))
         ]
         super(ArmActionSchema, self).__init__('arm', parameters, preconditions,\
             invariants, postconditions, estimators)
@@ -225,7 +233,10 @@ class SetModeActionSchema(ActionSchema):
         ]
         invariants = [
             Invariant('battery', 'description',
-                      lambda action, state, env: state.read('battery') > 0)
+                      lambda action, state, env: state.read('battery') > 0),
+            Invariant('alive', 'description',
+                       lambda action, state, env: state.read('alive'))
+
         ]
         super(SetModeActionSchema, self).__init__('setmode', parameters, \
             preconditions, invariants, postconditions, estimators)
@@ -269,15 +280,6 @@ class GoToActionSchema(ActionSchema):
                          lambda action, state, env: state.read('altitude') > 0)
         ]
 
-        invariants = [
-            Invariant('battery', 'description',
-                       lambda action, state, env: state.read('battery') > 0),
-            Invariant('armed', 'description',
-                       lambda action, state, env: state.read('armed')),
-            Invariant('altitude', 'description',
-                       lambda action, state, env: state.read('altitude') > -0.3)
-        ]
-
         postconditions = [
             Postcondition('altitude', 'description',
                           lambda action, state, env: state.read('altitude') - 0.3 < \
@@ -290,7 +292,17 @@ class GoToActionSchema(ActionSchema):
                           (float(action.getValues()['latitude']), float(action.getValues()['longitude'])),
                           (float(state.read('latitude')), float(state.read('longitude'))))
                           .meters) < 0.5)
+        ]
 
+        invariants = [
+            Invariant('battery', 'description',
+                       lambda action, state, env: state.read('battery') > 0),
+            Invariant('armed', 'description',
+                       lambda action, state, env: state.read('armed')),
+            Invariant('altitude', 'description',
+                       lambda action, state, env: state.read('altitude') > -0.3),
+            Invariant('alive', 'description',
+                       lambda action, state, env: state.read('alive'))
         ]
 
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions,\
@@ -331,12 +343,6 @@ class LandActionSchema(ActionSchema):
                 lambda action, state, env: 0.0)
         ]
 
-        invariants = [
-            Invariant('battery', 'description',
-                       lambda action, state, env: state.read('battery') > 0),
-            Invariant('altitude', 'description',
-                       lambda action, state, env: state.read('altitude') > -0.3)
-        ]
         postconditions = [
             Postcondition('altitude', 'description',
                           lambda action, state, env: state.read('altitude') < 1 ),
@@ -349,6 +355,16 @@ class LandActionSchema(ActionSchema):
             Postcondition('armed', 'description',
                           lambda action, state, env: True if state.read('mode') != 'GUIDED' else not state.read('armed'))
         ]
+
+        invariants = [
+            Invariant('battery', 'description',
+                       lambda action, state, env: state.read('battery') > 0),
+            Invariant('altitude', 'description',
+                       lambda action, state, env: state.read('altitude') > -0.3),
+            Invariant('alive', 'description',
+                       lambda action, state, env: state.read('alive'))
+        ]
+
         super(LandActionSchema, self).__init__('land', parameters, preconditions,\
             invariants, postconditions, estimators)
 
@@ -392,7 +408,9 @@ class TakeoffActionSchema(ActionSchema):
             Invariant('armed', 'description',
                       lambda action, state, env: state.read('armed')),
             Invariant('altitude', 'description',
-                      lambda action, state, env: state.read('altitude') > -0.3)
+                      lambda action, state, env: state.read('altitude') > -0.3),
+            Invariant('alive', 'description',
+                      lambda action, state, env: state.read('alive'))
         ]
         postconditions = [
             Postcondition('altitude', 'description',
