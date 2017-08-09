@@ -153,6 +153,9 @@ class ActionOutcome(object):
 
 
     def toJSON(self):
+        """
+        Returns a JSON description of this action outcome.
+        """
         return {
             'action': self.__action.toJSON(),
             'successful': self.__successful,
