@@ -1,8 +1,10 @@
 from system import *
 from ardupilot import *
-
+from state import *
+from mission import *
+import houston
 if __name__ == "__main__":
-    system = ArduPilot()
+    system = houston.getSystem('ardupilot')
     actions = [
         Action("setmode", {
             'mode': 'GUIDED'
@@ -19,7 +21,7 @@ if __name__ == "__main__":
         Action('land', {})
     ]
     environment = Environment({})
-    initialInternalState = InternalState({
+    initial = State({
         "x": 10.43,
         "y": 0.5,
         "bumper": False, # we could have defaults?
@@ -27,8 +29,7 @@ if __name__ == "__main__":
         "orientation": 12.0,
         "battery": 30.0
     })
-    initialExternalState = ExternalState({
-    })
 
-    missionOutcome = system.execute(Mission(environment, initialInternalState, initialExternalState, actions)).toJSON()
+
+    missionOutcome = system.execute(Mission(environment, initial, actions)).toJSON()
     print missionOutcome

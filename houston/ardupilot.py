@@ -125,7 +125,7 @@ class ArduPilot(System):
         util.pexpect_close(sitl)
 
         self.__sitl  = util.start_SITL(binary, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5, valgrind=False, gdb=False)
-        options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --out=127.0.0.1:14551 --quadcopter --streamrate=5'
+        options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --out=127.0.0.1:14550 --quadcopter --streamrate=5'
         self.__mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
         self.__mavproxy.expect('Telemetry log: (\S+)')
         logfile = self.__mavproxy.match.group(1)
@@ -156,7 +156,7 @@ class ArduPilot(System):
             # zero throttle
             self.__mavproxy.send('rc 3 1000\n')
             self.__mavproxy.expect('IMU0 is using GPS')
-            DRONEKIT_SYSTEM = connect('127.0.0.1:14551', wait_ready=True)
+            DRONEKIT_SYSTEM = connect('127.0.0.1:14550', wait_ready=True)
         except pexpect.TIMEOUT:
             print("Failed: time out")
             return False
@@ -181,7 +181,9 @@ class ArmActionSchema(ActionSchema):
             Precondition('armed', 'description',
                          lambda action, state, env: not state.read('armed')),
             Precondition('armable', 'description',
-                         lambda action, state, env: state.read('armable'))
+                         lambda action, state, env: state.read('armable')),
+            Precondition('mode', 'description',
+                         lambda action, state, env: state.read('mode') == 'GUIDED')
         ]
         postconditions = [
             Postcondition('armed', 'description',
@@ -242,6 +244,7 @@ class SetModeActionSchema(ActionSchema):
             preconditions, invariants, postconditions, estimators)
 
     def dispatch(self, parameters):
+        print 'HHHHHHHHHHHHHHHHHHHH!@#H!@H#!@H#!H#!H#@!H#!@H'
         DRONEKIT_SYSTEM.mode = VehicleMode(parameters['mode'])
 
 

@@ -43,7 +43,7 @@ RUN sudo apt-get install -y python-matplotlib \
                             python-pexpect
 
 RUN sudo pip install  future \
-                      pymavlink \
+#                      pymavlink \
                       MAVProxy \
                       dronekit \
                       statistics \
