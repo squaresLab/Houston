@@ -140,7 +140,7 @@ class ActionOutcome(object):
         assert ('action' in jsn)
         assert ('stateBefore' in jsn)
         assert ('stateAfter' in jsn)
-        assert (isinstance(jsn['action'], bool) and not jsn['action'] is None)
+        assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
 
         return ActionOutcome(Action.fromJSON(jsn['action']),
                              jsn['successful'],
