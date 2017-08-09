@@ -141,15 +141,15 @@ class ActionOutcome(object):
         :param  stateBefore the state of the system immediately prior to execution
         :param  stateAfter  the state of the system immediately after execution
         """
-        assert(isinstance(action, Action) and not action is None)
-        assert(isinstance(successful, bool) and not successful is None)
-        assert(isinstance(stateBefore, state.state) and not stateBefore is None)
-        assert(isinstance(stateAfter, state.state) and not stateAfter is None)
+        assert (isinstance(action, Action) and not action is None)
+        assert (isinstance(successful, bool) and not successful is None)
+        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
+        assert (isinstance(stateAfter, state.State) and not stateAfter is None)
 
         self.__action = action
         self.__successful = successful
-        self.__stateBefore = stateBefore # TODO: type checking
-        self.__stateAfter = stateAfter # TODO: type checking
+        self.__stateBefore = stateBefore
+        self.__stateAfter = stateAfter
 
 
     def toJSON(self):
@@ -174,9 +174,9 @@ class Action(object):
         """
         Constructs an Action object from its JSON description.
         """
-        assert(isinstance(jsn, dict) and not jsn is None)
-        assert('kind' in jsn)
-        assert('parameters' in jsn)
+        assert (isinstance(jsn, dict) and not jsn is None)
+        assert ('kind' in jsn)
+        assert ('parameters' in jsn)
         return Action(jsn['kind'], jsn['parameters'])
 
 
