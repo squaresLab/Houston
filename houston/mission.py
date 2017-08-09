@@ -143,6 +143,8 @@ class ActionOutcome(object):
         """
         assert(isinstance(action, Action) and not action is None)
         assert(isinstance(successful, bool) and not successful is None)
+        assert(isinstance(stateBefore, state.state) and not stateBefore is None)
+        assert(isinstance(stateAfter, state.state) and not stateAfter is None)
 
         self.__action = action
         self.__successful = successful
@@ -151,11 +153,14 @@ class ActionOutcome(object):
 
 
     def toJSON(self):
+        """
+        Returns a JSON description of this action outcome.
+        """
         return {
             'action': self.__action.toJSON(),
             'successful': self.__successful,
-            'stateBefore': self.__stateBefore,
-            'stateAfter': self.__stateAfter
+            'stateBefore': self.__stateBefore.toJSON(),
+            'stateAfter': self.__stateAfter.toJSON()
         }
 
 
