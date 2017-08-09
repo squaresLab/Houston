@@ -104,7 +104,7 @@ class System(object):
 
                     # check if postconditions are satisfied
                     (satisfied, violations) = \
-                        schema.satisfiedPostConditions(self.__variables, action)
+                        schema.satisfiedPostConditions(action, stateCurrent, env)
                     if satisfied:
                         outcome = ActionOutcome(action, False, stateStart, stateCurrent)
                         outcomes.append(outcome)
