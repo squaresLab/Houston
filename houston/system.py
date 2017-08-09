@@ -114,7 +114,7 @@ class System(object):
                     (satisfied, violations) = \
                         schema.satisfiedPostConditions(action, stateCurrent, env)
                     if satisfied:
-                        outcome = mission.ActionOutcome(action, False, stateStart, stateCurrent)
+                        outcome = mission.ActionOutcome(action, True, stateStart, stateCurrent)
                         outcomes.append(outcome)
                         break
 
