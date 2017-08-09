@@ -152,7 +152,7 @@ class ActionOutcome(object):
 
     def toJSON(self):
         return {
-            'action': self.__action,
+            'action': self.__action.toJSON(),
             'successful': self.__successful,
             'stateBefore': self.__stateBefore,
             'stateAfter': self.__stateAfter
