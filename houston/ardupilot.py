@@ -43,6 +43,7 @@ except ImportError as e:
 
 DRONEKIT_SYSTEM = None
 
+
 """
 Description of the ArduPilot system
 """
@@ -259,8 +260,7 @@ class LandActionSchema(ActionSchema):
             ])
         ]
 
-        super(LandActionSchema, self).__init__('land', parameters, preconditions,\
-            invariants, postconditions, estimators)
+        super(LandActionSchema, self).__init__('land', parameters, branches)
 
 
     def dispatch(self, action):
@@ -285,8 +285,7 @@ class TakeoffActionSchema(ActionSchema):
             ])
         ]
 
-        super(TakeoffActionSchema, self).__init__('takeoff', parameters, \
-            preconditions, invariants, postconditions, estimators)
+        super(TakeoffActionSchema, self).__init__('takeoff', parameters, branches)
 
 
     def dispatch(self, action):
