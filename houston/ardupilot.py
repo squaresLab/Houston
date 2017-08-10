@@ -173,9 +173,7 @@ class ArmActionSchema(ActionSchema):
             OutcomeBranch(lambda action, state, env: state.read('armable') and state.read('mode') == 'GUIDED', [
                 FixedEstimator('armed', True)])
         ]
-
         super(ArmActionSchema, self).__init__('arm', parameters, branches)
-
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.armed = True
@@ -218,53 +216,13 @@ class GoToActionSchema(ActionSchema):
                       'description')
         ]
 
-        estimators = [
-            Estimator('battery',
-                lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
-                action.getValues()['latitude'],
-                action.getValues()['longitude'],
-                action.getValues()['altitude'])),
-            Estimator('latitude',
-                lambda action, state, env: action.getValues()['latitude']),
-            Estimator('longitude',
-                lambda action, state, env: action.getValues()['longitude']),
-            Estimator('altitude',
-                lambda action, state, env: action.getValues()['altitude'])
-        ]
-
-        preconditions = [
-            Precondition('battery', 'description',
-                         lambda action, state, env: state.read('battery') >= maxExpectedBatteryUsage(
-                         action.getValues()['latitude'],
-                         action.getValues()['longitude'],
-                         action.getValues()['altitude'])),
-            Precondition('altitude', 'description',
-                         lambda action, state, env: state.read('altitude') > 0)
-        ]
-
-        postconditions = [
-            Postcondition('altitude', 'description',
-                          lambda action, state, env: state.read('altitude') - 0.3 < \
-                            action.getValues()['altitude'] < state.read('altitude') + 0.3),
-            Postcondition('battery', 'description',
-                          lambda action, state, env: state.read('battery') > 0 ),
-            Postcondition('distance', 'description',
-                          lambda action, state, env:
-                          float(distance.great_circle(
-                          (float(action.getValues()['latitude']), float(action.getValues()['longitude'])),
-                          (float(state.read('latitude')), float(state.read('longitude'))))
-                          .meters) < 0.5)
-        ]
-
-        invariants = [
-            Invariant('battery', 'description',
-                       lambda action, state, env: state.read('battery') > 0),
-            Invariant('armed', 'description',
-                       lambda action, state, env: state.read('armed')),
-            Invariant('altitude', 'description',
-                       lambda action, state, env: state.read('altitude') > -0.3),
-            Invariant('alive', 'description',
-                       lambda action, state, env: state.read('alive'))
+        branches = [
+            OutcomeBranch(lambda action, state, env:
+                state.read('armed') and state.read('altitude') > 0.3, [
+                Estimator('latitude', lambda action, state, env: action.read('latitude')),
+                Estimator('longitude', lambda action, state, env: action.read('longitude')),
+                Estimator('altitude', lambda action, state, env: action.read('altitude'))
+            ])
         ]
 
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions,\
@@ -291,6 +249,14 @@ class LandActionSchema(ActionSchema):
             Precondition('armed', 'description',
                 lambda action, state, env: state.read('armed'))
         ]
+
+        branches = [
+            OutcomeBranch(lambda action, state, env):
+                state.read('altitude') > 0.3, [
+                FixedEstimatork
+                ]
+        ]
+
         estimators = [
             Estimator('battery',
                 lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
