@@ -42,7 +42,8 @@ except ImportError as e:
     ARDUPILOT_INSTALLED = False
 
 DRONEKIT_SYSTEM = None
-
+TIME_PER_METER_TRAVELED = .5
+CONSTANT_TIMEOUT_OFFSET = .5
 
 """
 Description of the ArduPilot system
