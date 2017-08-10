@@ -224,7 +224,6 @@ class SetModeActionSchema(ActionSchema):
             preconditions, invariants, postconditions, estimators)
 
     def dispatch(self, parameters):
-        print 'HHHHHHHHHHHHHHHHHHHH!@#H!@H#!@H#!H#!H#@!H#!@H'
         DRONEKIT_SYSTEM.mode = VehicleMode(parameters['mode'])
 
 
