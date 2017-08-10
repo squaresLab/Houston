@@ -262,43 +262,12 @@ class TakeoffActionSchema(ActionSchema):
             Parameter('altitude', ContinuousValueRange(0.3, 100.0),\
                       'description')
         ]
-
-        estimators = [
-            Estimator('battery',
-                lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
-                state.read('latitude'),
-                state.read('longitude'),
-                action.getValues()['altitude']
-                )),
-            Estimator('altitude',
-                lambda action, state, env: action.getValues()['altitude'])
+        branches = [
+            OutcomeBranch(lambda action, state, env:
+                state.read('armed') and state.read('altitude') < 0.3,
+                Estimator('altitude', lambda action, state, env: action.read('altitude')))
         ]
 
-        preconditions = [
-            Precondition('battery', 'description',
-                         lambda action, state, env: state.read('battery') >= \
-                         maxExpectedBatteryUsage(
-                            None,
-                            None,
-                            state.read('battery'))),
-            Precondition('altitude', 'description',
-                         lambda action, state, env: state.read('altitude') < 1.0),
-            Precondition('armed', 'description',
-                         lambda action, state, env: state.read('armed'))
-        ]
-        invariants = [
-            Invariant('armed', 'description',
-                      lambda action, state, env: state.read('armed')),
-            Invariant('altitude', 'description',
-                      lambda action, state, env: state.read('altitude') > -0.3),
-            Invariant('alive', 'description',
-                      lambda action, state, env: state.read('alive'))
-        ]
-        postconditions = [
-            Postcondition('altitude', 'description',
-                          lambda action, state, env: state.read('altitude')- 1 < \
-                          action.getValues()['altitude'] < state.read('altitude') + 1)
-        ]
         super(TakeoffActionSchema, self).__init__('takeoff', parameters, \
             preconditions, invariants, postconditions, estimators)
 
