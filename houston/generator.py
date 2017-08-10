@@ -45,11 +45,13 @@ class TestSuiteGenerator(object):
         """
         return self.__system
 
+
     def getEnvironment(self):
         """
         Returns the mission suite environment
         """
         return self.__environment
+
 
     def getInitialState(self):
         """
@@ -117,14 +119,15 @@ class RandomGenerator(TestSuiteGenerator):
         # generate an initial state
         env = self.generateEnvironment()
         startState = self.generateInitialState(env)
-        schemas = self.getSystem().getActionSchemas()
-        currentState = startState
-
+        schemas = list(self.getSystem().getActionSchemas().values())
+    
+        # TODO: doesn't enforce timeout limiting!
         actions = []
         for _ in range(characteristics.getMaxNumActionsPerMission()):
-            (action, currentState) = self.generateAction(env, currentState, \
-                                                                schemas, limits)
+            schema = random.choice(schemas)
+            action = self.generateAction(schema)
             actions.append(action)
+
         return mission.Mission(env, startState, actions)
 
 
@@ -136,71 +139,17 @@ class RandomGenerator(TestSuiteGenerator):
         return self.getInitialState()
 
 
-    def generateAction(self, env, stateBefore, schemas, limits):
+    def generateActionOfSchema(self, schema):
         """
-        Generates a legal action based on the current state of the system and
-        the (fixed) state of the environment.
+        Generates an action belonging to a particular schema at random
 
-        :param  env:    a description of the environment in which the action \
-                        should be conducted.
-        :param  stateBefore:    the state of the system immediately prior to \
-                                execution of the action that is to be generated
+        :param  schema:         the schema to which this action belongs, given \
+                                as an ActionSchema instance.
 
-        :returns    A randomly-generated Action instance
-        """
-        # which schemas can we *possibly* satisfy?
-        # - find preconditions that DO NOT interact with parameters
-        # - does the current state satisfy those preconditions? If not, we
-        #   can't generate an action of that schema! Discard.
-        legalSchemas = set()
-        for key, schema in schemas.iteritems(): # TODO what's the type?
-            for precondition in schema.getPreconditions():
-                if not precondition.usesParameters():
-                    #if not precondition.satisfiedBy(startState, {}):
-                        continue
-            legalSchemas.add(schema)
-
-        if not legalSchemas:
-            raise Exception('failed to generate action: no legal schemas available')
-
-        # attempt to generate an action belonging to a randomly selected legal
-        # schema
-        for attempt in range(limits.getMaxNumRetries()):
-            schema = random.choice(list(legalSchemas))
-            action  = self.generateActionOfSchema(schema, env, stateBefore)
-
-            # 1. do these parameters satisfy the precondition? If not, we need
-            #    to generate a new action
-            #  outcome returns a list of the preconditions that failed. Useful
-            #  for debugging.
-            passed, outcome = schema.satisfiedPreconditions(action, stateBefore, env)
-            if not passed:
-                continue
-
-            # 2. determine the resulting state separately
-            nextState = schema.estimateState(action, stateBefore, env)
-
-            return (action, nextState)
-
-        # have we exhausted the max. num. retries? Throw an error.
-        raise Exception('exhausted max. num. retries when generating action.')
-
-
-    def generateActionOfSchema(self, schema, env, stateBefore):
-        """
-        Generates an action at random
-
-        :param  schema: the schema to which this action belongs, given as\
-                    an ActionSchema instance.
-        :param  env: TODO
-        :param  stateBefore: the state of the system immediately before\
-                    the start of the action
-
-        :returns    A randomly-generated Action instance.
+        :returns    A randomly-generated Action instance, belonging to the \
+                    given schema.
         """
         assert (isinstance(schema, system.ActionSchema) and not schema is None)
-        assert (isinstance(env, state.Environment) and not env is None)
-        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
 
         params = {}
         for parameter in schema.getParameters():
@@ -210,4 +159,5 @@ class RandomGenerator(TestSuiteGenerator):
             # value, otherwise use the default generator
             value = parameter.generate()
             params[name] = value
+
         return mission.Action(schema.getName(), params)
