@@ -133,8 +133,8 @@ class MissionSuiteCharacteristics(object):
         assert ('maxTime' in jsn['suite'])
         assert ('maxMissions' in jsn['suite'])
 
-        ac = ActionCharacteristics.fromJSON(jsn['actions'])
-        mc = MissionCharacteristics.fromJSON(jsn['missions'])
+        ac = ActionCharacteristics.fromJSON(jsn['action'])
+        mc = MissionCharacteristics.fromJSON(jsn['mission'])
         maxTime = jsn['suite']['maxTime']
         maxMissions = jsn['suite']['maxMissions']
 
