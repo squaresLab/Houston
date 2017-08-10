@@ -229,7 +229,6 @@ class GoToActionSchema(ActionSchema):
                 Estimator('longitude', lambda action, state, env: action.read('longitude')),
                 Estimator('altitude', lambda action, state, env: action.read('altitude'))
             ])
-        ]
 
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions,\
             invariants, postconditions, estimators)
@@ -243,7 +242,10 @@ class GoToActionSchema(ActionSchema):
         ))
 
     def computeTimeout(self, action, state, environment):
-        pass
+        fromLocation = (state.read('latitude'), state.read('longitude'))
+        toLocation   = (action.getValue('latitude', 'longitude'))
+        totalDistance = distance.great_circle(fromLocation, toLocation).meters
+        return totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
 
 
 class LandActionSchema(ActionSchema):
