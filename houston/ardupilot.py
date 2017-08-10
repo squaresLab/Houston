@@ -178,6 +178,9 @@ class ArmActionSchema(ActionSchema):
     def dispatch(self, action):
         DRONEKIT_SYSTEM.armed = True
 
+    def computeTimeout(self, action, state, environment):
+        pass
+
 
 class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
@@ -203,6 +206,9 @@ class SetModeActionSchema(ActionSchema):
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.mode = VehicleMode(action.getValue('mode'))
+
+    def computeTimeout(self, action, state, environment):
+        pass
 
 
 class GoToActionSchema(ActionSchema):
@@ -236,6 +242,10 @@ class GoToActionSchema(ActionSchema):
             action.getValue('altitude')
         ))
 
+    def computeTimeout(self, action, state, environment):
+        pass
+
+
 class LandActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
@@ -253,6 +263,9 @@ class LandActionSchema(ActionSchema):
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
+
+    def computeTimeout(self, action, state, environment):
+        pass
 
 
 class TakeoffActionSchema(ActionSchema):
@@ -274,6 +287,9 @@ class TakeoffActionSchema(ActionSchema):
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
+
+    def computeTimeout(self, action, state, environment):
+        pass
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
