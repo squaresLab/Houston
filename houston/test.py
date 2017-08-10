@@ -223,7 +223,7 @@ class MissionCharacteristics(object):
         """
         Returns the maximum number of actions per mission.
         """
-        return self.maxActions
+        return self.__maxActions
 
 
 class ActionCharacteristics(object):
