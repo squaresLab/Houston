@@ -187,17 +187,25 @@ class Estimator(object):
     action.
     """
 
-    def __init__(self, variable, func):
+    def __init__(self, variable, func, noiseFunc = None):
         """
         Constructs an estimator for a given state variable.
 
-        :param   variable       the name of the (estimated) state variable
-        :param   func           a lambda function responsible for calculating
-                                the expected state after the execution
-                                of an action.
+        :param  variable    the name of the (estimated) state variable
+        :param  func        a lambda function responsible for calculating \
+                            the expected value of the associated variable \
+                            after the execution of an action.
+        :param  noiseFunc   an (optional) lambda function responsible for \
+                            calculating the permitted amount of noise in the \
+                            expected value produced by this estimator
         """
+        assert (isinstance(variable, str) and not variable is None)
+        assert (callable(func))
+        assert (callable(noiseFunc) or noiseFunc is None)
+
         self.__variable = variable
-        self.__func     = func
+        self.__func = func
+        self.__noiseFunc = noiseFunc
 
 
     def getVariableName(self):
@@ -217,4 +225,6 @@ class Estimator(object):
                                 performing the given action.
         :param    environment   the environment in which the action takes place.
         """
+
+        # TODO: sample a random amount of noise
         return self.__func(action, state, environment)
