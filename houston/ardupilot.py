@@ -267,7 +267,8 @@ class LandActionSchema(ActionSchema):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
 
     def computeTimeout(self, action, state, environment):
-        pass
+        timeout = state.read('altitude') * TIME_PER_METER_TRAVELEDm + CONSTANT_TIMEOUT_OFFSET
+        return timeout
 
 
 class TakeoffActionSchema(ActionSchema):
