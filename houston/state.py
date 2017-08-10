@@ -93,8 +93,11 @@ class ExpectedStateValue(object):
         self.__noise = noise
 
 
-    def isExpected(self, otherValue):
-        return self.__value == otherValue
+    def isExpected(self, observed):
+        if self.__noise is None:
+            return self.__value == observed
+        else:
+            return (self.__value - self.__noise) < observed <(self.__value + self.__noise)
 
 
 class ExpectedState(object):
