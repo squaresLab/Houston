@@ -153,6 +153,22 @@ class MissionSuiteCharacteristics(object):
         """
         self.__maxTime = maxTime
         self.__maxMissions = maxMissions
+        self.__missionCharacteristics = mCharacteristics
+        self.__actioncharacteristics = aCharacteristics
+
+
+    def getMisisonCharacteristics(self):
+        """
+        Returns the mission characteristics.
+        """
+        return self.__missionCharacteristics
+
+
+    def getActionCharacteristics(self):
+        """
+        Returns the actions characteristics.
+        """
+        return self.__actioncharacteristics
 
 
     def getMaxTime(self):
