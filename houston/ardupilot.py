@@ -255,7 +255,7 @@ class LandActionSchema(ActionSchema):
         branches = [
             OutcomeBranch(lambda action, state, env:
                 state.read('armed') and state.read('altitude') > 0.3, [
-                FixedEstimator('altitude', 0.0) # TODO Not entirely true
+                FixedEstimator('altitude', 0.0), # TODO Not entirely true
                 FixedEstimator('mode', 'LAND')
             ])
         ]
