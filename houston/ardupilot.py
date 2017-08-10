@@ -267,7 +267,7 @@ class LandActionSchema(ActionSchema):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
 
     def computeTimeout(self, action, state, environment):
-        timeout = state.read('altitude') * TIME_PER_METER_TRAVELEDm + CONSTANT_TIMEOUT_OFFSET
+        timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
@@ -292,8 +292,9 @@ class TakeoffActionSchema(ActionSchema):
         DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
 
     def computeTimeout(self, action, state, environment):
-        pass
-
+        timeout = action.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+        return timeout
+        
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
     return 0.01
