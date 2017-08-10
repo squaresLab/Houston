@@ -127,12 +127,19 @@ class MissionSuiteCharacteristics(object):
         description.
         """
         assert (isinstance(jsn, dict))
-        assert ('maxTime' in jsn)
-        assert ('maxMissions' in jsn)
-        return MissionSuiteCharacteristics(jsn['maxTime'], jsn['maxMissions'])
+        assert ('suite' in jsn)
+        assert ('mission' in jsn)
+        assert ('action' in jsn)
+
+        ac = ActionCharacteristics.fromJSON(jsn['actions'])
+        mc = MissionCharacteristics.fromJSON(jsn['missions'])
+        maxTime = jsn['suite']['maxTime']
+        maxMissions = jsn['suite']['maxMissions']
+
+        return MissionSuiteCharacteristics(maxTime, maxMissions, mc, ac)
 
 
-    def __init__(self, maxTime, maxMissions):
+    def __init__(self, maxTime, maxMissions, aCharacteristics, mCharacteristics):
         """
         Constructs a set of desired mission suite characteristics
 
