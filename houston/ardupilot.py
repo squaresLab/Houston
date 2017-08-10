@@ -177,7 +177,7 @@ class ArmActionSchema(ActionSchema):
         super(ArmActionSchema, self).__init__('arm', parameters, branches)
 
 
-    def dispatch(self, parameters):
+    def dispatch(self, action):
         DRONEKIT_SYSTEM.armed = True
 
 
@@ -203,8 +203,8 @@ class SetModeActionSchema(ActionSchema):
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
-    def dispatch(self, parameters):
-        DRONEKIT_SYSTEM.mode = VehicleMode(parameters['mode'])
+    def dispatch(self, action):
+        DRONEKIT_SYSTEM.mode = VehicleMode(action.getValue('mode'))
 
 
 class GoToActionSchema(ActionSchema):
@@ -271,11 +271,11 @@ class GoToActionSchema(ActionSchema):
             invariants, postconditions, estimators)
 
 
-    def dispatch(self, parameters):
+    def dispatch(self, action):
         DRONEKIT_SYSTEM.simple_goto(LocationGlobalRelative(
-            parameters['latitude'],
-            parameters['longitude'],
-            parameters['altitude']
+            action.getValue('latitude'),
+            action.getValue('longitude'),
+            action.getValue('altitude')
         ))
 
 class LandActionSchema(ActionSchema):
@@ -331,7 +331,7 @@ class LandActionSchema(ActionSchema):
             invariants, postconditions, estimators)
 
 
-    def dispatch(self, parameters):
+    def dispatch(self, action):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
 
 
@@ -383,8 +383,8 @@ class TakeoffActionSchema(ActionSchema):
             preconditions, invariants, postconditions, estimators)
 
 
-    def dispatch(self, parameters):
-        DRONEKIT_SYSTEM.simple_takeoff(parameters['altitude'])
+    def dispatch(self, action):
+        DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
