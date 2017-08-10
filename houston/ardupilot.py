@@ -280,8 +280,9 @@ class TakeoffActionSchema(ActionSchema):
         ]
         branches = [
             OutcomeBranch(lambda action, state, env:
-                state.read('armed') and state.read('altitude') < 0.3,
-                Estimator('altitude', lambda action, state, env: action.read('altitude')))
+                state.read('armed') and state.read('altitude') < 0.3,[
+                Estimator('altitude', lambda action, state, env: action.read('altitude'))
+            ])
         ]
 
         super(TakeoffActionSchema, self).__init__('takeoff', parameters, \
