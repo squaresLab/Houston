@@ -92,8 +92,10 @@ class RandomGenerator(TestSuiteGenerator):
     """
 
     def generate(self, characteristics, resources):
-        assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
+        assert (isinstance(characteristics, test.MissionSuiteCharacteristics))
+        assert (isinstance(resources, test.GeneratorResourceLimits))
         assert(not characteristics is None)
+        assert(not resources is None)
 
         missions = test.MissionSuite()
         while not missions.satisfiesMissionNumber(characteristics.getMaxMissions()):
@@ -114,7 +116,9 @@ class RandomGenerator(TestSuiteGenerator):
         :returns    A randomly-generated Mission instance
         """
         assert (isinstance(characteristics, test.MissionSuiteCharacteristics))
+        assert (isinstance(resources, test.GeneratorResourceLimits))
         assert (not characteristics is None)
+        assert (not resources is None)
 
         # generate an initial state
         env = self.generateEnvironment()
@@ -123,7 +127,7 @@ class RandomGenerator(TestSuiteGenerator):
 
         # TODO: doesn't enforce timeout limiting!
         actions = []
-        for _ in range(characteristics.getMaxNumActionsPerMission()):
+        for _ in range(characteristics.getMissionCharacteristics().getMaxActions()):
             schema = random.choice(schemas)
             action = self.generateAction(schema)
             actions.append(action)
