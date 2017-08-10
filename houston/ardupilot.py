@@ -208,7 +208,7 @@ class SetModeActionSchema(ActionSchema):
         DRONEKIT_SYSTEM.mode = VehicleMode(action.getValue('mode'))
 
     def computeTimeout(self, action, state, environment):
-        pass
+        return CONSTANT_TIMEOUT_OFFSET
 
 
 class GoToActionSchema(ActionSchema):
@@ -245,8 +245,8 @@ class GoToActionSchema(ActionSchema):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (action.getValue('latitude', 'longitude'))
         totalDistance = distance.great_circle(fromLocation, toLocation).meters
-        return totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
-
+        timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+        return timeout
 
 class LandActionSchema(ActionSchema):
     def __init__(self):
