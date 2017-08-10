@@ -126,45 +126,110 @@ class MissionSuiteCharacteristics(object):
         Constructs a mission suite characteristics from its associated JSON
         description.
         """
-        return MissionSuiteCharacteristics(jsn['maxMissions'],
-            jsn['maxActionsPerMission'], jsn['maxTime'])
+        assert (isinstance(jsn, dict))
+        assert ('maxTime' in jsn)
+        assert ('maxMissions' in jsn)
+        return MissionSuiteCharacteristics(jsn['maxTime'], jsn['maxMissions'])
 
 
-    def __init__(self, maxMissions, maxActionsPerMission, maxTime):
+    def __init__(self, maxTime, maxMissions):
         """
         Constructs a set of desired mission suite characteristics
 
-        :param  maxNumMissions: the maximum number of missions that should be\
-                                contained within the suite.
-        :param  maxNumActionsPerMission: the maximum number of actions that\
-                                each mission can contain.
         :param  maxTime: the maximum running time of the entire mission suite.
+
+        :param  maxMissions: the maximum number of missions that should be\
+                                contained within the suite.
+
         """
-        self.__maxMissions = maxMissions
-        self.__maxActionsPerMission = maxActionsPerMission
         self.__maxTime = maxTime
+        self.__maxMissions = maxMissions
 
-    def getMaxNumMissions(self):
-        """
-        Returns the maximum number of missions inside the mission suite
-        """
-        return self.__maxMissions
-
-    def getMaxNumActionsPerMission(self):
-        """
-        Returns the maximum number of actions per mission
-        """
-        return self.__maxActionsPerMission
 
     def getMaxTime(self):
         """
-        Returns the desired maximum running time of the test suite.
-
-        TODO: a desired `maximum' doesn't entirely make sense?
+        Returns the maximum duration of a mission suite.
         """
         return self.__maxTime
 
-class MissionSuiteLimits(object):
+
+    def getMaxMissions(self):
+        """
+        Returns the maximum number of missions per mission suite.
+        """
+        return self.__maxMissions
+
+
+class MissionCharacteristics(object):
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a mission suite characteristics from its associated JSON
+        description.
+        """
+        assert (isinstance(jsn, dict))
+        assert ('maxTime' in jsn)
+        assert ('maxActions' in jsn)
+        return MissionCharacteristics(jsn['maxTime'], jsn['maxActions'])
+
+
+    def __init__(self, maxTime, maxActions):
+        """
+        Constructs a set of desired mission suite characteristics
+
+        :param  maxTime: the maximum running time of a mission.
+
+        :param  maxActions: the maximum number of actions that\
+                                each a mission can contain.
+
+        """
+        self.__maxTime = maxTime
+        self.__maxActions = maxActions
+
+
+    def getMaxTime(self):
+        """
+        Returns the maximum duration of a mission.
+        """
+        return self.__maxTime
+
+
+    def getMaxActions(self):
+        """
+        Returns the maximum number of actions per mission.
+        """
+        return self.maxActions
+
+
+class ActionCharacteristics(object):
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs an action characteristics from its associated JSON
+        description.
+        """
+        assert (isinstance(jsn, dict))
+        assert ('maxTime' in jsn)
+        return ActionCharacteristics(jsn['maxTime'])
+
+
+    def __init__(self, maxTime):
+        """
+        Constructs a set of desired action characteristics.
+
+        :param  maxTime: the maximum duration of an action.
+        """
+        self.__maxTime = maxTime
+
+
+    def getMaxTime(self):
+        """
+        Returns the maximum duration of an action.
+        """
+        return self.__maxTime
+
+
+class GeneratorResourceLimits(object):
     """
     Used to describe the limits that the generator has when generating a mission
     suite.
@@ -175,7 +240,10 @@ class MissionSuiteLimits(object):
         Constructs a mission suite limits  from its associated JSON
         description.
         """
-        return MissionSuiteLimits(jsn['maxTime'], jsn['maxNumRetries'])
+        assert (isinstance(jsn, dict))
+        assert ('maxTime' in jsn)
+        assert ('maxNumRetries' in jsn)
+        return GeneratorResourceLimits(jsn['maxTime'], jsn['maxNumRetries'])
 
     def __init__(self, maxTime, maxNumRetries):
         """
