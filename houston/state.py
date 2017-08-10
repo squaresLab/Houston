@@ -82,12 +82,16 @@ class State(object):
 
 class ExpectedStateValue(object):
 
-    def __init__(self, value):
+    def __init__(self, value, noise=None):
         """
         Constructs a description of an expected.
         """
-        #TODO ranges??
+        assert (isinstance(noise, float) or isinstance(noise, int) or noise is None)
+        assert (noise is None or type(value) == type(noise))
+
         self.__value = value
+        self.__noise = noise
+
 
     def isExpected(self, otherValue):
         return self.__value == otherValue
