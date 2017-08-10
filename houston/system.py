@@ -238,6 +238,8 @@ class ActionSchema(object):
         :param  action          the action that is going to be performed.
         :param  state           the state in which the system is currently on.
         :param  environment     the system environment
+
+        :returns maximum time in seconds (as a float)
         """
         raise UnimplementedError
 
