@@ -172,7 +172,16 @@ class OutcomeBranch(object):
                     system is expected to be in immediately after the \
                     execution of this branch
         """
-        return state.ExpectedState()
+        values = {}
+
+        for (varName, initialValue) in initialState.getValues():
+            if varName in self.__effects:
+                expected = effects[varName].computeExpectedValue(action, initialState, env)
+                values[varName] = expected
+            else:
+                values[varName] = ExpectedStateValue(initialValue)
+
+        return state.ExpectedState(values)
 
 
 class OutcomeElseBranch(OutcomeBranch):
