@@ -179,7 +179,7 @@ class ArmActionSchema(ActionSchema):
         DRONEKIT_SYSTEM.armed = True
 
     def computeTimeout(self, action, state, environment):
-        pass
+        return CONSTANT_TIMEOUT_OFFSET
 
 
 class SetModeActionSchema(ActionSchema):
