@@ -88,7 +88,7 @@ class System(object):
                 expected = schema.computeExpectedState(action, initialState, env)
 
                 # dispatch (blocks until action completion)
-                actionTimeout = schema.computeTimeout(action, initialState)
+                actionTimeout = schema.computeTimeout(action, initialState, environment)
                 schema.dispatch(action)
                 print('Doing: {}'.format(action.getSchemaName()))
 
