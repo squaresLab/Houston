@@ -147,6 +147,20 @@ class System(object):
         return copy.deepcopy(self.__schemas)
 
 
+class OutcomeBranch(object):
+    def __init__(self, guard, effects = []):
+        assert (callable(guard))
+        assert (isinstance(effects, list) and not effects is None)
+
+        self.__guard = guard
+        self.__effect = effects
+
+
+class OutcomeElseBranch(OutcomeBranch):
+    def __init__(self, effects = []):
+        super(OutcomeElseBranch).__init__(lambda _,_,_: True, effects)
+
+
 class ActionSchema(object):
     """
     Action schemas are responsible for describing the kinds of actions that
@@ -155,35 +169,19 @@ class ActionSchema(object):
     preconditions, postconditions, and invariants.
     """
 
-    def __init__(self, name, parameters, preconditions, invariants, postconditions,
-        estimators):
+    def __init__(self, name, parameters):
         """
         Constructs an ActionSchema object.
 
         :param  name            name of the action schema
         :param  parameters      a list of the parameters for this action schema
-        :param  preconditions   predicates that must be met before the action
-                                can be executed.
-        :param  invariants      predicates that should be met at all times during
-                                the execution of an action.
-        :param  postconditions  predicates that must be met after the action is
-                                completed.
-        :param  estimator       a list of state estimators.
         """
         assert (isinstance(name, str) and not name is None)
         assert (len(name) > 0)
         assert (isinstance(parameters, list) and not parameters is None)
-        assert (isinstance(preconditions, list) and not preconditions is None)
-        assert (isinstance(postconditions, list) and not postconditions is None)
-        assert (isinstance(invariants, list) and not invariants is None)
-        assert (isinstance(estimators, list) and not estimators is None)
 
         self.__name           = name
         self.__parameters     = parameters
-        self.__preconditions  = preconditions
-        self.__invariants     = invariants
-        self.__postconditions = postconditions
-        self.__estimators     = estimators
 
 
     def getName(self):
@@ -210,82 +208,6 @@ class ActionSchema(object):
         return copy.deepcopy(self.__parameters)
 
 
-    def getPreconditions(self):
-        """
-        Returns the preconditions being hold for the current action schema. This
-        is used to generate and validate actions.
-        """
-        return copy.deepcopy(self.__preconditions)
-
-
-    def satisfiedPostConditions(self, action, currentState, env):
-        """
-        Checks that the postconditions are met. Returns a tuple, with a boolean
-        holding the success or failure of the check, and a list with the name of
-        the postconditions that were not met (if any).
-
-        :param  action              the action that is to be executed.
-        :param  currentState        the state of the system immediately prior to
-                                    the execution of the action.
-        :param  env                 the environment in which the action will be
-                                    executed.
-        """
-        #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
-
-        postconditionsFailed = []
-        success = True
-        for postcondition in self.__postconditions:
-            if not postcondition.check(action, currentState, env):
-                postconditionsFailed.append(postcondition.getName())
-                success = False
-        return (success, postconditionsFailed)
-
-
-    def satisfiedPreconditions(self, action, currentState, env):
-        """
-        Checks that the preconditions are met. Returns a tuple, with a boolean
-        holding the success or failure of the check, and a list with the name of
-        the preconditions that were not met (if any).
-
-        :param  action              the action that is to be executed.
-        :param  currentState        the state of the system immediately prior to
-                                    the execution of the action.
-        :param  env                 the environment in which the action will be
-                                    executed.
-        """
-        #print 'Doing precondition. Action: {}'.format(parameters.getKind())
-
-        preconditionsFailed = []
-        success = True
-        for precondition in self.__preconditions:
-            if not precondition.check(action, currentState, env):
-                preconditionsFailed.append(precondition.getName())
-                success = False
-        return (success, preconditionsFailed)
-
-
-    def satisfiedInvariants(self, action, currentState, env):
-        """
-        Checks that the invariants are met. Returns a tuple, with a boolean
-        holding the success or failure of the check, and a list with the name of
-        the invariants that were not met (if any).
-
-        :param  action              the action that is to be executed.
-        :param  currentState        the state of the system immediately prior to
-                                    the execution of the action.
-        :param  env                 the environment in which the action will be
-                                    executed.
-        """
-        #print 'Doing invariants. Action: {}'.format(parameters.getKind())
-        invariantsFailed    = []
-        success             = True
-        for invariant in self.__invariants:
-            if not invariant.check(action, currentState, env):
-                invariantsFailed.append(invariant.getName())
-                success = False
-        return (success, invariantsFailed)
-
-
     def estimateState(self, action, initialState, environment):
         """
         Estimates the resulting system state after executing an action
@@ -300,10 +222,13 @@ class ActionSchema(object):
 
         :return An estimate of the resulting system state
         """
-        values = initialState.getValues()
+        # figure out which branch to take
+        branch = blah
+        expected = {}
 
-        for estimator in self.__estimators:
-            var = estimator.getVariableName()
-            values[var] = estimator.estimate(action, initialState, environment)
+        #
+        for var in system_vars:
+            expected[var] = branch.expectedValue(action, initialState, environment, var)
+        
+        return state.ExpectedState(expected)
 
-        return state.State(values)
