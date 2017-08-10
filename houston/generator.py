@@ -139,7 +139,7 @@ class RandomGenerator(TestSuiteGenerator):
         return self.getInitialState()
 
 
-    def generateActionOfSchema(self, schema):
+    def generateAction(self, schema):
         """
         Generates an action belonging to a particular schema at random
 
