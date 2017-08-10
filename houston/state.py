@@ -252,9 +252,9 @@ class Estimator(object):
         return self.__variable
 
 
-    def estimate(self, action, state, environment):
+    def computeExpectedValue(self, action, state, environment):
         """
-        Estimates the value for the variable associated with this estimator,
+        Computes the expected value for the variable associated with this estimator,
         within a given state and environment.
 
         :param    action        action used to calculate the expected state.
@@ -262,6 +262,9 @@ class Estimator(object):
                                 performing the given action.
         :param    environment   the environment in which the action takes place.
         """
-
         # TODO: sample a random amount of noise
-        return self.__func(action, state, environment)
+        value = self.__func(action, state, environment)
+        noise = None
+        if self.__noiseFunc:
+            noise = self.__noiseFunc(action, state, environment)
+        return ExpectedStateValue(value, noise)
