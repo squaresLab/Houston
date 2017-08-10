@@ -80,6 +80,36 @@ class State(object):
     def __repr__(self):
         return str(self)
 
+class ExpectedStateValue(object):
+
+    def __init__(self, value):
+        """
+        Constructs a description of an expected.
+        """
+        #TODO ranges??
+        self.__value = value
+
+    def isExpected(self, otherValue):
+        return self.__value == otherValue
+
+
+class ExpectedState(object):
+
+    def __init__(self, values):
+        """
+        Constructs a description of an expected state of the system.
+        """
+        assert (isinstance(values, dict))
+        self.__values = values
+
+
+    def isExpected(self, st):
+        for name, expectedValue in self.__values.items():
+            if not expectedValue.isExpected(st.read(name)):
+                return False
+
+        return True
+
 
 class StateVariable(object):
 
