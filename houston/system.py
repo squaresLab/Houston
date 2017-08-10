@@ -76,52 +76,29 @@ class System(object):
         self.setUp(msn)
 
         env = msn.getEnvironment()
+        outcomes = []
 
         try:
 
-            outcomes = []
+            # execute each action in sequence
             for action in msn.getActions():
                 schema = self.__schemas[action.getSchemaName()]
-                stateStart = self.getState()
-                stateCurrent = stateStart
 
-                # check for precondition violations
-                (satisfied, violations) = \
-                    schema.satisfiedPreconditions(action, stateStart, env)
-                if not satisfied:
-                    outcome = mission.ActionOutcome(action, False, stateStart, stateStart)
-                    outcomes.append(outcome)
-                    return mission.MissionOutcome(False, outcomes)
+                initialState = self.getState()
+                expected = schema.computeExpectedState(action, initialState, env)
 
-                # dispatch
-                # TODO: just pass the action object?
-                schema.dispatch(action.getValues())
+                # dispatch (blocks until action completion)
+                schema.dispatch(action)
                 print('Doing: {}'.format(action.getSchemaName()))
 
-                # loop until postconditions are satisfied, or an invariant is violated
-                while True:
-                    stateCurrent = self.getState()
+                # compare the observed and expected states
+                observed = self.getState()
+                passed = expected.isExpected(observed)
+                outcome = mission.ActionOutcome(action, passed, initialState, observed)
+                outcomes.append(outcome)
 
-                    # check for invariant violations
-                    (satisfied, violations) = \
-                        schema.satisfiedInvariants(action, stateCurrent, env)
-                    if not satisfied:
-                        outcome = mission.ActionOutcome(action, False, stateStart, stateCurrent)
-                        outcomes.append(outcome)
-                        return mission.MissionOutcome(False, outcomes)
-
-                    # check if postconditions are satisfied
-                    (satisfied, violations) = \
-                        schema.satisfiedPostConditions(action, stateCurrent, env)
-                    if satisfied:
-                        outcome = mission.ActionOutcome(action, True, stateStart, stateCurrent)
-                        outcomes.append(outcome)
-                        break
-
-                    time.sleep(0.5) # TODO: parameterise
-
-                    # TODO: enforce a time-out!\
-
+                if not passed:
+                    return mission.MissionOutcome(False, outcomes)
 
             return mission.MissionOutcome(True, outcomes)
 
