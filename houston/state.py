@@ -109,7 +109,7 @@ class ExpectedState(object):
         Returns an ExpectedState object that is identical to a given State.
         """
         expected = {}
-        for (name, val) in to.getValues():
+        for (name, val) in to.getValues().items():
             expected[name] = ExpectedStateValue(val)
         return ExpectedState(expected)
 
