@@ -282,3 +282,14 @@ class Estimator(object):
         if self.__noiseFunc:
             noise = self.__noiseFunc(action, state, environment)
         return ExpectedStateValue(value, noise)
+
+
+class FixedEstimator(Estimator):
+    """
+    A fixed estimator is one that always assigns a fixed value to its \
+    associated state variable, rather than computing a value based on the \
+    (action, state, environment) context.
+    """
+
+    def __init__(self, variable, value):
+        super(self).__init__(variable, lambda action, state, env: value)
