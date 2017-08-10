@@ -292,4 +292,4 @@ class FixedEstimator(Estimator):
     """
 
     def __init__(self, variable, value):
-        super(self).__init__(variable, lambda action, state, env: value)
+        super(FixedEstimator, self).__init__(variable, lambda action, state, env: value)

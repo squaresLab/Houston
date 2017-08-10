@@ -10,7 +10,7 @@ from valueRange import DiscreteValueRange, ContinuousValueRange
 from system     import System, ActionSchema, OutcomeBranch, OutcomeElseBranch
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
-from state      import Estimator
+from state      import Estimator, FixedEstimator
 from state      import InternalVariable, ExternalVariable
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
