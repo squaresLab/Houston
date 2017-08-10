@@ -261,6 +261,8 @@ class Estimator(object):
         :param    state         the state of the system immediately prior to
                                 performing the given action.
         :param    environment   the environment in which the action takes place.
+
+        :returns  an ExpectedStateValue object.
         """
         # TODO: sample a random amount of noise
         value = self.__func(action, state, environment)
