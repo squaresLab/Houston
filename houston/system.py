@@ -157,6 +157,25 @@ class OutcomeBranch(object):
         self.__effect = effects
 
 
+    def isGuardSatisfied(self, action, initialState, env):
+        """
+        Determines whether the guard for this outcome branch is satisfied by
+        the parameters for the action, the state of the system immediately
+        prior to the execution of the action, and the state of the environment.
+
+        :param  action:         a description of the action that is about to \
+                                be performed
+        :param  initialState:   the state of the system immediately prior to \
+                                the execution of the action
+        :param  env:            the environment in which the action is being \
+                                performed
+
+        :returns    True if the guard is satisfied by the given context, \
+                    otherwise False.
+        """
+        return self.__guard(action, initialState, env)
+
+
     def computeExpectedState(self, action, initialState, env):
         """
         Produces an estimate of the system state following the execution of
