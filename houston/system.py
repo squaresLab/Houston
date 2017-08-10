@@ -88,7 +88,7 @@ class System(object):
                 expected = schema.computeExpectedState(action, initialState, env)
 
                 # dispatch (blocks until action completion)
-                actionTimeout = schema.computeTimeout(action, initialState, environment)
+                actionTimeout = schema.computeTimeout(action, initialState, env)
                 schema.dispatch(action)
                 print('Doing: {}'.format(action.getSchemaName()))
 
@@ -132,10 +132,10 @@ class OutcomeBranch(object):
         assert (all(isinstance(e, state.Estimator) for e in effects))
 
         self.__guard = guard
-        self.__effect = effects
+        self.__effects = effects
 
 
-    def isGuardSatisfied(self, action, initialState, env):
+    def isApplicable(self, action, initialState, env):
         """
         Determines whether the guard for this outcome branch is satisfied by
         the parameters for the action, the state of the system immediately
@@ -171,12 +171,12 @@ class OutcomeBranch(object):
         """
         values = {}
 
-        for (varName, initialValue) in initialState.getValues():
+        for (varName, initialValue) in initialState.getValues().items():
             if varName in self.__effects:
                 expected = effects[varName].computeExpectedValue(action, initialState, env)
                 values[varName] = expected
             else:
-                values[varName] = ExpectedStateValue(initialValue)
+                values[varName] = state.ExpectedStateValue(initialValue)
 
         return state.ExpectedState(values)
 
