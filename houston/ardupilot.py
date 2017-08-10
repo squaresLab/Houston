@@ -239,58 +239,12 @@ class GoToActionSchema(ActionSchema):
 class LandActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
-        preconditions = [
-            Precondition('battery', 'description',
-                lambda action, state, env: state.read('battery') >= \
-                    maxExpectedBatteryUsage(state.read('latitude'), \
-                    state.read('longitude'), 0.0)),
-            Precondition('altitude', 'description',
-                lambda action, state, env: state.read('altitude') > 0.3),
-            Precondition('armed', 'description',
-                lambda action, state, env: state.read('armed'))
-        ]
-
         branches = [
-            OutcomeBranch(lambda action, state, env):
-                state.read('altitude') > 0.3, [
-                FixedEstimatork
-                ]
-        ]
-
-        estimators = [
-            Estimator('battery',
-                lambda action, state, env: state.read('battery') - maxExpectedBatteryUsage(
-                state.read('latitude'),
-                state.read('longitude'),
-                0.0
-                )),
-            Estimator('armed',
-                lambda action, state, env: \
-                    False if state.read('mode') == 'GUIDED' else state.read('armed')),
-            Estimator('altitude',
-                lambda action, state, env: 0.0)
-        ]
-
-        postconditions = [
-            Postcondition('altitude', 'description',
-                          lambda action, state, env: state.read('altitude') < 1 ),
-            Postcondition('battery', 'description',
-                          lambda action, state, env: state.read('battery') > 0 ),
-            Postcondition('time', 'description',
-                          # we need a "start" time (or an initial state)
-                          lambda action, state, env: maxExpectedTime(None, None, 0) > \
-                            time.time() - state.read('time')),
-            Postcondition('armed', 'description',
-                          lambda action, state, env: True if state.read('mode') != 'GUIDED' else not state.read('armed'))
-        ]
-
-        invariants = [
-            Invariant('battery', 'description',
-                       lambda action, state, env: state.read('battery') > 0),
-            Invariant('altitude', 'description',
-                       lambda action, state, env: state.read('altitude') > -0.3),
-            Invariant('alive', 'description',
-                       lambda action, state, env: state.read('alive'))
+            OutcomeBranch(lambda action, state, env:
+                state.read('armed') and state.read('altitude') > 0.3, [
+                FixedEstimator('altitude', 0.0) # TODO Not entirely true
+                FixedEstimator('mode', 'LAND')
+            ])
         ]
 
         super(LandActionSchema, self).__init__('land', parameters, preconditions,\
