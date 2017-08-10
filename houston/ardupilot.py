@@ -169,12 +169,12 @@ class ArmActionSchema(ActionSchema):
     """docstring for ArmActionSchema."""
     def __init__(self):
         parameters = []
-        outcomes = [
-            ActionOutcomeBranch(lambda action, state, env: state.read('armable') and state.read('mode') == 'GUIDED', [
+        branches = [
+            OutcomeBranch(lambda action, state, env: state.read('armable') and state.read('mode') == 'GUIDED', [
                 FixedEstimator('armed', True)])
         ]
 
-        super(ArmActionSchema, self).__init__('arm', parameters, outcomes)
+        super(ArmActionSchema, self).__init__('arm', parameters, branches)
 
 
     def dispatch(self, parameters):
@@ -188,40 +188,20 @@ class SetModeActionSchema(ActionSchema):
             Parameter('mode', DiscreteValueRange(['GUIDED', 'LOITER', 'RTL']),\
                       'description')
         ]
-
-        estimators = [
-            Estimator('mode',
-                lambda action, state, env: state.read('mode')),
-            Estimator('latitude',
-                lambda action, state, env: state.read('homeLatitude') \
-                if action.getValues()['mode'] == 'RTL' else state.read('latitude')),
-            Estimator('longitude',
-                lambda action, state, env: state.read('homeLongitude') \
-                if action.getValues()['mode'] == 'RTL' else state.read('longitude')),
-            Estimator('altitude',
-                lambda action, state, env: 0.0 \
-                if action.getValues()['mode'] == 'RTL' else state.read('altitude')),
-            Estimator('armed',
-                lambda action, state, env: False \
-                if action.getValues()['mode'] == 'RTL' else state.read('armed'))
+        branches = [
+            OutcomeBranch(lambda action, state, env: action.read('mode') == 'RTL', [
+                FixedEstimator('mode', 'RTL'),
+                FixedEstimator('armed', False),
+                FixedEstimator('altitude', 0.0),
+                # BATTERY
+                Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
+                Estimator('longitude', lambda action, state, env: state.read('homeLongitude'))
+            ]),
+            OutcomeElseBranch([
+                Estimator('mode', lambda action, state, env: action.read('mode'))])
         ]
 
-        preconditions = [
-        ]
-
-        postconditions = [
-            Postcondition('mode', 'description',
-                          lambda action, state, env: state.read('mode') == action.getValues()['mode'])
-        ]
-        invariants = [
-            Invariant('battery', 'description',
-                      lambda action, state, env: state.read('battery') > 0),
-            Invariant('alive', 'description',
-                       lambda action, state, env: state.read('alive'))
-
-        ]
-        super(SetModeActionSchema, self).__init__('setmode', parameters, \
-            preconditions, invariants, postconditions, estimators)
+        super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
     def dispatch(self, parameters):
         DRONEKIT_SYSTEM.mode = VehicleMode(parameters['mode'])
