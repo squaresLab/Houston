@@ -218,9 +218,16 @@ class Action(object):
         return self.__kind
 
 
+    def read(self, value):
+        """
+        Returns the value for a specific parameter in this action.
+        """
+        return self.getValue(value)
+
+
     def getValue(self, value):
         """
-        Returns an value of a specific parameter for this action.
+        Returns the value for a specific parameter in this action.
         """
         return self.__values[value]
 
