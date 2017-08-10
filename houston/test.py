@@ -130,6 +130,8 @@ class MissionSuiteCharacteristics(object):
         assert ('suite' in jsn)
         assert ('mission' in jsn)
         assert ('action' in jsn)
+        assert ('maxTime' in jsn['suite'])
+        assert ('maxMissions' in jsn['suite'])
 
         ac = ActionCharacteristics.fromJSON(jsn['actions'])
         mc = MissionCharacteristics.fromJSON(jsn['missions'])
