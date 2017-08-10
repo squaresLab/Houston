@@ -157,6 +157,24 @@ class OutcomeBranch(object):
         self.__effect = effects
 
 
+    def computeExpectedState(self, action, initialState, env):
+        """
+        Produces an estimate of the system state following the execution of
+        this branch within a given context.
+
+        :param  action:         a description of the action being performed
+        :param  initialState:   the state of the system immediately prior to \
+                                the execution of this action
+        :param  env:            the environment in which the action is being \
+                                performed
+
+        :returns    An ExpectedState object, describing the state that the \
+                    system is expected to be in immediately after the \
+                    execution of this branch
+        """
+        return state.ExpectedState()
+
+
 class OutcomeElseBranch(OutcomeBranch):
     def __init__(self, effects = []):
         super(OutcomeElseBranch).__init__(lambda _,_,_: True, effects)
