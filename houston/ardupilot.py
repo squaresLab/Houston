@@ -229,6 +229,7 @@ class GoToActionSchema(ActionSchema):
                 Estimator('longitude', lambda action, state, env: action.read('longitude')),
                 Estimator('altitude', lambda action, state, env: action.read('altitude'))
             ])
+        ]
 
         super(GoToActionSchema, self).__init__('goto',parameters, preconditions,\
             invariants, postconditions, estimators)
