@@ -151,6 +151,7 @@ class OutcomeBranch(object):
     def __init__(self, guard, effects = []):
         assert (callable(guard))
         assert (isinstance(effects, list) and not effects is None)
+        assert (all(isinstance(e, state.Estimator) for e in effects))
 
         self.__guard = guard
         self.__effect = effects
