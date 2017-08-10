@@ -231,8 +231,7 @@ class GoToActionSchema(ActionSchema):
             ])
         ]
 
-        super(GoToActionSchema, self).__init__('goto',parameters, preconditions,\
-            invariants, postconditions, estimators)
+        super(GoToActionSchema, self).__init__('goto', parameters, branches)
 
 
     def dispatch(self, action):

@@ -194,7 +194,7 @@ class ActionSchema(object):
     preconditions, postconditions, and invariants.
     """
 
-    def __init__(self, name, parameters):
+    def __init__(self, name, parameters, branches):
         """
         Constructs an ActionSchema object.
 
