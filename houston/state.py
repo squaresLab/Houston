@@ -80,6 +80,7 @@ class State(object):
     def __repr__(self):
         return str(self)
 
+
 class ExpectedStateValue(object):
 
     def __init__(self, value, noise=None):
@@ -101,6 +102,17 @@ class ExpectedStateValue(object):
 
 
 class ExpectedState(object):
+
+    @staticmethod
+    def identical(to):
+        """
+        Returns an ExpectedState object that is identical to a given State.
+        """
+        expected = {}
+        for (name, val) in to.getValues():
+            expected[name] = ExpectedStateValue(val)
+        return ExpectedState(expected)
+
 
     def __init__(self, values):
         """
