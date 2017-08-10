@@ -91,18 +91,18 @@ class RandomGenerator(TestSuiteGenerator):
     throw an exception?
     """
 
-    def generate(self, characteristics, limits):
+    def generate(self, characteristics, resources):
         assert(isinstance(characteristics, test.MissionSuiteCharacteristics))
         assert(not characteristics is None)
 
         missions = test.MissionSuite()
-        while not missions.satisfiesMissionNumber(characteristics):
-            m = self.generateMission(characteristics, limits)
+        while not missions.satisfiesMissionNumber(characteristics.getMaxMissions()):
+            m = self.generateMission(characteristics, resources)
             missions.add(m)
         return missions
 
 
-    def generateMission(self, characteristics, limits):
+    def generateMission(self, characteristics, resources):
         """
         Generates a single Mission at random.
 
@@ -120,7 +120,7 @@ class RandomGenerator(TestSuiteGenerator):
         env = self.generateEnvironment()
         startState = self.generateInitialState(env)
         schemas = list(self.getSystem().getActionSchemas().values())
-    
+
         # TODO: doesn't enforce timeout limiting!
         actions = []
         for _ in range(characteristics.getMaxNumActionsPerMission()):
