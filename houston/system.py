@@ -230,6 +230,17 @@ class ActionSchema(object):
         raise UnimplementedError
 
 
+    def computeTimeout(self, action, state, environment):
+        """
+        Responsible for calculating the maximum time that this action shoud take.
+
+        :param  action          the action that is going to be performed.
+        :param  state           the state in which the system is currently on.
+        :param  environment     the system environment
+        """
+        raise UnimplementedError
+
+
     def getParameters(self):
         """
         Returns the parameters being hold for the current action schema. This is
@@ -264,5 +275,5 @@ class ActionSchema(object):
         # unchanged following the execution of the action
         if branch is None:
             return state.ExpectedState.identical(initialState) # TODO implement
-    
+
         return branch.computeExpectedState(action, initialState, environment)
