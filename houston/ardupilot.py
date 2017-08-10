@@ -57,8 +57,6 @@ class ArduPilot(System):
         # TODO: this is very tricky; we'll need to do something clever here
         variables['time'] = \
             InternalVariable('time', lambda: time.time())
-        variables['alive'] = \
-            InternalVariable('alive', lambda: self.systemAlive())
         variables['homeLatitude'] = \
             InternalVariable('homeLatitude', lambda: 149.165085) # Fixed
         variables['homeLongitude'] = \
@@ -171,35 +169,17 @@ class ArmActionSchema(ActionSchema):
     """docstring for ArmActionSchema."""
     def __init__(self):
         parameters = []
-
-        estimators = [
-            Estimator('armed',
-                        lambda action, state, env: True)
+        outcomes = [
+            ActionOutcomeBranch(lambda action, state, env: state.read('armable') and state.read('mode') == 'GUIDED', [
+                FixedEstimator('armed', True)])
         ]
 
-        preconditions = [
-            Precondition('armed', 'description',
-                         lambda action, state, env: not state.read('armed')),
-            Precondition('armable', 'description',
-                         lambda action, state, env: state.read('armable')),
-            Precondition('mode', 'description',
-                         lambda action, state, env: state.read('mode') == 'GUIDED')
-        ]
-        postconditions = [
-            Postcondition('armed', 'description',
-                         lambda action, state, env: state.read('armed'))
-        ]
-        invariants = [
-            Invariant('battery', 'description',
-                      lambda action, state, env: state.read('battery') > 0),
-            Invariant('alive', 'description',
-                       lambda action, state, env: state.read('alive'))
-        ]
-        super(ArmActionSchema, self).__init__('arm', parameters, preconditions,\
-            invariants, postconditions, estimators)
+        super(ArmActionSchema, self).__init__('arm', parameters, outcomes)
+
 
     def dispatch(self, parameters):
         DRONEKIT_SYSTEM.armed = True
+
 
 class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
