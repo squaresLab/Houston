@@ -208,6 +208,16 @@ class MissionSuiteSummary(object):
     """
     Contains a summary of the execution of a mission suite.
     """
+    @staticmethod
+    def fromJSON(self, jsn):
+        """
+        Constructs a mission suite summary from a given dict, containing a
+        JSON-based description of its contents.
+        """
+        assert (isinstance(jsn, dict))
+        assert ('wallTime' in jsn)
+        assert ('outcomes' in jsn)
+        return MissionSuiteSummary(jsn['wallTime'], jsn['outcomes'])
 
     def __init__(self, wallTime, outcomes):
         assert (isinstance(wallTime, float) and not wallTime is None)
