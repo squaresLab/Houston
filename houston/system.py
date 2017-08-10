@@ -183,7 +183,7 @@ class OutcomeBranch(object):
 
 class OutcomeElseBranch(OutcomeBranch):
     def __init__(self, effects = []):
-        super(self).__init__(lambda a, s, e: True, effects)
+        super(OutcomeElseBranch, self).__init__(lambda a, s, e: True, effects)
 
 
 class ActionSchema(object):
