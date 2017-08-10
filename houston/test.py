@@ -49,13 +49,13 @@ class MissionSuite(object):
         """
         self.__contents.append(mission)
 
-    def satisfiesMissionNumber(self, characteristics):
+    def satisfiesMissionNumber(self, maxMissions):
         """
         Checks if the state of the mission suite satisfies the characteristics given.
 
         :param    characteristics       MissionSuiteCharacteristics
         """
-        if len(self.__contents) < characteristics.getMaxNumMissions():
+        if len(self.__contents) < maxMissions:
             return False
         #TODO How to check expected running time?
         return True
@@ -138,7 +138,7 @@ class MissionSuiteCharacteristics(object):
         maxTime = jsn['suite']['maxTime']
         maxMissions = jsn['suite']['maxMissions']
 
-        return MissionSuiteCharacteristics(maxTime, maxMissions, mc, ac)
+        return MissionSuiteCharacteristics(maxTime, maxMissions, ac, mc)
 
 
     def __init__(self, maxTime, maxMissions, aCharacteristics, mCharacteristics):
@@ -157,7 +157,7 @@ class MissionSuiteCharacteristics(object):
         self.__actioncharacteristics = aCharacteristics
 
 
-    def getMisisonCharacteristics(self):
+    def getMissionCharacteristics(self):
         """
         Returns the mission characteristics.
         """
