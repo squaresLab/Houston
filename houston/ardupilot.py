@@ -245,7 +245,7 @@ class GoToActionSchema(ActionSchema):
 
     def computeTimeout(self, action, state, environment):
         fromLocation = (state.read('latitude'), state.read('longitude'))
-        toLocation   = (action.getValue('latitude', 'longitude'))
+        toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
         totalDistance = distance.great_circle(fromLocation, toLocation).meters
         timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
