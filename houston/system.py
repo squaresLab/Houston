@@ -222,13 +222,19 @@ class ActionSchema(object):
 
         :param  name            name of the action schema
         :param  parameters      a list of the parameters for this action schema
+        :param  branches        a list of the possible outcomes for actions \
+                                belonging to this schema. If none of the \
+
         """
         assert (isinstance(name, str) and not name is None)
         assert (len(name) > 0)
         assert (isinstance(parameters, list) and not parameters is None)
+        assert (isinstance(branches, list) and not branches is None)
+        assert (len(branches) > 0)
 
-        self.__name           = name
-        self.__parameters     = parameters
+        self.__name = name
+        self.__parameters =  parameters
+        self.__branches = branches
 
 
     def getName(self):
@@ -255,7 +261,7 @@ class ActionSchema(object):
         return copy.deepcopy(self.__parameters)
 
 
-    def estimateState(self, action, initialState, environment):
+    def computeExpectedState(self, action, initialState, environment):
         """
         Estimates the resulting system state after executing an action
         belonging to this schema in a given initial state.
@@ -267,15 +273,19 @@ class ActionSchema(object):
         :param  environment:    a description of the environment in which the \
                                 action should take place.
 
-        :return An estimate of the resulting system state
+        :return An estimate of the resulting system state, in the form of an \
+                ExpectedState object
         """
-        # figure out which branch to take
-        branch = blah
-        expected = {}
+        # figure out which branch the action is expected to take.
+        branch = None
+        for b in self.__branches:
+            if b.isApplicable(action, initialState, environment):
+                branch = b
+                break
 
-        #
-        for var in system_vars:
-            expected[var] = branch.expectedValue(action, initialState, environment, var)
-        
-        return state.ExpectedState(expected)
-
+        # if no branch is applicable, the system state is assumed to remain
+        # unchanged following the execution of the action
+        if branch is None:
+            return state.ExpectedState.identical(initialState) # TODO implement
+    
+        return branch.computeExpectedState(action, initialState, environment)
