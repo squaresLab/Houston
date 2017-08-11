@@ -94,7 +94,7 @@ class System(object):
                 timeBefore = timeit.default_timer()
 
                 try:
-                    schema.dispatch(action, initialState, expected)
+                    schema.dispatch(action)
                 except TimeoutError:
                     pass
                 finally:
