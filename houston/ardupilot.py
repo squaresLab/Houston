@@ -211,11 +211,10 @@ class SetModeActionSchema(ActionSchema):
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
     def dispatch(self, action,):
-        DRONEKIT_SYSTEM.mode = VehicleMode(action.getValue('mode'))
-        while expectedState.isExpected(initialState):
-            pass
-        if expectedState.isExpected(initialState):
-            # TODO
+        vehicleMode = VehicleMode(action.getValue('mode'))
+        DRONEKIT_SYSTEM.mode = vehicleMode
+        while not DRONEKIT_SYSTEM.mode == vehicleMode:
+            time.sleep(0.1)
 
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
