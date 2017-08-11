@@ -140,18 +140,20 @@ class ActionOutcome(object):
         assert ('action' in jsn)
         assert ('stateBefore' in jsn)
         assert ('stateAfter' in jsn)
+        assert ('timeElapsed' in jsn)
         assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
 
         return ActionOutcome(Action.fromJSON(jsn['action']),
                              jsn['successful'],
                              state.State.fromJSON(jsn['stateBefore']),
-                             state.State.fromJSON(jsn['stateAfter']))
+                             state.State.fromJSON(jsn['stateAfter']),
+                             jsn['timeElapsed'])
 
 
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
-    def __init__(self, action, successful, stateBefore, stateAfter):
+    def __init__(self, action, successful, stateBefore, stateAfter, timeElapsed):
         """
         Constructs a ActionOutcome.
 
@@ -163,11 +165,13 @@ class ActionOutcome(object):
         assert (isinstance(successful, bool) and not successful is None)
         assert (isinstance(stateBefore, state.State) and not stateBefore is None)
         assert (isinstance(stateAfter, state.State) and not stateAfter is None)
+        assert (isinstance(timeElapsed, float) and not timeElapsed is None)
 
-        self.__action = action
-        self.__successful = successful
+        self.__action      = action
+        self.__successful  = successful
         self.__stateBefore = stateBefore
-        self.__stateAfter = stateAfter
+        self.__stateAfter  = stateAfter
+        self.__timeElapsed = timeElapsed
 
 
     def toJSON(self):
@@ -175,10 +179,11 @@ class ActionOutcome(object):
         Returns a JSON description of this action outcome.
         """
         return {
-            'action': self.__action.toJSON(),
-            'successful': self.__successful,
-            'stateBefore': self.__stateBefore.toJSON(),
-            'stateAfter': self.__stateAfter.toJSON()
+            'action':       self.__action.toJSON(),
+            'successful':   self.__successful,
+            'stateBefore':  self.__stateBefore.toJSON(),
+            'stateAfter':   self.__stateAfter.toJSON(),
+            'timeElapsed':  self.__timeElapsed
         }
 
 
