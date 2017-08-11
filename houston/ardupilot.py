@@ -215,7 +215,6 @@ class SetModeActionSchema(ActionSchema):
         while expectedState.isExpected(initialState):
             pass
         if expectedState.isExpected(initialState):
-            pass
             # TODO
 
     def computeTimeout(self, action, state, environment):
