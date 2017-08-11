@@ -245,20 +245,21 @@ class GoToActionSchema(ActionSchema):
         super(GoToActionSchema, self).__init__('goto', parameters, branches)
 
 
-    def dispatch(self, action, initialState, expectedState):
+    def dispatch(self, action):
         DRONEKIT_SYSTEM.simple_goto(LocationGlobalRelative(
-            action.getValue('latitude'),
-            action.getValue('longitude'),
-            action.getValue('altitude'))
+            action.read('latitude'),
+            action.read('longitude'),
+            action.read('altitude'))
         )
-        while not expectedState.isExpected(initialState):
-            pass
-        if expectedState.isExpected(initialState):
-            pass
-            #TODO if this happendds. Then it terminates the action even prior to the
-            # timeout. Maybe throw an Expetion or something to let us know that the
-            # sysem was laready in the desired state.
+        currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
+        currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+        toLocation = (action.getValue('latitude'), action.getValue('longitude'))
+        fromLocation = (currentLat, currentLon)
 
+        while distance.great_circle(fromLocation, toLocation).meters > 0.3:
+            time.sleep(.2)
+            currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
+            currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
 
 
     def computeTimeout(self, action, state, environment):
