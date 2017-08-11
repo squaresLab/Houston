@@ -89,7 +89,26 @@ class System(object):
 
                 # dispatch (blocks until action completion)
                 actionTimeout = schema.computeTimeout(action, initialState, env)
-                schema.dispatch(action)
+                schema.dispatch(action, initialState, expected)
+                # To give the system the chance to finisht the action early, we can
+                # pass it the obversed state  and the expected state. Then the condition
+                # that blocks dispatch would the obversedState == expectedState.
+                # As this happens inside dispatch execute will be keeping track of timeout.
+                #
+                # Not so cool about this:
+                #   * We will be checking wayy too much if the state is the desired state.
+                #   * Hwo does the system gets an updated obsevable state
+                #
+                # Cool aboutt this:
+                #   We will be doing both ideas contemplated a more discrete and a more
+                #   continous check.
+                #
+                # Second Approach:
+                #
+                # We can still pass both states and since the condition is expeccted to always be the same
+                # its expected loop forever.  In case it finishes early then we know that weird shit haaappend
+
+
                 print('Doing: {}'.format(action.getSchemaName()))
 
                 # compare the observed and expected states

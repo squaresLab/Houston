@@ -179,6 +179,11 @@ class ArmActionSchema(ActionSchema):
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.armed = True
+        while expectedState.isExpected(initialState):
+            pass
+        if expectedState.isExpected(initialState):
+            pass
+            # TODO
 
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
@@ -206,8 +211,13 @@ class SetModeActionSchema(ActionSchema):
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
-    def dispatch(self, action):
+    def dispatch(self, action,):
         DRONEKIT_SYSTEM.mode = VehicleMode(action.getValue('mode'))
+        while expectedState.isExpected(initialState):
+            pass
+        if expectedState.isExpected(initialState):
+            pass
+            # TODO
 
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
@@ -236,12 +246,20 @@ class GoToActionSchema(ActionSchema):
         super(GoToActionSchema, self).__init__('goto', parameters, branches)
 
 
-    def dispatch(self, action):
+    def dispatch(self, action, initialState, expectedState):
         DRONEKIT_SYSTEM.simple_goto(LocationGlobalRelative(
             action.getValue('latitude'),
             action.getValue('longitude'),
-            action.getValue('altitude')
-        ))
+            action.getValue('altitude'))
+        )
+        while not expectedState.isExpected(initialState):
+            pass
+        if expectedState.isExpected(initialState):
+            pass
+            #TODO if this happendds. Then it terminates the action even prior to the
+            # timeout. Maybe throw an Expetion or something to let us know that the
+            # sysem was laready in the desired state.
+
 
 
     def computeTimeout(self, action, state, environment):
@@ -266,8 +284,13 @@ class LandActionSchema(ActionSchema):
         super(LandActionSchema, self).__init__('land', parameters, branches)
 
 
-    def dispatch(self, action):
+    def dispatch(self, action, initialState, expectedState):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
+        while expectedState.isExpected(initialState):
+            pass
+        if expectedState.isExpected(initialState):
+            pass
+            # TODO
 
     def computeTimeout(self, action, state, environment):
         timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
@@ -293,6 +316,11 @@ class TakeoffActionSchema(ActionSchema):
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
+        while expectedState.isExpected(initialState):
+            pass
+        if expectedState.isExpected(initialState):
+            pass
+            # TODO
 
     def computeTimeout(self, action, state, environment):
         timeout = action.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
