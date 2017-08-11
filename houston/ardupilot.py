@@ -315,11 +315,14 @@ class TakeoffActionSchema(ActionSchema):
 
     def dispatch(self, action):
         DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
-        while expectedState.isExpected(initialState):
-            pass
-        if expectedState.isExpected(initialState):
-            pass
-            # TODO
+
+        expectedAlt = action.read('altitude')
+        currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+
+        while currentAlt < expectedAlt - 0.3: # OFFSET
+            time.sleep(.1)
+            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+
 
     def computeTimeout(self, action, state, environment):
         timeout = action.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
