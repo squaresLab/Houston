@@ -89,7 +89,7 @@ class System(object):
                 # enforce a timeout
                 timeout = schema.computeTimeout(action, initialState, env)
                 signal.signal(signal.SIGALRM, lambda: TimeoutError.produce())
-                signal.alarm(int(math.ceil(itimeout)))
+                signal.alarm(int(math.ceil(timeout)))
 
                 timeBefore = timeit.default_timer()
 
