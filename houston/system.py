@@ -33,12 +33,6 @@ class System(object):
         """
         raise NotImplementedError
 
-    def systemAlive(self):
-        """
-        Returns true if system is running.
-        """
-        raise NotImplementedError
-
 
     def getIdentifier(self):
         """
