@@ -210,7 +210,7 @@ class SetModeActionSchema(ActionSchema):
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
-    def dispatch(self, action,):
+    def dispatch(self, action):
         vehicleMode = VehicleMode(action.getValue('mode'))
         DRONEKIT_SYSTEM.mode = vehicleMode
         while not DRONEKIT_SYSTEM.mode == vehicleMode:
@@ -282,7 +282,7 @@ class LandActionSchema(ActionSchema):
         super(LandActionSchema, self).__init__('land', parameters, branches)
 
 
-    def dispatch(self, action, initialState, expectedState):
+    def dispatch(self, action):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
         currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
