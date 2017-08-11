@@ -68,7 +68,7 @@ class Mission(object):
         durationTime = 0.0
         schemas = system.getActionSchemas()
         for action in self.__actions:
-            durationTime += schemas[action.getSchemaName()].computeTimeout()
+            durationTime += schemas[action.getSchemaName()].computeTimeout(action, self.__initialState, self.__environment)
         return durationTime
 
 
