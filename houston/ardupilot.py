@@ -177,13 +177,12 @@ class ArmActionSchema(ActionSchema):
         ]
         super(ArmActionSchema, self).__init__('arm', parameters, branches)
 
+
     def dispatch(self, action):
         DRONEKIT_SYSTEM.armed = True
-        while expectedState.isExpected(initialState):
-            pass
-        if expectedState.isExpected(initialState):
-            pass
-            # TODO
+        while not DRONEKIT_SYSTEM.armed:
+            time.sleep(0.1)
+
 
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
