@@ -11,6 +11,12 @@ from subprocess import PIPE, Popen, call, check_call
 import pexpect
 
 
+class TimeoutError(Exception):
+    @staticmethod
+    def produce(msg=None):
+        raise TimeoutError(msg)
+
+
 if (sys.version_info[0] >= 3):
     ENCODING = 'ascii'
 else:
