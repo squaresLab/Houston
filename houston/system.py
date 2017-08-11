@@ -78,12 +78,21 @@ class System(object):
             for action in msn.getActions():
                 schema = self.__schemas[action.getSchemaName()]
 
+                # compute expected state
                 initialState = self.getState()
                 expected = schema.computeExpectedState(action, initialState, env)
+                
+                # enforce a timeout
+                timeout = schema.computeTimeout(action, initialState, env)
+                try:
+                    t = threading.Thread(lambda: schema.dispatch(action, initialState, expected))
+                    t.start()
+                    t.join(timeout)
 
-                # dispatch (blocks until action completion)
-                actionTimeout = schema.computeTimeout(action, initialState, env)
-                schema.dispatch(action, initialState, expected)
+                except X: # TODO change to appropriate Exception type
+                    blah # TODO TIMEOUT OUTCOME
+
+
                 # To give the system the chance to finisht the action early, we can
                 # pass it the obversed state  and the expected state. Then the condition
                 # that blocks dispatch would the obversedState == expectedState.
