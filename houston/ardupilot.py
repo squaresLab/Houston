@@ -12,6 +12,7 @@ from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
 from state      import Estimator, FixedEstimator
 from state      import InternalVariable, ExternalVariable
+from geopy      import distance
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
 # prevent any interaction attempts.
