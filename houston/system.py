@@ -1,9 +1,10 @@
 import thread
-import time
 import copy
 import json
 import state
 import mission
+import timeit
+
 
 class System(object):
     """
@@ -81,43 +82,28 @@ class System(object):
                 # compute expected state
                 initialState = self.getState()
                 expected = schema.computeExpectedState(action, initialState, env)
-                
+
                 # enforce a timeout
                 timeout = schema.computeTimeout(action, initialState, env)
-                try:
-                    t = threading.Thread(lambda: schema.dispatch(action, initialState, expected))
-                    t.start()
-                    t.join(timeout)
 
-                except X: # TODO change to appropriate Exception type
-                    blah # TODO TIMEOUT OUTCOME
-
-
-                # To give the system the chance to finisht the action early, we can
-                # pass it the obversed state  and the expected state. Then the condition
-                # that blocks dispatch would the obversedState == expectedState.
-                # As this happens inside dispatch execute will be keeping track of timeout.
-                #
-                # Not so cool about this:
-                #   * We will be checking wayy too much if the state is the desired state.
-                #   * Hwo does the system gets an updated obsevable state
-                #
-                # Cool aboutt this:
-                #   We will be doing both ideas contemplated a more discrete and a more
-                #   continous check.
-                #
-                # Second Approach:
-                #
-                # We can still pass both states and since the condition is expeccted to always be the same
-                # its expected loop forever.  In case it finishes early then we know that weird shit haaappend
-
+                t = threading.Thread(target=lambda: schema.dispatch(action,
+                                                    initialState, expected))
+                # start timer and thread
+                timeBefore = timeit.default_timer()
+                t.start()
+                t.join(timeout)
+                timeAfter = timeit.default_timer()
+                timeElapsed = timeAfter - timeBefore
+                if t.is_alive():
+                    t.cancel()
 
                 print('Doing: {}'.format(action.getSchemaName()))
 
                 # compare the observed and expected states
                 observed = self.getState()
                 passed = expected.isExpected(observed)
-                outcome = mission.ActionOutcome(action, passed, initialState, observed)
+                outcome = mission.ActionOutcome(action, passed, initialState,
+                                                        observed, timeElapsed)
                 outcomes.append(outcome)
 
                 if not passed:
