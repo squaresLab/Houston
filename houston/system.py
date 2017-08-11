@@ -3,7 +3,7 @@ import json
 import state
 import mission
 import timeit
-import threading
+import signal
 
 from util import TimeoutError
 
