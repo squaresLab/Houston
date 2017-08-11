@@ -285,11 +285,11 @@ class LandActionSchema(ActionSchema):
 
     def dispatch(self, action, initialState, expectedState):
         DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
-        while expectedState.isExpected(initialState):
-            pass
-        if expectedState.isExpected(initialState):
-            pass
-            # TODO
+        currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+
+        while currentAlt > 0.1:
+            time.sleep(.1)
+            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
     def computeTimeout(self, action, state, environment):
         timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
