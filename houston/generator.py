@@ -98,8 +98,16 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not resources is None)
 
         missions = test.MissionSuite()
+        # TODO implement getExpectedMissionDuration
+        missionSuiteTime = 0.0
+        missionSuiteMaxTime = characteristics.getMaxTime()
+
         while not missions.satisfiesMissionNumber(characteristics.getMaxMissions()):
+            if missionSuiteTime >= missionSuiteMaxTime:
+                break
             m = self.generateMission(characteristics, resources)
+            missionSuiteTime += m.getExpectedMissionDuration(self.getSystem())
+
             missions.add(m)
         return missions
 
@@ -125,12 +133,25 @@ class RandomGenerator(TestSuiteGenerator):
         startState = self.generateInitialState(env)
         schemas = list(self.getSystem().getActionSchemas().values())
 
-        # TODO: doesn't enforce timeout limiting!
+        missionTime = 0.0
+        missionMaxTime = characteristics.getMissionCharacteristics().getMaxTime()
+        actionMaxTime = characteristics.getActionCharacteristics().getMaxTime()
+
         actions = []
         for _ in range(characteristics.getMissionCharacteristics().getMaxActions()):
+            if missionTime >= missionMaxTime:
+                break
             schema = random.choice(schemas)
-            action = self.generateAction(schema)
-            actions.append(action)
+            for __ in range(resources.getMaxNumRetries()):
+                action = self.generateAction(schema)
+                actionTime = schema.computeTimeout(action, startState, env)
+
+                if actionTime < actionMaxTime:
+                    actions.append(action)
+                    missionTime += actionTime
+                    break
+            print 'Passed: {}'.format(_)
+
 
         return mission.Mission(env, startState, actions)
 
@@ -154,6 +175,7 @@ class RandomGenerator(TestSuiteGenerator):
                     given schema.
         """
         assert (isinstance(schema, system.ActionSchema) and not schema is None)
+
 
         params = {}
         for parameter in schema.getParameters():
