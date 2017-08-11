@@ -60,6 +60,18 @@ class Mission(object):
         return copy.copy(self.__actions)
 
 
+    def getExpectedMissionDuration(self, system):
+        """
+        Returns the expected time that the mission is going to take based on each
+        action timeout.
+        """
+        durationTime = 0.0
+        schemas = system.getActionSchemas()
+        for action in self.__actions:
+            durationTime += schemas[action.getSchemaName()].computeTimeout()
+        return durationTime
+
+
     def toJSON(self):
         """
         Returns a JSON description of this mission.
