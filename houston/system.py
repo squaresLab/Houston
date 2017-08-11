@@ -1,9 +1,10 @@
-import thread
 import copy
 import json
 import state
 import mission
 import timeit
+
+from util import TimeoutError
 
 
 class System(object):
@@ -85,17 +86,20 @@ class System(object):
 
                 # enforce a timeout
                 timeout = schema.computeTimeout(action, initialState, env)
+                signal.signal(signal.SIGALRM, lambda: TimeoutError.produce())
+                signal.alarm(timeout)
 
-                t = threading.Thread(target=lambda: schema.dispatch(action,
-                                                    initialState, expected))
-                # start timer and thread
                 timeBefore = timeit.default_timer()
-                t.start()
-                t.join(timeout)
+
+                try:
+                    schema.dispatch(action, initialState, expected)
+                except TimeoutError:
+                    pass 
+                finally:
+                    signal.alarm(0) # does this reset the alarm?
+
                 timeAfter = timeit.default_timer()
                 timeElapsed = timeAfter - timeBefore
-                if t.is_alive():
-                    t.cancel()
 
                 print('Doing: {}'.format(action.getSchemaName()))
 
@@ -103,7 +107,7 @@ class System(object):
                 observed = self.getState()
                 passed = expected.isExpected(observed)
                 outcome = mission.ActionOutcome(action, passed, initialState,
-                                                        observed, timeElapsed)
+                                                observed, timeElapsed)
                 outcomes.append(outcome)
 
                 if not passed:
