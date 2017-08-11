@@ -4,6 +4,7 @@ import state
 import mission
 import timeit
 import signal
+import math
 
 from util import TimeoutError
 
@@ -88,14 +89,14 @@ class System(object):
                 # enforce a timeout
                 timeout = schema.computeTimeout(action, initialState, env)
                 signal.signal(signal.SIGALRM, lambda: TimeoutError.produce())
-                signal.alarm(timeout)
+                signal.alarm(int(math.ceil(itimeout)))
 
                 timeBefore = timeit.default_timer()
 
                 try:
                     schema.dispatch(action, initialState, expected)
                 except TimeoutError:
-                    pass 
+                    pass
                 finally:
                     signal.alarm(0) # does this reset the alarm?
 
