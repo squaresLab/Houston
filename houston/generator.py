@@ -160,8 +160,6 @@ class RandomGenerator(TestSuiteGenerator):
                     actions.append(action)
                     missionTime += actionTime
                     break
-            print 'Passed: {}'.format(_)
-
 
         return mission.Mission(env, startState, actions)
 
