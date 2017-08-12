@@ -94,10 +94,6 @@ class ArduPilot(System):
         return ARDUPILOT_INSTALLED
 
 
-    def systemAlive(self):
-        return True #TODO
-
-
     def setUp(self, mission):
     	global DRONEKIT_SYSTEM
         # TODO lots of hardcoded paths
