@@ -3,6 +3,7 @@ import mission
 import system
 import state
 import test
+import time
 
 """
 The generator module is responsible for providing a number of different test
@@ -98,13 +99,22 @@ class RandomGenerator(TestSuiteGenerator):
         assert(not resources is None)
 
         missions = test.MissionSuite()
-        # TODO implement getExpectedMissionDuration
+
+        generationMaxTime = resources.getMaxTime()
+        startGenerationTime = time.time()
+
         missionSuiteTime = 0.0
         missionSuiteMaxTime = characteristics.getMaxTime()
 
         while not missions.satisfiesMissionNumber(characteristics.getMaxMissions()):
-            if missionSuiteTime >= missionSuiteMaxTime:
+            currentElapsedTime = time.time() - startGenerationTime
+            # Checks that the generation is not taking longer than the specified.
+            if currentElapsedTime >= generationMaxTime:
                 break
+            # Checks that the mission suite doesn't take longer than the specified.
+            if missionSuiteTime >= missionSuiteMaxTime and generationMaxTime:
+                break
+            # Generates a mission
             m = self.generateMission(characteristics, resources)
             missionSuiteTime += m.getExpectedMissionDuration(self.getSystem())
 
