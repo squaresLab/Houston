@@ -195,3 +195,46 @@ class RandomGenerator(TestSuiteGenerator):
             params[name] = value
 
         return mission.Action(schema.getName(), params)
+
+
+class IncrementalGenerator(TestSuiteGenerator):
+    pass
+
+    def __init__(self):
+        self.__initialStates = blah
+
+    
+    def generate(self):
+        schemas = list(self.getSystem().getSchemas().values())
+
+        tabu = set()
+        failures = set()
+        pool = set(Mission(s, []) for s in self.__initialStates)
+
+        # sample N missions with replacement from the pool
+        N = 10
+        parents = random.sample(pool, N)
+        children = set()
+
+        # generate candidate missions using the selected parents
+        # discard any missions that belong to the tabu list
+        for parent in parents:
+            schema = random.choice(schemas)
+            action = self.generateAction(schema)
+
+            child = Mission(parent.getContext(), parent.getActions() + [action]) # TODO: Mission::getContext
+
+            if child in tabu: # TODO: optimise (via hashing)
+                continue
+
+            children.append(child)
+
+        # evaluate each of the missions (in parallel, using a thread pool)
+        results = {child: cntr.execute(child) for child in children}
+
+        #
+
+
+    # TODO: implement via ActionGenerator
+    def generateAction(self, schema):
+        pass
