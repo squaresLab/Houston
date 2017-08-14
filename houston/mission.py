@@ -198,6 +198,27 @@ class ActionOutcome(object):
             'timeElapsed':  self.__timeElapsed
         }
 
+    
+    def passed(self):
+        """
+        :see `successful`
+        """
+        return self.successful()
+
+    
+    def successful(self):
+        """
+        Returns true if this action was unsuccessful.
+        """
+        return self.__successful
+
+    
+    def failed(self):
+        """
+        Returns true if this action was unsuccessful.
+        """
+        return not self.__successful
+
 
 class Action(object):
     """
