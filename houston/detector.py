@@ -116,6 +116,7 @@ class BugDetector(object):
         self.__startTime = timeit.default_timer()
         self.__history = []
         self.__outcomes = {}
+        self.__failures = set()
 
 
     def cleanup(self):
@@ -202,16 +203,21 @@ class IncrementalBugDetector(BugDetector):
         return self.__env
 
 
+    def prepare(self):
+        super(IncrementalBugDetector, self).prepare()
+
+        # seed the pool
+        m = Mission(self.getEnvironment(), self.getInitialState(), [])
+        self.__pool = set([m])
+        self.__endStates = {m: self.getInitialState()}
+
+        # initialise the tabu list
+        self.__tabu = set()
+
+
     def detect(self, systm, image, resourceLimits):
         self.prepare()
         try:
-            # initial seed
-            m = Mission(self.getEnvironment(), self.getInitialState(), [])
-
-            self.__pool = set([m])
-            self.__endStates = {m: self.getInitialState()}
-            self.__failures = set()
-            self.__tabu = set()
 
             # keep running tests until we hit the resource limit
             while not resourceLimits.reached(resourceUsage):
@@ -228,7 +234,7 @@ class IncrementalBugDetector(BugDetector):
             self.cleanup()
        
 
-    def nextGeneration(self):
+    def runGeneration(self):
         N = 10
         parents = random.sample(pool, N)
         children = set()
