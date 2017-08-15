@@ -176,9 +176,6 @@ class BugDetector(object):
             self.__resourceUsage.runningTime = \
                 timeit.default_timer() - self.__startTime
 
-            # TODO: move
-            self.__endStates[m] = outcome.getEndState()
-
 
     def executeMission(self, mission):
         return self.__containers[0].execute(mission)
@@ -223,6 +220,11 @@ class IncrementalBugDetector(BugDetector):
 
         # initialise the tabu list
         self.__tabu = set()
+
+
+    def recordOutcome(self, mission, outcome):
+        super(IncrementalBugDetector, self).recordOutcome(mission, outcome)
+        self.__endStates[m] = outcome.getEndState()
 
 
     def detect(self, systm, image, resourceLimits):
