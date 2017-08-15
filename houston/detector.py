@@ -108,6 +108,37 @@ class IncrementalBugDetector(BugDetector):
         return self.__env
 
 
+    def generate(self):
+        # initial seed
+        m = Mission(self.getEnvironment(), self.getInitialState(), [])
+
+        self.__pool = set([m])
+        self.__endStates = {m: self.getInitialState()}
+        self.__history = []
+        self.__outcomes = {}
+        self.__failures = set()
+        self.__tabu = set()
+
+        for i in range(10): 
+            self.nextGeneration()
+        
+
+    def executeMissions(self, missions):
+        # TODO use a thread pool!
+        outcomes = {m: self.executeMission(m) for m in missions}
+        for (m, outcome) in outcomes.items():
+            self.__history.append(m)
+            self.__outcomes.append(outcome)
+            self.__endStates.append(outcome.getEndState())
+
+            if m.failed():
+                self.__failures.add(m)
+
+
+    def executeMission(self, mission, container):
+        return container.execute(mission)
+
+
     def generateAction(self, schema):
         """
         Generates an instance of a given action schema at random.
@@ -120,36 +151,10 @@ class IncrementalBugDetector(BugDetector):
         return schema.generate()
 
 
-class RandomBugDetector(BugDetector):
-    pass
-
-
 class RandomDirectedBugDetector(BugDetector):
-    
-    def generate(self):
-        schemas = list(self.getSystem().getSchemas().values())
 
-        # seed the initial contents of the pool
-        m = Mission(self.getEnvironment(), self.getInitialState(), [])
-        pool = set([m])
-
-        # a list of missions that were executed
-        history = []
-
-        # a dictionary from missions to end states
-        endStates = {m: self.getInitialState()}
-
-        # a dictionary from missions to outcomes
-        outcomes = {}
-
-        # the set of pruned mission paths
-        tabu = set()
-
-        # the set of failing missions, believed to be indicate of an
-        # underlying fault
-        failures = set()
-
-        # sample N missions with replacement from the pool
+ 
+    def nextGeneration(self):
         N = 10
         parents = random.sample(pool, N)
         children = set()
@@ -159,7 +164,6 @@ class RandomDirectedBugDetector(BugDetector):
         for parent in parents:
             schema = random.choice(schemas)
             action = self.generateAction(schema)
-
             actions = parent.getActions() + [action]
 
             child = Mission(parent.getEnvironment(), parent.getInitialState(), actions)
@@ -168,18 +172,14 @@ class RandomDirectedBugDetector(BugDetector):
             # if child in tabu:
             #    continue
 
-            children.append(child)
+            children.add(child)
 
         # TODO: evaluate each of the missions (in parallel, using a thread pool)
         # TODO: enforce limits 
-        results = {child: cntr.execute(child) for child in children}
+        self.executeMissions(children)
 
         # process the results for each child
-        for (child, outcome) in results.items():
-            history.append(child) # TODO: updating history here
-            outcomes[child] = outcome
-            endStates[child] = outcome.getEndState()
-
+        for child in children:
             # TODO: update tabu list
             if outcome.failed():
                 failures.add(child)
