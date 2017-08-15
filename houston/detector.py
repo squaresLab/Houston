@@ -264,11 +264,13 @@ class IncrementalBugDetector(BugDetector):
         # discard any missions that belong to the tabu list
         for parent in parents:
             schema = random.choice(schemas)
-            action = self.generateAction(schema)
+            env = parent.getEnvironment()
+            currentState = self.__endStates[parent]
+            action = self.generateAction(schema, currentState, env)
             actions = parent.getActions() + [action]
 
             # TODO: implement tabu list
-            child = Mission(parent.getEnvironment(), parent.getInitialState(), actions)
+            child = Mission(env, parent.getInitialState(), actions)
             children.add(child)
 
         self.executeMissions(children)
