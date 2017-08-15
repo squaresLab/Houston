@@ -285,7 +285,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
             mission.Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
         ]
 
-        super(DistanceBasedGoToGenerator, self).__init__(parameters)
+        super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
 
     def compute(self, currentState, env, values):
@@ -301,7 +301,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         params['longitude'] = destination.longitude
         params['altitude'] = currentState.read('altitude')
 
-        return Action('goto', params)
+        return params
 
 
 class LandActionSchema(ActionSchema):
