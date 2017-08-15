@@ -1,5 +1,7 @@
 import copy
 
+from mission import Mission
+
 class ResourceUsage(object):
 
     def __init__(self):
@@ -81,13 +83,18 @@ class BugDetectionSummary(object):
 
 class IncrementalBugDetector(BugDetector):
     
-    def __init__(self, initialState, actionGenerators):
+    def __init__(self, initialState, env, actionGenerators):
         self.__initialState = initialState
+        self.__env = env
         self.__actionGenerators = actionGenerators
 
 
     def getInitialState(self):
         return self.__initialState
+
+
+    def getEnvironment(self):
+        return self.__env
 
 
 class RandomBugDetector(BugDetector):
@@ -99,7 +106,10 @@ class RandomDirectedBugDetector(BugDetector):
     def generate(self):
         schemas = list(self.getSystem().getSchemas().values())
 
-        # TODO: an ordered dictionary of mission outcomes
+        # a list of missions that were executed
+        history = []
+
+        # a dictionary from missions to outcomes
         outcomes = {}
 
         # the set of pruned mission paths
@@ -110,7 +120,8 @@ class RandomDirectedBugDetector(BugDetector):
         failures = {}
 
         # seed the initial contents of the pool
-        pool = set([Mission(self.__initialState, [])])
+        m = Mission(self.getEnvironment(), self.getInitialState(), [])
+        pool = set([m])
 
         # sample N missions with replacement from the pool
         N = 10
