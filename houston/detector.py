@@ -246,7 +246,7 @@ class IncrementalBugDetector(BugDetector):
 
     def run(self, systm):
         while not self.exhausted():
-            self.runGeneration()
+            self.runGeneration(systm)
 
         return BugDetectorSummary(self.__history,
                                   self.__outcomes,
@@ -254,7 +254,8 @@ class IncrementalBugDetector(BugDetector):
                                   self.__usage,
                                   resourceLimits)
 
-    def runGeneration(self):
+    def runGeneration(self, systm):
+        schemas = systm.getActionSchemas()
         N = 10
         parents = [random.sample(self.__pool, 1) for i in range(N)]
         children = set()
