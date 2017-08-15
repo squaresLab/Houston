@@ -42,7 +42,7 @@ class ResourceLimits(object):
 
 
 class BugDetectionSummary(object):
-    def __init__(self, history, outcomes, resourceUsage, resourceLimits):
+    def __init__(self, history, outcomes, failures, resourceUsage, resourceLimits):
         """
         Constructs a summary of a bug detection process.
 
@@ -51,8 +51,14 @@ class BugDetectionSummary(object):
         :params resourceLimits: a description of the resources limits that \
                     were imposed during the bug detection process.
         """
+        assert (isinstance(history, list) and history is not None)
+        assert (isinstance(outcomes, dict) and outcomes is not None)
+        assert (isinstance(failures, set) and failures is not None)
+        assert (all(isinstance(m, Mission) for m in failures))
+
         self.__history = history
         self.__outcomes = outcomes
+        self.__failures = failures
         self.__resourceUsage = copy.copy(resourceUsage)
         self.__resourceLimits = resourceLimits
 
@@ -65,9 +71,11 @@ class BugDetectionSummary(object):
             'used': self.__resourceUsage.toJSON(),
             'limits': self.__resourceLimits.toJSON()
         }
+        history = [(m, self.__outcomes[m]) for m in self.__history]
+        history = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in history]
         summary = {
             'resources': resources,
-            'history': [self.__history
+            'history': history
         }
         return {'summary': summary}
 
