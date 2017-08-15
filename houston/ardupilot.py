@@ -27,7 +27,7 @@ try:
     from dronekit_sitl  import SITL
     from dronekit       import connect, VehicleMode, LocationGlobalRelative
 
-    testdir = os.path.abspath("/home/robot/ardupilot/Tools/autotest")
+    testdir = os.path.abspath("/experiment/source/Tools/autotest")
     sys.path.append(testdir)
 
     from common import expect_callback, expect_list_clear, expect_list_extend, message_hook, idle_hook
