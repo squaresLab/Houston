@@ -109,10 +109,11 @@ class BugDetector(object):
             self.__actionGenerators[name] = g
 
     
-    def prepare(self):
+    def prepare(self, systm, image, resourceLimits):
         self.__containers = \
             [houston.createContainer(systm, image) for i in range(self.__threads)]
         self.__usage = ResourceUsage()
+        self.__resourceLimits = resourceLimits
         self.__startTime = timeit.default_timer()
         self.__history = []
         self.__outcomes = {}
@@ -124,6 +125,14 @@ class BugDetector(object):
             container.destroy()
 
         self.__containers = []
+
+
+    def exhausted(self):
+        """
+        Used to determine whether the resource limit for the current bug
+        detection session has been hit.
+        """
+        return self.__resourceLimits.reached(self.__usage)
 
    
     def detect(self, systm, image, resourceLimits):
@@ -203,8 +212,8 @@ class IncrementalBugDetector(BugDetector):
         return self.__env
 
 
-    def prepare(self):
-        super(IncrementalBugDetector, self).prepare()
+    def prepare(self, systm, image, resourceLimits):
+        super(IncrementalBugDetector, self).prepare(systm, image, resourceLimits)
 
         # seed the pool
         m = Mission(self.getEnvironment(), self.getInitialState(), [])
@@ -216,14 +225,13 @@ class IncrementalBugDetector(BugDetector):
 
 
     def detect(self, systm, image, resourceLimits):
-        self.prepare()
+        self.prepare(systm, image, resourceLimits)
         try:
 
             # keep running tests until we hit the resource limit
             while not resourceLimits.reached(resourceUsage):
                 self.runGeneration()
 
-            # kill the containers
             return BugDetectorSummary(self.__history,
                                       self.__outcomes,
                                       self.__failures,
