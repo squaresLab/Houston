@@ -138,14 +138,17 @@ class RandomDirectedBugDetector(BugDetector):
             schema = random.choice(schemas)
             action = self.generateAction(schema)
 
-            child = Mission(parent.getContext(), parent.getActions() + [action]) # TODO: Mission::getContext
+            actions = parent.getActions() + [action]
 
-            if child in tabu: # TODO: optimise (via hashing)
-                continue
+            child = Mission(parent.getEnvironment(), parent.getInitialState(), actions)
+
+            # TODO: implement tabu list
+            # if child in tabu:
+            #    continue
 
             children.append(child)
 
-        # evaluate each of the missions (in parallel, using a thread pool)
+        # TODO evaluate each of the missions (in parallel, using a thread pool)
         results = {child: cntr.execute(child) for child in children}
 
         # process the results for each child
