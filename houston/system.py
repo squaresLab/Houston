@@ -301,7 +301,7 @@ class ActionSchema(object):
         Generates an action belonging to this schema at random.
         """
         values = {p.getName(): p.generate() for p in self.__parameters}
-        return Action(self.__name, values)
+        return mission.Action(self.__name, values)
 
 
 class ActionGenerator(object):
