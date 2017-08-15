@@ -257,7 +257,7 @@ class IncrementalBugDetector(BugDetector):
     def runGeneration(self, systm):
         schemas = systm.getActionSchemas().values()
         N = 10
-        parents = [random.sample(self.__pool, 1) for i in range(N)]
+        parents = [random.sample(self.__pool, 1)[0] for i in range(N)]
         children = set()
 
         # generate candidate missions using the selected parents
