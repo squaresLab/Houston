@@ -294,3 +294,19 @@ class ActionSchema(object):
             return state.ExpectedState.identical(initialState) # TODO implement
 
         return branch.computeExpectedState(action, initialState, environment)
+
+
+class ActionGenerator(object):
+
+    def __init__(self, parameters = []):
+        assert (isinstance(parameters, list) and parameters is not None)
+        self.__parameters = parameters
+
+    
+    def construct(self, currentState, env, values):
+        raise UnimplementedError
+
+
+    def generate(self, currentState, env):
+        values = {p.getName(): p.generate() for p in self.__parameters}
+        return self.construct(currentState, env, values)
