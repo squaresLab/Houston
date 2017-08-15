@@ -1,6 +1,7 @@
 import copy
 import random
 import timeit
+import houston
 
 from mission import Mission
 
@@ -35,7 +36,7 @@ class ResourceLimits(object):
         return  self.__numMissions is not None and \
                     numMissions >= self.__numMissions
 
-    
+
     def reachedTimeLimit(self, runningTime):
         return  self.__runningTime is not None and \
                     runningTime >= self.__runningTime
@@ -102,13 +103,13 @@ class BugDetector(object):
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
+        self.__threads = threads
         self.__actionGenerators = {}
         for g in actionGenerators:
             name = g.getSchemaName()
             assert not (name in self.__actionGenerators)
             self.__actionGenerators[name] = g
 
-    
     def prepare(self, systm, image, resourceLimits):
         self.__containers = \
             [houston.createContainer(systm, image) for i in range(self.__threads)]
@@ -195,7 +196,7 @@ class BugDetector(object):
 
         if mission.failed():
             self.__failures.add(mission)
-        
+
 
 class IncrementalBugDetector(BugDetector):
     def __init__(self, initialState, env, threads = 1, actionGenerators = []):
@@ -203,7 +204,7 @@ class IncrementalBugDetector(BugDetector):
         self.__initialState = initialState
         self.__env = env
 
-        
+
     def getInitialState(self):
         return self.__initialState
 
@@ -240,7 +241,7 @@ class IncrementalBugDetector(BugDetector):
 
         finally:
             self.cleanup()
-       
+
 
     def runGeneration(self):
         N = 10
