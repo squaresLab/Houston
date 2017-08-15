@@ -9,13 +9,28 @@ class BugDetector(object):
 
     
     def detect(self, systm, resourceLimits):
+        """
 
+        :param      systm:          the system under test
+        :param      resourceLimits: a description of the resources available \
+                        to the detection process, given as a ResourceLimits \
+                        object
+
+        :returns    a summary of the detection process in the form of a \
+                    BugDetectionSummary object
+        """
         resourceUsage = ResourceUsage()
+
+
+        summary = BugDetectionSummary(resourceUsage, resourceLimits)
+        return summary
 
 
 class BugDetectionSummary(object):
     def __init__(self, resourceUsage, resourceLimits):
         """
+        Constructs a summary of a bug detection process.
+
         :params resourceUsage:  a description of the resources consumed during \
                     the bug detection process.
         :params resourceLimits: a description of the resources limits that \
@@ -33,4 +48,12 @@ class BugDetectionSummary(object):
 
 
 class IncrementalBugDetector(BugDetector):
+    pass
+
+
+class RandomBugDetector(BugDetector):
+    pass
+
+
+class RandomDirectedBugDetector(BugDetector):
     pass
