@@ -292,7 +292,7 @@ class Parameter(object):
     Docstring.
     """
 
-    def __init__(self, name, valueRange, description):
+    def __init__(self, name, valueRange, description='N/A'):
         """
         Constructs a Parameter object.
 
