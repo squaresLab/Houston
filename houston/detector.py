@@ -1,12 +1,26 @@
 import copy
 
+class ResourceUsage(object):
 
-class ResourceLimit(object):
+    def __init__(self):
+        self.__numMissions = 0
+
+
+class ResourceLimits(object):
     """
     A convenience class used to impose limits on the bug detection process.
     """
-    def __init__(self):
-        pass
+    def __init__(self, numMissions = None):
+        self.__numMissions = numMissions
+
+
+    def reached(self, usage):
+        return False
+
+
+    def reachedMissionLimit(self, numMissions):
+        return  self.__numMissions is not None \
+                    or numMissions >= self.__numMissions
 
 
 class BugDetector(object):
@@ -66,7 +80,13 @@ class BugDetectionSummary(object):
 
 
 class IncrementalBugDetector(BugDetector):
-    pass
+    
+    def __init__(self, initialState):
+        self.__initialState = initialState
+
+
+    def getInitialState(self):
+        return self.__initialState
 
 
 class RandomBugDetector(BugDetector):
@@ -75,5 +95,52 @@ class RandomBugDetector(BugDetector):
 
 class RandomDirectedBugDetector(BugDetector):
     
+    def generate(self):
+        schemas = list(self.getSystem().getSchemas().values())
 
+        tabu = {}
+        failures = {}
+        pool = {Mission(s, []): s for s in self.__initialStates}
 
+        # sample N missions with replacement from the pool
+        N = 10
+        parents = random.sample(pool, N)
+        children = set()
+
+        # generate candidate missions using the selected parents
+        # discard any missions that belong to the tabu list
+        for parent in parents:
+            schema = random.choice(schemas)
+            action = self.generateAction(schema)
+
+            child = Mission(parent.getContext(), parent.getActions() + [action]) # TODO: Mission::getContext
+
+            if child in tabu: # TODO: optimise (via hashing)
+                continue
+
+            children.append(child)
+
+        # evaluate each of the missions (in parallel, using a thread pool)
+        results = {child: cntr.execute(child) for child in children}
+
+        # process the results for each child
+        for (child, outcome) in results.items():
+            if outcome.failed():
+                # if the last action failed, mark the mission as fault-revealing
+                if outcome.lastActionFailed():
+                    failures[child] = outcome
+                    tabu[child] = outcome
+
+                # if an earlier action failed, add the failing segment of the
+                # mission to the tabu list
+                else:
+                    blah
+
+            # if the test was successful, add it to the pool
+            else:
+                pool[child] = outcome
+             
+        
+    # TODO: implement via ActionGenerator
+    def generateAction(self, schema):
+        pass
