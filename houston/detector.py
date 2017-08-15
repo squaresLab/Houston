@@ -1,5 +1,14 @@
 import copy
 
+
+class ResourceLimit(object):
+    """
+    A convenience class used to impose limits on the bug detection process.
+    """
+    def __init__(self):
+        pass
+
+
 class BugDetector(object):
     """
     Bug detectors are responsible for finding bugs in a given system under test.
@@ -8,10 +17,12 @@ class BugDetector(object):
         pass
 
     
-    def detect(self, systm, resourceLimits):
+    def detect(self, systm, image, resourceLimits):
         """
 
-        :param      systm:          the system under test
+        :param      systm: the system under test
+        :param      image: the name of the Dockerfile that should be used to \
+                        containerise the system under test
         :param      resourceLimits: a description of the resources available \
                         to the detection process, given as a ResourceLimits \
                         object
@@ -63,4 +74,6 @@ class RandomBugDetector(BugDetector):
 
 
 class RandomDirectedBugDetector(BugDetector):
-    pass
+    
+
+
