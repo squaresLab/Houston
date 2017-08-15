@@ -230,7 +230,7 @@ class IncrementalBugDetector(BugDetector):
         try:
 
             # keep running tests until we hit the resource limit
-            while not resourceLimits.reached(resourceUsage):
+            while not self.exhausted():
                 self.runGeneration()
 
             return BugDetectorSummary(self.__history,
