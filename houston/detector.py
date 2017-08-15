@@ -81,8 +81,9 @@ class BugDetectionSummary(object):
 
 class IncrementalBugDetector(BugDetector):
     
-    def __init__(self, initialState):
+    def __init__(self, initialState, actionGenerators):
         self.__initialState = initialState
+        self.__actionGenerators = actionGenerators
 
 
     def getInitialState(self):
@@ -98,9 +99,18 @@ class RandomDirectedBugDetector(BugDetector):
     def generate(self):
         schemas = list(self.getSystem().getSchemas().values())
 
-        tabu = {}
+        # TODO: an ordered dictionary of mission outcomes
+        outcomes = {}
+
+        # the set of pruned mission paths
+        tabu = set()
+
+        # the set of failing missions, believed to be indicate of an
+        # underlying fault
         failures = {}
-        pool = {Mission(s, []): s for s in self.__initialStates}
+
+        # seed the initial contents of the pool
+        pool = set([Mission(self.__initialState, [])])
 
         # sample N missions with replacement from the pool
         N = 10
