@@ -45,15 +45,6 @@ class SystemContainer(object):
                 break
                                                  
 
-    def __del__(self):
-        """
-        Ensures the associated Docker container is discarded once this
-        resource is no longer needed.
-        """
-        if not self.__container is None:
-            self.destroy()
-
-
     def ready(self):
         """
         Returns true if the server running inside this system container is
