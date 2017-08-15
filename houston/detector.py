@@ -108,6 +108,18 @@ class BugDetector(object):
             assert not (name in self.__actionGenerators)
             self.__actionGenerators[name] = g
 
+    
+    def prepare(self):
+        self.__containers = \
+            [houston.createContainer(systm, image) for i in range(self.__threads)]
+
+
+    def cleanup(self):
+        for container in self.__containers:
+            container.destroy()
+
+        self.__containers = []
+
    
     def detect(self, systm, image, resourceLimits):
         """
@@ -154,7 +166,7 @@ class IncrementalBugDetector(BugDetector):
 
 
     def detect(self, systm, image, resourceLimits):
-        self.__containers = [houston.createContainer(systm, image)]
+        self.prepare()
 
         # initial seed
         m = Mission(self.getEnvironment(), self.getInitialState(), [])
@@ -172,10 +184,9 @@ class IncrementalBugDetector(BugDetector):
         while not resourceLimits.reached(resourceUsage):
             self.runGeneration()
 
-        # kill the containers
-        for container in self.__containers:
-            container.destroy()
+        self.cleanup()
 
+        # kill the containers
         return BugDetectorSummary(self.__history,
                                   self.__outcomes,
                                   self.__failures,
