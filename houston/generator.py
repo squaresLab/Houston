@@ -21,19 +21,31 @@ class TestSuiteGenerator(object):
     generation approaches.
     """
 
-    def __init__(self, systm, environment, initialState):
+    def __init__(self, systm, environment, initialState, actionGenerators = []):
         """
         Constructs a test suite generator for a given system.
 
-        :param      systm           system-under-test
-        :param      environment     the environment in which the missions \
-                                    should be conducted
-        :param      initialState    the initial state of the system for each \
-                                    mission
+        :param      systm: system-under-test
+        :param      environment: the environment in which the missions should \
+                        be conducted
+        :param      initialState: the initial state of the system for each \
+                        mission
+        :param      actionGenerators: a list of specialised action generators
         """
-        assert (isinstance(systm, system.System) and not systm is None)
-        assert (isinstance(environment, state.Environment) and not environment is None)
-        assert (isinstance(initialState, state.State) and not initialState is None)
+        assert (isinstance(systm, system.System) and systm is not None)
+        assert (isinstance(environment, state.Environment) and environment is not None)
+        assert (isinstance(initialState, state.State) and initialState is not None)
+        assert (isinstance(actionGenerators, list) and actionGenerators is not None)
+        assert (all(isinstance(g) for g in actionGenerators))
+
+        # transform the list of generators into a dictionary, indexed by the
+        # name of the associated action schema
+        self.__generators = {}
+        for g in actionGenerators:
+            name = g.getSchemaName()
+            assert not (name in self.__generators)
+            self.__generators[name] = g
+
         self.__system = systm
         self.__environment = environment
         self.__initialState = initialState
