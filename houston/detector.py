@@ -44,7 +44,14 @@ class BugDetectionSummary(object):
         """
         Transforms this bug detection summary into a JSON format.
         """
-        pass
+        resources = {
+            'used': self.__resourceUsage.toJSON(),
+            'limits': self.__resourceLimits.toJSON()
+        }
+        summary = {
+            'resources': resources
+        }
+        return {'summary': summary}
 
 
 class IncrementalBugDetector(BugDetector):
