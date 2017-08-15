@@ -141,6 +141,22 @@ class MissionOutcome(object):
         return str(self)
 
 
+    def getEndState(self):
+        """
+        Returns a description of the state of the system immediately after the
+        execution of this mission.
+        """
+        return self.__stateAfter
+
+
+    def getStartState(self):
+        """
+        Returns a description of the state of the system immediately before the
+        execution of this mission.
+        """
+        return self.__startBefore
+
+
 class ActionOutcome(object):
     @staticmethod
     def fromJSON(jsn):
@@ -223,7 +239,7 @@ class ActionOutcome(object):
     def getEndState(self):
         """
         Returns a description of the state of the system immediately after the
-        execution of this mission.
+        execution of this action.
         """
         return self.__stateAfter
 
@@ -231,7 +247,7 @@ class ActionOutcome(object):
     def getStartState(self):
         """
         Returns a description of the state of the system immediately before the
-        execution of this mission.
+        execution of this action.
         """
         return self.__startBefore
 
