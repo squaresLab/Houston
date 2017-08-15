@@ -256,7 +256,7 @@ class IncrementalBugDetector(BugDetector):
 
     def runGeneration(self):
         N = 10
-        parents = random.sample(self.__pool, N)
+        parents = [random.sample(self.__pool, 1) for i in range(N)]
         children = set()
 
         # generate candidate missions using the selected parents
