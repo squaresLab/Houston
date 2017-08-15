@@ -220,6 +220,22 @@ class ActionOutcome(object):
         return not self.__successful
 
 
+    def getEndState(self):
+        """
+        Returns a description of the state of the system immediately after the
+        execution of this mission.
+        """
+        return self.__stateAfter
+
+
+    def getStartState(self):
+        """
+        Returns a description of the state of the system immediately before the
+        execution of this mission.
+        """
+        return self.__startBefore
+
+
 class Action(object):
     """
     Description of the concept of "Actions".
