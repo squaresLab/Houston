@@ -255,7 +255,7 @@ class IncrementalBugDetector(BugDetector):
                                   resourceLimits)
 
     def runGeneration(self, systm):
-        schemas = systm.getActionSchemas()
+        schemas = systm.getActionSchemas().values()
         N = 10
         parents = [random.sample(self.__pool, 1) for i in range(N)]
         children = set()
