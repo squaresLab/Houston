@@ -42,6 +42,8 @@ try:
     ARDUPILOT_INSTALLED = True
 except ImportError as e:
     ARDUPILOT_INSTALLED = False
+    print("Import warning: {}".format(e))
+
 
 DRONEKIT_SYSTEM = None
 TIME_PER_METER_TRAVELED = .5
