@@ -41,10 +41,21 @@ class BugDetector(object):
     """
     Bug detectors are responsible for finding bugs in a given system under test.
     """
-    def __init__(self):
-        pass
+    def __init__(self, threads = 1, actionGenerators = []):
+        assert (isinstance(threads, int) and threads is not None)
+        assert (threads >= 1)
+        assert (isinstance(actionGenerators, list) and actionGenerators is not None)
+        assert (all(isinstance(g) for g in actionGenerators))
 
-    
+        # transform the list of generators into a dictionary, indexed by the
+        # name of the associated action schema
+        self.__actionGenerators = {}
+        for g in actionGenerators:
+            name = g.getSchemaName()
+            assert not (name in self.__actionGenerators)
+            self.__actionGenerators[name] = g
+
+   
     def detect(self, systm, image, resourceLimits):
         """
 
@@ -58,12 +69,20 @@ class BugDetector(object):
         :returns    a summary of the detection process in the form of a \
                     BugDetectionSummary object
         """
-        resourceUsage = ResourceUsage()
+        raise UnimplementedError
 
 
-        summary = BugDetectionSummary(resourceUsage, resourceLimits)
-        return summary
+    def generateAction(self, schema):
+        """
+        Generates an instance of a given action schema at random.
+        """
+        name = schema.getName()
+        if name in self.__actionGenerators:
+            g = self.__actionGenerators[name]
+            return g.generate()
 
+        return schema.generate()
+        
 
 class BugDetectionSummary(object):
     def __init__(self, resourceUsage, resourceLimits):
@@ -95,22 +114,12 @@ class BugDetectionSummary(object):
 
 class IncrementalBugDetector(BugDetector):
     
-    def __init__(self, initialState, env, actionGenerators):
+    def __init__(self, initialState, env, threads = 1, actionGenerators = []):
+        super(IncrementalBugDetector, self).__init__(threads, actionGenerators)
         self.__initialState = initialState
         self.__env = env
 
-        assert (isinstance(actionGenerators, list) and actionGenerators is not None)
-        assert (all(isinstance(g) for g in actionGenerators))
-
-        # transform the list of generators into a dictionary, indexed by the
-        # name of the associated action schema
-        self.__actionGenerators = {}
-        for g in actionGenerators:
-            name = g.getSchemaName()
-            assert not (name in self.__actionGenerators)
-            self.__actionGenerators[name] = g
-
-
+        
     def getInitialState(self):
         return self.__initialState
 
@@ -125,7 +134,7 @@ class IncrementalBugDetector(BugDetector):
         # initial seed
         m = Mission(self.getEnvironment(), self.getInitialState(), [])
 
-        self.__startTime = 
+        self.__startTime = timeit.default_timer()
         self.__usage = ResourceUsage()
         self.__pool = set([m])
         self.__endStates = {m: self.getInitialState()}
@@ -153,7 +162,11 @@ class IncrementalBugDetector(BugDetector):
             self.__history.append(m)
             self.__outcomes.append(outcome)
             self.__endStates.append(outcome.getEndState())
-            self.__resourceUsage.reportCurrentTime()
+
+            # update resource usage
+            self.__resourceUsage.numMissions += 1
+            self.__resourceUsage.runningTime = \
+                timeit.default_timer() - self.__startTime
 
             if m.failed():
                 self.__failures.add(m)
@@ -161,18 +174,6 @@ class IncrementalBugDetector(BugDetector):
 
     def executeMission(self, mission):
         return self.__containers[0].execute(mission)
-
-
-    def generateAction(self, schema):
-        """
-        Generates an instance of a given action schema at random.
-        """
-        name = schema.getName()
-        if name in self.__actionGenerators:
-            g = self.__actionGenerators[name]
-            return g.generate()
-
-        return schema.generate()
 
 
     def nextGeneration(self):
