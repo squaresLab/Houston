@@ -110,7 +110,12 @@ class BugDetector(object):
             assert not (name in self.__actionGenerators)
             self.__actionGenerators[name] = g
 
+
     def prepare(self, systm, image, resourceLimits):
+        """
+        Prepares the state of the bug detector immediately before beginning a
+        bug detection trial.
+        """
         self.__containers = \
             [houston.createContainer(systm, image) for i in range(self.__threads)]
         self.__usage = ResourceUsage()
@@ -122,6 +127,10 @@ class BugDetector(object):
 
 
     def cleanup(self):
+        """
+        Cleans up the state of this bug detector at the end of a bug detection
+        trial.
+        """
         for container in self.__containers:
             container.destroy()
 
