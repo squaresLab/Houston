@@ -101,7 +101,7 @@ class ArduPilot(System):
     def setUp(self, mission):
     	global DRONEKIT_SYSTEM
         # TODO lots of hardcoded paths
-        ardu_location = '/home/robot/ardupilot' # TODO: hardcoded!
+        ardu_location = '/experiment/source/' # TODO: hardcoded!
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
         param_file = os.path.join(ardu_location, 'Tools/autotest/default_params/copter.parm')
 
