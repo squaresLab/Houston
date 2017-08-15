@@ -108,7 +108,9 @@ class IncrementalBugDetector(BugDetector):
         return self.__env
 
 
-    def generate(self):
+    def detect(self, systm, image, resourceLimits):
+        container = houston.createContainer(systm, image)
+
         # initial seed
         m = Mission(self.getEnvironment(), self.getInitialState(), [])
 
@@ -120,11 +122,14 @@ class IncrementalBugDetector(BugDetector):
         self.__tabu = set()
 
         for i in range(10): 
-            self.nextGeneration()
+            self.runGeneration()
+
+        return BugDetectionSummary()
         
 
     def executeMissions(self, missions):
         # TODO use a thread pool!
+        # TODO enforce limits
         outcomes = {m: self.executeMission(m) for m in missions}
         for (m, outcome) in outcomes.items():
             self.__history.append(m)
@@ -151,9 +156,6 @@ class IncrementalBugDetector(BugDetector):
         return schema.generate()
 
 
-class RandomDirectedBugDetector(BugDetector):
-
- 
     def nextGeneration(self):
         N = 10
         parents = random.sample(pool, N)
@@ -166,35 +168,12 @@ class RandomDirectedBugDetector(BugDetector):
             action = self.generateAction(schema)
             actions = parent.getActions() + [action]
 
-            child = Mission(parent.getEnvironment(), parent.getInitialState(), actions)
-
             # TODO: implement tabu list
-            # if child in tabu:
-            #    continue
-
+            child = Mission(parent.getEnvironment(), parent.getInitialState(), actions)
             children.add(child)
 
-        # TODO: evaluate each of the missions (in parallel, using a thread pool)
-        # TODO: enforce limits 
         self.executeMissions(children)
 
-        # process the results for each child
         for child in children:
-            # TODO: update tabu list
-            if outcome.failed():
-                failures.add(child)
-
-
-            #    # if the last action failed, mark the mission as fault-revealing
-            #    if outcome.lastActionFailed():
-            #        failures[child] = outcome
-            #        tabu[child] = outcome
-
-            #    # if an earlier action failed, add the failing segment of the
-            #    # mission to the tabu list
-            #    else:
-            #        blah
-
-            # if the test was successful, add it to the pool
-            else:
-                pool[child] = outcome
+            if not outcome.failed(): # TODO: update tabu list
+                pool.add(child)
