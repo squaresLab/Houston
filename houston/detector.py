@@ -41,7 +41,7 @@ class ResourceLimits(object):
                     runningTime >= self.__runningTime
 
 
-class BugDetectionSummary(object):
+class BugDetectorSummary(object):
     def __init__(self, history, outcomes, failures, resourceUsage, resourceLimits):
         """
         Constructs a summary of a bug detection process.
@@ -51,6 +51,8 @@ class BugDetectionSummary(object):
         :params resourceLimits: a description of the resources limits that \
                     were imposed during the bug detection process.
         """
+        assert (isinstance(resourceUsage, ResourceUsage) and resourceUsage is not None)
+        assert (isinstance(resourceLimits, ResourceLimits) and resourceLimits is not None)
         assert (isinstance(history, list) and history is not None)
         assert (isinstance(outcomes, dict) and outcomes is not None)
         assert (isinstance(failures, set) and failures is not None)
@@ -174,7 +176,11 @@ class IncrementalBugDetector(BugDetector):
         for container in self.__containers:
             container.destroy()
 
-        return BugDetectionSummary(self.__usage, resourceLimits)
+        return BugDetectionSummary(self.__history,
+                                   self.__outcomes,
+                                   self.__failures,
+                                   self.__usage,
+                                   resourceLimits)
         
 
     def executeMissions(self, missions):
