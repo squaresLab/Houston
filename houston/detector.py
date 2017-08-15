@@ -25,9 +25,9 @@ class ResourceLimits(object):
 
 
     def reached(self, usage):
-        if self.reachedMissionLimit(self, usage.numMissions):
+        if self.reachedMissionLimit(usage.numMissions):
             return True
-        if self.reachedTimeLimit(self, usage.runningTime):
+        if self.reachedTimeLimit(usage.runningTime):
             return True
         return False
 
