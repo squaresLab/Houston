@@ -256,7 +256,7 @@ class IncrementalBugDetector(BugDetector):
 
     def runGeneration(self):
         N = 10
-        parents = random.sample(pool, N)
+        parents = random.sample(self.__pool, N)
         children = set()
 
         # generate candidate missions using the selected parents
@@ -274,4 +274,4 @@ class IncrementalBugDetector(BugDetector):
 
         for child in children:
             if not outcome.failed(): # TODO: update tabu list
-                pool.add(child)
+                self.__pool.add(child)
