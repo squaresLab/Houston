@@ -49,10 +49,10 @@ DRONEKIT_SYSTEM = None
 TIME_PER_METER_TRAVELED = .5
 CONSTANT_TIMEOUT_OFFSET = .5
 
-"""
-Description of the ArduPilot system
-"""
 class ArduPilot(System):
+    """
+    Description of the ArduPilot system
+    """
 
     def __init__(self):
         self.__sitl       = None
@@ -266,6 +266,25 @@ class GoToActionSchema(ActionSchema):
         totalDistance = distance.great_circle(fromLocation, toLocation).meters
         timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
+
+
+class DistanceBasedGoToGenerator(ActionGenerator):
+    """
+    Description.
+    """
+
+    def __init__(self, maxDistance, minDistance = 1.0):
+        assert (isinstance(maxDistance, float) and maxDistance is not None)
+        assert (isinstance(minDistance, float) and minDistance is not None)
+        assert (maxDistance > minDistance)
+        assert (minDistance > 0.0)
+
+        self.__maxDistance = maxDistance
+        parameters = [
+            mission.Parameter('distance', ContinuousValueRange(minDistance, maxDistance))
+        ]
+
+        super(DistanceBasedGoToGenerator, self).__init__(parameters)
 
 
 class LandActionSchema(ActionSchema):
