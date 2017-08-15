@@ -291,12 +291,15 @@ class DistanceBasedGoToGenerator(ActionGenerator):
     def compute(self, currentState, env, values):
         dist = values['distance']
         heading = values['heading']
-        long = currentState.read('longitude')
+        lon = currentState.read('longitude')
         lat = currentState.read('latitude')
 
         params = {}
-
-        # compute target longitude and latitude
+        origin = geopy.Point(lat, lon)
+        destination = geopy.distance.VincentyDistance(meters=dist).destination(origin, heading)
+        params['latitude'] = destination.latitude
+        params['longitude'] = destination.longitude
+        params['altitude'] = currentState.read('altitude')
 
         return Action('goto', params)
 
