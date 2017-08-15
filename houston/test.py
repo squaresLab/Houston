@@ -1,8 +1,8 @@
 import time
-import docker
 import json
 import houston
 from pprint import pprint as pp
+
 
 class MissionSuite(object):
     """
