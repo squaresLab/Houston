@@ -35,7 +35,7 @@ class Mission(object):
         :param  external:       a description of the initial external state
         :param  actions:        a list of actions
         """
-        assert(actions != [])
+        # assert(actions != [])
         assert(isinstance(environment, state.Environment) and not environment is None)
         assert(isinstance(initialState, state.State) and not initialState is None)
 
@@ -214,21 +214,21 @@ class ActionOutcome(object):
             'timeElapsed':  self.__timeElapsed
         }
 
-    
+
     def passed(self):
         """
         :see `successful`
         """
         return self.successful()
 
-    
+
     def successful(self):
         """
         Returns true if this action was unsuccessful.
         """
         return self.__successful
 
-    
+
     def failed(self):
         """
         Returns true if this action was unsuccessful.
