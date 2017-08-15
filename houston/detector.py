@@ -112,6 +112,10 @@ class BugDetector(object):
     def prepare(self):
         self.__containers = \
             [houston.createContainer(systm, image) for i in range(self.__threads)]
+        self.__usage = ResourceUsage()
+        self.__startTime = timeit.default_timer()
+        self.__history = []
+        self.__outcomes = {}
 
 
     def cleanup(self):
@@ -147,52 +151,7 @@ class BugDetector(object):
             return g.generate()
 
         return schema.generate()
-        
 
-class IncrementalBugDetector(BugDetector):
-    
-    def __init__(self, initialState, env, threads = 1, actionGenerators = []):
-        super(IncrementalBugDetector, self).__init__(threads, actionGenerators)
-        self.__initialState = initialState
-        self.__env = env
-
-        
-    def getInitialState(self):
-        return self.__initialState
-
-
-    def getEnvironment(self):
-        return self.__env
-
-
-    def detect(self, systm, image, resourceLimits):
-        self.prepare()
-
-        # initial seed
-        m = Mission(self.getEnvironment(), self.getInitialState(), [])
-
-        self.__startTime = timeit.default_timer()
-        self.__usage = ResourceUsage()
-        self.__pool = set([m])
-        self.__endStates = {m: self.getInitialState()}
-        self.__history = []
-        self.__outcomes = {}
-        self.__failures = set()
-        self.__tabu = set()
-
-        # keep running tests until we hit the resource limit
-        while not resourceLimits.reached(resourceUsage):
-            self.runGeneration()
-
-        self.cleanup()
-
-        # kill the containers
-        return BugDetectorSummary(self.__history,
-                                  self.__outcomes,
-                                  self.__failures,
-                                  self.__usage,
-                                  resourceLimits)
-        
 
     def executeMissions(self, missions):
         # TODO use a thread pool!
@@ -214,7 +173,48 @@ class IncrementalBugDetector(BugDetector):
 
     def executeMission(self, mission):
         return self.__containers[0].execute(mission)
+        
 
+class IncrementalBugDetector(BugDetector):
+    def __init__(self, initialState, env, threads = 1, actionGenerators = []):
+        super(IncrementalBugDetector, self).__init__(threads, actionGenerators)
+        self.__initialState = initialState
+        self.__env = env
+
+        
+    def getInitialState(self):
+        return self.__initialState
+
+
+    def getEnvironment(self):
+        return self.__env
+
+
+    def detect(self, systm, image, resourceLimits):
+        self.prepare()
+        try:
+            # initial seed
+            m = Mission(self.getEnvironment(), self.getInitialState(), [])
+
+            self.__pool = set([m])
+            self.__endStates = {m: self.getInitialState()}
+            self.__failures = set()
+            self.__tabu = set()
+
+            # keep running tests until we hit the resource limit
+            while not resourceLimits.reached(resourceUsage):
+                self.runGeneration()
+
+            # kill the containers
+            return BugDetectorSummary(self.__history,
+                                      self.__outcomes,
+                                      self.__failures,
+                                      self.__usage,
+                                      resourceLimits)
+
+        finally:
+            self.cleanup()
+       
 
     def nextGeneration(self):
         N = 10
