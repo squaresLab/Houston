@@ -5,6 +5,10 @@ import timeit
 from mission import Mission
 
 class ResourceUsage(object):
+    """
+    Simple data structure used to maintain track of what resources have been
+    consumed over the course of a bug detection trial.
+    """
     def __init__(self):
         self.numMissions = 0
         self.runningTime = 0.0
