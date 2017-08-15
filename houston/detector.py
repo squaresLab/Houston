@@ -170,21 +170,30 @@ class RandomDirectedBugDetector(BugDetector):
 
             children.append(child)
 
-        # TODO evaluate each of the missions (in parallel, using a thread pool)
+        # TODO: evaluate each of the missions (in parallel, using a thread pool)
+        # TODO: enforce limits 
         results = {child: cntr.execute(child) for child in children}
 
         # process the results for each child
         for (child, outcome) in results.items():
-            if outcome.failed():
-                # if the last action failed, mark the mission as fault-revealing
-                if outcome.lastActionFailed():
-                    failures[child] = outcome
-                    tabu[child] = outcome
+            history.append(child) # TODO: updating history here
+            outcomes[child] = outcome
+            endStates[child] = outcome.getEndState()
 
-                # if an earlier action failed, add the failing segment of the
-                # mission to the tabu list
-                else:
-                    blah
+            # TODO: update tabu list
+            if outcome.failed():
+                failures.add(child)
+
+
+            #    # if the last action failed, mark the mission as fault-revealing
+            #    if outcome.lastActionFailed():
+            #        failures[child] = outcome
+            #        tabu[child] = outcome
+
+            #    # if an earlier action failed, add the failing segment of the
+            #    # mission to the tabu list
+            #    else:
+            #        blah
 
             # if the test was successful, add it to the pool
             else:
