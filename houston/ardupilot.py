@@ -281,10 +281,24 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         self.__maxDistance = maxDistance
         parameters = [
-            mission.Parameter('distance', ContinuousValueRange(minDistance, maxDistance))
+            mission.Parameter('distance', ContinuousValueRange(minDistance, maxDistance)),
+            mission.Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
         ]
 
         super(DistanceBasedGoToGenerator, self).__init__(parameters)
+
+
+    def compute(self, currentState, env, values):
+        dist = values['distance']
+        heading = values['heading']
+        long = currentState.read('longitude')
+        lat = currentState.read('latitude')
+
+        params = {}
+
+        # compute target longitude and latitude
+
+        return Action('goto', params)
 
 
 class LandActionSchema(ActionSchema):
