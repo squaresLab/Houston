@@ -71,12 +71,20 @@ class BugDetectionSummary(object):
             'used': self.__resourceUsage.toJSON(),
             'limits': self.__resourceLimits.toJSON()
         }
+
         history = [(m, self.__outcomes[m]) for m in self.__history]
         history = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in history]
+
+
+        failures = [(m, self.__outcomes[m]) for m in self.__failures]
+        failures = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in failures]
+
         summary = {
             'resources': resources,
-            'history': history
+            'history': history,
+            'failures': failures
         }
+
         return {'summary': summary}
 
 
