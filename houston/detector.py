@@ -149,7 +149,15 @@ class BugDetector(object):
         :returns    a summary of the detection process in the form of a \
                     BugDetectionSummary object
         """
-        raise UnimplementedError
+        self.prepare(systm, image, resourceLimits)
+        try:
+           return self.run(systm)
+        finally:
+            self.cleanup()
+
+
+    def run(self, systm):
+        raise NotImplementedError
 
 
     def generateAction(self, schema):
@@ -227,23 +235,15 @@ class IncrementalBugDetector(BugDetector):
         self.__endStates[m] = outcome.getEndState()
 
 
-    def detect(self, systm, image, resourceLimits):
-        self.prepare(systm, image, resourceLimits)
-        try:
+    def run(self, systm):
+        while not self.exhausted():
+            self.runGeneration()
 
-            # keep running tests until we hit the resource limit
-            while not self.exhausted():
-                self.runGeneration()
-
-            return BugDetectorSummary(self.__history,
-                                      self.__outcomes,
-                                      self.__failures,
-                                      self.__usage,
-                                      resourceLimits)
-
-        finally:
-            self.cleanup()
-
+        return BugDetectorSummary(self.__history,
+                                  self.__outcomes,
+                                  self.__failures,
+                                  self.__usage,
+                                  resourceLimits)
 
     def runGeneration(self):
         N = 10
