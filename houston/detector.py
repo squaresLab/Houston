@@ -158,21 +158,33 @@ class BugDetector(object):
         # TODO enforce limits
         outcomes = {m: self.executeMission(m) for m in missions}
         for (m, outcome) in outcomes.items():
-            self.__history.append(m)
-            self.__outcomes[m] = outcome
-            self.__endStates[m] = outcome.getEndState()
+            self.recordOutcome(m, outcome)
 
             # update resource usage
             self.__resourceUsage.numMissions += 1
             self.__resourceUsage.runningTime = \
                 timeit.default_timer() - self.__startTime
 
-            if m.failed():
-                self.__failures.add(m)
+            # TODO: move
+            self.__endStates[m] = outcome.getEndState()
 
 
     def executeMission(self, mission):
         return self.__containers[0].execute(mission)
+
+
+    def recordOutcome(self, mission, outcome):
+        """
+        Records the outcome of a given mission. The mission is logged to the
+        history, and its outcome is stored in the outcome dictionary. If the
+        mission failed, the mission is also added to the set of failed
+        missions.
+        """
+        self.__history.append(mission)
+        self.__outcomes[mission] = outcome
+
+        if mission.failed():
+            self.__failures.add(mission)
         
 
 class IncrementalBugDetector(BugDetector):
