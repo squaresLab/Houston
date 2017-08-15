@@ -296,6 +296,14 @@ class ActionSchema(object):
         return branch.computeExpectedState(action, initialState, environment)
 
 
+    def generate(self):
+        """
+        Generates an action belonging to this schema at random.
+        """
+        values = {p.getName(): p.generate() for p in self.__parameters}
+        return Action(self.__name, values)
+
+
 class ActionGenerator(object):
 
     def __init__(self, schemaName, parameters = []):

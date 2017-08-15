@@ -169,14 +169,14 @@ class BugDetector(object):
         raise NotImplementedError
 
 
-    def generateAction(self, schema):
+    def generateAction(self, schema, currentState, env):
         """
         Generates an instance of a given action schema at random.
         """
         name = schema.getName()
         if name in self.__actionGenerators:
             g = self.__actionGenerators[name]
-            return g.generate()
+            return g.generate(currentState, env)
 
         return schema.generate()
 
