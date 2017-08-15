@@ -87,7 +87,17 @@ class IncrementalBugDetector(BugDetector):
     def __init__(self, initialState, env, actionGenerators):
         self.__initialState = initialState
         self.__env = env
-        self.__actionGenerators = actionGenerators
+
+        assert (isinstance(actionGenerators, list) and actionGenerators is not None)
+        assert (all(isinstance(g) for g in actionGenerators))
+
+        # transform the list of generators into a dictionary, indexed by the
+        # name of the associated action schema
+        self.__actionGenerators = {}
+        for g in actionGenerators:
+            name = g.getSchemaName()
+            assert not (name in self.__actionGenerators)
+            self.__actionGenerators[name] = g
 
 
     def getInitialState(self):
@@ -96,6 +106,18 @@ class IncrementalBugDetector(BugDetector):
 
     def getEnvironment(self):
         return self.__env
+
+
+    def generateAction(self, schema):
+        """
+        Generates an instance of a given action schema at random.
+        """
+        name = schema.getName()
+        if name in self.__actionGenerators:
+            g = self.__actionGenerators[name]
+            return g.generate()
+
+        return schema.generate()
 
 
 class RandomBugDetector(BugDetector):
@@ -167,13 +189,3 @@ class RandomDirectedBugDetector(BugDetector):
             # if the test was successful, add it to the pool
             else:
                 pool[child] = outcome
-             
-        
-    def generateAction(self, schema):
-        name = schema.getName()
-        generators = self.getGenerators()
-        if name in generators:
-            g = generators[name]
-            return g.generate()
-
-        schema.generate()
