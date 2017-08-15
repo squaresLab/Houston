@@ -1,4 +1,5 @@
 import copy
+import random
 
 from mission import Mission
 
@@ -106,8 +107,15 @@ class RandomDirectedBugDetector(BugDetector):
     def generate(self):
         schemas = list(self.getSystem().getSchemas().values())
 
+        # seed the initial contents of the pool
+        m = Mission(self.getEnvironment(), self.getInitialState(), [])
+        pool = set([m])
+
         # a list of missions that were executed
         history = []
+
+        # a dictionary from missions to end states
+        endStates = {m: self.getInitialState()}
 
         # a dictionary from missions to outcomes
         outcomes = {}
@@ -117,11 +125,7 @@ class RandomDirectedBugDetector(BugDetector):
 
         # the set of failing missions, believed to be indicate of an
         # underlying fault
-        failures = {}
-
-        # seed the initial contents of the pool
-        m = Mission(self.getEnvironment(), self.getInitialState(), [])
-        pool = set([m])
+        failures = set()
 
         # sample N missions with replacement from the pool
         N = 10
@@ -162,6 +166,11 @@ class RandomDirectedBugDetector(BugDetector):
                 pool[child] = outcome
              
         
-    # TODO: implement via ActionGenerator
     def generateAction(self, schema):
-        pass
+        name = schema.getName()
+        generators = self.getGenerators()
+        if name in generators:
+            g = generators[name]
+            return g.generate()
+
+        schema.generate()
