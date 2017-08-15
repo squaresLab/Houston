@@ -164,6 +164,7 @@ class ArduPilot(System):
 
     def tearDown(self, mission):
         DRONEKIT_SYSTEM.close()
+        self.__mavlink.close()
         util.pexpect_close(self.__mavproxy)
         util.pexpect_close(self.__mavlink)
 
