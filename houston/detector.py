@@ -1,29 +1,40 @@
 import copy
 import random
+import timeit
 
 from mission import Mission
 
 class ResourceUsage(object):
-
     def __init__(self):
-        self.__numMissions = 0
+        self.numMissions = 0
+        self.runningTime = 0.0
 
 
 class ResourceLimits(object):
     """
     A convenience class used to impose limits on the bug detection process.
     """
-    def __init__(self, numMissions = None):
+    def __init__(self, numMissions = None, runningTime = None):
         self.__numMissions = numMissions
+        self.__runningTime = runningTime
 
 
     def reached(self, usage):
+        if self.reachedMissionLimit(self, usage.numMissions):
+            return True
+        if self.reachedTimeLimit(self, usage.runningTime):
+            return True
         return False
 
 
     def reachedMissionLimit(self, numMissions):
-        return  self.__numMissions is not None \
-                    or numMissions >= self.__numMissions
+        return  self.__numMissions is not None and \
+                    numMissions >= self.__numMissions
+
+    
+    def reachedTimeLimit(self, runningTime):
+        return  self.__runningTime is not None and \
+                    runningTime >= self.__runningTime
 
 
 class BugDetector(object):
@@ -109,11 +120,13 @@ class IncrementalBugDetector(BugDetector):
 
 
     def detect(self, systm, image, resourceLimits):
-        container = houston.createContainer(systm, image)
+        self.__containers = [houston.createContainer(systm, image)]
 
         # initial seed
         m = Mission(self.getEnvironment(), self.getInitialState(), [])
 
+        self.__startTime = 
+        self.__usage = ResourceUsage()
         self.__pool = set([m])
         self.__endStates = {m: self.getInitialState()}
         self.__history = []
@@ -121,10 +134,15 @@ class IncrementalBugDetector(BugDetector):
         self.__failures = set()
         self.__tabu = set()
 
-        for i in range(10): 
+        # keep running tests until we hit the resource limit
+        while not resourceLimits.reached(resourceUsage):
             self.runGeneration()
 
-        return BugDetectionSummary()
+        # kill the containers
+        for container in self.__containers:
+            container.destroy()
+
+        return BugDetectionSummary(self.__usage, resourceLimits)
         
 
     def executeMissions(self, missions):
@@ -135,13 +153,14 @@ class IncrementalBugDetector(BugDetector):
             self.__history.append(m)
             self.__outcomes.append(outcome)
             self.__endStates.append(outcome.getEndState())
+            self.__resourceUsage.reportCurrentTime()
 
             if m.failed():
                 self.__failures.add(m)
 
 
-    def executeMission(self, mission, container):
-        return container.execute(mission)
+    def executeMission(self, mission):
+        return self.__containers[0].execute(mission)
 
 
     def generateAction(self, schema):
