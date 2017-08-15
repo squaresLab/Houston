@@ -8,7 +8,10 @@ import time
 from math import acos, atan2, cos, pi, sqrt
 from subprocess import PIPE, Popen, call, check_call
 
-import pexpect
+try:
+    import pexpect
+except ImportError:
+    pass
 
 
 class TimeoutError(Exception):
