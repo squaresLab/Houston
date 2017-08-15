@@ -41,6 +41,37 @@ class ResourceLimits(object):
                     runningTime >= self.__runningTime
 
 
+class BugDetectionSummary(object):
+    def __init__(self, history, outcomes, resourceUsage, resourceLimits):
+        """
+        Constructs a summary of a bug detection process.
+
+        :params resourceUsage:  a description of the resources consumed during \
+                    the bug detection process.
+        :params resourceLimits: a description of the resources limits that \
+                    were imposed during the bug detection process.
+        """
+        self.__history = history
+        self.__outcomes = outcomes
+        self.__resourceUsage = copy.copy(resourceUsage)
+        self.__resourceLimits = resourceLimits
+
+
+    def toJSON(self):
+        """
+        Transforms this bug detection summary into a JSON format.
+        """
+        resources = {
+            'used': self.__resourceUsage.toJSON(),
+            'limits': self.__resourceLimits.toJSON()
+        }
+        summary = {
+            'resources': resources,
+            'history': [self.__history
+        }
+        return {'summary': summary}
+
+
 class BugDetector(object):
     """
     Bug detectors are responsible for finding bugs in a given system under test.
@@ -87,34 +118,6 @@ class BugDetector(object):
 
         return schema.generate()
         
-
-class BugDetectionSummary(object):
-    def __init__(self, resourceUsage, resourceLimits):
-        """
-        Constructs a summary of a bug detection process.
-
-        :params resourceUsage:  a description of the resources consumed during \
-                    the bug detection process.
-        :params resourceLimits: a description of the resources limits that \
-                    were imposed during the bug detection process.
-        """
-        self.__resourceUsage = copy.copy(resourceUsage)
-        self.__resourceLimits = resourceLimits
-
-
-    def toJSON(self):
-        """
-        Transforms this bug detection summary into a JSON format.
-        """
-        resources = {
-            'used': self.__resourceUsage.toJSON(),
-            'limits': self.__resourceLimits.toJSON()
-        }
-        summary = {
-            'resources': resources
-        }
-        return {'summary': summary}
-
 
 class IncrementalBugDetector(BugDetector):
     
@@ -164,8 +167,8 @@ class IncrementalBugDetector(BugDetector):
         outcomes = {m: self.executeMission(m) for m in missions}
         for (m, outcome) in outcomes.items():
             self.__history.append(m)
-            self.__outcomes.append(outcome)
-            self.__endStates.append(outcome.getEndState())
+            self.__outcomes[m] = outcome
+            self.__endStates[m] = outcome.getEndState()
 
             # update resource usage
             self.__resourceUsage.numMissions += 1
