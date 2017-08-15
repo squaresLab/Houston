@@ -176,11 +176,11 @@ class IncrementalBugDetector(BugDetector):
         for container in self.__containers:
             container.destroy()
 
-        return BugDetectionSummary(self.__history,
-                                   self.__outcomes,
-                                   self.__failures,
-                                   self.__usage,
-                                   resourceLimits)
+        return BugDetectorSummary(self.__history,
+                                  self.__outcomes,
+                                  self.__failures,
+                                  self.__usage,
+                                  resourceLimits)
         
 
     def executeMissions(self, missions):
