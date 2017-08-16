@@ -104,13 +104,17 @@ class MissionOutcome(object):
         assert(isinstance(jsn, dict) and not jsn is None)
         assert('passed' in jsn)
         assert('actions' in jsn)
+        assert('setupTime' in jsn)
+        assert('totalTime' in jsn)
         assert(isinstance(jsn['passed'], bool))
         assert(isinstance(jsn['actions'], list))
+        assert(isinstance(jsn['setupTime'], float))
+        assert(isinstance(jsn['totalTime'], float))
         actions = [ActionOutcome.fromJSON(a) for a in jsn['actions']]
         return MissionOutcome(jsn['passed'], actions)
 
 
-    def __init__(self, passed, outcomes):
+    def __init__(self, passed, outcomes, setupTime, totalTime):
         """
         Constructs a MissionOutcome object.
 
@@ -121,6 +125,8 @@ class MissionOutcome(object):
         """
         self.__passed = passed
         self.__outcomes  = outcomes
+        self.__setupTime = setupTime
+        self.__totalTime = totalTime
 
 
     def toJSON(self):
@@ -129,7 +135,9 @@ class MissionOutcome(object):
         """
         return {
             'passed': self.__passed,
-            'actions': [outcome.toJSON() for outcome in  self.__outcomes]
+            'actions': [outcome.toJSON() for outcome in  self.__outcomes],
+            'setupTime': self.__setupTime,
+            'totalTime': self.__totalTime
         }
 
 
@@ -145,7 +153,7 @@ class MissionOutcome(object):
         """
         Returns a description of the state of the system immediately after the
         execution of this mission.
-        """ 
+        """
         return self.__outcomes[-1].getEndState()
 
 
