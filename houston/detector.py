@@ -260,6 +260,9 @@ class IncrementalBugDetector(BugDetector):
         super(IncrementalBugDetector, self).recordOutcome(mission, outcome)
         self.__endStates[mission] = outcome.getEndState()
 
+        if not outcome.failed(): # TODO: update tabu list
+                self.__pool.add(mission)
+
 
     def run(self, systm):
         while not self.exhausted():
@@ -291,7 +294,3 @@ class IncrementalBugDetector(BugDetector):
             children.add(child)
 
         self.executeMissions(children)
-
-        for child in children:
-            if not outcome.failed(): # TODO: update tabu list
-                self.__pool.add(child)
