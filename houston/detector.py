@@ -214,10 +214,11 @@ class BugDetector(object):
 
     def executeMissions(self, missions):
         # if we've been given more missions than we can execute, trim the list
+        missions = list(missions)
         missionLimit = self.__resourceLimits.getNumMissions()
         if missionLimit is not None:
             missionsLeft = missionLimit - self.__resourceUsage.numMissions
-            missions = list(missions)[:min(len(missions), missionsLeft)]
+            missions = missions[:min(len(missions), missionsLeft)]
 
         # use a thread pool to distribute the execution
         tPool = ThreadPool(self.__threads)
