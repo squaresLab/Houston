@@ -284,23 +284,36 @@ class Estimator(object):
         return self.__variable
 
 
-    def computeExpectedValue(self, action, state, environment):
+    def computeExpectedValue(self, action, state, environment, measurementNoise):
         """
         Computes the expected value for the variable associated with this estimator,
         within a given state and environment.
 
-        :param    action        action used to calculate the expected state.
-        :param    state         the state of the system immediately prior to
-                                performing the given action.
-        :param    environment   the environment in which the action takes place.
+        :param  action: action used to calculate the expected state.
+        :param  state:  the state of the system immediately prior to \
+                        performing the given action.
+        :param  environment:    the environment in which the action takes place.
+        :param  measurementNoise:   the amount of noise inherent in measuring \
+                                    this value; this noise will be added to \
+                                    the noise for this action.
 
         :returns  an ExpectedStateValue object.
         """
+        assert (isinstance(action, mission.Action) and action is not None)
+        assert (isinstance(state, State) and state is not None)
+        assert (isinstance(environment, Environment) and environment is not None)
+
         # TODO: sample a random amount of noise
         value = self.__func(action, state, environment)
-        noise = None
+
+        # compute the noise
         if self.__noiseFunc:
             noise = self.__noiseFunc(action, state, environment)
+            if measurementNoise is not None:
+                noise += measurementNoise
+        else:
+            noise = measurementNoise
+
         return ExpectedStateValue(value, noise)
 
 
