@@ -316,13 +316,7 @@ class ActionSchema(object):
         assert (isinstance(initialState, state.State) and state is not None)
         assert (isinstance(environment, state.Environment) and environment is not None)
 
-        # figure out which branch the action is expected to take.
-        branch = None
-        for b in self.__branches:
-            if b.isApplicable(action, initialState, environment):
-                branch = b
-                break
-
+        branch = self.resolveBranch(action, initialState, environment)
         # if no branch is applicable, the system state is assumed to remain
         # unchanged following the execution of the action
         if branch is None:
