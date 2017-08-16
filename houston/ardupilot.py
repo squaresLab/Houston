@@ -291,7 +291,6 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
 
-    def compute(self, currentState, env, values):
     def construct(self, currentState, env, values):
         dist = values['distance']
         heading = values['heading']
