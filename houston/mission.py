@@ -161,21 +161,14 @@ class MissionOutcome(object):
         """
         :see `successful`
         """
-        return self.successful()
-
-
-    def successful(self):
-        """
-        Returns true if this mission was unsuccessful.
-        """
-        return self.__successful
+        return self.__passed
 
 
     def failed(self):
         """
         Returns true if this mission was unsuccessful.
         """
-        return not self.__successful
+        return not self.passed()
 
 
 class ActionOutcome(object):
