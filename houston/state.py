@@ -132,17 +132,37 @@ class ExpectedState(object):
 
 class StateVariable(object):
 
-    def __init__(self, name, getter):
+    def __init__(self, name, getter, noise=None):
         """
         Constructs a new state variable
 
         :param  name:   the name of this variable
         :param  type:   the type of this variable
         :param  getter: a lambda function, used to obtain the value of this variable
+        :param  noise:  the inherent level of noise when measuring this variable
         """
-        assert(isinstance(self, InternalVariable) or isinstance(self, ExternalVariable))
+        assert (isinstance(self, InternalVariable) or isinstance(self, ExternalVariable))
+        assert (noise is None or type(noise) in [float, int])
+        assert (noise is None or noise >= 0)
+
         self.__name = name
         self.__getter = getter
+        self.__noise = noise
+
+
+    """
+    Returns true if there is inherent noise in the measurement of this variable.
+    """
+    def isNoisy(self):
+        return self.__noise is not None
+
+
+    """
+    Returns the inherent level of noise that is to be expected when measuring
+    this variable. If no noise is expected, None is returned.
+    """
+    def getNoise(self):
+        return self.__noise
 
 
     """
