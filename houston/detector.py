@@ -29,6 +29,7 @@ class ResourceLimits(object):
             return True
         if self.reachedTimeLimit(usage.runningTime):
             return True
+        print usage.runningTime
         return False
 
 
@@ -144,7 +145,7 @@ class BugDetector(object):
         """
         return self.__resourceLimits.reached(self.__usage)
 
-   
+
     def detect(self, systm, image, resourceLimits):
         """
 
@@ -184,12 +185,17 @@ class BugDetector(object):
     def executeMissions(self, missions):
         # TODO use a thread pool!
         # TODO enforce limits
-        outcomes = {m: self.executeMission(m) for m in missions}
+        outcomes = {}
+        for m in missions:
+            if self.exhausted():
+                break
+            self.__resourceUsage.numMissions += 1
+            outcomes[m] = self.executeMission(m)
+
         for (m, outcome) in outcomes.items():
             self.recordOutcome(m, outcome)
 
             # update resource usage
-            self.__resourceUsage.numMissions += 1
             self.__resourceUsage.runningTime = \
                 timeit.default_timer() - self.__startTime
 
