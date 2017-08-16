@@ -272,7 +272,8 @@ class ActionSchema(object):
 
         :returns maximum time in seconds (as a float)
         """
-        raise UnimplementedError
+        branch = self.resolveBranch(action, state, environment)
+        return branch.computeTimeout(action, state, environment)
 
 
     def getParameters(self):
