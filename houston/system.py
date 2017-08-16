@@ -285,7 +285,6 @@ class ActionSchema(object):
         Returns the branch that is appropiate for the current action, state, and
         environment based on the current action schema.
         """
-        # figure out which branch the action is expected to take.
         branch = None
         for b in self.__branches:
             if b.isApplicable(action, initialState, environment):
