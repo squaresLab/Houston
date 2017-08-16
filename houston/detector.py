@@ -17,8 +17,8 @@ class ResourceUsage(object):
 
     def toJSON(self):
         return {
-            'numMissions': self.__numMissions,
-            'runningTime': self.__runningTime
+            'numMissions': self.numMissions,
+            'runningTime': self.runningTime
         }
 
 
@@ -52,8 +52,8 @@ class ResourceLimits(object):
 
     def toJSON(self):
         return {
-            'numMissions': self.__numMissions,
-            'runningTime': self.__runningTime
+            'numMissions': self.numMissions,
+            'runningTime': self.runningTime
         }
 
 
