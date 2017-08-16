@@ -107,7 +107,7 @@ class System(object):
 
                 # compare the observed and expected states
                 observed = self.getState()
-                passed = expected.isExpected(observed)
+                passed = expected.isExpected(self.__variables, observed)
                 outcome = mission.ActionOutcome(action, passed, initialState,
                                                 observed, timeElapsed)
                 outcomes.append(outcome)
@@ -172,14 +172,11 @@ class OutcomeBranch(object):
         return self.__guard(action, initialState, env)
 
 
-    def computeExpectedState(self, variables, action, initialState, env):
+    def computeExpectedState(self, action, initialState, env):
         """
         Produces an estimate of the system state following the execution of
         this branch within a given context.
 
-        :param  variables:      a dictionary containing the definitions of \
-                                the variables for the system under test, \
-                                indexed by their names
         :param  action:         a description of the action being performed
         :param  initialState:   the state of the system immediately prior to \
                                 the execution of this action
@@ -190,9 +187,6 @@ class OutcomeBranch(object):
                     system is expected to be in immediately after the \
                     execution of this branch
         """
-        assert (isinstance(variables, dict) and dict is not None)
-        assert (all(isinstance(k, str) for k in variables))
-        assert (all(isinstance(v, state.StateVariable) for v in variables.values()))
         assert (isinstance(action, mission.Action) and action is not None)
         assert (isinstance(initialState, state.State) and state is not None)
         assert (isinstance(env, state.Environment) and env is not None)
@@ -202,12 +196,11 @@ class OutcomeBranch(object):
         # of the associated state variable
         values = {}
         for (varName, initialValue) in initialState.getValues().items():
-            varNoise = variables[varName].getNoise()
             if varName in self.__effects:
-                expected = self.__effects[varName].computeExpectedValue(action, initialState, env, varNoise)
+                expected = self.__effects[varName].computeExpectedValue(action, initialState, env)
                 values[varName] = expected
             else:
-                values[varName] = state.ExpectedStateValue(initialValue, varNoise)
+                values[varName] = state.ExpectedStateValue(initialValue)
 
         return state.ExpectedState(values)
 
@@ -283,14 +276,11 @@ class ActionSchema(object):
         return copy.deepcopy(self.__parameters)
 
 
-    def computeExpectedState(self, variables, action, initialState, environment):
+    def computeExpectedState(self, action, initialState, environment):
         """
         Estimates the resulting system state after executing an action
         belonging to this schema in a given initial state.
 
-        :param  variables:      a dictionary containing the definitions of \
-                                the variables for the system under test, \
-                                indexed by their names
         :param  action:         the action for which an outcome should be \
                                 estimated.
         :param  initialState:   the initial state of the system, immediately \
@@ -301,9 +291,6 @@ class ActionSchema(object):
         :return An estimate of the resulting system state, in the form of an \
                 ExpectedState object
         """
-        assert (isinstance(variables, dict) and dict is not None)
-        assert (all(isinstance(k, str) for k in variables))
-        assert (all(isinstance(v, state.StateVariable) for v in variables.values()))
         assert (isinstance(action, mission.Action) and action is not None)
         assert (isinstance(initialState, state.State) and state is not None)
         assert (isinstance(env, state.Environment) and env is not None)
@@ -318,9 +305,9 @@ class ActionSchema(object):
         # if no branch is applicable, the system state is assumed to remain
         # unchanged following the execution of the action
         if branch is None:
-            return state.ExpectedState.identical(variables, initialState)
+            return state.ExpectedState.identical(initialState)
 
-        return branch.computeExpectedState(variables, action, initialState, environment)
+        return branch.computeExpectedState(action, initialState, environment)
 
 
     def generate(self):

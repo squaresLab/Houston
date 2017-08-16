@@ -94,8 +94,20 @@ class ExpectedStateValue(object):
         self.__noise = noise
 
 
-    def isExpected(self, observed):
-        if self.__noise is None:
+    def isExpected(self, observed, measurementNoise):
+        assert (observed is not None)
+        assert (measurementNoise is None or type(measurementNoise) == type(observed))
+
+        # add the measurement noise to the action noise
+        if measurementNoise is not None:
+            noise = self.__noise
+        elif self.__noise is not None:
+            noise = self.__noise + measurementNoise
+        else:
+            noise = None
+
+        # check the observed value against the expected range
+        if noise is None:
             return self.__value == observed
         else:
             return (self.__value - self.__noise) < observed <(self.__value + self.__noise)
@@ -122,9 +134,23 @@ class ExpectedState(object):
         self.__values = values
 
 
-    def isExpected(self, st):
-        for name, expectedValue in self.__values.items():
-            if not expectedValue.isExpected(st.read(name)):
+    def isExpected(self, variables, st):
+        """
+        :param  variables:      a dictionary containing the definitions of \
+                                the variables for the system under test, \
+                                indexed by their names
+        :param  st:             the observed state of the system
+
+        :returns    True if the observed state of the system was expected
+        """
+        assert (isinstance(variables, dict) and dict is not None)
+        assert (all(isinstance(k, str) for k in variables))
+        assert (all(isinstance(v, state.StateVariable) for v in variables.values()))
+        assert (isinstance(st, State) and state is not None)
+
+        for (name, expectedValue) in self.__values.items():
+            measurementNoise = variables[name].getNoise()
+            if not expectedValue.isExpected(st.read(name), measurementNoise):
                 return False
 
         return True
@@ -284,7 +310,7 @@ class Estimator(object):
         return self.__variable
 
 
-    def computeExpectedValue(self, action, state, environment, measurementNoise):
+    def computeExpectedValue(self, action, state, environment):
         """
         Computes the expected value for the variable associated with this estimator,
         within a given state and environment.
@@ -293,9 +319,6 @@ class Estimator(object):
         :param  state:  the state of the system immediately prior to \
                         performing the given action.
         :param  environment:    the environment in which the action takes place.
-        :param  measurementNoise:   the amount of noise inherent in measuring \
-                                    this value; this noise will be added to \
-                                    the noise for this action.
 
         :returns  an ExpectedStateValue object.
         """
@@ -309,10 +332,8 @@ class Estimator(object):
         # compute the noise
         if self.__noiseFunc:
             noise = self.__noiseFunc(action, state, environment)
-            if measurementNoise is not None:
-                noise += measurementNoise
         else:
-            noise = measurementNoise
+            noise = None
 
         return ExpectedStateValue(value, noise)
 
