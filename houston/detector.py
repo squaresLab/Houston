@@ -117,8 +117,10 @@ class BugDetector(object):
         Prepares the state of the bug detector immediately before beginning a
         bug detection trial.
         """
-        self.__containers = \
-            [houston.createContainer(systm, image) for i in range(self.__threads)]
+        self.__systm = systm
+        self.__image = image
+#        self.__containers = \
+#            [houston.createContainer(systm, image) for i in range(self.__threads)]
         self.__resourceUsage = ResourceUsage()
         self.__resourceLimits = resourceLimits
         self.__startTime = timeit.default_timer()
@@ -201,9 +203,15 @@ class BugDetector(object):
 
 
     def executeMission(self, mission):
+        # TODO: temporary!
         print("executing mission...")
-        outcome = self.__containers[0].execute(mission)
-        return self.__containers[0].execute(mission)
+        container = houston.createContainer(self.__systm, self.__image)
+        try:
+            outcome = container.execute(mission)
+            print("finished mission!")
+            return outcome
+        finally:
+            container.destroy()
 
 
     def recordOutcome(self, mission, outcome):
