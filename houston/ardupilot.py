@@ -62,8 +62,6 @@ class ArduPilot(System):
 
         variables = {}
         # TODO: this is very tricky; we'll need to do something clever here
-        variables['time'] = \
-            InternalVariable('time', lambda: time.time())
         variables['homeLatitude'] = \
             InternalVariable('homeLatitude', lambda: 149.165085) # Fixed
         variables['homeLongitude'] = \
