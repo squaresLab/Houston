@@ -198,10 +198,10 @@ class OutcomeBranch(object):
                     execution of this branch
         """
         values = {}
-
+        effectsDict = self.getEffectsAsDict()
         for (varName, initialValue) in initialState.getValues().items():
-            if varName in self.__effects:
-                expected = effects[varName].computeExpectedValue(action, initialState, env)
+            if varName in effectsDict:
+                expected = self.effectsDict[varName].computeExpectedValue(action, initialState, env)
                 values[varName] = expected
             else:
                 values[varName] = state.ExpectedStateValue(initialValue)
