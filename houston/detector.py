@@ -201,6 +201,8 @@ class BugDetector(object):
 
 
     def executeMission(self, mission):
+        print("executing mission...")
+        outcome = self.__containers[0].execute(mission)
         return self.__containers[0].execute(mission)
 
 
@@ -247,7 +249,7 @@ class IncrementalBugDetector(BugDetector):
 
     def recordOutcome(self, mission, outcome):
         super(IncrementalBugDetector, self).recordOutcome(mission, outcome)
-        self.__endStates[m] = outcome.getEndState()
+        self.__endStates[mission] = outcome.getEndState()
 
 
     def run(self, systm):
