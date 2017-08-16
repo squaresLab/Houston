@@ -94,8 +94,20 @@ class ExpectedStateValue(object):
         self.__noise = noise
 
 
-    def isExpected(self, observed):
-        if self.__noise is None:
+    def isExpected(self, observed, measurementNoise):
+        assert (observed is not None)
+        assert (measurementNoise is None or type(measurementNoise) == type(observed))
+
+        # add the measurement noise to the action noise
+        if measurementNoise is not None:
+            noise = self.__noise
+        elif self.__noise is not None:
+            noise = self.__noise + measurementNoise
+        else:
+            noise = None
+
+        # check the observed value against the expected range
+        if noise is None:
             return self.__value == observed
         else:
             return (self.__value - self.__noise) < observed <(self.__value + self.__noise)
