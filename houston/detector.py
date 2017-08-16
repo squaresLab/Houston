@@ -42,6 +42,10 @@ class ResourceLimits(object):
         return False
 
 
+    def getNumMissions(self):
+        return self.__numMissions
+
+
     def reachedMissionLimit(self, numMissions):
         return  self.__numMissions is not None and \
                     numMissions >= self.__numMissions
