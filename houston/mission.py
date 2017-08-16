@@ -145,8 +145,8 @@ class MissionOutcome(object):
         """
         Returns a description of the state of the system immediately after the
         execution of this mission.
-        """
-        return self.__stateAfter
+        """ 
+        return self.__outcomes[-1].getEndState()
 
 
     def getStartState(self):
@@ -154,7 +154,7 @@ class MissionOutcome(object):
         Returns a description of the state of the system immediately before the
         execution of this mission.
         """
-        return self.__startBefore
+        return self.__outcomes[0].getStartState()
 
 
     def passed(self):
