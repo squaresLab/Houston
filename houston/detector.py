@@ -3,6 +3,8 @@ import random
 import timeit
 import houston
 
+from multiprocessing.pool import ThreadPool
+
 from mission import Mission, Action
 
 class ResourceUsage(object):
@@ -207,21 +209,22 @@ class BugDetector(object):
 
 
     def executeMissions(self, missions):
-        # TODO use a thread pool!
-        # TODO enforce limits
-        outcomes = {}
-        for m in missions:
-            if self.exhausted():
-                break
-            self.__resourceUsage.numMissions += 1
-            outcomes[m] = self.executeMission(m)
+        # if we've been given more missions than we can execute, trim the list
+        missionLimit = self.__resourceLimits.getNumMissions()
+        if missionLimit is not None:
+            missionsLeft = missionLimit - self.__resourceUsage.numMissions
+            missions = missions[:min(len(missions), missionsLeft)]
 
-        for (m, outcome) in outcomes.items():
-            self.recordOutcome(m, outcome)
+        # use a thread pool to distribute the execution
+        tPool = ThreadPool(self.__threads)
+        outcomes = tPool.map(lambda m: (m, self.executeMission(m)), missions)
+        for (mission, outcome) in outcomes:
+            self.recordOutcome(mission, outcome)
 
-            # update resource usage
-            self.__resourceUsage.runningTime = \
-                timeit.default_timer() - self.__startTime
+        # update resource usage
+        self.__resourceUsage.numMissions += len(missions)
+        self.__resourceUsage.runningTime = \
+            timeit.default_timer() - self.__startTime
 
 
     def executeMission(self, mission):
