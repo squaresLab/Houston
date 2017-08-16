@@ -217,7 +217,7 @@ class BugDetector(object):
         missionLimit = self.__resourceLimits.getNumMissions()
         if missionLimit is not None:
             missionsLeft = missionLimit - self.__resourceUsage.numMissions
-            missions = missions[:min(len(missions), missionsLeft)]
+            missions = list(missions)[:min(len(missions), missionsLeft)]
 
         # use a thread pool to distribute the execution
         tPool = ThreadPool(self.__threads)
