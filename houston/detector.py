@@ -2,6 +2,7 @@ import copy
 import random
 import timeit
 import houston
+import system
 
 from multiprocessing.pool import ThreadPool
 
@@ -121,7 +122,7 @@ class BugDetector(object):
         assert (isinstance(threads, int) and threads is not None)
         assert (threads >= 1)
         assert (isinstance(actionGenerators, list) and actionGenerators is not None)
-        assert (all(isinstance(g) for g in actionGenerators))
+        assert (all(isinstance(g, system.ActionGenerator) for g in actionGenerators))
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
