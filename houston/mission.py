@@ -157,6 +157,27 @@ class MissionOutcome(object):
         return self.__startBefore
 
 
+    def passed(self):
+        """
+        :see `successful`
+        """
+        return self.successful()
+
+
+    def successful(self):
+        """
+        Returns true if this mission was unsuccessful.
+        """
+        return self.__successful
+
+
+    def failed(self):
+        """
+        Returns true if this mission was unsuccessful.
+        """
+        return not self.__successful
+
+
 class ActionOutcome(object):
     @staticmethod
     def fromJSON(jsn):
