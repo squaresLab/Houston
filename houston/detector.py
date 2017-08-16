@@ -164,7 +164,13 @@ class BugDetector(object):
         """
         self.prepare(systm, image, resourceLimits)
         try:
-           return self.run(systm)
+            self.run(systm)
+            summary = BugDetectorSummary(self.__history,
+                                         self.__outcomes,
+                                         self.__failures,
+                                         self.__resourceUsage,
+                                         self.__resourceLimits)
+            return summary
         finally:
             self.cleanup()
 
@@ -268,11 +274,11 @@ class IncrementalBugDetector(BugDetector):
         while not self.exhausted():
             self.runGeneration(systm)
 
-        return BugDetectorSummary(self.__history,
-                                  self.__outcomes,
-                                  self.__failures,
-                                  self.__usage,
-                                  resourceLimits)
+        return BugDetectorSummary(self.getHistory(),
+                                  self.getOutcomes(),
+                                  self.getFailures(),
+                                  self.getResourceUsage(),
+                                  self.getResourceLimits())
 
     def runGeneration(self, systm):
         schemas = systm.getActionSchemas().values()
