@@ -149,6 +149,20 @@ class OutcomeBranch(object):
         self.__effects = effects
 
 
+    def getEffects(self):
+        """
+        Returns a list with the effects in this branch.
+        """
+        return self.__effects
+
+
+    def getEffectsAsDict(self):
+        """
+        Returns a dictionary with the effects in this branch.
+        """
+        return {effect.getVariableName(): effect for effect in self.__effects}
+
+
     def isApplicable(self, action, initialState, env):
         """
         Determines whether the guard for this outcome branch is satisfied by
