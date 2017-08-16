@@ -22,9 +22,7 @@ try:
     # TODO always prefer "import" over "from"
     import pexpect
     import statistics
-    from geopy      import distance
     from pymavlink      import mavutil, mavwp
-    from geopy          import distance
     from dronekit_sitl  import SITL
     from dronekit       import connect, VehicleMode, LocationGlobalRelative
 
@@ -259,8 +257,6 @@ class GoToActionSchema(ActionSchema):
             time.sleep(.2)
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
-            print 'still GOTO'
-            sys.stdout.flush()
 
 
     def computeTimeout(self, action, state, environment):
@@ -290,16 +286,17 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
-
     def construct(self, currentState, env, values):
         dist = values['distance']
         heading = values['heading']
         lon = currentState.read('longitude')
         lat = currentState.read('latitude')
-
         params = {}
-        origin = geopy.Point(lat, lon)
-        destination = geopy.distance.VincentyDistance(meters=dist).destination(origin, heading)
+
+        origin = geopy.Point(latitude=lat, longitude=lon)
+        dist = geopy.distance.VincentyDistance(meters=dist)
+        destination =  dist.destination(origin, heading)
+
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
         params['altitude'] = currentState.read('altitude')
