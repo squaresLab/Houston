@@ -172,11 +172,14 @@ class OutcomeBranch(object):
         return self.__guard(action, initialState, env)
 
 
-    def computeExpectedState(self, action, initialState, env):
+    def computeExpectedState(self, variables, action, initialState, env):
         """
         Produces an estimate of the system state following the execution of
         this branch within a given context.
 
+        :param  variables:      a dictionary containing the definitions of \
+                                the variables for the system under test, \
+                                indexed by their names
         :param  action:         a description of the action being performed
         :param  initialState:   the state of the system immediately prior to \
                                 the execution of this action
@@ -187,13 +190,24 @@ class OutcomeBranch(object):
                     system is expected to be in immediately after the \
                     execution of this branch
         """
+        assert (isinstance(variables, dict) and dict is not None)
+        assert (all(isinstance(k, str) for k in variables))
+        assert (all(isinstance(v, state.StateVariable) for v in variables.values()))
+        assert (isinstance(action, mission.Action) and action is not None)
+        assert (isinstance(initialState, state.State) and state is not None)
+        assert (isinstance(env, state.Environment) and env is not None)
+
+
+        # store the expected state values in a dictionary, indexed by the name
+        # of the associated state variable
         values = {}
         for (varName, initialValue) in initialState.getValues().items():
+            varNoise = variables[varName].getNoise()
             if varName in self.__effects:
-                expected = self.__effects[varName].computeExpectedValue(action, initialState, env)
+                expected = self.__effects[varName].computeExpectedValue(action, initialState, env, varNoise)
                 values[varName] = expected
             else:
-                values[varName] = state.ExpectedStateValue(initialValue)
+                values[varName] = state.ExpectedStateValue(initialValue, varNoise)
 
         return state.ExpectedState(values)
 
