@@ -14,6 +14,9 @@ import mission
 # Find the location of Houston on disk
 # PATH_TO_SITE_PKGS = site.getsitepackages()[0]
 PATH_TO_HOUSTON_EGG = os.path.dirname(os.path.dirname(houston.__file__))
+HOUSTON_SCRIPT_PATHS = [
+    '/usr/local/bin/houstonserver'
+]
 
 
 class SystemContainer(object):
@@ -40,7 +43,14 @@ class SystemContainer(object):
 
         command = 'houstonserver {}'.format(port)
         ports = {port: port}
-        volumes = {PATH_TO_HOUSTON_EGG: {'bind': PATH_TO_HOUSTON_EGG, 'mode': 'ro'}}
+
+        # prepare Houston library and scripts for auto-mounting
+        volumes = {
+            PATH_TO_HOUSTON_EGG: {'bind': PATH_TO_HOUSTON_EGG, 'mode': 'ro'}
+        }
+        for path in HOUSTON_SCRIPT_PATHS:
+            volumes[path] = {'bind': path, 'mode': 'ro'}
+
         client = docker.from_env()
         self.__container = client.containers.run(image,
                                                  command,
