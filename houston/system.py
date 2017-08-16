@@ -294,6 +294,7 @@ class ActionSchema(object):
         assert (isinstance(action, mission.Action) and action is not None)
         assert (isinstance(initialState, state.State) and state is not None)
         assert (isinstance(env, state.Environment) and env is not None)
+        assert (isinstance(environment, state.Environment) and environment is not None)
 
         # figure out which branch the action is expected to take.
         branch = None
