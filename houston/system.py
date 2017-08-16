@@ -142,25 +142,15 @@ class System(object):
 class OutcomeBranch(object):
     def __init__(self, guard, effects = []):
         assert (callable(guard))
-        assert (isinstance(effects, list) and not effects is None)
+        assert (isinstance(effects, list) and effects is not None)
         assert (all(isinstance(e, state.Estimator) for e in effects))
 
         self.__guard = guard
-        self.__effects = effects
 
+        # transform the list of effects into a dictionary
+        self.__effects = {e.getVariableName(): e for e in effects}
 
-    def getEffects(self):
-        """
-        Returns a list with the effects in this branch.
-        """
-        return self.__effects
-
-
-    def getEffectsAsDict(self):
-        """
-        Returns a dictionary with the effects in this branch.
-        """
-        return {effect.getVariableName(): effect for effect in self.__effects}
+        assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
 
     def isApplicable(self, action, initialState, env):
@@ -198,10 +188,9 @@ class OutcomeBranch(object):
                     execution of this branch
         """
         values = {}
-        effectsDict = self.getEffectsAsDict()
         for (varName, initialValue) in initialState.getValues().items():
-            if varName in effectsDict:
-                expected = effectsDict[varName].computeExpectedValue(action, initialState, env)
+            if varName in self.__effects:
+                expected = self.__effects[varName].computeExpectedValue(action, initialState, env)
                 values[varName] = expected
             else:
                 values[varName] = state.ExpectedStateValue(initialValue)
