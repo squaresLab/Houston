@@ -280,6 +280,20 @@ class ActionSchema(object):
         return copy.deepcopy(self.__parameters)
 
 
+    def resolveBranch(self, action, initialState, environment):
+        """
+        Returns the branch that is appropiate for the current action, state, and
+        environment based on the current action schema.
+        """
+        # figure out which branch the action is expected to take.
+        branch = None
+        for b in self.__branches:
+            if b.isApplicable(action, initialState, environment):
+                branch = b
+                break
+        return branch
+
+
     def computeExpectedState(self, action, initialState, environment):
         """
         Estimates the resulting system state after executing an action
