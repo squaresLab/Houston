@@ -144,16 +144,12 @@ class System(object):
 
 
 class OutcomeBranch(object):
-    def __init__(self, guard, effects = []):
-        assert (callable(guard))
-        assert (isinstance(effects, list) and effects is not None)
-        assert (all(isinstance(e, state.Estimator) for e in effects))
+    def __init__(self, estimators):
+        assert (isinstance(estimators, list) and estimators is not None)
+        assert (all(isinstance(e, state.Estimator) for e in estimators))
 
-        self.__guard = guard
-
-        # transform the list of effects into a dictionary
-        self.__effects = {e.getVariableName(): e for e in effects}
-
+        self.__estimators = estimators
+        self.__effects = {e.getVariableName(): e for e in estimators}
         assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
 
@@ -173,7 +169,14 @@ class OutcomeBranch(object):
         :returns    True if the guard is satisfied by the given context, \
                     otherwise False.
         """
-        return self.__guard(action, initialState, env)
+        raise NotImplementedError
+
+
+    def computeTimeout(self, action, state, environment):
+        """
+        Computes the timeout for the current branch.
+        """
+        raise NotImplementedError
 
 
     def computeExpectedState(self, action, initialState, env):
