@@ -3,7 +3,7 @@ import random
 import timeit
 import houston
 
-from mission import Mission
+from mission import Mission, Action
 
 class ResourceUsage(object):
     """
@@ -118,7 +118,7 @@ class BugDetector(object):
         """
         self.__containers = \
             [houston.createContainer(systm, image) for i in range(self.__threads)]
-        self.__usage = ResourceUsage()
+        self.__resourceUsage = ResourceUsage()
         self.__resourceLimits = resourceLimits
         self.__startTime = timeit.default_timer()
         self.__history = []
@@ -142,7 +142,7 @@ class BugDetector(object):
         Used to determine whether the resource limit for the current bug
         detection session has been hit.
         """
-        return self.__resourceLimits.reached(self.__usage)
+        return self.__resourceLimits.reached(self.__resourceUsage)
 
    
     def detect(self, systm, image, resourceLimits):
@@ -208,7 +208,7 @@ class BugDetector(object):
         self.__history.append(mission)
         self.__outcomes[mission] = outcome
 
-        if mission.failed():
+        if outcome.failed():
             self.__failures.add(mission)
 
 
