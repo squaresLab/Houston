@@ -71,7 +71,9 @@ class System(object):
                 MissionOutcome
         """
         assert (self.installed())
+        timeBeforeSetup = timeit.default_timer()
         self.setUp(msn)
+        totalSetupTime = timeit.default_timer() - timeBeforeSetup()
 
         env = msn.getEnvironment()
         outcomes = []
@@ -113,9 +115,11 @@ class System(object):
                 outcomes.append(outcome)
 
                 if not passed:
-                    return mission.MissionOutcome(False, outcomes)
-
-            return mission.MissionOutcome(True, outcomes)
+                    totalTime = timeit.default_timer() - timeBeforeSetup
+                    return mission.MissionOutcome(False, outcomes, totalSetupTime, \
+                                                                        totalTime)
+            totalTime = timeit.default_timer() - timeBeforeSetup
+            return mission.MissionOutcome(True, outcomes, totalSetupTime, totalTime)
 
         finally:
             self.tearDown(msn)
