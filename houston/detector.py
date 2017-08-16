@@ -119,6 +119,7 @@ class BugDetector(object):
         """
         self.__systm = systm
         self.__image = image
+        self.__containers = []
 #        self.__containers = \
 #            [houston.createContainer(systm, image) for i in range(self.__threads)]
         self.__resourceUsage = ResourceUsage()
