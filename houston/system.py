@@ -73,7 +73,7 @@ class System(object):
         assert (self.installed())
         timeBeforeSetup = timeit.default_timer()
         self.setUp(msn)
-        totalSetupTime = timeit.default_timer() - timeBeforeSetup()
+        totalSetupTime = timeit.default_timer() - timeBeforeSetup
 
         env = msn.getEnvironment()
         outcomes = []
