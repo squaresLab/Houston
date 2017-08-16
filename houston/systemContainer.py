@@ -3,9 +3,18 @@ try:
 except ImportError:
     pass
 
+import os
+import houston
+import site
 import sys
 import requests
 import mission
+
+
+# Find the location of Houston on disk
+# PATH_TO_SITE_PKGS = site.getsitepackages()[0]
+PATH_TO_HOUSTON_EGG = os.path.dirname(os.path.dirname(houston.__file__))
+
 
 class SystemContainer(object):
     """
@@ -31,11 +40,13 @@ class SystemContainer(object):
 
         command = 'houstonserver {}'.format(port)
         ports = {port: port}
+        volumes = {PATH_TO_HOUSTON_EGG: {'bind': PATH_TO_HOUSTON_EGG, 'mode': 'ro'}}
         client = docker.from_env()
         self.__container = client.containers.run(image,
                                                  command,
                                                  network_mode='bridge',
                                                  ports=ports,
+                                                 volumes=volumes,
                                                  detach=True)
 
         # blocks until server is running
