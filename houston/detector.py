@@ -52,8 +52,8 @@ class ResourceLimits(object):
 
     def toJSON(self):
         return {
-            'numMissions': self.numMissions,
-            'runningTime': self.runningTime
+            'numMissions': self.__numMissions,
+            'runningTime': self.__runningTime
         }
 
 
