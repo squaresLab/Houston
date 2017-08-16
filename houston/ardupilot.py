@@ -289,6 +289,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
 
     def compute(self, currentState, env, values):
+    def construct(self, currentState, env, values):
         dist = values['distance']
         heading = values['heading']
         lon = currentState.read('longitude')
