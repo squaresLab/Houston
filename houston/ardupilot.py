@@ -281,8 +281,8 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         self.__maxDistance = maxDistance
         parameters = [
-            mission.Parameter('distance', ContinuousValueRange(minDistance, maxDistance)),
-            mission.Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
+            Parameter('distance', ContinuousValueRange(minDistance, maxDistance)),
+            Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
         ]
 
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
