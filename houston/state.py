@@ -146,8 +146,8 @@ class ExpectedState(object):
         assert (isinstance(variables, dict) and dict is not None)
         assert (all(isinstance(k, str) for k in variables))
         assert (all(isinstance(v, state.StateVariable) for v in variables.values()))
-        assert (isinstance(st, State) and state is not None)
-
+        assert (isinstance(st, state.State) and st is not None)
+        
         for (name, expectedValue) in self.__values.items():
             measurementNoise = variables[name].getNoise()
             if not expectedValue.isExpected(st.read(name), measurementNoise):
