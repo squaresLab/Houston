@@ -255,16 +255,18 @@ class GoToActionSchema(ActionSchema):
         toLocation = (action.getValue('latitude'), action.getValue('longitude'))
         fromLocation = (currentLat, currentLon)
 
-        while distance.great_circle(fromLocation, toLocation).meters > 0.3:
+        while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3:
             time.sleep(.2)
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+            print 'still GOTO'
+            sys.stdout.flush()
 
 
     def computeTimeout(self, action, state, environment):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
-        totalDistance = distance.great_circle(fromLocation, toLocation).meters
+        totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
         timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
