@@ -15,6 +15,13 @@ class ResourceUsage(object):
         self.runningTime = 0.0
 
 
+    def toJSON(self):
+        return {
+            'numMissions': self.__numMissions,
+            'runningTime': self.__runningTime
+        }
+
+
 class ResourceLimits(object):
     """
     A convenience class used to impose limits on the bug detection process.
@@ -41,6 +48,14 @@ class ResourceLimits(object):
     def reachedTimeLimit(self, runningTime):
         return  self.__runningTime is not None and \
                     runningTime >= self.__runningTime
+
+
+    def toJSON(self):
+        return {
+            'numMissions': self.__numMissions,
+            'runningTime': self.__runningTime
+        }
+
 
 
 class BugDetectorSummary(object):
