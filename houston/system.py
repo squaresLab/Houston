@@ -211,9 +211,6 @@ class OutcomeBranch(object):
         return state.ExpectedState(values)
 
 
-class OutcomeElseBranch(OutcomeBranch):
-    def __init__(self, effects = []):
-        super(OutcomeElseBranch, self).__init__(lambda a, s, e: True, effects)
 class IdleBranch(OutcomeBranch):
     def __init__(self):
         super(IdleBranch, self).__init__([])
