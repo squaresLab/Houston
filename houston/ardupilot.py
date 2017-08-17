@@ -275,7 +275,7 @@ class SetModeLoiterBranch(OutcomeBranch):
         return CONSTANT_TIMEOUT_OFFSET
 
     def isApplicable(self, action, state, environment):
-        return True
+        return action.read('mode') == 'LOITER'
 
 
 class SetModeRTLBranch(OutcomeBranch):
