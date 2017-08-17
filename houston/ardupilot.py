@@ -251,6 +251,12 @@ class SetModeNormalBranch(OutcomeBranch):
         super(SetModeNormalBranch, self).__init__(estimators)
 
     def computeTimeout(self, action, state, environment):
+        if action.read('mode') == 'RTL':
+            fromLocation = (state.read('latitude'), state.read('longitude'))
+            toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
+            totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
+            timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+            return timeout
         return CONSTANT_TIMEOUT_OFFSET
 
     def isApplicable(self, action, state, environment):
