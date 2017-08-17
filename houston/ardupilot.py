@@ -236,19 +236,15 @@ class SetModeActionSchema(ActionSchema):
                 time.sleep(0.1)
 
 
-class SetModeNormalBranch(OutcomeBranch):
+class SetModeGuidedBranch(OutcomeBranch):
     """
     Description.
     """
     def __init__(self):
         estimators = [
-            FixedEstimator('mode', 'RTL'),
-            FixedEstimator('armed', False),
-            FixedEstimator('altitude', 0.0),
-            Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
-            Estimator('longitude', lambda action, state, env: state.read('homeLongitude'))
+            FixedEstimator('mode', 'GUIDED')
         ]
-        super(SetModeNormalBranch, self).__init__(estimators)
+        super(SetModeGuidedBranch, self).__init__(estimators)
 
     def computeTimeout(self, action, state, environment):
         if action.read('mode') == 'RTL':
