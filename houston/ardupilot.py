@@ -219,8 +219,21 @@ class SetModeActionSchema(ActionSchema):
     def dispatch(self, action):
         vehicleMode = VehicleMode(action.getValue('mode'))
         DRONEKIT_SYSTEM.mode = vehicleMode
-        while not DRONEKIT_SYSTEM.mode == vehicleMode:
-            time.sleep(0.1)
+        if action.read('mode') == 'RTL':
+            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+            currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
+            currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+            toLocation = (action.getValue('latitude'), action.getValue('longitude'))
+            fromLocation = (currentLat, currentLon)
+            while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3 and \
+                currentAlt > 0.1:
+                time.sleep(0.2)
+                currentLat = DRONEKIT_SYSTEM.location.global_relative_frame.lat
+                currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+                currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+        else: # TODO as we add more modes this would have to change
+            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+                time.sleep(0.1)
 
 
 class SetModeNormalBranch(OutcomeBranch):
