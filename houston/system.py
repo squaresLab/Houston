@@ -300,9 +300,8 @@ class ActionSchema(object):
         branch = None
         for b in self.__branches:
             if b.isApplicable(action, initialState, environment):
-                branch = b
-                break
-        return branch
+                return b
+        raise Exception
 
 
     def computeExpectedState(self, action, initialState, environment):
