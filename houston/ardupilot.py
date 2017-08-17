@@ -256,7 +256,9 @@ class SetModeGuidedBranch(OutcomeBranch):
         return CONSTANT_TIMEOUT_OFFSET
 
     def isApplicable(self, action, state, environment):
-        return action.read('mode') == 'RTL'
+        return True
+
+
 class SetModeLoiterBranch(OutcomeBranch):
     """
     Description.
