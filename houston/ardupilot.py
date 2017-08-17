@@ -7,8 +7,7 @@ import subprocess as sub
 
 import houston
 from valueRange import DiscreteValueRange, ContinuousValueRange
-from system     import System, ActionSchema, OutcomeBranch, OutcomeElseBranch, \
-                       ActionGenerator
+from system     import System, ActionSchema, OutcomeBranch, ActionGenerator, IdleBranch
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
 from state      import Estimator, FixedEstimator
@@ -171,8 +170,8 @@ class ArmActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
         branches = [
-            OutcomeBranch(lambda action, state, env: state.read('armable') and state.read('mode') == 'GUIDED', [
-                FixedEstimator('armed', True)])
+            ArmNormalBranch(),
+            IdleBranch()
         ]
         super(ArmActionSchema, self).__init__('arm', parameters, branches)
 
@@ -183,8 +182,24 @@ class ArmActionSchema(ActionSchema):
             time.sleep(0.1)
 
 
+class ArmNormalBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators = [
+            FixedEstimator('armed', True)
+        ]
+        super(ArmNormalBranch, self).__init__(estimators)
+
+
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
+
+
+    def isApplicable(self, action, state, environment):
+        return state.read('armable') and state.read('mode') == 'GUIDED'
+
 
 
 class SetModeActionSchema(ActionSchema):
@@ -195,16 +210,7 @@ class SetModeActionSchema(ActionSchema):
                       'description')
         ]
         branches = [
-            OutcomeBranch(lambda action, state, env: action.read('mode') == 'RTL', [
-                FixedEstimator('mode', 'RTL'),
-                FixedEstimator('armed', False),
-                FixedEstimator('altitude', 0.0),
-                # BATTERY
-                Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
-                Estimator('longitude', lambda action, state, env: state.read('homeLongitude'))
-            ]),
-            OutcomeElseBranch([
-                Estimator('mode', lambda action, state, env: action.read('mode'))])
+            SetModeNormalBranch()
         ]
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
@@ -215,8 +221,26 @@ class SetModeActionSchema(ActionSchema):
         while not DRONEKIT_SYSTEM.mode == vehicleMode:
             time.sleep(0.1)
 
+
+class SetModeNormalBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators = [
+            FixedEstimator('mode', 'RTL'),
+            FixedEstimator('armed', False),
+            FixedEstimator('altitude', 0.0),
+            Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
+            Estimator('longitude', lambda action, state, env: state.read('homeLongitude'))
+        ]
+        super(SetModeNormalBranch, self).__init__(estimators)
+
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
+
+    def isApplicable(self, action, state, environment):
+        return action.read('mode') == 'RTL'
 
 
 class GoToActionSchema(ActionSchema):
@@ -231,12 +255,8 @@ class GoToActionSchema(ActionSchema):
         ]
 
         branches = [
-            OutcomeBranch(lambda action, state, env:
-                state.read('armed') and state.read('altitude') > 0.3, [
-                Estimator('latitude', lambda action, state, env: action.read('latitude')),
-                Estimator('longitude', lambda action, state, env: action.read('longitude')),
-                Estimator('altitude', lambda action, state, env: action.read('altitude'))
-            ])
+            GotoNormalBranch(),
+            IdleBranch()
         ]
 
         super(GoToActionSchema, self).__init__('goto', parameters, branches)
@@ -259,12 +279,29 @@ class GoToActionSchema(ActionSchema):
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
 
 
+class GotoNormalBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators = [
+            Estimator('latitude', lambda action, state, env: action.read('latitude')),
+            Estimator('longitude', lambda action, state, env: action.read('longitude')),
+            Estimator('altitude', lambda action, state, env: action.read('altitude'))
+        ]
+        super(GotoNormalBranch, self).__init__(estimators)
+
+
     def computeTimeout(self, action, state, environment):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
         timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
+
+
+    def isApplicable(self, action, state, environment):
+        return state.read('armed') and state.read('altitude') > 0.3
 
 
 class DistanceBasedGoToGenerator(ActionGenerator):
@@ -308,11 +345,8 @@ class LandActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
         branches = [
-            OutcomeBranch(lambda action, state, env:
-                state.read('armed') and state.read('altitude') > 0.3, [
-                FixedEstimator('altitude', 0.0), # TODO Not entirely true
-                FixedEstimator('mode', 'LAND')
-            ])
+            LandNormalBranch(),
+            IdleBranch()
         ]
 
         super(LandActionSchema, self).__init__('land', parameters, branches)
@@ -326,9 +360,29 @@ class LandActionSchema(ActionSchema):
             time.sleep(.1)
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
+
+
+
+class LandNormalBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators =  [
+            FixedEstimator('altitude', 0.0), # TODO Not entirely true
+            FixedEstimator('mode', 'LAND')
+        ]
+        super(LandNormalBranch, self).__init__(estimators)
+
+
     def computeTimeout(self, action, state, environment):
         timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
+
+
+    def isApplicable(self, action, state, environment):
+        return state.read('armed') and state.read('altitude') > 0.3
+
 
 
 class TakeoffActionSchema(ActionSchema):
@@ -339,10 +393,8 @@ class TakeoffActionSchema(ActionSchema):
                       'description')
         ]
         branches = [
-            OutcomeBranch(lambda action, state, env:
-                state.read('armed') and state.read('altitude') < 0.3,[
-                Estimator('altitude', lambda action, state, env: action.read('altitude'))
-            ])
+            TakeoffNormalBranch(),
+            IdleBranch()
         ]
 
         super(TakeoffActionSchema, self).__init__('takeoff', parameters, branches)
@@ -359,9 +411,23 @@ class TakeoffActionSchema(ActionSchema):
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
 
+class TakeoffNormalBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators = [
+            Estimator('altitude', lambda action, state, env: action.read('altitude'))
+        ]
+        super(TakeoffNormalBranch, self).__init__(estimators)
+
+
     def computeTimeout(self, action, state, environment):
         timeout = action.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
+
+    def isApplicable(self, action, state, environment):
+        return state.read('armed') and state.read('altitude') < 0.3
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
