@@ -148,7 +148,6 @@ class OutcomeBranch(object):
         assert (isinstance(estimators, list) and estimators is not None)
         assert (all(isinstance(e, state.Estimator) for e in estimators))
 
-        self.__estimators = estimators
         self.__effects = {e.getVariableName(): e for e in estimators}
         assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
