@@ -261,6 +261,21 @@ class SetModeNormalBranch(OutcomeBranch):
 
     def isApplicable(self, action, state, environment):
         return action.read('mode') == 'RTL'
+class SetModeLoiterBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators = [
+            FixedEstimator('mode', 'LOITER')
+        ]
+        super(SetModeLoiterBranch, self).__init__(estimators)
+
+    def computeTimeout(self, action, state, environment):
+        return CONSTANT_TIMEOUT_OFFSET
+
+    def isApplicable(self, action, state, environment):
+        return True
 
 
 class GoToActionSchema(ActionSchema):
