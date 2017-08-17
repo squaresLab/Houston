@@ -111,7 +111,7 @@ class MissionOutcome(object):
         assert(isinstance(jsn['setupTime'], float))
         assert(isinstance(jsn['totalTime'], float))
         actions = [ActionOutcome.fromJSON(a) for a in jsn['actions']]
-        return MissionOutcome(jsn['passed'], actions, jsn['setupTime', jsn['totalTime']])
+        return MissionOutcome(jsn['passed'], actions, jsn['setupTime'], jsn['totalTime'])
 
 
     def __init__(self, passed, outcomes, setupTime, totalTime):
