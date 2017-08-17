@@ -278,6 +278,32 @@ class SetModeLoiterBranch(OutcomeBranch):
         return True
 
 
+class SetModeRTLBranch(OutcomeBranch):
+    """
+    Description.
+    """
+    def __init__(self):
+        estimators = [
+            FixedEstimator('mode', 'RTL'),
+            Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
+            Estimator('longitude', lambda action, state, env: state.read('homeLongitude')),
+            Estimator('altitude', lambda action, state, env: 0.0)
+        ]
+        super(SetModeRTLBranch, self).__init__(estimators)
+
+
+    def computeTimeout(self, action, state, environment):
+        fromLocation = (state.read('latitude'), state.read('longitude'))
+        toLocation   = (action.getValue('homeLatitude'), action.getValue('homeLongitude'))
+        totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
+        timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+        return timeout
+
+
+    def isApplicable(self, action, state, environment):
+        return True
+
+
 class GoToActionSchema(ActionSchema):
     def __init__(self):
         parameters = [
