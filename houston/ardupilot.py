@@ -301,7 +301,7 @@ class SetModeRTLBranch(OutcomeBranch):
 
 
     def isApplicable(self, action, state, environment):
-        return True
+        return action.read('mode') == 'RTL'
 
 
 class GoToActionSchema(ActionSchema):
