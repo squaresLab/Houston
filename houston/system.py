@@ -214,6 +214,15 @@ class OutcomeBranch(object):
 class OutcomeElseBranch(OutcomeBranch):
     def __init__(self, effects = []):
         super(OutcomeElseBranch, self).__init__(lambda a, s, e: True, effects)
+class IdleBranch(OutcomeBranch):
+    def __init__(self):
+        super(IdleBranch, self).__init__([])
+
+    def computeTimeout(self, action, state, environment):
+        return 1.0
+
+    def isApplicable(self, action, state, environment):
+        return True
 
 
 class ActionSchema(object):
