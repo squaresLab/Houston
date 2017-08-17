@@ -210,7 +210,8 @@ class SetModeActionSchema(ActionSchema):
                       'description')
         ]
         branches = [
-            SetModeNormalBranch()
+            SetModeNormalBranch(),
+            IdleBranch()
         ]
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
