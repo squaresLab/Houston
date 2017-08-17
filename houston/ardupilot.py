@@ -210,7 +210,9 @@ class SetModeActionSchema(ActionSchema):
                       'description')
         ]
         branches = [
-            SetModeNormalBranch(),
+            SetModeGuidedBranch(),
+            SetModeLoiterBranch(),
+            SetModeRTLBranch(),
             IdleBranch()
         ]
 
