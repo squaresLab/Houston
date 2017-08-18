@@ -212,6 +212,7 @@ class SetModeActionSchema(ActionSchema):
             SetModeGuidedBranch(),
             SetModeLoiterBranch(),
             SetModeRTLBranch(),
+            SetModeLandBranch(),
             IdleBranch()
         ]
 
