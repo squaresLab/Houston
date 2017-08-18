@@ -258,7 +258,7 @@ class ActionSchema(object):
         return self.__name
 
 
-    def dispatch(self, action):
+    def dispatch(self, action, state, environment):
         """
         Responsible for invoking an action belonging to this schema.
 
