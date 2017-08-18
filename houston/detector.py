@@ -326,7 +326,7 @@ class IncrementalBugDetector(BugDetector):
             self.runGeneration(systm)
 
 
-    def generateAction(schema, state, env):
+    def generateAction(self, schema, state, env):
         generator = self.getGenerator(schema)
 
         if generator is None:
