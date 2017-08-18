@@ -353,8 +353,8 @@ class ActionGenerator(object):
         self.__schemaName = schemaName
         self.__parameters = parameters
 
-    
-    def construct(self, currentState, env, values):
+
+    def constructWithState(self, currentState, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
