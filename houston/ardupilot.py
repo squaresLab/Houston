@@ -447,7 +447,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
         assert (isinstance(centerCoordinates, tuple) and centerCoordinates is not None)
         assert (isinstance(radius, float) and radius is not None)
         self.__centerCoordinates = centerCoordinates
-        self.__boxSideLength = boxSideLength
+        self.__radius = radius
 
         parameters = [
             Parameter('latitude', DiscreteValueRange([centerCoordinates[0]])),
