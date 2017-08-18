@@ -403,11 +403,3 @@ class RandomBugDetector(BugDetector):
             bffr.append(mission)
 
         self.executeMissions(bffr)
-
-
-    def recordOutcome(self, mission, outcome):
-        super(IncrementalBugDetector, self).recordOutcome(mission, outcome)
-        self.__endStates[mission] = outcome.getEndState()
-
-        if not outcome.failed():
-                self.__pool.add(mission)
