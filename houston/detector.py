@@ -401,11 +401,8 @@ class RandomBugDetector(BugDetector):
         env = self.__env
         initialState = self.__initialState
 
-        if maxNumActions is None:
-            maxNumActions = 10 #TODO default.
-
         bffr = []
-        for _ in range(self.getNumThreads()): # TODO add getNumThreads() to BugDetector
+        for _ in range(self.getNumThreads()):
             actions = []
             for _ in range(random.randint(1, maxNumActions)):
                 schema = random.choice(schemas)
