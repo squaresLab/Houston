@@ -314,7 +314,7 @@ class IncrementalBugDetector(BugDetector):
         N = 10
 
         if maxNumActions is not None:
-            parents = [p for p in self.__pool if len(p.size()) < maxNumActions]
+            parents = [p for p in self.__pool if p.size() < maxNumActions]
         else:
             parents = self.__pool
 
