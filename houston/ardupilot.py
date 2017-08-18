@@ -461,6 +461,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
         lon = values['latitude']
         lat = values['longitude']
         heading = values['heading']
+        dist = values['distance']
         params = {}
 
         origin = geopy.Point(latitude=lat, longitude=lon)
