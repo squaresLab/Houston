@@ -435,7 +435,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         return params
 
     def constructWithoutState(self, env, values):
-        raise Exception
+        raise NotImplementedError
 
 
 class CircleBasedGotoGenerator(ActionGenerator):
@@ -475,7 +475,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
 
 
     def constructWithState(self, env, values):
-        raise Exception
+        raise NotImplementedError
 
 
 class TakeoffActionSchema(ActionSchema):
