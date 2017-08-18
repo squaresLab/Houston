@@ -60,6 +60,13 @@ class Mission(object):
         return copy.copy(self.__actions)
 
 
+    def size(self):
+        """
+        Returns the number of actions in this mission.
+        """
+        return len(self.__actions)
+
+
     def getExpectedMissionDuration(self, system):
         """
         Returns the expected time that the mission is going to take based on each
