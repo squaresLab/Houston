@@ -449,7 +449,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
         parameters = [
             Parameter('latitude', DiscreteValueRange([centerCoordinates[0]])),
             Parameter('longitude', DiscreteValueRange([centerCoordinates[1]])),
-            Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
+            Parameter('heading', ContinuousValueRange(0.0, 360.0, True)),
             Parameter('distance', ContinuousValueRange(0.0, radius))
         ]
 
