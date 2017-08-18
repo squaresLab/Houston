@@ -363,3 +363,50 @@ class IncrementalBugDetector(BugDetector):
             children.add(child)
 
         self.executeMissions(children)
+
+
+class RandomBugDetector(BugDetector):
+    def __init__(self, initialState, env, threads = 1, actionGenerators = []):
+        super(RandomBugDetector, self).__init__(threads, actionGenerators)
+        self.__initialState = initialState
+        self.__env = env
+
+
+    def run(self, systm):
+        while not self.exhausted():
+            self.runGeneration(systm)
+
+   def generateAction(self, schema):
+       generator = self.getGenerator(schema)
+       if generator is None:
+           return schema.generate() # CAN'T TAKE STATE
+       return generator.generateActionWithoutState(self.__env)
+
+
+    def runGeneration(self, systm):
+        schemas = systm.getActionSchemas().values()
+        maxNumActions = self.getMaxNumActions()
+        env = self.__env
+        initialState = self.__initialState
+
+        if maxNumActions is None:
+            maxNumActions = 10 #TODO default.
+
+        bffr = []
+        for _ in range(self.getNumThreads()): # TODO add getNumThreads() to BugDetector
+            actions = []
+            for _ in range(random.randint(1, maxNumActions))
+                schema = random.choice(schemas)
+                actions.append(self.generateAction(schema))
+            mission = Mission(env, initialState, actions)
+            bffr.append(mission)
+
+        self.executeMissions(bffr)
+
+
+    def recordOutcome(self, mission, outcome):
+        super(IncrementalBugDetector, self).recordOutcome(mission, outcome)
+        self.__endStates[mission] = outcome.getEndState()
+
+        if not outcome.failed():
+                self.__pool.add(mission)
