@@ -268,7 +268,7 @@ class SetModeLandBranch(OutcomeBranch):
         return timeout
 
     def isApplicable(self, action, state, environment):
-        return state.read('mode') == 'LAND'
+        return action.read('mode') == 'LAND'
 
 
 class SetModeGuidedBranch(OutcomeBranch):
