@@ -383,7 +383,13 @@ class ActionGenerator(object):
         return self.__schemaName
 
 
-    def generate(self, currentState, env):
+    def generateActionWithState(self, currentState, env):
         values = {p.getName(): p.generate() for p in self.__parameters}
-        values = self.construct(currentState, env, values)
+        values = self.constructWithState(currentState, env, values)
+        return mission.Action(self.__schemaName, values)
+
+
+    def generateActionWithoutState(self, env):
+        values = {p.getName(): p.generate() for p in self.__parameters}
+        values = self.constructWithoutState(env, values)
         return mission.Action(self.__schemaName, values)
