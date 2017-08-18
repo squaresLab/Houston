@@ -29,8 +29,9 @@ class ResourceLimits(object):
     """
     A convenience class used to impose limits on the bug detection process.
     """
-    def __init__(self, numMissions = None, runningTime = None):
+    def __init__(self, numMissions = None, numMaxActions = None, runningTime = None):
         self.__numMissions = numMissions
+        self.__numMaxActions  = numMaxActions
         self.__runningTime = runningTime
 
 
@@ -45,6 +46,10 @@ class ResourceLimits(object):
 
     def getNumMissions(self):
         return self.__numMissions
+
+
+    def getMaxNumActions(self):
+        return self.__numMaxActions
 
 
     def reachedMissionLimit(self, numMissions):
@@ -301,8 +306,15 @@ class IncrementalBugDetector(BugDetector):
 
     def runGeneration(self, systm):
         schemas = systm.getActionSchemas().values()
+        maxNumActions = self.getMaxNumActions()
         N = 10
-        parents = [random.sample(self.__pool, 1)[0] for i in range(N)]
+
+        if maxNumActions is not None:
+            parents = [p for p in self.__pool if len(p.size()) < maxNumActions]
+        else:
+            parents = self.__pool
+
+        parents = [random.sample(parents, 1)[0] for i in range(N)]
         children = set()
 
         # generate candidate missions using the selected parents
@@ -312,6 +324,8 @@ class IncrementalBugDetector(BugDetector):
             env = parent.getEnvironment()
             currentState = self.__endStates[parent]
             action = self.generateAction(schema, currentState, env)
+
+
             actions = parent.getActions() + [action]
 
             # TODO: implement tabu list
