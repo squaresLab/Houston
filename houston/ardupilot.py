@@ -82,7 +82,6 @@ class ArduPilot(System):
         schemas = {
             'goto'   : GoToActionSchema(),
             'takeoff': TakeoffActionSchema(),
-            'land'   : LandActionSchema(),
             'arm'    : ArmActionSchema(),
             'setmode'   : SetModeActionSchema()
         }
@@ -206,7 +205,7 @@ class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
     def __init__(self):
         parameters = [
-            Parameter('mode', DiscreteValueRange(['GUIDED', 'LOITER', 'RTL']),\
+            Parameter('mode', DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']),\
                       'description')
         ]
         branches = [
@@ -228,14 +227,39 @@ class SetModeActionSchema(ActionSchema):
             toLocation = (state.read('homeLatitude'), state.read('homeLongitude'))
             fromLocation = (currentLat, currentLon)
             while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3 and \
-                currentAlt > 0.1:
+                currentAlt > 0.1 and not DRONEKIT_SYSTEM.mode == vehicleMode:
                 time.sleep(0.2)
                 currentLat = DRONEKIT_SYSTEM.location.global_relative_frame.lat
                 currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+        elif action.read('mode') == 'LAND':
+            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+            while not DRONEKIT_SYSTEM.mode == vehicleinfo and currentAlt > 0.1:
+                time.sleep(0.2)
+                currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
         else: # TODO as we add more modes this would have to change
             while not DRONEKIT_SYSTEM.mode == vehicleMode:
                 time.sleep(0.1)
+
+
+class SetModeLandBranch(OutcomeBranch):
+    """
+    """
+    def __init__(self):
+        estimators = [
+            FixedEstimator('mode', 'LAND'),
+            Estimator('latitude', lambda action, state, env: state.read('latitude')),
+            Estimator('longitude', lambda action, state, env: state.read('longitude')),
+            Estimator('altitude', lambda action, state, env: 0.0)
+        ]
+        super(SetModeLandBranch, self).__init__(estimators)
+
+    def computeTimeout(self, action, state, environment):
+        timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+        return timeout
+
+    def isApplicable(self, action, state, environment):
+        return state.read('armed') and state.read('altitude') > 0.3
 
 
 class SetModeGuidedBranch(OutcomeBranch):
@@ -400,50 +424,6 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         params['altitude'] = currentState.read('altitude')
 
         return params
-
-
-class LandActionSchema(ActionSchema):
-    def __init__(self):
-        parameters = []
-        branches = [
-            LandNormalBranch(),
-            IdleBranch()
-        ]
-
-        super(LandActionSchema, self).__init__('land', parameters, branches)
-
-
-    def dispatch(self, action, state, environment):
-        DRONEKIT_SYSTEM.mode = VehicleMode('LAND')
-        currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
-
-        while currentAlt > 0.1:
-            time.sleep(.1)
-            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
-
-
-
-
-class LandNormalBranch(OutcomeBranch):
-    """
-    Description.
-    """
-    def __init__(self):
-        estimators =  [
-            FixedEstimator('altitude', 0.0), # TODO Not entirely true
-            FixedEstimator('mode', 'LAND')
-        ]
-        super(LandNormalBranch, self).__init__(estimators)
-
-
-    def computeTimeout(self, action, state, environment):
-        timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
-        return timeout
-
-
-    def isApplicable(self, action, state, environment):
-        return state.read('armed') and state.read('altitude') > 0.3
-
 
 
 class TakeoffActionSchema(ActionSchema):
