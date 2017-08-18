@@ -376,7 +376,8 @@ class RandomBugDetector(BugDetector):
         while not self.exhausted():
             self.runGeneration(systm)
 
-   def generateAction(self, schema):
+
+    def generateAction(self, schema):
        generator = self.getGenerator(schema)
        if generator is None:
            return schema.generate() # CAN'T TAKE STATE
