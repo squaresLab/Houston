@@ -206,6 +206,10 @@ class BugDetector(object):
         raise NotImplementedError
 
 
+    def getMaxNumActions(self):
+        return self.__resourceLimits.getMaxNumActions()
+
+
     def generateAction(self, schema, currentState, env):
         """
         Generates an instance of a given action schema at random.
