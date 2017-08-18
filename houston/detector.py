@@ -396,7 +396,7 @@ class RandomBugDetector(BugDetector):
         bffr = []
         for _ in range(self.getNumThreads()): # TODO add getNumThreads() to BugDetector
             actions = []
-            for _ in range(random.randint(1, maxNumActions))
+            for _ in range(random.randint(1, maxNumActions)):
                 schema = random.choice(schemas)
                 actions.append(self.generateAction(schema))
             mission = Mission(env, initialState, actions)
