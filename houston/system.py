@@ -362,10 +362,9 @@ class ActionGenerator(object):
 
         :returns    a dictionary of arguments for the generated action
         """
-        raise UnimplementedError
         raise NotImplementedError
 
-    def constructWithoutState(self, env):
+    def constructWithoutState(self, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -373,7 +372,6 @@ class ActionGenerator(object):
 
         :returns    a dictionary of arguments for the generated action
         """
-        raise UnimplementedError
         raise NotImplementedError
 
 
