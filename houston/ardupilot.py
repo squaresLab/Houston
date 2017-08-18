@@ -434,6 +434,9 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         return params
 
+    def constructWithoutState(self, env, values):
+        raise Exception
+
 
 class CircleBasedGotoGenerator(ActionGenerator):
     """
@@ -452,8 +455,9 @@ class CircleBasedGotoGenerator(ActionGenerator):
             Parameter('heading', ContinuousValueRange(0.0, 360.0, True)),
             Parameter('distance', ContinuousValueRange(0.0, radius))
         ]
+        super(CircleBasedGotoGenerator, self).__init__('goto', parameters)
 
-    def construct(self, env, values):
+    def constructWithoutState(self, env, values):
         lon = values['latitude']
         lat = values['longitude']
         heading = values['heading']
@@ -468,6 +472,10 @@ class CircleBasedGotoGenerator(ActionGenerator):
         params['altitude'] = currentState.read('altitude')
 
         return params
+
+
+    def constructWithState(self, env, values):
+        raise Exception
 
 
 class TakeoffActionSchema(ActionSchema):
