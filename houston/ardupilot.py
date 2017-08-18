@@ -45,8 +45,8 @@ except ImportError as e:
 
 
 DRONEKIT_SYSTEM = None
-TIME_PER_METER_TRAVELED = .5
-CONSTANT_TIMEOUT_OFFSET = .5
+TIME_PER_METER_TRAVELED = 1.0
+CONSTANT_TIMEOUT_OFFSET = 1.0
 
 class ArduPilot(System):
     """
@@ -198,7 +198,7 @@ class ArmNormalBranch(OutcomeBranch):
 
 
     def isApplicable(self, action, state, environment):
-        return state.read('armable') and state.read('mode') == 'GUIDED'
+        return state.read('armable') and (state.read('mode') == 'GUIDED' or state.read('mode') == 'LOITER')
 
 
 
