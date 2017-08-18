@@ -111,7 +111,7 @@ class ExpectedStateValue(object):
         if noise is None:
             return self.__value == observed
         else:
-            return (self.__value - self.__noise) < observed < (self.__value + self.__noise)
+            return (self.__value - noise) < observed < (self.__value + noise)
 
 
 class ExpectedState(object):
