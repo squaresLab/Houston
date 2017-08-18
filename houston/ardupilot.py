@@ -219,21 +219,31 @@ class SetModeActionSchema(ActionSchema):
     def dispatch(self, action, state, environment):
         vehicleMode = VehicleMode(action.read('mode'))
         DRONEKIT_SYSTEM.mode = vehicleMode
+
         if action.read('mode') == 'RTL':
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
             toLocation = (state.read('homeLatitude'), state.read('homeLongitude'))
             fromLocation = (currentLat, currentLon)
+
+            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+                time.sleep(0.2)
+
             while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3 and \
-                currentAlt > 0.1 and not DRONEKIT_SYSTEM.mode == vehicleMode:
+                currentAlt > 0.1:
                 time.sleep(0.2)
                 currentLat = DRONEKIT_SYSTEM.location.global_relative_frame.lat
                 currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+
         elif action.read('mode') == 'LAND':
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
-            while not DRONEKIT_SYSTEM.mode == vehicleMode and currentAlt > 0.1:
+
+            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+                time.sleep(0.2)
+
+            while currentAlt > 0.1:
                 time.sleep(0.2)
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
         else: # TODO as we add more modes this would have to change
@@ -254,7 +264,7 @@ class SetModeLandBranch(OutcomeBranch):
         super(SetModeLandBranch, self).__init__(estimators)
 
     def computeTimeout(self, action, state, environment):
-        timeout = state.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+        timeout = (state.read('altitude') * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
     def isApplicable(self, action, state, environment):
@@ -319,7 +329,7 @@ class SetModeRTLBranch(OutcomeBranch):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (state.read('homeLatitude'), state.read('homeLongitude'))
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        timeout = totalDistance * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
+        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
