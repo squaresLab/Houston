@@ -319,6 +319,14 @@ class IncrementalBugDetector(BugDetector):
             self.runGeneration(systm)
 
 
+    def generateAction(schema, state, env):
+        generator = self.getGenerator(schema)
+
+        if generator is None:
+            return schema.generate()
+        return generator.generateActionWithState(state, env)
+
+
     def runGeneration(self, systm):
         schemas = systm.getActionSchemas().values()
         maxNumActions = self.getMaxNumActions()
