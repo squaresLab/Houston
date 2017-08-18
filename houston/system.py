@@ -363,6 +363,7 @@ class ActionGenerator(object):
         :returns    a dictionary of arguments for the generated action
         """
         raise UnimplementedError
+        raise NotImplementedError
 
     def constructWithoutState(self, env):
         """
@@ -373,6 +374,7 @@ class ActionGenerator(object):
         :returns    a dictionary of arguments for the generated action
         """
         raise UnimplementedError
+        raise NotImplementedError
 
 
     def getSchemaName(self):
