@@ -29,9 +29,8 @@ class ResourceLimits(object):
     """
     A convenience class used to impose limits on the bug detection process.
     """
-    def __init__(self, numMissions = None, numMaxActions = None, runningTime = None):
+    def __init__(self, numMissions = None, runningTime = None):
         self.__numMissions = numMissions
-        self.__numMaxActions  = numMaxActions
         self.__runningTime = runningTime
 
 
@@ -46,10 +45,6 @@ class ResourceLimits(object):
 
     def getNumMissions(self):
         return self.__numMissions
-
-
-    def getMaxNumActions(self):
-        return self.__numMaxActions
 
 
     def reachedMissionLimit(self, numMissions):
@@ -123,7 +118,9 @@ class BugDetector(object):
     """
     Bug detectors are responsible for finding bugs in a given system under test.
     """
-    def __init__(self, threads = 1, actionGenerators = []):
+    def __init__(self, threads = 1, actionGenerators = [], maxNumActions = 10):
+        assert (isinstance(maxNumActions, int) and maxNumActions is not None)
+        assert (maxNumActions >= 1)
         assert (isinstance(threads, int) and threads is not None)
         assert (threads >= 1)
         assert (isinstance(actionGenerators, list) and actionGenerators is not None)
@@ -207,7 +204,7 @@ class BugDetector(object):
 
 
     def getMaxNumActions(self):
-        return self.__resourceLimits.getMaxNumActions()
+        return self.__maxNumActions
 
 
     def generateAction(self, schema, currentState, env):
@@ -365,9 +362,23 @@ class IncrementalBugDetector(BugDetector):
         self.executeMissions(children)
 
 
+class TreeBasedBugDetector(BugDetector):
+    def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
+        super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
+
+
+    def run(self, systm):
+        while not self.exhausted():
+            self.runGeneration(systm)
+
+
+    def runGeneration(self):
+        pass
+
+
 class RandomBugDetector(BugDetector):
-    def __init__(self, initialState, env, threads = 1, actionGenerators = []):
-        super(RandomBugDetector, self).__init__(threads, actionGenerators)
+    def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
+        super(RandomBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
         self.__initialState = initialState
         self.__env = env
 
@@ -380,7 +391,7 @@ class RandomBugDetector(BugDetector):
     def generateAction(self, schema):
        generator = self.getGenerator(schema)
        if generator is None:
-           return schema.generate() # CAN'T TAKE STATE
+           return schema.generate()
        return generator.generateActionWithoutState(self.__env)
 
 
