@@ -100,12 +100,12 @@ class ExpectedStateValue(object):
         assert (measurementNoise is None or type(measurementNoise) == type(observed))
 
         # add the measurement noise to the action noise
-        if measurementNoise is not None:
+        if measurementNoise is None:
             noise = self.__noise
         elif self.__noise is not None:
             noise = self.__noise + measurementNoise
         else:
-            noise = None
+            noise = measurementNoise
 
         # check the observed value against the expected range
         if noise is None:
