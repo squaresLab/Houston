@@ -222,6 +222,17 @@ class BugDetector(object):
         return schema.generate()
 
 
+    def getGenerator(self, schema):
+        """
+        Returns an available generator for a given action schema if there are
+        non then it returns None.
+        """
+        name = schema.getName()
+        if name in self.__actionGenerators:
+            return self.__actionGenerators[name]
+        return None
+
+
     def executeMissions(self, missions):
         # if we've been given more missions than we can execute, trim the list
         missions = list(missions)
