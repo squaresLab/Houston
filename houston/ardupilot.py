@@ -219,7 +219,7 @@ class SetModeActionSchema(ActionSchema):
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
     def dispatch(self, action, state, environment):
-        vehicleMode = VehicleMode(action.getValue('mode'))
+        vehicleMode = VehicleMode(action.read('mode'))
         DRONEKIT_SYSTEM.mode = vehicleMode
         if action.read('mode') == 'RTL':
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
