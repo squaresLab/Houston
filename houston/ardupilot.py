@@ -477,7 +477,7 @@ class TakeoffNormalBranch(OutcomeBranch):
         return timeout
 
     def isApplicable(self, action, state, environment):
-        return state.read('armed') and state.read('altitude') < 0.3 and state.read('mode') == 'GUIDED'
+        return state.read('armed') and state.read('altitude') < 0.3 and state.read('mode') == 'GUIDED' #TODO further check
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
