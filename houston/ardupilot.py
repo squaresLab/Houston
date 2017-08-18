@@ -225,7 +225,7 @@ class SetModeActionSchema(ActionSchema):
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
-            toLocation = (action.getValue('latitude'), action.getValue('longitude'))
+            toLocation = (state.read('homeLatitude'), state.read('homeLongitude'))
             fromLocation = (currentLat, currentLon)
             while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3 and \
                 currentAlt > 0.1:
