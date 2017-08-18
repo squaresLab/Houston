@@ -235,7 +235,7 @@ class SetModeActionSchema(ActionSchema):
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
         elif action.read('mode') == 'LAND':
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
-            while not DRONEKIT_SYSTEM.mode == vehicleinfo and currentAlt > 0.1:
+            while not DRONEKIT_SYSTEM.mode == vehicleMode and currentAlt > 0.1:
                 time.sleep(0.2)
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
         else: # TODO as we add more modes this would have to change
