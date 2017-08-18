@@ -14,7 +14,7 @@ import mission
 # Find the location of Houston on disk
 # PATH_TO_SITE_PKGS = site.getsitepackages()[0]
 PATH_TO_HOUSTON_EGG = os.path.dirname(os.path.dirname(houston.__file__))
-HOUSTON_SCRIPT_PATHS = [
+HOUSTON_SCRIPT_PATHS = [ # TODO: use `which` command
     '/usr/local/bin/houstonserver'
 ]
 
