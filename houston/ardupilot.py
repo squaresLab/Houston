@@ -435,6 +435,41 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         return params
 
 
+class CircleBasedGotoGenerator(ActionGenerator):
+    """
+    Description.
+    """
+
+    def __init__(self, centerCoordinates, radius):
+        assert (isinstance(centerCoordinates, tuple) and centerCoordinates is not None)
+        assert (isinstance(radius, float) and radius is not None)
+        self.__centerCoordinates = centerCoordinates
+        self.__boxSideLength = boxSideLength
+
+        parameters = [
+            Parameter('latitude', DiscreteValueRange([centerCoordinates[0]])),
+            Parameter('longitude', DiscreteValueRange([centerCoordinates[1]])),
+            Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
+            Parameter('distance', ContinuousValueRange(0.0, radius))
+        ]
+
+    def construct(self, env, values):
+        lon = values['latitude']
+        lat = values['longitude']
+        heading = values['heading']
+        params = {}
+
+        origin = geopy.Point(latitude=lat, longitude=lon)
+        dist = geopy.distance.VincentyDistance(meters=dist)
+        destination =  dist.destination(origin, heading)
+
+        params['latitude'] = destination.latitude
+        params['longitude'] = destination.longitude
+        params['altitude'] = currentState.read('altitude')
+
+        return params
+
+
 class TakeoffActionSchema(ActionSchema):
     """docstring for TakeoffActionSchema."""
     def __init__(self):
