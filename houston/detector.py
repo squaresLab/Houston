@@ -222,6 +222,13 @@ class BugDetector(object):
         return schema.generate()
 
 
+    def getNumThreads(self):
+        """
+        Returns the number of threads specified.
+        """
+        return self.__threads
+
+
     def getGenerator(self, schema):
         """
         Returns an available generator for a given action schema if there are
