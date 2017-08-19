@@ -2,6 +2,8 @@ import copy
 import system
 import state
 
+from system import BranchID
+
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
