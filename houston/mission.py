@@ -217,25 +217,31 @@ class ActionOutcome(object):
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
-    def __init__(self, action, successful, stateBefore, stateAfter, timeElapsed):
+    def __init__(self, action, successful, stateBefore, stateAfter, timeElapsed, branchID):
         """
         Constructs a ActionOutcome.
 
         :param  action      the action that was performed
+        :param  succesful   a flag indicating if the action was completed \
+                            successfully
         :param  stateBefore the state of the system immediately prior to execution
         :param  stateAfter  the state of the system immediately after execution
+        :param  branchID    the identifier of the branch that was taken \
+                            during the execution of this action
         """
         assert (isinstance(action, Action) and not action is None)
         assert (isinstance(successful, bool) and not successful is None)
         assert (isinstance(stateBefore, state.State) and not stateBefore is None)
         assert (isinstance(stateAfter, state.State) and not stateAfter is None)
         assert (isinstance(timeElapsed, float) and not timeElapsed is None)
+        assert (isinstance(branchID, BranchID) and not branchID is None)
 
         self.__action      = action
         self.__successful  = successful
         self.__stateBefore = stateBefore
         self.__stateAfter  = stateAfter
         self.__timeElapsed = timeElapsed
+        self.__branchID = branchID
 
 
     def toJSON(self):
@@ -255,8 +261,7 @@ class ActionOutcome(object):
         """
         Returns an identifier for the branch that was taken by this action.
         """
-        # TODO
-        raise UnimplementedError
+        return self.__branchID
 
 
     def passed(self):
