@@ -6,12 +6,15 @@ import sys
 import subprocess as sub
 
 import houston
+
 from valueRange import DiscreteValueRange, ContinuousValueRange
-from system     import System, ActionSchema, OutcomeBranch, ActionGenerator, IdleBranch
+from system     import System, ActionSchema, Branch, ActionGenerator, IdleBranch
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
 from state      import Estimator, FixedEstimator
 from state      import InternalVariable, ExternalVariable
+from branch     import Branch, IdleBranch
+
 import geopy
 import geopy.distance
 # Attempt to import the modules necessary to interact with ArduPilot. If the
@@ -145,7 +148,7 @@ class ArmActionSchema(ActionSchema):
             time.sleep(0.1)
 
 
-class ArmNormalBranch(OutcomeBranch):
+class ArmNormalBranch(Branch):
     """
     Description.
     """
@@ -220,7 +223,7 @@ class SetModeActionSchema(ActionSchema):
                 time.sleep(0.1)
 
 
-class SetModeLandBranch(OutcomeBranch):
+class SetModeLandBranch(Branch):
     """
     """
     def __init__(self, schema):
@@ -250,7 +253,7 @@ class SetModeLandBranch(OutcomeBranch):
         return Action(self.getSchemaName(), {'mode': 'LAND'})
 
 
-class SetModeGuidedBranch(OutcomeBranch):
+class SetModeGuidedBranch(Branch):
     """
     Description.
     """
@@ -284,7 +287,7 @@ class SetModeGuidedBranch(OutcomeBranch):
 
 
 
-class SetModeLoiterBranch(OutcomeBranch):
+class SetModeLoiterBranch(Branch):
     """
     Description.
     """
@@ -311,7 +314,7 @@ class SetModeLoiterBranch(OutcomeBranch):
         return Action(self.getSchemaName(), {'mode': 'LOITER'})
 
 
-class SetModeRTLBranch(OutcomeBranch):
+class SetModeRTLBranch(Branch):
     """
     Description.
     """
@@ -381,7 +384,7 @@ class GoToActionSchema(ActionSchema):
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
 
 
-class GotoNormalBranch(OutcomeBranch):
+class GotoNormalBranch(Branch):
     """
     Description.
     """
@@ -525,7 +528,7 @@ class TakeoffActionSchema(ActionSchema):
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
 
-class TakeoffNormalBranch(OutcomeBranch):
+class TakeoffNormalBranch(Branch):
     """
     Description.
     """
