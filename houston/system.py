@@ -195,6 +195,13 @@ class OutcomeBranch(object):
         return self.__schema
 
 
+    def getSchemaName(self):
+        """
+        Returns the name of the schema to which this outcome branch belongs.
+        """
+        return self.getSchema().getName()
+
+
     def getName(self):
         """
         Returns the name of this branch.
@@ -434,6 +441,7 @@ class ActionGenerator(object):
         :returns    a dictionary of arguments for the generated action
         """
         raise NotImplementedError
+
 
     def constructWithoutState(self, env, values):
         """
