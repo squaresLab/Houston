@@ -319,8 +319,9 @@ class TreeBasedBugDetector(BugDetector):
                 otherPath = self.getOutcome(other).getExecutedBranchPath() # TODO
                 if otherPath.startswith(executedPath):
                     self.__flaky.add(other)
-                    # TODO
-                    # remove from failure set
+                    # TODO: access!
+                    self.__failures = \
+                        set(m for m in self.__failures if not self.__paths[m].startswith(path))
 
 
     def prune(self, path):
@@ -358,11 +359,11 @@ class TreeBasedBugDetector(BugDetector):
     def generateMission(self, systm, seed):
         branches = systm.getAllBranches() # TODO: System.getAllBranches
         state = self.__endStates[seed]
-        path = seed.getBranchPath() # TODO: Mission.getBranchPath (BranchPath)
+        path = self.__paths[seed]
 
         # choose a branch at random
         branches = [b for b in branches if b.feasible(state)] # TODO: Branch.feasible(State)
-        branches = [b for b in branches if path.extended(b) not in self.__tabu] # TODO: Path.extended
+        branches = [b for b in branches if path.extended(b) not in self.__tabu]
 
         # check if there are no viable branches
         if not branches:

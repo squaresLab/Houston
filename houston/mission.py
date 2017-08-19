@@ -155,6 +155,13 @@ class MissionOutcome(object):
     def __repr__(self):
         return str(self)
 
+    
+    def getPath(self):
+        """
+        Returns the branch path that was taken by this mission execution.
+        """
+        return BranchPath([a.getBranchID() for a in self.__outcomes])
+
 
     def getEndState(self):
         """
@@ -242,6 +249,14 @@ class ActionOutcome(object):
             'stateAfter':   self.__stateAfter.toJSON(),
             'timeElapsed':  self.__timeElapsed
         }
+
+    
+    def getBranchID(self):
+        """
+        Returns an identifier for the branch that was taken by this action.
+        """
+        # TODO
+        raise UnimplementedError
 
 
     def passed(self):
