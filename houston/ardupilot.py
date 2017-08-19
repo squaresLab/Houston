@@ -150,6 +150,8 @@ class ArduPilot(System):
             # zero throttle
             self.__mavproxy.send('rc 3 1000\n')
             self.__mavproxy.expect('IMU0 is using GPS')
+            self.__mavproxy.send('param set DISARM_DELAY 0')
+            time.sleep(2)
             DRONEKIT_SYSTEM = connect('127.0.0.1:14550', wait_ready=True)
         except pexpect.TIMEOUT:
             print("Failed: time out")
