@@ -527,6 +527,16 @@ class BranchPath(object):
         return True
 
 
+    def __eq__(self, other):
+        assert (isinstance(other, BranchPath) and not BranchPath is None)
+        if self.size() != other.size():
+            return False
+        for (x, y) in zip(self.__identifiers, other.getIdentifiers()):
+            if x != y:
+                return False
+        return True
+
+
     def __str__(self):
         """
         Returns a string-based description of this path.
