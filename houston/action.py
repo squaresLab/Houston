@@ -253,7 +253,7 @@ class ActionOutcome(object):
                              state.State.fromJSON(jsn['stateBefore']),
                              state.State.fromJSON(jsn['stateAfter']),
                              jsn['timeElapsed'],
-                             branch.BranchID(jsn['branchID']))
+                             branch.BranchID.fromJSON(jsn['branchID']))
 
 
     """
