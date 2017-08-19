@@ -130,8 +130,7 @@ class System(object):
                 # compare the observed and expected states
                 observed = self.getState()
                 passed = expected.isExpected(self.__variables, observed)
-                outcome = mission.ActionOutcome(action, passed, initialState,
-                                                observed, timeElapsed)
+                outcome = mission.ActionOutcome(action, passed, initialState, observed, timeElapsed, branch.getID())
                 outcomes.append(outcome)
 
                 if not passed:
