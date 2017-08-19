@@ -320,7 +320,7 @@ class TreeBasedBugDetector(BugDetector):
 
         # find the intended and executed path for this mission
         intendedPath = self.__paths[mission] # TODO store
-        executedPath = outcome.getPath() # TODO
+        executedPath = self.getExecutedPath(mission)
         
         if not outcome.failed():
             self.__explored[intendedPath] = mission
@@ -337,7 +337,7 @@ class TreeBasedBugDetector(BugDetector):
             self.__failures.remove(mission)
 
             for other in self.__failures:
-                otherPath = self.getOutcome(other).getPath() # TODO
+                otherPath = self.getExecutedPath(other)
                 if otherPath.startswith(executedPath):
                     self.__flaky.add(other)
                     self.__failures.remove(other)

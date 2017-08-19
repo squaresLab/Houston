@@ -156,7 +156,7 @@ class MissionOutcome(object):
         return str(self)
 
     
-    def getPath(self):
+    def getExecutedPath(self):
         """
         Returns the branch path that was taken by this mission execution.
         """
