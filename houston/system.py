@@ -87,6 +87,9 @@ class System(object):
 
                 # compute expected state
                 initialState = self.getState()
+
+                # TODO: find and record applicable branch!
+    
                 expected = schema.computeExpectedState(action, initialState, env)
 
                 # enforce a timeout
