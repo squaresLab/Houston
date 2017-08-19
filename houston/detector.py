@@ -283,117 +283,73 @@ class BugDetector(object):
             self.__failures.add(mission)
 
 
-class IncrementalBugDetector(BugDetector):
-    def __init__(self, initialState, env, threads = 1, actionGenerators = []):
-        super(IncrementalBugDetector, self).__init__(threads, actionGenerators)
-        self.__initialState = initialState
-        self.__env = env
+class TreeBasedBugDetector(BugDetector):
+    """
+    Description.
+    """
 
 
-    def getInitialState(self):
-        return self.__initialState
+    class AllPathsExplored(Exception):
+        """
+        Used to indicate that all paths have been explored.
+        """
+        pass
 
 
-    def getEnvironment(self):
-        return self.__env
-
-
-    def prepare(self, systm, image, resourceLimits):
-        super(IncrementalBugDetector, self).prepare(systm, image, resourceLimits)
-
-        # seed the pool
-        m = Mission(self.getEnvironment(), self.getInitialState(), [])
-        self.__pool = set([m])
-        self.__endStates = {m: self.getInitialState()}
-
-        # initialise the tabu list
+    def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
+        super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
         self.__tabu = set()
+        self.__seed = Mission(self.__env, self.__initialState, [])
 
 
+    # TODO
     def recordOutcome(self, mission, outcome):
-        super(IncrementalBugDetector, self).recordOutcome(mission, outcome)
+        super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
         self.__endStates[mission] = outcome.getEndState()
 
         if not outcome.failed(): # TODO: update tabu list
                 self.__pool.add(mission)
 
 
-    def run(self, systm):
-        while not self.exhausted():
-            self.runGeneration(systm)
-
-
-    def generateAction(self, schema, state, env):
-        generator = self.getGenerator(schema)
-
-        if generator is None:
-            return schema.generate()
-        return generator.generateActionWithState(state, env)
-
-
-    def runGeneration(self, systm):
-        schemas = systm.getActionSchemas().values()
-        maxNumActions = self.getMaxNumActions()
-        N = 10
-
-        if maxNumActions is not None:
-            parents = [p for p in self.__pool if p.size() < maxNumActions]
-        else:
-            parents = self.__pool
-
-        parents = [random.sample(parents, 1)[0] for i in range(N)]
-        children = set()
-
-        # generate candidate missions using the selected parents
-        # discard any missions that belong to the tabu list
-        for parent in parents:
-            schema = random.choice(schemas)
-            env = parent.getEnvironment()
-            currentState = self.__endStates[parent]
-            action = self.generateAction(schema, currentState, env)
-
-
-            actions = parent.getActions() + [action]
-
-            # TODO: implement tabu list
-            child = Mission(env, parent.getInitialState(), actions)
-            children.add(child)
-
-        self.executeMissions(children)
-
-
-class TreeBasedBugDetector(BugDetector):
-    def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
-        super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
-        self.__tabu = set()
-
-
     def prepare(self):
         super(TreeBasedBugDetector, self).prepare()
+        self.__endStates = {self.__seed: self.getInitialState()}
+        self.__explored = {}
         self.__tabu = set()
 
 
     def run(self, systm):
+        seed = Mission(self.__env, self.__initialState, [])
         while not self.exhausted():
             # TODO: implement parallelism
             m = self.generateMission(seed)
-            self.runGeneration(systm)
 
 
     def generateMission(self, systm, seed):
-        # needs branch awareness
-        state = self.__states[seed]
+        # TODO needs branch awareness
+        state = self.__endStates[seed]
         path = seed.getBranchPath() # TODO
-        branches = XYZXYZXYZ
+        branches = XYZXYZXYZ # TODO
 
         # choose a branch at random
         branches = [b for b in branches if b.feasible(state)]
         branches = [b for b in branches if not path.extended(b) in self.__tabu]
 
-        # TODO: what if we exhaust all possible branches? add this path to the
-        #   tabu list and go back.
+        # check if there are no viable branches
         if not branches:
+            
+            # if all viable paths in the tree have been explored, raise an
+            # `ExhaustedSearch` exception
+            if not path:
+                raise AllPathsExplored
+
+            # otherwise, add the current path to the tabu list, and attempt to
+            # generate a mission from the preceding point along the path
             self.__tabu.add(path)
+            mission = Mission(seed.getEnvironment(),
+                              seed.getInitialState(),
+                              seed.getActions()[:-1])
+            return self.generateMission(systm, mission)
 
         branch = random.choice(branches)
 
@@ -407,10 +363,6 @@ class TreeBasedBugDetector(BugDetector):
         actions = seed.getActions() + [action]
         mission = Mission(seed.getEnviroment(), seed.getInitialState(), actions)
         return mission
-
-
-    def runGeneration(self, systm):
-        pass 
 
 
 class RandomBugDetector(BugDetector):
