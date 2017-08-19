@@ -297,14 +297,24 @@ class OutcomeBranch(object):
 
 
 class IdleBranch(OutcomeBranch):
-    def __init__(self):
-        super(IdleBranch, self).__init__([])
+    def __init__(self, schema):
+        super(IdleBranch, self).__init__("idle", schema, [])
+
 
     def computeTimeout(self, action, state, environment):
         return 1.0
 
+
     def isApplicable(self, action, state, environment):
         return True
+
+
+    def isSatisfiable(self, state, environment):
+        return True
+
+
+    def generate(self, state, environment):
+        return self.getSchema.generate()
 
 
 class ActionSchema(object):
