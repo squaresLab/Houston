@@ -308,16 +308,16 @@ class TreeBasedBugDetector(BugDetector):
             return
 
         # add the executed mission path to the tabu list
-        print("Adding path to tabu list: {}".format(executedPath)) # TODO
-        self.prune(executedPath) # TODO: reduction
+        print("Adding path to tabu list: {}".format(executedPath))
+        self.prune(executedPath)
 
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
         if intendedPath != executedPath:
             self.__flaky.add(mission)
             for other in self.__failures:
-                otherPath = self.getOutcome(other).getExecutedBranchPath()
-                if otherPath.startsWith(executedPath): # TODO: BranchPath.startsWith()
+                otherPath = self.getOutcome(other).getExecutedBranchPath() # TODO
+                if otherPath.startswith(executedPath):
                     self.__flaky.add(other)
                     # TODO
                     # remove from failure set

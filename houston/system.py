@@ -443,7 +443,7 @@ class BranchPath(object):
         return BranchPath(self.__branches + [branch])
 
 
-    def startsWith(self, prefix):
+    def startswith(self, prefix):
         """
         Determines whether this path is prefixed by a given path. Returns True
         if this path is prefixed by the given path, otherwise False.
