@@ -469,6 +469,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
+
     def constructWithState(self, currentState, env, values):
         dist = values['distance']
         heading = values['heading']
@@ -485,6 +486,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         params['altitude'] = currentState.read('altitude')
 
         return params
+
 
     def constructWithoutState(self, env, values):
         raise NotImplementedError
@@ -508,6 +510,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
             Parameter('distance', ContinuousValueRange(0.0, radius))
         ]
         super(CircleBasedGotoGenerator, self).__init__('goto', parameters)
+
 
     def constructWithoutState(self, env, values):
         lon = values['latitude']
@@ -562,19 +565,24 @@ class TakeoffNormalBranch(OutcomeBranch):
     """
     Description.
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             Estimator('altitude', lambda action, state, env: action.read('altitude'))
         ]
-        super(TakeoffNormalBranch, self).__init__(estimators)
+        super(TakeoffNormalBranch, self).__init__('normal', schema, estimators)
 
 
     def computeTimeout(self, action, state, environment):
         timeout = action.read('altitude') * TIME_PER_METER_TRAVELED + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
+
     def isApplicable(self, action, state, environment):
         return state.read('armed') and state.read('altitude') < 0.3 and state.read('mode') == 'GUIDED' #TODO further check
+
+    
+    def isSatisfiable(self, state, environment):
+        return self.isApplicable(None, state, environment)
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
