@@ -6,7 +6,8 @@ import system
 
 from multiprocessing.pool import ThreadPool
 
-from mission import Mission, Action
+from mission import Mission, MissionOutcome
+from action import ActionOutcome, Action
 
 class ResourceUsage(object):
     """
