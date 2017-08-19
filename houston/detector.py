@@ -219,6 +219,14 @@ class BugDetector(object):
         """
         return self.__threads
 
+    
+    def getEndState(self, m):
+        """
+        Returns the end state after executing a given mission.
+        """
+        outcome = self.__outcomes[m]
+        return outcome.getEndState()
+
 
     def getGenerator(self, schema):
         """
@@ -300,11 +308,10 @@ class TreeBasedBugDetector(BugDetector):
 
         # find the intended and executed path for this mission
         intendedPath = self.__paths[mission] # TODO store
-        executedPath = outcome.getExecutedBranchPath() # TODO
+        executedPath = outcome.getPath() # TODO
         
         if not outcome.failed():
             self.__explored[intendedPath] = mission
-            self.__endStates[mission] = outcome.getEndState()
             return
 
         # add the executed mission path to the tabu list
@@ -315,13 +322,13 @@ class TreeBasedBugDetector(BugDetector):
         # found a flaky path.
         if intendedPath != executedPath:
             self.__flaky.add(mission)
+            self.__failures.remove(mission)
+
             for other in self.__failures:
-                otherPath = self.getOutcome(other).getExecutedBranchPath() # TODO
+                otherPath = self.getOutcome(other).getPath() # TODO
                 if otherPath.startswith(executedPath):
                     self.__flaky.add(other)
-                    # TODO: access!
-                    self.__failures = \
-                        set(m for m in self.__failures if not self.__paths[m].startswith(path))
+                    self.__failures.remove(other)
 
 
     def prune(self, path):
@@ -333,13 +340,17 @@ class TreeBasedBugDetector(BugDetector):
 
         # remove redundant end state, exploration, and path information
         self.__paths = {m: p for (m, p) in self.__paths.items() if not p.startswith(path)}
-        self.__endStates = {m: p for (m, p) in self.__endStates.items() if not p.startswith(path)}
         self.__explored = {p: m for (p, m) in self.__explored if not p.startswith(path)}
+
+
+    def getEndState(self, m):
+        if m == self.__seed:
+            return self.__seed.getInitialState()
+        return super(TreeBasedBugDetector, self).getEndState(m)
 
 
     def prepare(self):
         super(TreeBasedBugDetector, self).prepare()
-        self.__endStates = {self.__seed: self.getInitialState()}
         self.__paths = {self.__seed: BranchPath()}
         self.__explored = {}
         self.__tabu = set()
@@ -358,7 +369,7 @@ class TreeBasedBugDetector(BugDetector):
 
     def generateMission(self, systm, seed):
         branches = systm.getAllBranches() # TODO: System.getAllBranches
-        state = self.__endStates[seed]
+        state = self.getEndState(seed)
         path = self.__paths[seed]
 
         # choose a branch at random
