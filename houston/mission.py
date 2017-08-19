@@ -1,6 +1,6 @@
 import state
 import branch
-from action import Action, ActionOutcome
+import action
 
 class Mission(object):
     """
@@ -21,7 +21,7 @@ class Mission(object):
 
         env = state.Environment.fromJSON(jsn['environment'])
         initialState = state.State.fromJSON(jsn['initialState'])
-        actions = [Action.fromJSON(action) for action in jsn['actions']]
+        actions = [action.Action.fromJSON(action) for action in jsn['actions']]
 
         return Mission(env, initialState, actions)
 
@@ -35,7 +35,6 @@ class Mission(object):
         :param  external:       a description of the initial external state
         :param  actions:        a list of actions
         """
-        # assert(actions != [])
         assert(isinstance(environment, state.Environment) and not environment is None)
         assert(isinstance(initialState, state.State) and not initialState is None)
 
@@ -74,8 +73,8 @@ class Mission(object):
         """
         durationTime = 0.0
         schemas = system.getActionSchemas()
-        for action in self.__actions:
-            durationTime += schemas[action.getSchemaName()].computeTimeout(action, self.__initialState, self.__environment)
+        for a in self.__actions:
+            durationTime += schemas[a.getSchemaName()].computeTimeout(a, self.__initialState, self.__environment)
         return durationTime
 
 
@@ -109,7 +108,7 @@ class MissionOutcome(object):
         assert(isinstance(jsn['actions'], list))
         assert(isinstance(jsn['setupTime'], float))
         assert(isinstance(jsn['totalTime'], float))
-        actions = [ActionOutcome.fromJSON(a) for a in jsn['actions']]
+        actions = [action.ActionOutcome.fromJSON(a) for a in jsn['actions']]
         return MissionOutcome(jsn['passed'], actions, jsn['setupTime'], jsn['totalTime'])
 
 
