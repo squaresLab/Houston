@@ -152,6 +152,17 @@ class OutcomeBranch(object):
         assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
 
+    def getLabel(self):
+        """
+        Returns the label for this branch.
+        """
+        pass # TODO
+
+
+    def generate(self, initialState, env):
+        pass
+
+
     def isApplicable(self, action, initialState, env):
         """
         Determines whether the guard for this outcome branch is satisfied by
@@ -399,6 +410,7 @@ class BranchPath(object):
 
     def __init__(self, branches):
         # TODO: how do record branches?
+        # TODO: add assertions!
         self.__branches = branches
 
 
