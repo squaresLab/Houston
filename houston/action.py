@@ -27,7 +27,7 @@ class Action(object):
         assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
         assert (isinstance(values, dict) and not values is None)
         self.__kind = kind
-        self.__values = copy.copy(values)
+        self.__values = values[:]
 
 
     def getSchemaName(self):
@@ -55,7 +55,7 @@ class Action(object):
         """
         Returns a copy of the parameters for this action.
         """
-        return copy.copy(self.__values)
+        return self.__values[:]
 
 
     def toJSON(self):
