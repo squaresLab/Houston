@@ -8,7 +8,7 @@ import subprocess as sub
 import houston
 
 from valueRange import DiscreteValueRange, ContinuousValueRange
-from system     import System, ActionSchema, Branch, ActionGenerator, IdleBranch
+from system     import System, ActionSchema, Branch, ActionGenerator
 from mission    import Parameter
 from predicate  import Invariant, Postcondition, Precondition
 from state      import Estimator, FixedEstimator
