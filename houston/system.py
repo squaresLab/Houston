@@ -213,7 +213,7 @@ class OutcomeBranch(object):
         """
         Returns the identifier for this branch.
         """
-        return BranchID(self.__schema, self.__name)
+        return BranchID(self.getSchemaName(), self.__name)
 
 
     def generate(self, initialState, env):
@@ -533,7 +533,6 @@ class BranchID(object):
         
 
 class BranchPath(object):
-
     def __init__(self, identifiers):
         assert (isinstance(identifiers, list) and identifiers is not None)
         assert (all(isinstance(i, BranchID) for i in identifiers))
