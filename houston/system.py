@@ -393,3 +393,47 @@ class ActionGenerator(object):
         values = {p.getName(): p.generate() for p in self.__parameters}
         values = self.constructWithoutState(env, values)
         return mission.Action(self.__schemaName, values)
+
+
+class BranchPath(object):
+
+    def __init__(self, branches):
+        # TODO: how do record branches?
+        self.__branches = branches
+
+
+    def length(self):
+        """
+        Returns the length of this path (measured by its number of branches).
+        """
+        return len(self.__branches)
+
+
+    def getBranches(self):
+        """
+        Returns an ordered list of the branches along this path.
+        """
+        return copy.copy(self.__branches)
+
+
+    def extended(self, branch):
+        """
+        Returns a copy of this path with an additional branch attached to the end.
+        """
+        return BranchPath(self.__branches + [branch])
+
+
+    def startsWith(self, prefix):
+        """
+        Determines whether this path is prefixed by a given path. Returns True
+        if this path is prefixed by the given path, otherwise False.
+        """
+        if prefix.length() > self.length():
+            return False
+
+        prefix = prefix.getBranches()
+        for i in range(len(prefix)):
+            if prefix[i] != self.__branches[i]:
+                return False
+
+        return True
