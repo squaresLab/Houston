@@ -208,7 +208,7 @@ class ActionSchema(object):
         Returns the parameters being hold for the current action schema. This is
         used to generate actions
         """
-        return copy.deepcopy(self.__parameters)
+        return self.__parameters[:]
 
 
     def resolveBranch(self, action, initialState, environment):
