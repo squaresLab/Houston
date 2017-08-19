@@ -439,7 +439,17 @@ class BranchID(object):
         self.__branchName = branchName
 
 
-    # TODO: implement equality checking
+    def __eq__(self, other):
+        return  self.__actionName == other.getActionName() and \
+                self.__branchName == other.getBranchName()
+
+    
+    def getActionName(self):
+        return self.__actionName
+
+
+    def getBranchName(self):
+        return self.__branchName
 
 
     def __str__(self):
