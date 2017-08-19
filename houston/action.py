@@ -55,7 +55,7 @@ class Action(object):
         """
         Returns a copy of the parameters for this action.
         """
-        return self.__values[:]
+        return self.__values.copy()
 
 
     def toJSON(self):
