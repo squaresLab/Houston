@@ -148,27 +148,47 @@ class System(object):
 
 
 class OutcomeBranch(object):
-    def __init__(self, label, estimators):
+    def __init__(self, actionSchema, name, estimators):
+        """
+        Constructs a new outcome branch.
+
+        :param  actionSchema:   the action schema to which this outcome \
+                                branch belongs, given as an ActionSchema \
+                                instance.
+        :param  name:           the name of this branch.
+        :param  estimators:     a list of state estimators for this branch.
+        """
         assert (isinstance(estimators, list) and estimators is not None)
         assert (all(isinstance(e, state.Estimator) for e in estimators))
 
         self.__effects = {e.getVariableName(): e for e in estimators}
         assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
-        assert (isinstance(name, str) or isinstance(name, unicode))
+        assert (isinstance(name, str))
         assert (name is not None)
         assert (name is not "")
         self.__name = name
+
+        # slightly sketchy
+        self.__identifier = BranchIdentifier(actionSchema.getName(), name)
 
 
     def getName(self):
         """
         Returns the name of this branch.
         """
-        return self.__label
+        return self.__name
+
+
+    def getID(self):
+        """
+        Returns the identifier for this branch.
+        """
+        return self.__identifier
 
 
     def generate(self, initialState, env):
+        # TODO
         pass
 
 
