@@ -412,7 +412,7 @@ class ActionGenerator(object):
         return mission.Action(self.__schemaName, values)
 
 
-class BranchIdentifier(object):
+class BranchID(object):
     @staticmethod
     def fromJSON(jsn):
         # TODO: fix earlier string assertions!
@@ -422,7 +422,7 @@ class BranchIdentifier(object):
 
         (actionName, _, branchName) = jsn.partition(':')
 
-        return BranchIdentifier(actionName, branchName)
+        return BranchID(actionName, branchName)
 
     
     def __init__(self, actionName, branchName):
@@ -439,6 +439,9 @@ class BranchIdentifier(object):
         self.__branchName = branchName
 
 
+    # TODO: implement equality checking
+
+
     def __str__(self):
         return "{}:{}".format(self.__actionName, self.__branchName)
 
@@ -451,7 +454,7 @@ class BranchPath(object):
 
     def __init__(self, identifiers):
         assert (isinstance(identifiers, list) and identifiers is not None)
-        assert (all(isinstance(i, BranchIdentifier) for i in identifiers))
+        assert (all(isinstance(i, BranchID) for i in identifiers))
         self.__identifiers = identifiers
 
 
@@ -462,20 +465,30 @@ class BranchPath(object):
         return len(self.__identifiers)
 
 
-    def getBranches(self):
+    def getIdentifiers(self):
         """
-        Returns an ordered list of the branches along this path.
+        Returns an ordered list of identifiers for the branches along this path.
         """
-        # TODO: implement
         return copy.copy(self.__identifiers)
 
 
-    def extended(self, branch):
+    def getBranches(self, systm):
         """
-        Returns a copy of this path with an additional branch attached to the end.
+        Returns an ordered list of the branches along this path.
         """
-        # TODO: implement
-        return BranchPath(self.__branches + [branch])
+        return [systm.getBranch(i) for i in self.__identifiers]
+
+
+    def extended(self, branchID):
+        """
+        Returns a copy of this path with an additional branch attached to the
+        end.
+
+        :param  branchID:   the identifier of the branch that should be added \
+                            to this path
+        """
+        assert (isinstance(branchID, BranchID) and BranchID is not None)
+        return BranchPath(self.__identifiers + [branchID])
 
 
     def startswith(self, prefix):
@@ -483,13 +496,14 @@ class BranchPath(object):
         Determines whether this path is prefixed by a given path. Returns True
         if this path is prefixed by the given path, otherwise False.
         """
-        # TODO: type check and update
+        assert (isinstance(prefix, BranchPath) and prefix is not None)
+
         if prefix.length() > self.length():
             return False
 
-        prefix = prefix.getBranches()
+        prefix = prefix.getIdentifiers()
         for i in range(len(prefix)):
-            if prefix[i] != self.__branches[i]:
+            if prefix[i] != self.__identifiers[i]:
                 return False
 
         return True
