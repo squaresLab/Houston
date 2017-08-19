@@ -316,7 +316,7 @@ class TreeBasedBugDetector(BugDetector):
 
         # add the executed mission path to the tabu list
         print("Adding path to tabu list: {}".format(executedPath)) # TODO
-        self.__tabu.add(executedPath) # TODO: reduction
+        self.prune(executedPath) # TODO: reduction
 
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
@@ -330,6 +330,12 @@ class TreeBasedBugDetector(BugDetector):
                     # remove from failure set
 
 
+    def prune(self, path):
+        assert (isinstance(path, BranchPath) and path is not None)
+        self.__tabu = set(p for p in self.__tabu if not p.startswith(path))
+        self.__tabu.add(path)
+
+
     def prepare(self):
         super(TreeBasedBugDetector, self).prepare()
         self.__endStates = {self.__seed: self.getInitialState()}
@@ -340,6 +346,7 @@ class TreeBasedBugDetector(BugDetector):
 
     def run(self, systm):
         try:
+            # TODO: make asynchronous
             while not self.exhausted():
                 bffr = [self.generateMission(systm, self.__seed) for _ in self.getNumThreads()]
                 self.executeMissions(bffr)
@@ -366,7 +373,7 @@ class TreeBasedBugDetector(BugDetector):
 
             # otherwise, add the current path to the tabu list, and attempt to
             # generate a mission from the preceding point along the path
-            self.__tabu.add(path) # TODO
+            self.prune(path)
             mission = Mission(seed.getEnvironment(),
                               seed.getInitialState(),
                               seed.getActions()[:-1])
