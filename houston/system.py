@@ -151,10 +151,10 @@ class OutcomeBranch(object):
         self.__effects = {e.getVariableName(): e for e in estimators}
         assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
-        assert (isinstance(label, str) or isinstance(label, unicode))
-        assert (label is not None)
-        assert (label is not "")
-        self.__label = label
+        assert (isinstance(name, str) or isinstance(name, unicode))
+        assert (name is not None)
+        assert (name is not "")
+        self.__name = name
 
 
     def getName(self):
@@ -414,8 +414,9 @@ class ActionGenerator(object):
 class BranchPath(object):
 
     def __init__(self, branches):
-        # TODO: how do record branches?
-        # TODO: add assertions!
+        assert (isinstance(branches, list) and branches is not None)
+        assert (branches is not [])
+        # TODO: assert type of elements in `branches`
         self.__branches = branches
 
 
