@@ -302,13 +302,30 @@ class TreeBasedBugDetector(BugDetector):
         self.__seed = Mission(self.__env, self.__initialState, [])
 
 
-    # TODO
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
-        self.__endStates[mission] = outcome.getEndState()
+        
+        if not outcome.failed():
+            self.__explored[mission.getPath()] = mission
+            self.__endStates[mission] = outcome.getEndState()
+            return
 
-        if not outcome.failed(): # TODO: update tabu list
-                self.__pool.add(mission)
+        # determine the path that the mission was supposed to take, and the
+        # path it actually ended up taking
+        intendedPath = mission.getPath() # TODO
+        executedPath = outcome.getExecutedPath() # TODO
+
+        # add the executed mission path to the tabu list
+        print("Adding path to tabu list: {}".format(executedPath)) # TODO
+        self.__tabu.add(executedPath) # TODO: reduction
+
+        # if the mission failed but didn't follow the intended path, we've
+        # found a flaky path.
+        if intendedPath != executedPath:
+            self.__flaky.add(executedPath)
+
+            # update failure set
+            # reduce the tabu list?
 
 
     def prepare(self):
@@ -319,10 +336,9 @@ class TreeBasedBugDetector(BugDetector):
 
 
     def run(self, systm):
-        seed = Mission(self.__env, self.__initialState, [])
         while not self.exhausted():
-            # TODO: implement parallelism
-            m = self.generateMission(seed)
+            bffr = [self.generateMission(self.__seed) for _ in self.getNumThreads()]
+            self.executeMissions(bffr)
 
 
     def generateMission(self, systm, seed):
