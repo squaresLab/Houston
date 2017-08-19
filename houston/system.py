@@ -45,6 +45,15 @@ class System(object):
         """
         return self.__identifier
 
+    
+    def getBranch(self, iden):
+        """
+        Returns an outcome branch for this sytem provided its identifier.
+        """
+        assert (isinstance(iden, BranchID) and iden is not None)
+        schema = self.__schemas[iden.getActionName()]
+        return schema.getBranch(iden)
+
 
     def setUp(self, mission):
         """
@@ -296,6 +305,15 @@ class ActionSchema(object):
         Returns the name of this schema.
         """
         return self.__name
+
+    
+    def getBranch(self, iden):
+        """
+        Returns a branch belonging to this action schema using its identifier.
+        """
+        assert (isinstance(iden, BranchID) and iden is not None)
+        assert (iden.getActionName() == self.__name)
+        return self.__branches[iden.getBranchName()]
 
 
     def dispatch(self, action, state, environment):
