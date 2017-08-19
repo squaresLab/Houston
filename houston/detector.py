@@ -305,14 +305,14 @@ class TreeBasedBugDetector(BugDetector):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
         
         if not outcome.failed():
-            self.__explored[mission.getPath()] = mission
+            self.__explored[mission.getBranchPath()] = mission
             self.__endStates[mission] = outcome.getEndState()
             return
 
         # determine the path that the mission was supposed to take, and the
         # path it actually ended up taking
-        intendedPath = mission.getPath() # TODO
-        executedPath = outcome.getExecutedPath() # TODO
+        intendedPath = mission.getBranchPath() # TODO
+        executedPath = outcome.getExecutedBranchPath() # TODO
 
         # add the executed mission path to the tabu list
         print("Adding path to tabu list: {}".format(executedPath)) # TODO
@@ -321,10 +321,13 @@ class TreeBasedBugDetector(BugDetector):
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
         if intendedPath != executedPath:
-            self.__flaky.add(executedPath)
-
-            # update failure set
-            # reduce the tabu list?
+            self.__flaky.add(mission)
+            for other in self.__failures:
+                otherPath = self.getOutcome(other).getExecutedBranchPath()
+                if otherPath.startsWith(executedPath): # TODO: BranchPath.startsWith()
+                    self.__flaky.add(other)
+                    # TODO
+                    # remove from failure set
 
 
     def prepare(self):
@@ -332,6 +335,7 @@ class TreeBasedBugDetector(BugDetector):
         self.__endStates = {self.__seed: self.getInitialState()}
         self.__explored = {}
         self.__tabu = set()
+        self.__flaky = set()
 
 
     def run(self, systm):
@@ -346,23 +350,23 @@ class TreeBasedBugDetector(BugDetector):
     def generateMission(self, systm, seed):
         branches = systm.getAllBranches() # TODO: System.getAllBranches
         state = self.__endStates[seed]
-        path = seed.getBranchPath() # TODO: Mission.getBranchPath
+        path = seed.getBranchPath() # TODO: Mission.getBranchPath (BranchPath)
 
         # choose a branch at random
-        branches = [b for b in branches if b.feasible(state)]
-        branches = [b for b in branches if not path.extended(b) in self.__tabu]
+        branches = [b for b in branches if b.feasible(state)] # TODO: Branch.feasible(State)
+        branches = [b for b in branches if path.extended(b) not in self.__tabu] # TODO: Path.extended
 
         # check if there are no viable branches
         if not branches:
             
             # if all viable paths in the tree have been explored, raise an
-            # `ExhaustedSearch` exception
+            # `AllPathsExplored` exception
             if not path:
                 raise AllPathsExplored
 
             # otherwise, add the current path to the tabu list, and attempt to
             # generate a mission from the preceding point along the path
-            self.__tabu.add(path)
+            self.__tabu.add(path) # TODO
             mission = Mission(seed.getEnvironment(),
                               seed.getInitialState(),
                               seed.getActions()[:-1])
@@ -376,7 +380,7 @@ class TreeBasedBugDetector(BugDetector):
 
         # if we haven't, generate an action belonging to this branch
         path = path.extended(branch)
-        action = branch.generate(seed.getEnvironment(), seed.getInitialState()) # TODO
+        action = branch.generate(seed.getEnvironment(), seed.getInitialState()) # TODO: Branch.generate
         actions = seed.getActions() + [action]
         mission = Mission(seed.getEnviroment(), seed.getInitialState(), actions)
         return mission
