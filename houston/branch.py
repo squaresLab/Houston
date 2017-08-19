@@ -203,7 +203,11 @@ class BranchID(object):
 
     def __repr__(self):
         return str(self)
- 
+
+
+    def toJSON(self):
+        return str(self)
+
 
 class BranchPath(object):
     def __init__(self, identifiers):
