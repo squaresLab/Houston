@@ -318,10 +318,6 @@ class TreeBasedBugDetector(BugDetector):
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
 
-        # find the intended and executed path for this mission
-        intendedPath = self.__paths[mission] # TODO store
-        executedPath = self.getExecutedPath(mission)
-        
         if not outcome.failed():
             self.__explored[intendedPath] = mission
             return
@@ -332,8 +328,14 @@ class TreeBasedBugDetector(BugDetector):
 
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
+        intendedPath = self.__intendedPaths[mission]
+        del self.__intendedPaths[mission]
+        executedPath = self.getExecutedPath(mission)
+
         if intendedPath != executedPath:
             self.__flaky.add(mission)
+
+            # TODO: access!
             self.__failures.remove(mission)
 
             for other in self.__failures:
@@ -359,6 +361,7 @@ class TreeBasedBugDetector(BugDetector):
         self.__explored = {}
         self.__tabu = set()
         self.__flaky = set()
+        self.__intendedPaths = {}
 
 
     def run(self, systm):
