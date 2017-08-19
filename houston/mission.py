@@ -197,7 +197,7 @@ class ActionOutcome(object):
     @staticmethod
     def fromJSON(jsn):
         """
-        TODO
+        TODO: add comment
         """
         assert (isinstance(jsn, dict) and not jsn is None)
         assert ('successful' in jsn)
@@ -205,13 +205,17 @@ class ActionOutcome(object):
         assert ('stateBefore' in jsn)
         assert ('stateAfter' in jsn)
         assert ('timeElapsed' in jsn)
+        assert ('branchID' in jsn)
+        assert (isinstance(jsn['branchID'], str) and not jsn['branchID'] is None)
+        assert (jsn['branchID'] != '')
         assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
 
         return ActionOutcome(Action.fromJSON(jsn['action']),
                              jsn['successful'],
                              state.State.fromJSON(jsn['stateBefore']),
                              state.State.fromJSON(jsn['stateAfter']),
-                             jsn['timeElapsed'])
+                             jsn['timeElapsed'],
+                             BranchID(jsn['branchID']))
 
 
     """
@@ -253,7 +257,8 @@ class ActionOutcome(object):
             'successful':   self.__successful,
             'stateBefore':  self.__stateBefore.toJSON(),
             'stateAfter':   self.__stateAfter.toJSON(),
-            'timeElapsed':  self.__timeElapsed
+            'timeElapsed':  self.__timeElapsed,
+            'branchID':     self.__branchID.toJSON()
         }
 
     
