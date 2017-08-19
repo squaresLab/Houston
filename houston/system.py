@@ -45,7 +45,14 @@ class System(object):
         """
         return self.__identifier
 
-    
+   
+    def getBranches(self):
+        """
+        Returns a list of the branches for this system.
+        """
+        return [b for s in s.__schemas for b in s.getBranches()]
+
+
     def getBranch(self, iden):
         """
         Returns an outcome branch for this sytem provided its identifier.
@@ -305,6 +312,13 @@ class ActionSchema(object):
         Returns the name of this schema.
         """
         return self.__name
+
+
+    def getBranches(self):
+        """
+        Returns a list of the branches for this action schema.
+        """
+        return self.__branches[:]
 
     
     def getBranch(self, iden):
