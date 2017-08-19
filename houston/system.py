@@ -1,3 +1,4 @@
+# TODO: rename `OutcomeBranch` to `Branch`
 import copy
 import json
 import state
@@ -417,6 +418,7 @@ class BranchPath(object):
         assert (isinstance(branches, list) and branches is not None)
         assert (branches is not [])
         # TODO: assert type of elements in `branches`
+        assert (all(isinstance(b, OutcomeBranch) for b in branches))
         self.__branches = branches
 
 
