@@ -1,6 +1,6 @@
 import copy
 import json
-import mission
+import action
 
 class State(object):
     """
@@ -311,28 +311,28 @@ class Estimator(object):
         return self.__variable
 
 
-    def computeExpectedValue(self, action, state, environment):
+    def computeExpectedValue(self, act, state, environment):
         """
         Computes the expected value for the variable associated with this estimator,
         within a given state and environment.
 
-        :param  action: action used to calculate the expected state.
+        :param  act:    action used to calculate the expected state.
         :param  state:  the state of the system immediately prior to \
                         performing the given action.
         :param  environment:    the environment in which the action takes place.
 
         :returns  an ExpectedStateValue object.
         """
-        assert (isinstance(action, mission.Action) and action is not None)
+        assert (isinstance(act, action.Action) and action is not None)
         assert (isinstance(state, State) and state is not None)
         assert (isinstance(environment, Environment) and environment is not None)
 
         # TODO: sample a random amount of noise
-        value = self.__func(action, state, environment)
+        value = self.__func(act, state, environment)
 
         # compute the noise
         if self.__noiseFunc:
-            noise = self.__noiseFunc(action, state, environment)
+            noise = self.__noiseFunc(act, state, environment)
         else:
             noise = None
 
@@ -347,4 +347,4 @@ class FixedEstimator(Estimator):
     """
 
     def __init__(self, variable, value):
-        super(FixedEstimator, self).__init__(variable, lambda action, state, env: value)
+        super(FixedEstimator, self).__init__(variable, lambda act, state, env: value)
