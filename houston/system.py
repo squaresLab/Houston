@@ -144,19 +144,24 @@ class System(object):
 
 
 class OutcomeBranch(object):
-    def __init__(self, estimators):
+    def __init__(self, label, estimators):
         assert (isinstance(estimators, list) and estimators is not None)
         assert (all(isinstance(e, state.Estimator) for e in estimators))
 
         self.__effects = {e.getVariableName(): e for e in estimators}
         assert (isinstance(self.__effects, dict) and self.__effects is not None)
 
+        assert (isinstance(label, str) or isinstance(label, unicode))
+        assert (label is not None)
+        assert (label is not "")
+        self.__label = label
 
-    def getLabel(self):
+
+    def getName(self):
         """
-        Returns the label for this branch.
+        Returns the name of this branch.
         """
-        pass # TODO
+        return self.__label
 
 
     def generate(self, initialState, env):
