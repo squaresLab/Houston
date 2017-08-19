@@ -365,6 +365,12 @@ class IncrementalBugDetector(BugDetector):
 class TreeBasedBugDetector(BugDetector):
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
+        self.__tabu = set()
+
+
+    def prepare(self):
+        super(TreeBasedBugDetector, self).prepare()
+        self.__tabu = set()
 
 
     def run(self, systm):
@@ -372,8 +378,33 @@ class TreeBasedBugDetector(BugDetector):
             self.runGeneration(systm)
 
 
-    def runGeneration(self):
-        pass
+    def generateMission(self, systm, seed):
+        # needs branch awareness
+        state = self.__states[seed]
+        path = seed.getBranchPath() # TODO
+        branches = XYZXYZXYZ
+
+        # choose a branch
+        branches = [b for b in branches if b.feasible(state)]
+        branches = [b for b in branches if not path.extended(b) in self.__tabu]
+
+        # TODO: what if we exhaust all possible branches? add this path to the
+        #   tabu list and go back.
+        if not branches:
+            self.__tabu.add(path)
+
+        branch = random.choice(branches)
+
+        # generate an action along this branch
+        action = branch.generate(seed.getEnvironment(), seed.getInitialState()) # TODO
+        actions = seed.getActions() + [action]
+        mission = Mission(seed.getEnviroment(), seed.getInitialState(), actions)
+
+        return mission
+
+
+    def runGeneration(self, systm):
+        pass 
 
 
 class RandomBugDetector(BugDetector):
