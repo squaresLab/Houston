@@ -200,6 +200,9 @@ class ArmNormalBranch(OutcomeBranch):
         return state.read('armable') and (state.read('mode') == 'GUIDED' or state.read('mode') == 'LOITER')
 
 
+    def generate(self, state, environment):
+        return self.getSchema.generate()
+
 
 class SetModeActionSchema(ActionSchema):
     """docstring for SetModeActionSchema"""
@@ -256,32 +259,43 @@ class SetModeActionSchema(ActionSchema):
 class SetModeLandBranch(OutcomeBranch):
     """
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'LAND'),
             Estimator('latitude', lambda action, state, env: state.read('latitude')),
             Estimator('longitude', lambda action, state, env: state.read('longitude')),
             Estimator('altitude', lambda action, state, env: 0.0)
         ]
-        super(SetModeLandBranch, self).__init__(estimators)
+        super(SetModeLandBranch, self).__init__('land', schema, estimators)
+
 
     def computeTimeout(self, action, state, environment):
         timeout = (state.read('altitude') * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
+
     def isApplicable(self, action, state, environment):
         return action.read('mode') == 'LAND'
+
+
+    def isSatisfiable(self):
+        return True
+
+    
+    def generate(self, state, environment):
+        return Action(self.getSchemaName(), {'mode': 'LAND'})
 
 
 class SetModeGuidedBranch(OutcomeBranch):
     """
     Description.
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'GUIDED')
         ]
-        super(SetModeGuidedBranch, self).__init__(estimators)
+        super(SetModeGuidedBranch, self).__init__('guided', schema, estimators)
+
 
     def computeTimeout(self, action, state, environment):
         if action.read('mode') == 'RTL':
@@ -292,39 +306,59 @@ class SetModeGuidedBranch(OutcomeBranch):
             return timeout
         return CONSTANT_TIMEOUT_OFFSET
 
+
     def isApplicable(self, action, state, environment):
         return action.read('mode') == 'GUIDED'
+
+
+    def isSatisfiable(self):
+        return True
+
+    
+    def generate(self, state, environment):
+        return Action(self.getSchemaName(), {'mode': 'GUIDED'})
+
 
 
 class SetModeLoiterBranch(OutcomeBranch):
     """
     Description.
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'LOITER')
         ]
-        super(SetModeLoiterBranch, self).__init__(estimators)
+        super(SetModeLoiterBranch, self).__init__('loiter', schema, estimators)
+
 
     def computeTimeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
+
     def isApplicable(self, action, state, environment):
         return action.read('mode') == 'LOITER'
+
+
+    def isSatisfiable(self):
+        return True
+
+    
+    def generate(self, state, environment):
+        return Action(self.getSchemaName(), {'mode': 'LOITER'})
 
 
 class SetModeRTLBranch(OutcomeBranch):
     """
     Description.
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'RTL'),
             Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
             Estimator('longitude', lambda action, state, env: state.read('homeLongitude')),
             Estimator('altitude', lambda action, state, env: 0.0)
         ]
-        super(SetModeRTLBranch, self).__init__(estimators)
+        super(SetModeRTLBranch, self).__init__('rtl', schema, estimators)
 
 
     def computeTimeout(self, action, state, environment):
@@ -337,6 +371,14 @@ class SetModeRTLBranch(OutcomeBranch):
 
     def isApplicable(self, action, state, environment):
         return action.read('mode') == 'RTL'
+
+
+    def isSatisfiable(self):
+        return True
+
+    
+    def generate(self, state, environment):
+        return Action(self.getSchemaName(), {'mode': 'RTL'})
 
 
 class GoToActionSchema(ActionSchema):
