@@ -321,8 +321,13 @@ class ActionSchema(object):
         assert (isinstance(name, str) and not name is None)
         assert (len(name) > 0)
         assert (isinstance(parameters, list) and not parameters is None)
+        assert (all(isinstance(p, Parameter) for p in parameters))
         assert (isinstance(branches, list) and not branches is None)
+        assert (all(isinstance(b, OutcomeBranch) for b in branches))
         assert (len(branches) > 0)
+
+        # unique branch names
+        assert (len(set(b.getName() for b in branches)) == len(branches))
 
         self.__name = name
         self.__parameters =  parameters
