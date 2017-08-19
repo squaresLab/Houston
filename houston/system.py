@@ -1,11 +1,12 @@
 import copy
 import json
 import state
-import mission
 import timeit
 import signal
 import math
 
+from mission import Mission, MissionOutcome
+from action import ActionSchema, ActionOutcome, Action
 from branch import BranchID, Branch, BranchPath
 
 from util import TimeoutError
@@ -131,15 +132,15 @@ class System(object):
                 # compare the observed and expected states
                 observed = self.getState()
                 passed = expected.isExpected(self.__variables, observed)
-                outcome = mission.ActionOutcome(action, passed, initialState, observed, timeElapsed, branch.getID())
+                outcome = ActionOutcome(action, passed, initialState, observed, timeElapsed, branch.getID())
                 outcomes.append(outcome)
 
                 if not passed:
                     totalTime = timeit.default_timer() - timeBeforeSetup
-                    return mission.MissionOutcome(False, outcomes, totalSetupTime, \
+                    return MissionOutcome(False, outcomes, totalSetupTime, \
                                                                         totalTime)
             totalTime = timeit.default_timer() - timeBeforeSetup
-            return mission.MissionOutcome(True, outcomes, totalSetupTime, totalTime)
+            return MissionOutcome(True, outcomes, totalSetupTime, totalTime)
 
         finally:
             self.tearDown(msn)
@@ -162,113 +163,6 @@ class System(object):
         """
         return copy.deepcopy(self.__schemas)
 
-
-class ActionSchema(object):
-    """
-    Action schemas are responsible for describing the kinds of actions that
-    can be performed within a given system. Action schemas describe actions
-    both syntactically, in terms of parameters, and semantically, in terms of
-    preconditions, postconditions, and invariants.
-    """
-
-    def __init__(self, name, parameters, branches):
-        """
-        Constructs an ActionSchema object.
-
-        :param  name            name of the action schema
-        :param  parameters      a list of the parameters for this action schema
-        :param  branches        a list of the possible outcomes for actions \
-                                belonging to this schema. If none of the \
-
-        """
-        assert (isinstance(name, str) and not name is None)
-        assert (len(name) > 0)
-        assert (isinstance(parameters, list) and not parameters is None)
-        assert (all(isinstance(p, mission.Parameter) for p in parameters))
-        assert (isinstance(branches, list) and not branches is None)
-        assert (all(isinstance(b, Branch) for b in branches))
-        assert (len(branches) > 0)
-
-        # unique branch names
-        assert (len(set(b.getName() for b in branches)) == len(branches))
-
-        self.__name = name
-        self.__parameters =  parameters
-        self.__branches = branches
-
-
-    def getName(self):
-        """
-        Returns the name of this schema.
-        """
-        return self.__name
-
-
-    def getBranches(self):
-        """
-        Returns a list of the branches for this action schema.
-        """
-        return self.__branches[:]
-
-    
-    def getBranch(self, iden):
-        """
-        Returns a branch belonging to this action schema using its identifier.
-        """
-        assert (isinstance(iden, BranchID) and iden is not None)
-        assert (iden.getActionName() == self.__name)
-        return self.__branches[iden.getBranchName()]
-
-
-    def dispatch(self, action, state, environment):
-        """
-        Responsible for invoking an action belonging to this schema.
-
-        :param  action  an Action belonging to this schema
-        """
-        raise UnimplementedError
-
-
-    def computeTimeout(self, action, state, environment):
-        """
-        Responsible for calculating the maximum time that this action shoud take.
-
-        :param  action          the action that is going to be performed.
-        :param  state           the state in which the system is currently on.
-        :param  environment     the system environment
-
-        :returns maximum time in seconds (as a float)
-        """
-        branch = self.resolveBranch(action, state, environment)
-        return branch.computeTimeout(action, state, environment)
-
-
-    def getParameters(self):
-        """
-        Returns the parameters being hold for the current action schema. This is
-        used to generate actions
-        """
-        return copy.deepcopy(self.__parameters)
-
-
-    def resolveBranch(self, action, initialState, environment):
-        """
-        Returns the branch that is appropiate for the current action, state, and
-        environment based on the current action schema.
-        """
-        branch = None
-        for b in self.__branches:
-            if b.isApplicable(action, initialState, environment):
-                return b
-        raise Exception
-
-
-    def generate(self):
-        """
-        Generates an action belonging to this schema at random.
-        """
-        values = {p.getName(): p.generate() for p in self.__parameters}
-        return mission.Action(self.__name, values)
 
 
 class ActionGenerator(object):
@@ -321,10 +215,10 @@ class ActionGenerator(object):
     def generateActionWithState(self, currentState, env):
         values = {p.getName(): p.generate() for p in self.__parameters}
         values = self.constructWithState(currentState, env, values)
-        return mission.Action(self.__schemaName, values)
+        return Action(self.__schemaName, values)
 
 
     def generateActionWithoutState(self, env):
         values = {p.getName(): p.generate() for p in self.__parameters}
         values = self.constructWithoutState(env, values)
-        return mission.Action(self.__schemaName, values)
+        return Action(self.__schemaName, values)

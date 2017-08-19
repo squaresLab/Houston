@@ -1,4 +1,5 @@
 import state
+import action
 import mission # TODO: CIRCULAR
 
 
@@ -24,7 +25,7 @@ class Branch(object):
         assert (name is not "")
         self.__name = name
 
-        assert (isinstance(schema, ActionSchema) and schema is not None)
+        assert (isinstance(schema, action.ActionSchema) and schema is not None)
         self.__schema = schema
 
 
@@ -77,7 +78,7 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def isApplicable(self, action, initialState, env):
+    def isApplicable(self, act, initialState, env):
         """
         Determines whether the guard for this outcome branch is satisfied by
         the parameters for the action, the state of the system immediately
@@ -96,19 +97,19 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def computeTimeout(self, action, state, environment):
+    def computeTimeout(self, act, state, environment):
         """
         Computes the timeout for the current branch.
         """
         raise NotImplementedError
 
 
-    def computeExpectedState(self, action, initialState, env):
+    def computeExpectedState(self, act, initialState, env):
         """
         Produces an estimate of the system state following the execution of
         this branch within a given context.
 
-        :param  action:         a description of the action being performed
+        :param  act:            a description of the action being performed
         :param  initialState:   the state of the system immediately prior to \
                                 the execution of this action
         :param  env:            the environment in which the action is being \
@@ -118,7 +119,7 @@ class Branch(object):
                     system is expected to be in immediately after the \
                     execution of this branch
         """
-        assert (isinstance(action, mission.Action) and action is not None)
+        assert (isinstance(act, action.Action) and act is not None)
         assert (isinstance(initialState, state.State) and state is not None)
         assert (isinstance(env, state.Environment) and env is not None)
 
@@ -128,7 +129,7 @@ class Branch(object):
         values = {}
         for (varName, initialValue) in initialState.getValues().items():
             if varName in self.__effects:
-                expected = self.__effects[varName].computeExpectedValue(action, initialState, env)
+                expected = self.__effects[varName].computeExpectedValue(act, initialState, env)
                 values[varName] = expected
             else:
                 values[varName] = state.ExpectedStateValue(initialValue)
@@ -141,11 +142,11 @@ class IdleBranch(Branch):
         super(IdleBranch, self).__init__("idle", schema, [])
 
 
-    def computeTimeout(self, action, state, environment):
+    def computeTimeout(self, act, state, environment):
         return 1.0
 
 
-    def isApplicable(self, action, state, environment):
+    def isApplicable(self, act, state, environment):
         return True
 
 

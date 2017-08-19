@@ -1,5 +1,3 @@
-import copy
-import system
 import state
 import branch
 
@@ -58,7 +56,7 @@ class Mission(object):
 
 
     def getActions(self):
-        return copy.copy(self.__actions)
+        return self.__actions[:]
 
 
     def size(self):
@@ -89,14 +87,6 @@ class Mission(object):
             'initialState': self.__initialState.toJSON(),
             'actions': [a.toJSON() for a in self.__actions]
         }
-
-
-#class MissionContext(object):
-#    """
-#    Mission contexts are used to describe a context in which a mission should
-#    take place. Context is given by the initial state of the environment, and
-#    the initial values of the internal and external system variables.
-#    """
 
 
 class MissionOutcome(object):
@@ -161,7 +151,7 @@ class MissionOutcome(object):
         """
         Returns the branch path that was taken by this mission execution.
         """
-        return BranchPath([a.getBranchID() for a in self.__outcomes])
+        return branch.BranchPath([a.getBranchID() for a in self.__outcomes])
 
 
     def getEndState(self):
@@ -192,237 +182,3 @@ class MissionOutcome(object):
         Returns true if this mission was unsuccessful.
         """
         return not self.passed()
-
-
-class ActionOutcome(object):
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        TODO: add comment
-        """
-        assert (isinstance(jsn, dict) and not jsn is None)
-        assert ('successful' in jsn)
-        assert ('action' in jsn)
-        assert ('stateBefore' in jsn)
-        assert ('stateAfter' in jsn)
-        assert ('timeElapsed' in jsn)
-        assert ('branchID' in jsn)
-        assert (isinstance(jsn['branchID'], str) and not jsn['branchID'] is None)
-        assert (jsn['branchID'] != '')
-        assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
-
-        return ActionOutcome(Action.fromJSON(jsn['action']),
-                             jsn['successful'],
-                             state.State.fromJSON(jsn['stateBefore']),
-                             state.State.fromJSON(jsn['stateAfter']),
-                             jsn['timeElapsed'],
-                             BranchID(jsn['branchID']))
-
-
-    """
-    Used to describe the outcome of an action execution in terms of system state.
-    """
-    def __init__(self, action, successful, stateBefore, stateAfter, timeElapsed, branchID):
-        """
-        Constructs a ActionOutcome.
-
-        :param  action      the action that was performed
-        :param  succesful   a flag indicating if the action was completed \
-                            successfully
-        :param  stateBefore the state of the system immediately prior to execution
-        :param  stateAfter  the state of the system immediately after execution
-        :param  branchID    the identifier of the branch that was taken \
-                            during the execution of this action
-        """
-        assert (isinstance(action, Action) and not action is None)
-        assert (isinstance(successful, bool) and not successful is None)
-        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
-        assert (isinstance(stateAfter, state.State) and not stateAfter is None)
-        assert (isinstance(timeElapsed, float) and not timeElapsed is None)
-        assert (isinstance(branchID, BranchID) and not branchID is None)
-
-        self.__action      = action
-        self.__successful  = successful
-        self.__stateBefore = stateBefore
-        self.__stateAfter  = stateAfter
-        self.__timeElapsed = timeElapsed
-        self.__branchID = branchID
-
-
-    def toJSON(self):
-        """
-        Returns a JSON description of this action outcome.
-        """
-        return {
-            'action':       self.__action.toJSON(),
-            'successful':   self.__successful,
-            'stateBefore':  self.__stateBefore.toJSON(),
-            'stateAfter':   self.__stateAfter.toJSON(),
-            'timeElapsed':  self.__timeElapsed,
-            'branchID':     self.__branchID.toJSON()
-        }
-
-    
-    def getBranchID(self):
-        """
-        Returns an identifier for the branch that was taken by this action.
-        """
-        return self.__branchID
-
-
-    def passed(self):
-        """
-        :see `successful`
-        """
-        return self.successful()
-
-
-    def successful(self):
-        """
-        Returns true if this action was unsuccessful.
-        """
-        return self.__successful
-
-
-    def failed(self):
-        """
-        Returns true if this action was unsuccessful.
-        """
-        return not self.__successful
-
-
-    def getEndState(self):
-        """
-        Returns a description of the state of the system immediately after the
-        execution of this action.
-        """
-        return self.__stateAfter
-
-
-    def getStartState(self):
-        """
-        Returns a description of the state of the system immediately before the
-        execution of this action.
-        """
-        return self.__startBefore
-
-
-class Action(object):
-    """
-    Description of the concept of "Actions".
-    """
-
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs an Action object from its JSON description.
-        """
-        assert (isinstance(jsn, dict) and not jsn is None)
-        assert ('kind' in jsn)
-        assert ('parameters' in jsn)
-        return Action(jsn['kind'], jsn['parameters'])
-
-
-    def __init__(self, kind, values):
-        """
-        Constructs an Action description.
-
-        :param  kind    the name of the schema to which the action belongs
-        :param  values  a dictionary of parameter values for the action
-        """
-        assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
-        assert (isinstance(values, dict) and not values is None)
-        self.__kind = kind
-        self.__values = copy.copy(values)
-
-
-    def getSchemaName(self):
-        """
-        Returns the name of the schema to which this action belongs.
-        """
-        return self.__kind
-
-
-    def read(self, value):
-        """
-        Returns the value for a specific parameter in this action.
-        """
-        return self.getValue(value)
-
-
-    def getValue(self, value):
-        """
-        Returns the value for a specific parameter in this action.
-        """
-        return self.__values[value]
-
-
-    def getValues(self):
-        """
-        Returns a copy of the parameters for this action.
-        """
-        return copy.copy(self.__values)
-
-
-    def toJSON(self):
-        """
-        Returns a JSON description of this action.
-        """
-        return {
-            'kind': self.__kind,
-            'parameters': self.getValues()
-        }
-
-
-class Parameter(object):
-    """
-    Docstring.
-    """
-
-    def __init__(self, name, valueRange, description='N/A'):
-        """
-        Constructs a Parameter object.
-
-        :param  name:           the name of this parameter
-        :param  valueRange:     the range of possible values for this parameter,\
-                                given as a ValueRange object.
-        :param  description:    a short description of the parameter
-        """
-        self.__name = name
-        self.__valueRange = valueRange
-        self.__description = description
-
-
-    def getValueRange(self):
-        """
-        Returns the range of possible values for this parameter.
-        """
-        return self.__valueRange
-
-
-    def generate(self):
-        """
-        Returns a sample (random)
-        """
-        return self.__valueRange.sample()
-
-
-    def getType(self):
-        """
-        Returns the type of this parameter
-        """
-        return self.__valueRange.getType()
-
-
-    def getDescription(self):
-        """
-        Returns a description of this parameter
-        """
-        return self.__description
-
-
-    def getName(self):
-        """
-        Returns the name of this parameter.
-        """
-        return self.__name
