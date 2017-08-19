@@ -104,9 +104,9 @@ class System(object):
                 # compute expected state
                 initialState = self.getState()
 
-                # TODO: find and record applicable branch!
-    
-                expected = schema.computeExpectedState(action, initialState, env)
+                # resolve the branch and compute the expected outcome
+                branch = schema.resolveBranch(action, initialState, env)
+                expected = branch.computeExpectedState(action, initialState, env)
 
                 # enforce a timeout
                 timeout = schema.computeTimeout(action, initialState, env)
@@ -380,34 +380,6 @@ class ActionSchema(object):
             if b.isApplicable(action, initialState, environment):
                 return b
         raise Exception
-
-
-    def computeExpectedState(self, action, initialState, environment):
-        """
-        Estimates the resulting system state after executing an action
-        belonging to this schema in a given initial state.
-
-        :param  action:         the action for which an outcome should be \
-                                estimated.
-        :param  initialState:   the initial state of the system, immediately \
-                                prior to executing the action.
-        :param  environment:    a description of the environment in which the \
-                                action should take place.
-
-        :return An estimate of the resulting system state, in the form of an \
-                ExpectedState object
-        """
-        assert (isinstance(action, mission.Action) and action is not None)
-        assert (isinstance(initialState, state.State) and state is not None)
-        assert (isinstance(environment, state.Environment) and environment is not None)
-
-        branch = self.resolveBranch(action, initialState, environment)
-        # if no branch is applicable, the system state is assumed to remain
-        # unchanged following the execution of the action
-        if branch is None:
-            return state.ExpectedState.identical(initialState)
-
-        return branch.computeExpectedState(action, initialState, environment)
 
 
     def generate(self):
