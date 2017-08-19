@@ -344,10 +344,9 @@ class TreeBasedBugDetector(BugDetector):
 
 
     def generateMission(self, systm, seed):
-        # TODO needs branch awareness
+        branches = systm.getAllBranches() # TODO: System.getAllBranches
         state = self.__endStates[seed]
-        path = seed.getBranchPath() # TODO
-        branches = XYZXYZXYZ # TODO
+        path = seed.getBranchPath() # TODO: Mission.getBranchPath
 
         # choose a branch at random
         branches = [b for b in branches if b.feasible(state)]
