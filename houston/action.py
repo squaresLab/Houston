@@ -243,7 +243,8 @@ class ActionOutcome(object):
         assert ('stateAfter' in jsn)
         assert ('timeElapsed' in jsn)
         assert ('branchID' in jsn)
-        assert (isinstance(jsn['branchID'], str) and not jsn['branchID'] is None)
+        assert (isinstance(jsn['branchID'], str) or isinstance(jsn['branchID'], unicode))
+        assert (jsn['branchID'] is not None)
         assert (jsn['branchID'] != '')
         assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
 
