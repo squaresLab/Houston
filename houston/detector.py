@@ -143,9 +143,6 @@ class BugDetector(object):
         """
         self.__systm = systm
         self.__image = image
-        self.__containers = []
-#        self.__containers = \
-#            [houston.createContainer(systm, image) for i in range(self.__threads)]
         self.__resourceUsage = ResourceUsage()
         self.__resourceLimits = resourceLimits
         self.__startTime = timeit.default_timer()
@@ -159,10 +156,7 @@ class BugDetector(object):
         Cleans up the state of this bug detector at the end of a bug detection
         trial.
         """
-        for container in self.__containers:
-            container.destroy()
-
-        self.__containers = []
+        pass
 
 
     def exhausted(self):
