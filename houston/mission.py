@@ -21,7 +21,7 @@ class Mission(object):
 
         env = state.Environment.fromJSON(jsn['environment'])
         initialState = state.State.fromJSON(jsn['initialState'])
-        actions = [action.Action.fromJSON(action) for action in jsn['actions']]
+        actions = [action.Action.fromJSON(a) for a in jsn['actions']]
 
         return Mission(env, initialState, actions)
 
