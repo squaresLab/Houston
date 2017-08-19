@@ -457,3 +457,16 @@ class BranchPath(object):
                 return False
 
         return True
+
+
+    def __str__(self):
+        """
+        Returns a string-based description of this path.
+        """
+        s = ', '.join([str(b) for b in self.__branches])
+        s = '<{}>'.format(s)
+        return s
+
+    
+    def __repr__(self):
+        return str(self)
