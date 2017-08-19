@@ -297,16 +297,15 @@ class TreeBasedBugDetector(BugDetector):
 
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
+
+        # find the intended and executed path for this mission
+        intendedPath = self.__paths[mission] # TODO store
+        executedPath = outcome.getExecutedBranchPath() # TODO
         
         if not outcome.failed():
-            self.__explored[mission.getBranchPath()] = mission
+            self.__explored[intendedPath] = mission
             self.__endStates[mission] = outcome.getEndState()
             return
-
-        # determine the path that the mission was supposed to take, and the
-        # path it actually ended up taking
-        intendedPath = mission.getBranchPath() # TODO
-        executedPath = outcome.getExecutedBranchPath() # TODO
 
         # add the executed mission path to the tabu list
         print("Adding path to tabu list: {}".format(executedPath)) # TODO
@@ -326,13 +325,21 @@ class TreeBasedBugDetector(BugDetector):
 
     def prune(self, path):
         assert (isinstance(path, BranchPath) and path is not None)
+
+        # remove redundant path information from tabu list before adding
         self.__tabu = set(p for p in self.__tabu if not p.startswith(path))
         self.__tabu.add(path)
+
+        # remove redundant end state, exploration, and path information
+        self.__paths = {m: p for (m, p) in self.__paths.items() if not p.startswith(path)}
+        self.__endStates = {m: p for (m, p) in self.__endStates.items() if not p.startswith(path)}
+        self.__explored = {p: m for (p, m) in self.__explored if not p.startswith(path)}
 
 
     def prepare(self):
         super(TreeBasedBugDetector, self).prepare()
         self.__endStates = {self.__seed: self.getInitialState()}
+        self.__paths = {self.__seed: BranchPath()}
         self.__explored = {}
         self.__tabu = set()
         self.__flaky = set()
