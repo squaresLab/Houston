@@ -210,8 +210,15 @@ class OutcomeBranch(object):
 
 
     def generate(self, initialState, env):
-        # TODO
-        pass
+        """
+        Generates an action that would cause the system to take this branch.
+
+        :param  initialState:   the state of the system immediately before \
+                                executing the generated action.
+        :param  env:            the environment in which the mission will be \
+                                conducted.
+        """
+        raise NotImplementedError
 
 
     def isSatisfiable(self, initialState, env):
