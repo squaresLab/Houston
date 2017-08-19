@@ -208,6 +208,15 @@ class OutcomeBranch(object):
         pass
 
 
+    def isSatisfiable(self, initialState, env):
+        """
+        Determines whether there exists a set of parameter values that would
+        satisify this precondition given a fixed initial state and
+        environment.
+        """
+        raise NotImplementedError
+
+
     def isApplicable(self, action, initialState, env):
         """
         Determines whether the guard for this outcome branch is satisfied by

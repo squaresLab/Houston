@@ -336,13 +336,13 @@ class TreeBasedBugDetector(BugDetector):
             self.__flaky.add(mission)
 
             # TODO: access!
-            self.__failures.remove(mission)
+            # self.__failures.remove(mission)
 
-            for other in self.__failures:
-                otherPath = self.getExecutedPath(other)
-                if otherPath.startswith(executedPath):
-                    self.__flaky.add(other)
-                    self.__failures.remove(other)
+            # for other in self.__failures:
+            #     otherPath = self.getExecutedPath(other)
+            #     if otherPath.startswith(executedPath):
+            #         self.__flaky.add(other)
+            #         self.__failures.remove(other)
 
 
     def prune(self, path):
@@ -375,12 +375,13 @@ class TreeBasedBugDetector(BugDetector):
 
 
     def generateMission(self, systm, seed):
-        branches = systm.getAllBranches() # TODO: System.getAllBranches
+        branches = systm.getAllBranches()
         state = self.getEndState(seed)
+        env = seed.getEnvironment()
         path = self.getExecutedPath(seed)
 
         # choose a branch at random
-        branches = [b for b in branches if b.feasible(state)] # TODO: Branch.feasible(State)
+        branches = [b for b in branches if b.isSatisfiable(state, env)]
         branches = [b for b in branches if path.extended(b) not in self.__tabu]
 
         # check if there are no viable branches
@@ -394,7 +395,7 @@ class TreeBasedBugDetector(BugDetector):
             # otherwise, add the current path to the tabu list, and attempt to
             # generate a mission from the preceding point along the path
             self.prune(path)
-            mission = Mission(seed.getEnvironment(),
+            mission = Mission(env,
                               seed.getInitialState(),
                               seed.getActions()[:-1])
             return self.generateMission(systm, mission)
@@ -407,7 +408,7 @@ class TreeBasedBugDetector(BugDetector):
 
         # if we haven't, generate an action belonging to this branch
         path = path.extended(branch)
-        action = branch.generate(seed.getEnvironment(), seed.getInitialState()) # TODO: Branch.generate
+        action = branch.generate(env, seed.getInitialState()) # TODO: Branch.generate
         actions = seed.getActions() + [action]
         mission = Mission(seed.getEnviroment(), seed.getInitialState(), actions)
         return mission
