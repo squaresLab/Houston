@@ -1,5 +1,6 @@
 import state
 import branch
+from action import Action, ActionOutcome
 
 class Mission(object):
     """
