@@ -336,10 +336,12 @@ class TreeBasedBugDetector(BugDetector):
 
 
     def run(self, systm):
-        while not self.exhausted():
-            bffr = [self.generateMission(self.__seed) for _ in self.getNumThreads()]
-            self.executeMissions(bffr)
-
+        try:
+            while not self.exhausted():
+                bffr = [self.generateMission(self.__seed) for _ in self.getNumThreads()]
+                self.executeMissions(bffr)
+        except AllPathsExplored:
+            return
 
     def generateMission(self, systm, seed):
         # TODO needs branch awareness
