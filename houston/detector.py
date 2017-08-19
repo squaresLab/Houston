@@ -411,7 +411,7 @@ class TreeBasedBugDetector(BugDetector):
 
         # if we haven't, generate an action belonging to this branch
         path = path.extended(branch)
-        action = branch.generate(env, seed.getInitialState()) # TODO: Branch.generate
+        action = branch.generate(env, state)
         actions = seed.getActions() + [action]
         mission = Mission(seed.getEnviroment(), seed.getInitialState(), actions)
         return mission
