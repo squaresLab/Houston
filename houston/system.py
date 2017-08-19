@@ -412,34 +412,69 @@ class ActionGenerator(object):
         return mission.Action(self.__schemaName, values)
 
 
+class BranchIdentifier(object):
+    @staticmethod
+    def fromJSON(jsn):
+        # TODO: fix earlier string assertions!
+        assert (isinstance(jsn, str) or isinstance(jsn, unicode))
+        assert (jsn is not None)
+        assert (jsn != '')
+
+        (actionName, _, branchName) = jsn.partition(':')
+
+        return BranchIdentifier(actionName, branchName)
+
+    
+    def __init__(self, actionName, branchName):
+        assert (isinstance(actionName, str) or isinstance(actionName, unicode))
+        assert (actionName is not None)
+        assert (actionName is not '')
+        # TODO: rules
+        assert (isinstance(branchName, str) or isinstance(branchName, unicode))
+        assert (branchName is not None)
+        assert (branchName is not '')
+        # TODO: rules
+
+        self.__actionName = actionName
+        self.__branchName = branchName
+
+
+    def __str__(self):
+        return "{}:{}".format(self.__actionName, self.__branchName)
+
+
+    def __repr__(self):
+        return str(self)
+        
+
 class BranchPath(object):
 
-    def __init__(self, branches):
-        assert (isinstance(branches, list) and branches is not None)
-        assert (branches is not [])
-        # TODO: assert type of elements in `branches`
-        assert (all(isinstance(b, OutcomeBranch) for b in branches))
-        self.__branches = branches
+    def __init__(self, identifiers):
+        assert (isinstance(identifiers, list) and identifiers is not None)
+        assert (all(isinstance(i, BranchIdentifier) for i in identifiers))
+        self.__identifiers = identifiers
 
 
     def length(self):
         """
         Returns the length of this path (measured by its number of branches).
         """
-        return len(self.__branches)
+        return len(self.__identifiers)
 
 
     def getBranches(self):
         """
         Returns an ordered list of the branches along this path.
         """
-        return copy.copy(self.__branches)
+        # TODO: implement
+        return copy.copy(self.__identifiers)
 
 
     def extended(self, branch):
         """
         Returns a copy of this path with an additional branch attached to the end.
         """
+        # TODO: implement
         return BranchPath(self.__branches + [branch])
 
 
@@ -448,6 +483,7 @@ class BranchPath(object):
         Determines whether this path is prefixed by a given path. Returns True
         if this path is prefixed by the given path, otherwise False.
         """
+        # TODO: type check and update
         if prefix.length() > self.length():
             return False
 
@@ -463,7 +499,7 @@ class BranchPath(object):
         """
         Returns a string-based description of this path.
         """
-        s = ', '.join([str(b) for b in self.__branches])
+        s = ', '.join([str(i) for i in self.__identifiers])
         s = '<{}>'.format(s)
         return s
 
