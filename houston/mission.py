@@ -1,8 +1,7 @@
 import copy
 import system
 import state
-
-from system import BranchID
+import branch
 
 class Mission(object):
     """

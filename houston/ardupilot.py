@@ -17,6 +17,7 @@ from branch     import Branch, IdleBranch
 
 import geopy
 import geopy.distance
+
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
 # prevent any interaction attempts.

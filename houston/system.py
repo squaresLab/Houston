@@ -186,7 +186,7 @@ class ActionSchema(object):
         assert (isinstance(parameters, list) and not parameters is None)
         assert (all(isinstance(p, mission.Parameter) for p in parameters))
         assert (isinstance(branches, list) and not branches is None)
-        assert (all(isinstance(b, OutcomeBranch) for b in branches))
+        assert (all(isinstance(b, Branch) for b in branches))
         assert (len(branches) > 0)
 
         # unique branch names
