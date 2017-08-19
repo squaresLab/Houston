@@ -375,6 +375,8 @@ class TreeBasedBugDetector(BugDetector):
 
     def run(self, systm):
         while not self.exhausted():
+            # TODO: implement parallelism
+            m = self.generateMission(seed)
             self.runGeneration(systm)
 
 
@@ -384,7 +386,7 @@ class TreeBasedBugDetector(BugDetector):
         path = seed.getBranchPath() # TODO
         branches = XYZXYZXYZ
 
-        # choose a branch
+        # choose a branch at random
         branches = [b for b in branches if b.feasible(state)]
         branches = [b for b in branches if not path.extended(b) in self.__tabu]
 
@@ -395,11 +397,15 @@ class TreeBasedBugDetector(BugDetector):
 
         branch = random.choice(branches)
 
-        # generate an action along this branch
+        # have we already traversed this path?
+        if path in self.__explored:
+            return self.generateMission(systm, self.__explored[path])
+
+        # if we haven't, generate an action belonging to this branch
+        path = path.extended(branch)
         action = branch.generate(seed.getEnvironment(), seed.getInitialState()) # TODO
         actions = seed.getActions() + [action]
         mission = Mission(seed.getEnviroment(), seed.getInitialState(), actions)
-
         return mission
 
 
