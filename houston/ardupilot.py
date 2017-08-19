@@ -169,8 +169,8 @@ class ArmActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
         branches = [
-            ArmNormalBranch(),
-            IdleBranch()
+            ArmNormalBranch(self),
+            IdleBranch(self)
         ]
         super(ArmActionSchema, self).__init__('arm', parameters, branches)
 
@@ -185,11 +185,11 @@ class ArmNormalBranch(OutcomeBranch):
     """
     Description.
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             FixedEstimator('armed', True)
         ]
-        super(ArmNormalBranch, self).__init__(estimators)
+        super(ArmNormalBranch, self).__init__('normal', schema, estimators)
 
 
     def computeTimeout(self, action, state, environment):
@@ -209,11 +209,11 @@ class SetModeActionSchema(ActionSchema):
                       'description')
         ]
         branches = [
-            SetModeGuidedBranch(),
-            SetModeLoiterBranch(),
-            SetModeRTLBranch(),
-            SetModeLandBranch(),
-            IdleBranch()
+            SetModeGuidedBranch(self),
+            SetModeLoiterBranch(self),
+            SetModeRTLBranch(self),
+            SetModeLandBranch(self),
+            IdleBranch(self)
         ]
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
@@ -351,8 +351,8 @@ class GoToActionSchema(ActionSchema):
         ]
 
         branches = [
-            GotoNormalBranch(),
-            IdleBranch()
+            GotoNormalBranch(self),
+            IdleBranch(self)
         ]
 
         super(GoToActionSchema, self).__init__('goto', parameters, branches)
@@ -490,8 +490,8 @@ class TakeoffActionSchema(ActionSchema):
                       'description')
         ]
         branches = [
-            TakeoffNormalBranch(),
-            IdleBranch()
+            TakeoffNormalBranch(self),
+            IdleBranch(self)
         ]
 
         super(TakeoffActionSchema, self).__init__('takeoff', parameters, branches)
