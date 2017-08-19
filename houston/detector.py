@@ -298,7 +298,6 @@ class TreeBasedBugDetector(BugDetector):
 
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
-        self.__tabu = set()
         self.__seed = Mission(self.__env, self.__initialState, [])
 
 
@@ -338,10 +337,11 @@ class TreeBasedBugDetector(BugDetector):
     def run(self, systm):
         try:
             while not self.exhausted():
-                bffr = [self.generateMission(self.__seed) for _ in self.getNumThreads()]
+                bffr = [self.generateMission(systm, self.__seed) for _ in self.getNumThreads()]
                 self.executeMissions(bffr)
         except AllPathsExplored:
             return
+
 
     def generateMission(self, systm, seed):
         # TODO needs branch awareness
