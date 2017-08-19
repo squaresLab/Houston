@@ -421,13 +421,13 @@ class GotoNormalBranch(OutcomeBranch):
     """
     Description.
     """
-    def __init__(self):
+    def __init__(self, schema):
         estimators = [
             Estimator('latitude', lambda action, state, env: action.read('latitude')),
             Estimator('longitude', lambda action, state, env: action.read('longitude')),
             Estimator('altitude', lambda action, state, env: action.read('altitude'))
         ]
-        super(GotoNormalBranch, self).__init__(estimators)
+        super(GotoNormalBranch, self).__init__('normal', schema, estimators)
 
 
     def computeTimeout(self, action, state, environment):
@@ -440,6 +440,14 @@ class GotoNormalBranch(OutcomeBranch):
 
     def isApplicable(self, action, state, environment):
         return state.read('armed') and state.read('altitude') > 0.3
+
+
+    def isSatisfiable(self, state, environment):
+        return self.isApplicable(None, state, environment)
+
+
+    def generate(self, state, environment):
+        return self.getSchema().generate()
 
 
 class DistanceBasedGoToGenerator(ActionGenerator):
