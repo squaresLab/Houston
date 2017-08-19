@@ -40,7 +40,7 @@ class ResourceLimits(object):
             return True
         if self.reachedTimeLimit(usage.runningTime):
             return True
-        print usage.runningTime
+        print 'Total running time: {}'.format(usage.runningTime)
         return False
 
 
