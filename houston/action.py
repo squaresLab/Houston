@@ -27,7 +27,7 @@ class Action(object):
         assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
         assert (isinstance(values, dict) and not values is None)
         self.__kind = kind
-        self.__values = values[:]
+        self.__values = values.copy()
 
 
     def getSchemaName(self):
