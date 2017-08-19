@@ -93,75 +93,39 @@ class ArduPilot(System):
 
     def setUp(self, mission):
     	global DRONEKIT_SYSTEM
-        # TODO lots of hardcoded paths
-        ardu_location = '/experiment/source/' # TODO: hardcoded!
+        global DRONEKIT_SITL
+        ardu_location = '/experiment/source/'
+
+        args = [
+            "--model=quad",
+            "--home=-35.362938,149.165085,584,270",
+            "--speedup=5"
+    #        valgrind=False,
+    #        gdb=False
+        ]
+
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
-        param_file = os.path.join(ardu_location, 'Tools/autotest/default_params/copter.parm')
+        DRONEKIT_SITL = SITL(binary)
+        DRONEKIT_SITL.launch(args, verbose=True, await_ready=True, restart=False)
+        connectString = DRONEKIT_SITL.connection_string()
+        print connectString
+        sys.stdout.flush()
+        DRONEKIT_SYSTEM = connect(connectString, wait_ready=True)
+        DRONEKIT_SYSTEM.wait_ready('autopilot_version')
+        vehicleMode = VehicleMode('GUIDED')
+        DRONEKIT_SYSTEM.mode = vehicleMode
+        DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
+        DRONEKIT_SYSTEM.parameters['ARMING_CHECK']=0
+        while DRONEKIT_SYSTEM.parameters['DISARM_DELAY'] is not 0 and DRONEKIT_SYSTEM.is_armable is False: #TODO Implement timeout
+            time.sleep(0.1)
+            DRONEKIT_SYSTEM.mode = vehicleMode
+            DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
 
-        sitl = util.start_SITL(binary, wipe=True, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5)
-        mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
-        mavproxy.expect('Received [0-9]+ parameters')
-
-        # setup test parameters
-        params = vinfo.options["ArduCopter"]["frames"]['quad']["default_params_filename"]
-        if not isinstance(params, list):
-            params = [params]
-            for x in params:
-                mavproxy.send("param load %s\n" % os.path.join(testdir, x))
-
-        mavproxy.expect('Loaded [0-9]+ parameters')
-        mavproxy.send("param set LOG_REPLAY 1\n")
-        mavproxy.send("param set LOG_DISARMED 1\n")
-        time.sleep(2)
-
-        # reboot with new parameters
-        util.pexpect_close(mavproxy)
-        util.pexpect_close(sitl)
-
-        self.__sitl  = util.start_SITL(binary, model='quad', home='-35.362938, 149.165085, 584, 270', speedup=5, valgrind=False, gdb=False)
-        options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --out=127.0.0.1:14550 --quadcopter --streamrate=5'
-        self.__mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
-        self.__mavproxy.expect('Telemetry log: (\S+)')
-        logfile = self.__mavproxy.match.group(1)
-        print("LOGFILE %s" % logfile)
-
-        # the received parameters can come before or after the ready to fly message
-        self.__mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
-        self.__mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
-
-        util.expect_setup_callback(self.__mavproxy, expect_callback)
-
-        expect_list_clear()
-        expect_list_extend([sitl, self.__mavproxy])
-        # get a mavlink connection going
-        try:
-            self.__mavlink = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
-        except Exception as msg:
-            print("Failed to start mavlink connection on 127.0.0.1:19550 {}".format(msg))
-            raise
-        self.__mavlink.message_hooks.append(message_hook)
-        self.__mavlink.idle_hooks.append(idle_hook)
-
-        try:
-            self.__mavlink.wait_heartbeat()
-            """Setup RC override control."""
-            for chan in range(1, 9):
-                self.__mavproxy.send('rc %u 1500\n' % chan)
-            # zero throttle
-            self.__mavproxy.send('rc 3 1000\n')
-            self.__mavproxy.expect('IMU0 is using GPS')
-            self.__mavproxy.send('param set DISARM_DELAY 0')
-            time.sleep(2)
-            DRONEKIT_SYSTEM = connect('127.0.0.1:14550', wait_ready=True)
-        except pexpect.TIMEOUT:
-            print("Failed: time out")
-            return False
 
     def tearDown(self, mission):
         DRONEKIT_SYSTEM.close()
-        self.__mavlink.close()
-        util.pexpect_close(self.__mavproxy)
-        util.pexpect_close(self.__mavlink)
+        DRONEKIT_SITL.stop()
+
 
 
 class ArmActionSchema(ActionSchema):
@@ -281,7 +245,7 @@ class SetModeLandBranch(OutcomeBranch):
     def isSatisfiable(self):
         return True
 
-    
+
     def generate(self, state, environment):
         return Action(self.getSchemaName(), {'mode': 'LAND'})
 
@@ -314,7 +278,7 @@ class SetModeGuidedBranch(OutcomeBranch):
     def isSatisfiable(self):
         return True
 
-    
+
     def generate(self, state, environment):
         return Action(self.getSchemaName(), {'mode': 'GUIDED'})
 
@@ -342,7 +306,7 @@ class SetModeLoiterBranch(OutcomeBranch):
     def isSatisfiable(self):
         return True
 
-    
+
     def generate(self, state, environment):
         return Action(self.getSchemaName(), {'mode': 'LOITER'})
 
@@ -376,7 +340,7 @@ class SetModeRTLBranch(OutcomeBranch):
     def isSatisfiable(self):
         return True
 
-    
+
     def generate(self, state, environment):
         return Action(self.getSchemaName(), {'mode': 'RTL'})
 
@@ -580,7 +544,7 @@ class TakeoffNormalBranch(OutcomeBranch):
     def isApplicable(self, action, state, environment):
         return state.read('armed') and state.read('altitude') < 0.3 and state.read('mode') == 'GUIDED' #TODO further check
 
-    
+
     def isSatisfiable(self, state, environment):
         return self.isApplicable(None, state, environment)
 
