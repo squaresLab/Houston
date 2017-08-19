@@ -492,16 +492,21 @@ class BranchPath(object):
         return [systm.getBranch(i) for i in self.__identifiers]
 
 
-    def extended(self, branchID):
+    def extended(self, b):
         """
         Returns a copy of this path with an additional branch attached to the
         end.
 
-        :param  branchID:   the identifier of the branch that should be added \
-                            to this path
+        :param  branchID:   the branch that should be added to this path, \
+                            given as an identifier or a branch object 
         """
-        assert (isinstance(branchID, BranchID) and BranchID is not None)
-        return BranchPath(self.__identifiers + [branchID])
+        assert (b is not None)
+        if isinstance(b, BranchID):
+            return BranchPath(self.__identifiers + [b])
+        elif isinstance(b, OutcomeBranch):
+            return BranchPath(self.__identifiers + [b.getID()])
+        else:
+            raise Exception('BranchPath::extended expected a BranchID or OutcomeBranch object')
 
 
     def startswith(self, prefix):
