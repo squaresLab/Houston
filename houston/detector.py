@@ -493,9 +493,6 @@ class TreeBasedBugDetector(BugDetector):
         path = path.extended(branch)
         printflush("Path: {}".format(path))
 
-        # have we already traversed this path?
-        printflush('EXPLORED: {}'.format(', '.join([str(p) for p in self.__explored])))
-
         if path in self.__explored:
             printflush("I'VE ALREADY EXPLORED THIS PATH")
             return self.generateMission(self.__explored[path])
