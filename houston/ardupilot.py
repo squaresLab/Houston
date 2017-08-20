@@ -497,8 +497,9 @@ class CircleBasedGotoGenerator(ActionGenerator):
         return params
 
 
-    def constructWithState(self, env, values):
-        raise NotImplementedError
+    def constructWithState(self, currentState, env, values):
+        return self.constructWithoutState(env, values)
+
 
 
 class TakeoffActionSchema(ActionSchema):

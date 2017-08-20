@@ -7,7 +7,7 @@ import system
 from multiprocessing.pool import ThreadPool
 
 from mission import Mission, MissionOutcome
-from action import ActionOutcome, Action
+from action import ActionOutcome, Action, ActionGenerator
 from branch import BranchID, BranchPath
 
 
@@ -174,7 +174,7 @@ class BugDetector(object):
         assert (isinstance(threads, int) and threads is not None)
         assert (threads >= 1)
         assert (isinstance(actionGenerators, list) and actionGenerators is not None)
-        assert (all(isinstance(g, system.ActionGenerator) for g in actionGenerators))
+        assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
 
         self.__maxNumActions = maxNumActions
 
@@ -452,7 +452,7 @@ class TreeBasedBugDetector(BugDetector):
         """
         generator = self.getGenerator(branch.getSchema())
         if generator is not None:
-            return generator.generate(state, env)
+            return generator.generateActionWithState(state, env)
         return branch.generate(env, state) 
 
 
