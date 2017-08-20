@@ -65,7 +65,6 @@ class ResourceLimits(object):
         }
 
 
-
 class BugDetectorSummary(object):
     def __init__(self, history, outcomes, failures, resourceUsage, resourceLimits):
         """
@@ -315,7 +314,7 @@ class TreeBasedBugDetector(BugDetector):
 
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
-        self.__seed = Mission(self.__env, self.__initialState, [])
+        self.__seed = Mission(env, initialState, [])
 
 
     def recordOutcome(self, mission, outcome):
