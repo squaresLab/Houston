@@ -90,7 +90,7 @@ class System(object):
         """
         assert (self.installed())
         timeBeforeSetup = timeit.default_timer()
-        self.setUp(msn)
+        self.setUpOld(msn)
         totalSetupTime = timeit.default_timer() - timeBeforeSetup
 
         env = msn.getEnvironment()
@@ -142,7 +142,7 @@ class System(object):
             return MissionOutcome(True, outcomes, totalSetupTime, totalTime)
 
         finally:
-            self.tearDown(msn)
+            self.tearDownOld(msn)
 
 
     def getState(self):
