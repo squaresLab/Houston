@@ -122,6 +122,30 @@ class BugDetectorSummary(object):
 
         return {'summary': summary}
 
+    
+    def getHistory(self):
+        return self.__history[:]
+
+
+    def getOutcome(self, m):
+        return self.__outcomes[m]
+
+    
+    def getOutcomes(self):
+        return self.__outcomes.copy()
+
+    
+    def getFailures(self):
+        return self.__failures.copy()
+
+
+    def getResourceUsage(self):
+        return copy.copy(self.__resourceUsage)
+
+
+    def getResourceLimits(self):
+        return self.__resourceLimits
+
 
 class BugDetector(object):
     """
