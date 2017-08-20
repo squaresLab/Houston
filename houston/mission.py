@@ -51,6 +51,13 @@ class Mission(object):
         return self.__environment
 
 
+    def isEmpty(self):
+        """
+        Returns True if this mission contains no actions.
+        """
+        return self.__actions == []
+
+
     def getInitialState(self):
         return self.__initialState
 
