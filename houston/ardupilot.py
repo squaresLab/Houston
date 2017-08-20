@@ -168,6 +168,10 @@ class ArmNormalBranch(Branch):
         return state.read('armable') and (state.read('mode') == 'GUIDED' or state.read('mode') == 'LOITER')
 
 
+    def isSatisfiable(self, state, environment):
+        return self.isApplicable(None, state, environment)
+
+
     def generate(self, state, environment):
         return self.getSchema.generate()
 
