@@ -302,6 +302,38 @@ class BugDetector(object):
             self.__failures.add(mission)
 
 
+class TreeBasedBugDetectorSummary(BugDetectorSummary):
+    """
+    Used to provide a summary of a tree-based bug detection trial.
+    """
+    def __init__(self, base, flaky, tabu):
+        assert (isinstance(base, BugDetectorSummary) and base is not None)
+        assert (isinstance(flaky, set) and flaky is not None)
+        assert (all(isinstance(m, Mission) for m in flaky))
+
+        super(TreeBasedBugDetectorSummary, self).__init__(base.getHistory(),
+                                                          base.getOutcomes(),
+                                                          base.getFailures(),
+                                                          base.getResourceUsage(),
+                                                          base.getResourceLimits())
+        self.__flaky = flaky
+        self.__tabu = tabu
+
+
+    def toJSON(self):
+        jsn = super(TreeBasedBugDetectorSummary, self).toJSON()
+
+        tabu = [to.toJSON() for t in self.__tabu]
+
+        flaky = [(m, self.getOutcome(m)) for m in self.__flaky]
+        flaky = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in flaky]
+
+        jsn['summary']['tabu'] = tabu
+        jsn['summary']['flaky'] = flaky
+
+        return jsn
+
+
 class TreeBasedBugDetector(BugDetector):
     """
     Description.
@@ -309,6 +341,10 @@ class TreeBasedBugDetector(BugDetector):
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
         self.__seed = Mission(env, initialState, [])
+
+
+    def summarise(self):
+        summary = super(TreeBasedBugDetector, self).summarise()
 
 
     def recordOutcome(self, mission, outcome):
