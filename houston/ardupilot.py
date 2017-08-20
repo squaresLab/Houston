@@ -193,6 +193,10 @@ class ArduPilot(System):
         DRONEKIT_SYSTEM.close()
         DRONEKIT_SITL.stop()
 
+    def tearDownOld(self, mission):
+        DRONEKIT_SYSTEM.close()
+        util.pexpect_close(self.__mavproxy)
+        util.pexpect_close(self.__mavlink)
 
 
 class ArmActionSchema(ActionSchema):
