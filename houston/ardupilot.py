@@ -250,7 +250,7 @@ class SetModeLandBranch(Branch):
         return action.read('mode') == 'LAND'
 
 
-    def isSatisfiable(self):
+    def isSatisfiable(self, state, environment):
         return True
 
 
@@ -277,7 +277,7 @@ class SetModeGuidedBranch(Branch):
         return action.read('mode') == 'GUIDED'
 
 
-    def isSatisfiable(self):
+    def isSatisfiable(self, state, environment):
         return True
 
 
@@ -305,7 +305,7 @@ class SetModeLoiterBranch(Branch):
         return action.read('mode') == 'LOITER'
 
 
-    def isSatisfiable(self):
+    def isSatisfiable(self, state, environment):
         return True
 
 
@@ -339,7 +339,7 @@ class SetModeRTLBranch(Branch):
         return action.read('mode') == 'RTL'
 
 
-    def isSatisfiable(self):
+    def isSatisfiable(self, state, environment):
         return True
 
 
