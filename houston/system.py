@@ -52,7 +52,7 @@ class System(object):
         """
         Returns a list of the branches for this system.
         """
-        return [b for s in s.__schemas for b in s.getBranches()]
+        return [b for s in self.__schemas.values() for b in s.getBranches()]
 
 
     def getBranch(self, iden):

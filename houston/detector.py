@@ -378,7 +378,7 @@ class TreeBasedBugDetector(BugDetector):
 
 
     def generateMission(self, systm, seed):
-        branches = systm.getAllBranches()
+        branches = systm.getBranches()
         state = self.getEndState(seed)
         env = seed.getEnvironment()
         path = self.getExecutedPath(seed)
