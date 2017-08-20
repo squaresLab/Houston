@@ -73,7 +73,7 @@ def destroyContainer(cntr):
     cntr.destroy()
 
 
-def createContainer(systm, image):
+def createContainer(systm, image, verbose=False):
     """
     Constructs a fresh, ephemeral container for a given system using a
     specified Docker image.
@@ -81,6 +81,8 @@ def createContainer(systm, image):
     :param  systm:  the System object
     :param  image:  the name of the Docker image that should be used to spawn\
                     the container
+    :param  verbose:    a flag indicating whether the outputs of the container \
+                        should be printed to the stdout upon its destruction
 
     :returns    A new SystemContainer for the given system
     """
@@ -98,7 +100,7 @@ def createContainer(systm, image):
     port = random.choice(list(__port_pool))
     __port_pool.remove(port)
 
-    container = systemContainer.SystemContainer(iden, image, port)
+    container = systemContainer.SystemContainer(iden, image, port, verbose=verbose)
     __containers.add(container)
 
     return container
