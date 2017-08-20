@@ -8,6 +8,7 @@ from multiprocessing.pool import ThreadPool
 
 from mission import Mission, MissionOutcome
 from action import ActionOutcome, Action
+from branch import BranchID, BranchPath
 
 
 class AllPathsExplored(Exception):
