@@ -354,6 +354,7 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
 
         jsn['summary']['tabu'] = tabu
         jsn['summary']['flaky'] = flaky
+        jsn['summary']['algorithm'] = 'tree'
 
         return jsn
 
@@ -369,6 +370,8 @@ class TreeBasedBugDetector(BugDetector):
 
     def summarise(self):
         summary = super(TreeBasedBugDetector, self).summarise()
+        summary = TreeBasedBugDetectorSummary(summary, self.__flaky, self.__tabu)
+        return summary
 
 
     def recordOutcome(self, mission, outcome):
@@ -487,6 +490,22 @@ class TreeBasedBugDetector(BugDetector):
         return mission
 
 
+class RandomBugDetectorSummary(BugDetectorSummary):
+    def __init__(self, base):
+        assert (isinstance(base, BugDetectorSummary) and base is not None)
+        super(TreeBasedBugDetectorSummary, self).__init__(base.getHistory(),
+                                                          base.getOutcomes(),
+                                                          base.getFailures(),
+                                                          base.getResourceUsage(),
+                                                          base.getResourceLimits())
+
+
+    def toJSON(self):
+        jsn = super(RandomBugDetectorSummary, self).toJSON()
+        jsn['summary']['algorithm'] = 'random'
+        return jsn
+
+
 class RandomBugDetector(BugDetector):
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(RandomBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
@@ -497,6 +516,12 @@ class RandomBugDetector(BugDetector):
     def run(self, systm):
         while not self.exhausted():
             self.runGeneration(systm)
+
+
+    def summarise(self):
+        summary = super(RandomBugDetector, self).summarise()
+        summary = RandomBugDetectorSummary(summary)
+        return summary
 
 
     def generateAction(self, schema):
