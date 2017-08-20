@@ -194,14 +194,20 @@ class BugDetector(object):
         self.prepare(systm, image, resourceLimits)
         try:
             self.run(systm)
-            summary = BugDetectorSummary(self.__history,
-                                         self.__outcomes,
-                                         self.__failures,
-                                         self.__resourceUsage,
-                                         self.__resourceLimits)
-            return summary
+            return self.summarise()
         finally:
             self.cleanup()
+
+
+    def summarise(self):
+        """
+        Returns a summary of the last bug detection trial.
+        """
+        return BugDetectorSummary(self.__history,
+                                  self.__outcomes,
+                                  self.__failures,
+                                  self.__resourceUsage,
+                                  self.__resourceLimits)
 
 
     def run(self, systm):
