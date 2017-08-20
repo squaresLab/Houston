@@ -234,7 +234,11 @@ class BugDetector(object):
         """
         self.prepare(systm, image, resourceLimits)
         try:
-            self.run(systm)
+            pool = ThreadPool(self.__threads)
+            pool.map(lambda m: (m, self.executeMission(m)),
+                     self.generateMissions())
+            self.__resourceUsage.runningTime = \
+                timeit.default_timer() - self.__startTime
             return self.summarise()
         finally:
             self.cleanup()
@@ -253,12 +257,12 @@ class BugDetector(object):
                                   self.__resourceLimits)
 
 
-    def run(self, systm):
-        raise NotImplementedError
-
-
     def getMaxNumActions(self):
         return self.__maxNumActions
+
+
+    def getSystem(self):
+        return self.__systm
 
 
     def getNumThreads(self):
@@ -298,33 +302,31 @@ class BugDetector(object):
             return self.__actionGenerators[name]
         return None
 
+    
+    def generateMissions(self):
+        while not self.exhausted():
+            try:
+                yield self.generateMission() 
 
-    def executeMissions(self, missions):
-        # if we've been given more missions than we can execute, trim the list
-        missions = list(missions)
-        missionLimit = self.__resourceLimits.getNumMissions()
-        if missionLimit is not None:
-            missionsLeft = missionLimit - self.__resourceUsage.numMissions
-            missions = missions[:min(len(missions), missionsLeft)]
+                # update resource usage
+                self.__resourceUsage.numMissions += 1
+                self.__resourceUsage.runningTime = \
+                    timeit.default_timer() - self.__startTime
 
-        # use a thread pool to distribute the execution
-        tPool = ThreadPool(self.__threads)
-        outcomes = tPool.map(lambda m: (m, self.executeMission(m)), missions)
-        for (mission, outcome) in outcomes:
-            self.recordOutcome(mission, outcome)
+            except AllPathsExplored:
+                return
 
-        # update resource usage
-        self.__resourceUsage.numMissions += len(missions)
-        self.__resourceUsage.runningTime = \
-            timeit.default_timer() - self.__startTime
+
+    def generateMission(self):
+        raise NotImplementedError
 
 
     def executeMission(self, mission):
-        # TODO: temporary!
         print("executing mission...")
         container = houston.createContainer(self.__systm, self.__image)
         try:
             outcome = container.execute(mission)
+            self.recordOutcome(mission, outcome)
             print("finished mission!")
             return outcome
         finally:
@@ -418,10 +420,11 @@ class TreeBasedBugDetector(BugDetector):
 
             # TODO: access!
             # self.__failures.remove(mission)
-            for other in self.__failures:
-                otherPath = self.getExecutedPath(other)
-                if otherPath.startswith(executedPath):
-                    self.__flaky.add(other)
+            # for other in self.__failures:
+            #     otherPath = self.getExecutedPath(other)
+            #     if otherPath.startswith(executedPath):
+            #         self.__flaky.add(other)
+            #         self.__failures.remove(other)
 
 
     def prune(self, path):
@@ -443,18 +446,6 @@ class TreeBasedBugDetector(BugDetector):
         self.__intendedPaths = {}
 
 
-    def run(self, systm):
-        try:
-            # TODO: make asynchronous
-            while not self.exhausted():
-                bffr = []
-                for _ in range(self.getNumThreads()):
-                    bffr.append(self.generateMission(systm, self.__seed))
-                self.executeMissions(bffr)
-        except AllPathsExplored:
-            return
-
-
     def generateAction(self, branch, env, state):
         """
         TODO: add branch-specific action generators
@@ -465,7 +456,11 @@ class TreeBasedBugDetector(BugDetector):
         return branch.generate(env, state) 
 
 
-    def generateMission(self, systm, seed):
+    def generateMission(self, seed = None):
+        if seed is None:
+            seed = self.__seed
+
+        systm = self.getSystem()
         branches = systm.getBranches()
         state = self.getEndState(seed)
         env = seed.getEnvironment()
@@ -512,13 +507,13 @@ class TreeBasedBugDetector(BugDetector):
 class RandomBugDetectorSummary(BugDetectorSummary):
     def __init__(self, base):
         assert (isinstance(base, BugDetectorSummary) and base is not None)
-        super(TreeBasedBugDetectorSummary, self).__init__(base.getSystem(),
-                                                          base.getImage(),
-                                                          base.getHistory(),
-                                                          base.getOutcomes(),
-                                                          base.getFailures(),
-                                                          base.getResourceUsage(),
-                                                          base.getResourceLimits())
+        super(RandomBugDetectorSummary, self).__init__(base.getSystem(),
+                                                       base.getImage(),
+                                                       base.getHistory(),
+                                                       base.getOutcomes(),
+                                                       base.getFailures(),
+                                                       base.getResourceUsage(),
+                                                       base.getResourceLimits())
 
 
     def toJSON(self):
@@ -534,11 +529,6 @@ class RandomBugDetector(BugDetector):
         self.__env = env
 
 
-    def run(self, systm):
-        while not self.exhausted():
-            self.runGeneration(systm)
-
-
     def summarise(self):
         summary = super(RandomBugDetector, self).summarise()
         summary = RandomBugDetectorSummary(summary)
@@ -552,19 +542,16 @@ class RandomBugDetector(BugDetector):
        return generator.generateActionWithoutState(self.__env)
 
 
-    def runGeneration(self, systm):
+    def generateMission(self):
+        systm = self.getSystem()
         schemas = systm.getActionSchemas().values()
         maxNumActions = self.getMaxNumActions()
         env = self.__env
         initialState = self.__initialState
 
-        bffr = []
-        for _ in range(self.getNumThreads()):
-            actions = []
-            for _ in range(random.randint(1, maxNumActions)):
-                schema = random.choice(schemas)
-                actions.append(self.generateAction(schema))
-            mission = Mission(env, initialState, actions)
-            bffr.append(mission)
+        actions = []
+        for _ in range(random.randint(1, maxNumActions)):
+            schema = random.choice(schemas)
+            actions.append(self.generateAction(schema))
 
-        self.executeMissions(bffr)
+        return Mission(env, initialState, actions)
