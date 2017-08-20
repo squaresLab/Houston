@@ -358,8 +358,8 @@ class TreeBasedBugDetector(BugDetector):
         self.__explored = {p: m for (p, m) in self.__explored if not p.startswith(path)}
 
 
-    def prepare(self):
-        super(TreeBasedBugDetector, self).prepare()
+    def prepare(self, systm, image, resourceLimits):
+        super(TreeBasedBugDetector, self).prepare(systm, image, resourceLimits)
         self.__explored = {}
         self.__tabu = set()
         self.__flaky = set()
