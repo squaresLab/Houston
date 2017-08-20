@@ -19,6 +19,10 @@ class TimeoutError(Exception):
     def produce(msg=None):
         raise TimeoutError(msg)
 
+def printflush(s):
+    print(s)
+    sys.stdout.flush()
+
 
 if (sys.version_info[0] >= 3):
     ENCODING = 'ascii'

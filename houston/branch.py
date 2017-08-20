@@ -2,6 +2,7 @@ import state
 import action
 import mission # TODO: CIRCULAR
 
+from util import printflush
 
 class Branch(object):
     def __init__(self, name, schema, estimators):
@@ -180,8 +181,12 @@ class BranchID(object):
         assert (branchName is not '')
         # TODO: rules
 
-        self.__actionName = actionName
-        self.__branchName = branchName
+        self.__actionName = str(actionName)
+        self.__branchName = str(branchName)
+
+
+    def equals(self, other):
+        return self.__eq__(other)
 
 
     def __eq__(self, other):
@@ -227,7 +232,7 @@ class BranchPath(object):
         """
         Returns an ordered list of identifiers for the branches along this path.
         """
-        return copy.copy(self.__identifiers)
+        return self.__identifiers[:]
 
 
     def getBranches(self, systm):
@@ -272,12 +277,16 @@ class BranchPath(object):
         return True
 
 
+    def __hash__(self):
+        return hash(tuple(str(i) for i in self.__identifiers))
+
+
     def __eq__(self, other):
         assert (isinstance(other, BranchPath) and not BranchPath is None)
-        if self.size() != other.size():
+        if self.length() != other.length():
             return False
         for (x, y) in zip(self.__identifiers, other.getIdentifiers()):
-            if x != y:
+            if not x.equals(y):
                 return False
         return True
 

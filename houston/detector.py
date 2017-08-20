@@ -4,6 +4,8 @@ import timeit
 import houston
 import system
 
+from util import printflush
+
 from multiprocessing.pool import ThreadPool
 
 from mission import Mission, MissionOutcome
@@ -286,6 +288,7 @@ class BugDetector(object):
         """
         Returns the end state after executing a given mission.
         """
+        assert (isinstance(m, Mission) and m is not None)
         if m.isEmpty():
             return m.getInitialState()
         outcome = self.__outcomes[m]
@@ -404,11 +407,10 @@ class TreeBasedBugDetector(BugDetector):
         del self.__intendedPaths[mission]
 
         if not outcome.failed():
-            self.__explored[intendedPath] = mission
             return
 
         # add the executed mission path to the tabu list
-        print("Adding path to tabu list: {}".format(executedPath))
+        printflush("Adding path to tabu list: {}".format(executedPath))
         self.prune(executedPath)
 
         # if the mission failed but didn't follow the intended path, we've
@@ -472,6 +474,7 @@ class TreeBasedBugDetector(BugDetector):
 
         # check if there are no viable branches
         if not branches:
+            printflush("NO VIABLE BRANCHES")
             
             # if all viable paths in the tree have been explored, raise an
             # `AllPathsExplored` exception
@@ -487,19 +490,26 @@ class TreeBasedBugDetector(BugDetector):
             return self.generateMission(systm, mission)
 
         branch = random.choice(branches)
+        path = path.extended(branch)
+        printflush("Path: {}".format(path))
 
         # have we already traversed this path?
+        printflush('EXPLORED: {}'.format(', '.join([str(p) for p in self.__explored])))
+
         if path in self.__explored:
-            return self.generateMission(systm, self.__explored[path])
+            printflush("I'VE ALREADY EXPLORED THIS PATH")
+            return self.generateMission(self.__explored[path])
 
         # if we haven't, generate an action belonging to this branch
-        path = path.extended(branch)
         action = self.generateAction(branch, env, state)
         actions = seed.getActions() + [action]
         mission = Mission(env, seed.getInitialState(), actions)
 
         # record the intended path
+        self.__explored[path] = mission
         self.__intendedPaths[mission] = path
+
+        printflush('GENERATED: {}'.format(path))
 
         return mission
 
