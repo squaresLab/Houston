@@ -212,18 +212,6 @@ class BugDetector(object):
         return self.__maxNumActions
 
 
-    def generateAction(self, schema, currentState, env):
-        """
-        Generates an instance of a given action schema at random.
-        """
-        name = schema.getName()
-        if name in self.__actionGenerators:
-            g = self.__actionGenerators[name]
-            return g.generate(currentState, env)
-
-        return schema.generate()
-
-
     def getNumThreads(self):
         """
         Returns the number of threads specified.
@@ -320,6 +308,9 @@ class TreeBasedBugDetector(BugDetector):
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
 
+        intendedPath = self.__intendedPaths[mission]
+        del self.__intendedPaths[mission]
+
         if not outcome.failed():
             self.__explored[intendedPath] = mission
             return
@@ -330,8 +321,6 @@ class TreeBasedBugDetector(BugDetector):
 
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
-        intendedPath = self.__intendedPaths[mission]
-        del self.__intendedPaths[mission]
         executedPath = self.getExecutedPath(mission)
 
         if intendedPath != executedPath:
@@ -378,6 +367,16 @@ class TreeBasedBugDetector(BugDetector):
             return
 
 
+    def generateAction(self, branch, env, state):
+        """
+        TODO: add branch-specific action generators
+        """
+        generator = self.getGenerator(branch.getSchema())
+        if generator is not None:
+            return generator.generate(state, env)
+        return branch.generate(env, state) 
+
+
     def generateMission(self, systm, seed):
         branches = systm.getBranches()
         state = self.getEndState(seed)
@@ -412,9 +411,13 @@ class TreeBasedBugDetector(BugDetector):
 
         # if we haven't, generate an action belonging to this branch
         path = path.extended(branch)
-        action = branch.generate(env, state)
+        action = self.generateAction(branch, env, state)
         actions = seed.getActions() + [action]
         mission = Mission(env, seed.getInitialState(), actions)
+
+        # record the intended path
+        self.__intendedPaths[mission] = path
+
         return mission
 
 
