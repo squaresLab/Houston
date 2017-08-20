@@ -11,7 +11,7 @@ __systems = {}
 """
 The pool of ports that are open and available to be used.
 """
-__port_pool = set(i for i in range(3000, 3500))
+__port_pool = set(i for i in range(10000, 10500))
 
 """
 The set of containers that are actively in use.
@@ -31,6 +31,23 @@ def registerSystem(systm):
     if iden in __systems:
         raise Error("system already registered with name: {}".format(iden))
     __systems[iden] = systm
+
+
+def setPortRange(start, end):
+    """
+    Updates the set of ports that are available to Houston. This should not
+    be called whilst containers are being provisioned, or missions are being
+    executed.
+    """
+    global __port_pool
+
+    assert (isinstance(start, int) and start is not None)
+    assert (start >= 1024 and start < 65535)
+    assert (isinstance(end, int) and end is not None)
+    assert (end >= 1024 and end < 65535)
+    assert (start < end)  
+
+    __port_pool = set(i for i in range(start, end))
 
 
 def getSystem(identifier):
