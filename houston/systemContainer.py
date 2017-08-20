@@ -25,19 +25,22 @@ class SystemContainer(object):
 
     - ensures clean-up
     """
-    def __init__(self, iden, image, port):
+    def __init__(self, iden, image, port, verbose=False):
         """
         Constructs a new SystemContainer
 
-        :param  iden:   the identifier of the system to which this container\
-                        belongs
-        :param  image:  the name of the Docker image to use for this container
-        :param  port:   the number of the port that the Houston server should\
-                        run on
+        :param  iden:       the identifier of the system to which this container\
+                            belongs
+        :param  image:      the name of the Docker image to use for this container
+        :param  port:       the number of the port that the Houston server should\
+                            run on
+        :param  verbose:    a flag indicating whether the output from this \
+                            container should be dumped before its destruction.
         """
         assert (isinstance(port, int) and not port is None)
         assert (port >= 1024 and port < 65535)
 
+        self.__verbose = verbose
         self.__systemIdentifier = iden
         self.__port = port
 
@@ -106,19 +109,21 @@ class SystemContainer(object):
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
         r = requests.post(url, json=jsn)
 
-        print(r.json())
+        outcome = mission.MissionOutcome.fromJSON(r.json())
+        if self.__verbose:
+            print(outcome.toJSON())
 
         # TODO: add timeout
         # TODO: handle unexpected responses
-        return mission.MissionOutcome.fromJSON(r.json())
+        return outcome
 
 
     def destroy(self):
         """
         Destroys the attached Docker container.
         """
-        print("Destroying container...")
-        print(self.__container.logs(stdout=True, stderr=True))
+        if self.__verbose:
+            print(self.__container.logs(stdout=True, stderr=True))
 
         self.__container.kill()
         self.__container.remove(force=True)

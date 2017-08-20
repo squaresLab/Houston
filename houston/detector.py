@@ -418,12 +418,10 @@ class TreeBasedBugDetector(BugDetector):
 
             # TODO: access!
             # self.__failures.remove(mission)
-
-            # for other in self.__failures:
-            #     otherPath = self.getExecutedPath(other)
-            #     if otherPath.startswith(executedPath):
-            #         self.__flaky.add(other)
-            #         self.__failures.remove(other)
+            for other in self.__failures:
+                otherPath = self.getExecutedPath(other)
+                if otherPath.startswith(executedPath):
+                    self.__flaky.add(other)
 
 
     def prune(self, path):
