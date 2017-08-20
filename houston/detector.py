@@ -9,6 +9,14 @@ from multiprocessing.pool import ThreadPool
 from mission import Mission, MissionOutcome
 from action import ActionOutcome, Action
 
+
+class AllPathsExplored(Exception):
+    """
+    Used to indicate that all paths have been explored.
+    """
+    pass
+
+
 class ResourceUsage(object):
     """
     Simple data structure used to maintain track of what resources have been
@@ -303,15 +311,6 @@ class TreeBasedBugDetector(BugDetector):
     """
     Description.
     """
-
-
-    class AllPathsExplored(Exception):
-        """
-        Used to indicate that all paths have been explored.
-        """
-        pass
-
-
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
         self.__seed = Mission(env, initialState, [])
@@ -370,7 +369,9 @@ class TreeBasedBugDetector(BugDetector):
         try:
             # TODO: make asynchronous
             while not self.exhausted():
-                bffr = [self.generateMission(systm, self.__seed) for _ in self.getNumThreads()]
+                bffr = []
+                for _ in range(self.getNumThreads()):
+                    bffr.append(self.generateMission(systm, self.__seed))
                 self.executeMissions(bffr)
         except AllPathsExplored:
             return
