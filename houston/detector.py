@@ -75,7 +75,7 @@ class ResourceLimits(object):
 
 
 class BugDetectorSummary(object):
-    def __init__(self, history, outcomes, failures, resourceUsage, resourceLimits):
+    def __init__(self, systm, image, history, outcomes, failures, resourceUsage, resourceLimits):
         """
         Constructs a summary of a bug detection process.
 
@@ -84,6 +84,8 @@ class BugDetectorSummary(object):
         :params resourceLimits: a description of the resources limits that \
                     were imposed during the bug detection process.
         """
+        assert (isinstance(systm, system.System) and systm is not None)
+        assert (isinstance(image, str) and image is not None)
         assert (isinstance(resourceUsage, ResourceUsage) and resourceUsage is not None)
         assert (isinstance(resourceLimits, ResourceLimits) and resourceLimits is not None)
         assert (isinstance(history, list) and history is not None)
@@ -91,6 +93,8 @@ class BugDetectorSummary(object):
         assert (isinstance(failures, set) and failures is not None)
         assert (all(isinstance(m, Mission) for m in failures))
 
+        self.__systm = systm
+        self.__image = image
         self.__history = history
         self.__outcomes = outcomes
         self.__failures = failures
@@ -114,13 +118,26 @@ class BugDetectorSummary(object):
         failures = [(m, self.__outcomes[m]) for m in self.__failures]
         failures = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in failures]
 
+
         summary = {
+            'settings': {
+                'system': self.__systm.getIdentifier(),
+                'image': self.__image
+            },
             'resources': resources,
             'history': history,
             'failures': failures
         }
 
         return {'summary': summary}
+
+
+    def getImage(self):
+        return self.__image
+
+
+    def getSystem(self):
+        return self.__systm
 
     
     def getHistory(self):
@@ -227,7 +244,9 @@ class BugDetector(object):
         """
         Returns a summary of the last bug detection trial.
         """
-        return BugDetectorSummary(self.__history,
+        return BugDetectorSummary(self.__systm,
+                                  self.__image,
+                                  self.__history,
                                   self.__outcomes,
                                   self.__failures,
                                   self.__resourceUsage,
@@ -335,7 +354,9 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
         assert (isinstance(flaky, set) and flaky is not None)
         assert (all(isinstance(m, Mission) for m in flaky))
 
-        super(TreeBasedBugDetectorSummary, self).__init__(base.getHistory(),
+        super(TreeBasedBugDetectorSummary, self).__init__(base.getSystem(),
+                                                          base.getImage(),
+                                                          base.getHistory(),
                                                           base.getOutcomes(),
                                                           base.getFailures(),
                                                           base.getResourceUsage(),
@@ -354,7 +375,7 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
 
         jsn['summary']['tabu'] = tabu
         jsn['summary']['flaky'] = flaky
-        jsn['summary']['algorithm'] = 'tree'
+        jsn['summary']['settings']['algorithm'] = 'tree'
 
         return jsn
 
@@ -493,7 +514,9 @@ class TreeBasedBugDetector(BugDetector):
 class RandomBugDetectorSummary(BugDetectorSummary):
     def __init__(self, base):
         assert (isinstance(base, BugDetectorSummary) and base is not None)
-        super(TreeBasedBugDetectorSummary, self).__init__(base.getHistory(),
+        super(TreeBasedBugDetectorSummary, self).__init__(base.getSystem(),
+                                                          base.getImage(),
+                                                          base.getHistory(),
                                                           base.getOutcomes(),
                                                           base.getFailures(),
                                                           base.getResourceUsage(),
@@ -502,7 +525,7 @@ class RandomBugDetectorSummary(BugDetectorSummary):
 
     def toJSON(self):
         jsn = super(RandomBugDetectorSummary, self).toJSON()
-        jsn['summary']['algorithm'] = 'random'
+        jsn['summary']['settings']['algorithm'] = 'random'
         return jsn
 
 
