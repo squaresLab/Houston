@@ -107,7 +107,7 @@ class ArduPilot(System):
         ]
 
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
-        DRONEKIT_SITL = SITL(binary)
+        DRONEKIT_SITL = SITL(binary,  wd='/experiment/')
         DRONEKIT_SITL.launch(args, verbose=True, await_ready=True, restart=False)
         connectString = DRONEKIT_SITL.connection_string()
         print connectString
