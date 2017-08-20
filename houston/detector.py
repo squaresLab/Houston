@@ -9,6 +9,14 @@ from multiprocessing.pool import ThreadPool
 from mission import Mission, MissionOutcome
 from action import ActionOutcome, Action
 
+
+class AllPathsExplored(Exception):
+    """
+    Used to indicate that all paths have been explored.
+    """
+    pass
+
+
 class ResourceUsage(object):
     """
     Simple data structure used to maintain track of what resources have been
@@ -63,7 +71,6 @@ class ResourceLimits(object):
             'numMissions': self.__numMissions,
             'runningTime': self.__runningTime
         }
-
 
 
 class BugDetectorSummary(object):
@@ -304,18 +311,9 @@ class TreeBasedBugDetector(BugDetector):
     """
     Description.
     """
-
-
-    class AllPathsExplored(Exception):
-        """
-        Used to indicate that all paths have been explored.
-        """
-        pass
-
-
     def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
         super(TreeBasedBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
-        self.__seed = Mission(self.__env, self.__initialState, [])
+        self.__seed = Mission(env, initialState, [])
 
 
     def recordOutcome(self, mission, outcome):
@@ -359,8 +357,8 @@ class TreeBasedBugDetector(BugDetector):
         self.__explored = {p: m for (p, m) in self.__explored if not p.startswith(path)}
 
 
-    def prepare(self):
-        super(TreeBasedBugDetector, self).prepare()
+    def prepare(self, systm, image, resourceLimits):
+        super(TreeBasedBugDetector, self).prepare(systm, image, resourceLimits)
         self.__explored = {}
         self.__tabu = set()
         self.__flaky = set()
@@ -371,7 +369,9 @@ class TreeBasedBugDetector(BugDetector):
         try:
             # TODO: make asynchronous
             while not self.exhausted():
-                bffr = [self.generateMission(systm, self.__seed) for _ in self.getNumThreads()]
+                bffr = []
+                for _ in range(self.getNumThreads()):
+                    bffr.append(self.generateMission(systm, self.__seed))
                 self.executeMissions(bffr)
         except AllPathsExplored:
             return
