@@ -623,6 +623,9 @@ class TakeoffNormalBranch(Branch):
     def isSatisfiable(self, state, environment):
         return self.isApplicable(None, state, environment)
 
+    def generate(self, initialState, env):
+        return self.getSchema().generate()
+
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
     return 0.01
