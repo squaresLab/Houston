@@ -85,6 +85,16 @@ class Mission(object):
         return durationTime
 
 
+    def extended(self, act):
+        """
+        Returns a variant of this mission with a given action added onto the
+        end.
+        """
+        assert (isinstance(act, action.Action) and act is not None)
+        actions = self.__actions + [act]
+        return Mission(self.__environment, self.__initialState, actions)
+
+
     def toJSON(self):
         """
         Returns a JSON description of this mission.
