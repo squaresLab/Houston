@@ -399,7 +399,8 @@ class SetModeRTLBranch(Branch):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (state.read('homeLatitude'), state.read('homeLongitude'))
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        landTime = state.read('altitude') * TIME_PER_METER_TRAVELED
+        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET + landTime
         return timeout
 
 
