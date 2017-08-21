@@ -497,26 +497,26 @@ class TreeBasedBugDetector(BugDetector):
                 self.tick()
 
                 # check if there are no jobs left
-                if self.exhausted():
-                    return None
+                self._contentsLock.acquire()
+                try:
+                    if self.exhausted():
+                        return None
 
-                # check if there is a job in the queue
-                if self.__queue != set():
-                    printflush("Generating mission")
-
-                    self._contentsLock.acquire()
-                    mission = random.sample(self.__queue, 1)[0]
-                    self.__queue.remove(mission)
-                    self.__running.add(mission)
+                    # check if there is a job in the queue
+                    if self.__queue != set():
+                        printflush("Generating mission")
+                        mission = random.sample(self.__queue, 1)[0]
+                        self.__queue.remove(mission)
+                        self.__running.add(mission)
+                        self.getResourceUsage().numMissions += 1
+                        return mission
+                    
+                finally:
                     self._contentsLock.release()
-
-                    self.getResourceUsage().numMissions += 1
-                    return mission
 
                 # if there isn't we need to wait until pending jobs
                 # are finished
-                else:
-                    time.sleep(0.1)
+                time.sleep(0.1)
 
         finally:
             self._fetchLock.release()
