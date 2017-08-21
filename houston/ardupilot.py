@@ -107,8 +107,8 @@ class ArduPilot(System):
         ]
 
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
-        DRONEKIT_SITL = SITL(binary,  wd='/experiment/')
-        DRONEKIT_SITL.launch(args, verbose=True, await_ready=True, restart=False)
+        DRONEKIT_SITL = SITL(binary, defaults_filepath='/experiment/source/Tools/autotest/default_params/copter.parm')
+        DRONEKIT_SITL.launch(args, verbose=True, await_ready=True, restart=False,  wd='/experiment/')
         connectString = DRONEKIT_SITL.connection_string()
         print connectString
         sys.stdout.flush()
@@ -301,6 +301,7 @@ class SetModeLandBranch(Branch):
     def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'LAND'),
+            FixedEstimator('armed', False),
             Estimator('latitude', lambda action, state, env: state.read('latitude')),
             Estimator('longitude', lambda action, state, env: state.read('longitude')),
             Estimator('altitude', lambda action, state, env: 0.0)

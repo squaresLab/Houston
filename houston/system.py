@@ -46,7 +46,7 @@ class System(object):
         """
         return self.__identifier
 
-   
+
     def getBranches(self):
         """
         Returns a list of the branches for this system.
@@ -90,7 +90,7 @@ class System(object):
         """
         assert (self.installed())
         timeBeforeSetup = timeit.default_timer()
-        self.setUpOld(msn)
+        self.setUp(msn)
         totalSetupTime = timeit.default_timer() - timeBeforeSetup
 
         env = msn.getEnvironment()
@@ -142,7 +142,7 @@ class System(object):
             return MissionOutcome(True, outcomes, totalSetupTime, totalTime)
 
         finally:
-            self.tearDownOld(msn)
+            self.tearDown(msn)
 
 
     def getState(self):
