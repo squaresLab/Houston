@@ -267,8 +267,7 @@ class BugDetector(object):
             workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
             for worker in workers:
                 worker.join()
-            self.__resourceUsage.runningTime = \
-                timeit.default_timer() - self.__startTime
+            self.tick()
             return self.summarise()
         finally:
             self.cleanup()
@@ -352,7 +351,6 @@ class BugDetector(object):
         container = houston.createContainer(self.__systm, self.__image)
         try:
             outcome = container.execute(mission)
-            print("finished execution!")
             self.recordOutcome(mission, outcome)
             # self.__running.remove(mission)
             print("finished mission!")
