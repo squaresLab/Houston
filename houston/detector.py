@@ -447,18 +447,16 @@ class TreeBasedBugDetector(BugDetector):
 
             if not outcome.failed():
                 self.expand(mission)
-
-            # add the executed mission path to the tabu list
-            self.prune(executedPath)
+            else:
+                self.prune(executedPath)
+                if intendedPath != executedPath:
+                    self.__flaky.add(mission)
         finally:
             self.__running.remove(mission)
             self._contentsLock.release()
 
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
-        if intendedPath != executedPath:
-            self.__flaky.add(mission)
-
             # TODO: access!
             # self.__failures.remove(mission)
             # for other in self.__failures:
