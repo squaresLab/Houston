@@ -3,6 +3,7 @@ import random
 import timeit
 import houston
 import system
+import time
 
 from util import printflush
 
@@ -13,11 +14,9 @@ from action import ActionOutcome, Action, ActionGenerator
 from branch import BranchID, BranchPath
 
 
-class AllPathsExplored(Exception):
-    """
-    Used to indicate that all paths have been explored.
-    """
-    pass
+# length of time to wait before checking to see if there's a mission in the
+# queue
+JOB_WAIT_TIME = 0.1
 
 
 class ResourceUsage(object):
@@ -246,6 +245,11 @@ class BugDetector(object):
             self.cleanup()
 
 
+    def tick(self):
+        self.__resourceUsage.runningTime = \
+            timeit.default_timer() - self.__startTime
+
+
     def summarise(self):
         """
         Returns a summary of the last bug detection trial.
@@ -265,6 +269,10 @@ class BugDetector(object):
 
     def getSystem(self):
         return self.__systm
+
+    
+    def getResourceUsage(self):
+        return self.__resourceUsage
 
 
     def getNumThreads(self):
@@ -308,17 +316,11 @@ class BugDetector(object):
     
     def generateMissions(self):
         while not self.exhausted():
-            try:
-                yield self.generateMission() 
+            yield self.generateMission() 
 
-                # update resource usage
-                self.__resourceUsage.numMissions += 1
-                self.__resourceUsage.runningTime = \
-                    timeit.default_timer() - self.__startTime
-
-            except AllPathsExplored:
-                return
-
+            # update resource usage
+            self.__resourceUsage.numMissions += 1
+            self.tick()
 
     def generateMission(self):
         raise NotImplementedError
@@ -403,11 +405,13 @@ class TreeBasedBugDetector(BugDetector):
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
 
+        self.__running.remove(mission)
+
         intendedPath = self.__intendedPaths[mission]
         del self.__intendedPaths[mission]
 
         if not outcome.failed():
-            return
+            self.expand(mission)
 
         # add the executed mission path to the tabu list
         printflush("Adding path to tabu list: {}".format(executedPath))
@@ -431,21 +435,74 @@ class TreeBasedBugDetector(BugDetector):
 
     def prune(self, path):
         assert (isinstance(path, BranchPath) and path is not None)
-
-        # remove redundant path information from tabu list before adding
-        self.__tabu = set(p for p in self.__tabu if not p.startswith(path))
-        self.__tabu.add(path)
-
-        # remove redundant information
-        self.__explored = {p: m for (p, m) in self.__explored if not p.startswith(path)}
+        for m in self.__queue:
+            if self.__intendedPaths[m].startswith(path):
+                self.__queue.remove(m)
 
 
     def prepare(self, systm, image, resourceLimits):
         super(TreeBasedBugDetector, self).prepare(systm, image, resourceLimits)
-        self.__explored = {}
-        self.__tabu = set()
+
         self.__flaky = set()
         self.__intendedPaths = {}
+        self.__queue = set()
+        self.__running = set()
+        self.expand(self.__seed)
+
+
+    def generateMissions(self):
+        while True:
+            # update running time
+            self.tick()
+
+            # have we hit the resource limit?
+            if self.exhausted():
+                return
+
+            # if there is a mission in the queue, yield it
+            if self.__queue != set():
+                printflush("Generating mission")
+                mission = random.sample(self.__queue, 1)[0]
+                self.__queue.remove(mission)
+                self.__running.add(mission)
+                self.getResourceUsage().numMissions += 1
+                yield mission
+
+            # if there are no missions in the queue and there are no
+            # missions running, we've exhausted the search space!
+            elif self.__running == set():
+                printflush("Exhausted search space!")
+                return
+
+            # otherwise, we need to sit and wait for a mission to be
+            # added to the queue (sleep?)
+            else:
+                time.sleep(JOB_WAIT_TIME)
+
+
+    def expand(self, mission):
+        """
+        Called after a mission has finished executing
+        """
+        systm = self.getSystem()
+        branches = systm.getBranches()
+        state = self.getEndState(mission)
+        env = mission.getEnvironment()
+        path = self.getExecutedPath(mission)
+      
+        # if we've hit the action limit, don't expand
+        maxNumActions = self.getMaxNumActions()
+        if maxNumActions is not None and maxNumActions == mission.size():
+            return
+
+        # otherwise, explore each branch
+        branches = [b for b in branches if b.isSatisfiable(state, env)]
+        for b in branches:
+            p = path.extended(b)
+            a = self.generateAction(b, env, state)
+            m = mission.extended(a)
+            self.__queue.add(m)
+            self.__intendedPaths[m] = p
 
 
     def generateAction(self, branch, env, state):
@@ -456,59 +513,6 @@ class TreeBasedBugDetector(BugDetector):
         if generator is not None:
             return generator.generateActionWithState(state, env)
         return branch.generate(env, state) 
-
-
-    def generateMission(self, seed = None):
-        if seed is None:
-            seed = self.__seed
-
-        systm = self.getSystem()
-        branches = systm.getBranches()
-        state = self.getEndState(seed)
-        env = seed.getEnvironment()
-        path = self.getExecutedPath(seed)
-
-        # choose a branch at random
-        branches = [b for b in branches if b.isSatisfiable(state, env)]
-        branches = [b for b in branches if path.extended(b) not in self.__tabu]
-
-        # check if there are no viable branches
-        if not branches:
-            printflush("NO VIABLE BRANCHES")
-            
-            # if all viable paths in the tree have been explored, raise an
-            # `AllPathsExplored` exception
-            if not path:
-                raise AllPathsExplored
-
-            # otherwise, add the current path to the tabu list, and attempt to
-            # generate a mission from the preceding point along the path
-            self.prune(path)
-            mission = Mission(env,
-                              seed.getInitialState(),
-                              seed.getActions()[:-1])
-            return self.generateMission(systm, mission)
-
-        branch = random.choice(branches)
-        path = path.extended(branch)
-        printflush("Path: {}".format(path))
-
-        if path in self.__explored:
-            printflush("I'VE ALREADY EXPLORED THIS PATH")
-            return self.generateMission(self.__explored[path])
-
-        # if we haven't, generate an action belonging to this branch
-        action = self.generateAction(branch, env, state)
-        actions = seed.getActions() + [action]
-        mission = Mission(env, seed.getInitialState(), actions)
-
-        # record the intended path
-        self.__explored[path] = mission
-        self.__intendedPaths[mission] = path
-
-        printflush('GENERATED: {}'.format(path))
-
-        return mission
 
 
 class RandomBugDetectorSummary(BugDetectorSummary):
