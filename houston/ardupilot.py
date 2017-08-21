@@ -69,11 +69,11 @@ class ArduPilot(System):
         variables['homeLongitude'] = \
             InternalVariable('homeLongitude', lambda: 149.165085) # Fixed
         variables['altitude'] = \
-            InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt, 0.3)
+            InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt, 0.5)
         variables['latitude'] = \
-            InternalVariable('latitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lat, 0.00001)
+            InternalVariable('latitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lat, 0.00002)
         variables['longitude'] = \
-            InternalVariable('longitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lon, 0.00001)
+            InternalVariable('longitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lon, 0.00002)
         variables['armable'] = \
             InternalVariable('armable', lambda: DRONEKIT_SYSTEM.is_armable)
         variables['armed'] = \
@@ -103,7 +103,7 @@ class ArduPilot(System):
         args = [
             "--model=quad",
             "--home=-35.362938,149.165085,584,270",
-            "--speedup=5"
+            "--speedup=3"
         ]
 
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
