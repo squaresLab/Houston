@@ -300,7 +300,7 @@ class SetModeLandBranch(Branch):
     def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'LAND'),
-            FixedEstimator('armed', False),
+            Estimator('armed', lambda action, state, env: False if state.read('altitude') < 0.3 else True),
             Estimator('latitude', lambda action, state, env: state.read('latitude')),
             Estimator('longitude', lambda action, state, env: state.read('longitude')),
             Estimator('altitude', lambda action, state, env: 0.0)
@@ -477,7 +477,7 @@ class GotoNormalBranch(Branch):
 
 
     def isApplicable(self, action, state, environment):
-        return state.read('armed') and state.read('altitude') > 0.3
+        return state.read('armed') and state.read('altitude') > 0.3 and state.read('mode') == 'GUIDED'
 
 
     def isSatisfiable(self, state, environment):
