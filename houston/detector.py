@@ -4,6 +4,7 @@ import timeit
 import houston
 import system
 import time
+import threading
 
 from util import printflush
 
@@ -14,9 +15,19 @@ from action import ActionOutcome, Action, ActionGenerator
 from branch import BranchID, BranchPath
 
 
-# length of time to wait before checking to see if there's a mission in the
-# queue
-JOB_WAIT_TIME = 0.1
+class MissionPoolWorker(threading.Thread):
+    def __init__(self, detector):
+        super(MissionPoolWorker, self).__init__()
+        self.__detector = detector
+        self.start()
+
+
+    def run(self):
+        while True:
+            m = self.__detector.getNextMission()
+            if m is None:
+                return
+            self.__detector.executeMission(m)
 
 
 class ResourceUsage(object):
@@ -50,7 +61,6 @@ class ResourceLimits(object):
             return True
         if self.reachedTimeLimit(usage.runningTime):
             return True
-        print 'Total running time: {}'.format(usage.runningTime)
         return False
 
 
@@ -178,6 +188,7 @@ class BugDetector(object):
         assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
 
         self.__maxNumActions = maxNumActions
+        self.__fetchLock = threading.Lock()
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
@@ -187,6 +198,24 @@ class BugDetector(object):
             name = g.getSchemaName()
             assert not (name in self.__actionGenerators)
             self.__actionGenerators[name] = g
+
+
+    def getNextMission(self):
+        self.__fetchLock.acquire()
+        try:
+            while True:
+                self.tick()
+
+                # check if there are no jobs left
+                if self.exhausted():
+                    return None
+
+                # RANDOM:
+                self.__resourceUsage.numMissions += 1
+                return self.generateMission()
+
+        finally:
+            self.__fetchLock.release()
 
 
     def prepare(self, systm, image, resourceLimits):
@@ -235,9 +264,9 @@ class BugDetector(object):
         """
         self.prepare(systm, image, resourceLimits)
         try:
-            pool = ThreadPool(self.__threads)
-            pool.map(lambda m: (m, self.executeMission(m)),
-                     self.generateMissions())
+            workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
+            for worker in workers:
+                worker.join()
             self.__resourceUsage.runningTime = \
                 timeit.default_timer() - self.__startTime
             return self.summarise()
@@ -313,14 +342,6 @@ class BugDetector(object):
             return self.__actionGenerators[name]
         return None
 
-    
-    def generateMissions(self):
-        while not self.exhausted():
-            yield self.generateMission() 
-
-            # update resource usage
-            self.__resourceUsage.numMissions += 1
-            self.tick()
 
     def generateMission(self):
         raise NotImplementedError
@@ -331,7 +352,9 @@ class BugDetector(object):
         container = houston.createContainer(self.__systm, self.__image)
         try:
             outcome = container.execute(mission)
+            print("finished execution!")
             self.recordOutcome(mission, outcome)
+            # self.__running.remove(mission)
             print("finished mission!")
             return outcome
         finally:
@@ -405,8 +428,6 @@ class TreeBasedBugDetector(BugDetector):
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
 
-        self.__running.remove(mission)
-
         intendedPath = self.__intendedPaths[mission]
         del self.__intendedPaths[mission]
 
@@ -476,8 +497,12 @@ class TreeBasedBugDetector(BugDetector):
 
             # otherwise, we need to sit and wait for a mission to be
             # added to the queue (sleep?)
+            #
+            # NOTE: we return Sleep, which is used to instruct the worker
+            #       that the thread should sleep
             else:
-                time.sleep(JOB_WAIT_TIME)
+                printflush("sleepo")
+                yield Sleep()
 
 
     def expand(self, mission):
