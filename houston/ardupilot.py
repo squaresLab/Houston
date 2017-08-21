@@ -450,6 +450,10 @@ class GoToActionSchema(ActionSchema):
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
 
+        while math.fabs(currentAlt - action.read('altitude')) > 0.3:
+            time.sleep(.2)
+            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+
 
 class GotoNormalBranch(Branch):
     """
