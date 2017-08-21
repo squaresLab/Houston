@@ -188,7 +188,8 @@ class BugDetector(object):
         assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
 
         self.__maxNumActions = maxNumActions
-        self.__fetchLock = threading.Lock()
+        self._fetchLock = threading.Lock()
+        self._contentsLock = threading.Lock()
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
@@ -201,21 +202,20 @@ class BugDetector(object):
 
 
     def getNextMission(self):
-        self.__fetchLock.acquire()
+        self._fetchLock.acquire()
         try:
-            while True:
-                self.tick()
+            self.tick()
 
-                # check if there are no jobs left
-                if self.exhausted():
-                    return None
+            # check if there are no jobs left
+            if self.exhausted():
+                return None
 
-                # RANDOM:
-                self.__resourceUsage.numMissions += 1
-                return self.generateMission()
+            # RANDOM:
+            self.__resourceUsage.numMissions += 1
+            return self.generateMission()
 
         finally:
-            self.__fetchLock.release()
+            self._fetchLock.release()
 
 
     def prepare(self, systm, image, resourceLimits):
@@ -267,8 +267,7 @@ class BugDetector(object):
             workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
             for worker in workers:
                 worker.join()
-            self.__resourceUsage.runningTime = \
-                timeit.default_timer() - self.__startTime
+            self.tick()
             return self.summarise()
         finally:
             self.cleanup()
@@ -290,6 +289,23 @@ class BugDetector(object):
                                   self.__failures,
                                   self.__resourceUsage,
                                   self.__resourceLimits)
+
+    def getNextMission(self):
+        self._fetchLock.acquire()
+        try:
+            while True:
+                self.tick()
+
+                # check if there are no jobs left
+                if self.exhausted():
+                    return None
+
+                # RANDOM:
+                self.__resourceUsage.numMissions += 1
+                return self.generateMission()
+
+        finally:
+            self._fetchLock.release()
 
 
     def getMaxNumActions(self):
@@ -352,7 +368,6 @@ class BugDetector(object):
         container = houston.createContainer(self.__systm, self.__image)
         try:
             outcome = container.execute(mission)
-            print("finished execution!")
             self.recordOutcome(mission, outcome)
             # self.__running.remove(mission)
             print("finished mission!")
@@ -379,7 +394,7 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
     """
     Used to provide a summary of a tree-based bug detection trial.
     """
-    def __init__(self, base, flaky, tabu):
+    def __init__(self, base, flaky):
         assert (isinstance(base, BugDetectorSummary) and base is not None)
         assert (isinstance(flaky, set) and flaky is not None)
         assert (all(isinstance(m, Mission) for m in flaky))
@@ -392,18 +407,14 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
                                                           base.getResourceUsage(),
                                                           base.getResourceLimits())
         self.__flaky = flaky
-        self.__tabu = tabu
 
 
     def toJSON(self):
         jsn = super(TreeBasedBugDetectorSummary, self).toJSON()
 
-        tabu = [to.toJSON() for t in self.__tabu]
-
         flaky = [(m, self.getOutcome(m)) for m in self.__flaky]
         flaky = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in flaky]
 
-        jsn['summary']['tabu'] = tabu
         jsn['summary']['flaky'] = flaky
         jsn['summary']['settings']['algorithm'] = 'tree'
 
@@ -421,27 +432,30 @@ class TreeBasedBugDetector(BugDetector):
 
     def summarise(self):
         summary = super(TreeBasedBugDetector, self).summarise()
-        summary = TreeBasedBugDetectorSummary(summary, self.__flaky, self.__tabu)
+        summary = TreeBasedBugDetectorSummary(summary, self.__flaky)
         return summary
 
 
     def recordOutcome(self, mission, outcome):
         super(TreeBasedBugDetector, self).recordOutcome(mission, outcome)
 
-        intendedPath = self.__intendedPaths[mission]
-        del self.__intendedPaths[mission]
+        self._contentsLock.acquire()
+        try:
+            intendedPath = self.__intendedPaths[mission]
+            executedPath = self.getExecutedPath(mission)
+            del self.__intendedPaths[mission]
 
-        if not outcome.failed():
-            self.expand(mission)
+            if not outcome.failed():
+                self.expand(mission)
 
-        # add the executed mission path to the tabu list
-        printflush("Adding path to tabu list: {}".format(executedPath))
-        self.prune(executedPath)
+            # add the executed mission path to the tabu list
+            self.prune(executedPath)
+        finally:
+            self.__running.remove(mission)
+            self._contentsLock.release()
 
         # if the mission failed but didn't follow the intended path, we've
         # found a flaky path.
-        executedPath = self.getExecutedPath(mission)
-
         if intendedPath != executedPath:
             self.__flaky.add(mission)
 
@@ -456,9 +470,8 @@ class TreeBasedBugDetector(BugDetector):
 
     def prune(self, path):
         assert (isinstance(path, BranchPath) and path is not None)
-        for m in self.__queue:
-            if self.__intendedPaths[m].startswith(path):
-                self.__queue.remove(m)
+        printflush("Adding path to tabu list: {}".format(path))
+        self.__queue = set(m for m in self.__queue if not self.__intendedPaths[m].startswith(path))
 
 
     def prepare(self, systm, image, resourceLimits):
@@ -471,38 +484,42 @@ class TreeBasedBugDetector(BugDetector):
         self.expand(self.__seed)
 
 
-    def generateMissions(self):
-        while True:
-            # update running time
-            self.tick()
+    def exhausted(self):
+        if super(TreeBasedBugDetector, self).exhausted():
+            return True
+        return self.__queue == set() and self.__running == set()
 
-            # have we hit the resource limit?
-            if self.exhausted():
-                return
 
-            # if there is a mission in the queue, yield it
-            if self.__queue != set():
-                printflush("Generating mission")
-                mission = random.sample(self.__queue, 1)[0]
-                self.__queue.remove(mission)
-                self.__running.add(mission)
-                self.getResourceUsage().numMissions += 1
-                yield mission
+    def getNextMission(self):
+        self._fetchLock.acquire()
+        try:
+            while True:
+                self.tick()
 
-            # if there are no missions in the queue and there are no
-            # missions running, we've exhausted the search space!
-            elif self.__running == set():
-                printflush("Exhausted search space!")
-                return
+                # check if there are no jobs left
+                self._contentsLock.acquire()
+                try:
+                    if self.exhausted():
+                        return None
 
-            # otherwise, we need to sit and wait for a mission to be
-            # added to the queue (sleep?)
-            #
-            # NOTE: we return Sleep, which is used to instruct the worker
-            #       that the thread should sleep
-            else:
-                printflush("sleepo")
-                yield Sleep()
+                    # check if there is a job in the queue
+                    if self.__queue != set():
+                        printflush("Generating mission")
+                        mission = random.sample(self.__queue, 1)[0]
+                        self.__queue.remove(mission)
+                        self.__running.add(mission)
+                        self.getResourceUsage().numMissions += 1
+                        return mission
+                    
+                finally:
+                    self._contentsLock.release()
+
+                # if there isn't we need to wait until pending jobs
+                # are finished
+                time.sleep(0.1)
+
+        finally:
+            self._fetchLock.release()
 
 
     def expand(self, mission):

@@ -239,7 +239,7 @@ class ArmNormalBranch(Branch):
 
 
     def generate(self, state, environment):
-        return self.getSchema.generate()
+        return self.getSchema().generate()
 
 
 class SetModeActionSchema(ActionSchema):
