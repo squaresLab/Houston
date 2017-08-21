@@ -79,7 +79,8 @@ def destroyContainer(cntr):
     assert (isinstance(cntr, systemContainer.SystemContainer) and not cntr is None)
 
     manager_lock.acquire()
-    __port_pool.add(cntr.port())
+    port = cntr.port()
+    __port_pool.add(port)
     __containers.remove(cntr)
     cntr.destroy()
     manager_lock.release()
@@ -111,7 +112,6 @@ def createContainer(systm, image, verbose=False):
     manager_lock.acquire()
     port = random.sample(__port_pool, 1)[0]
     __port_pool.remove(port)
-
     container = systemContainer.SystemContainer(iden, image, port, verbose=verbose)
     __containers.add(container)
     manager_lock.release()

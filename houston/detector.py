@@ -369,11 +369,10 @@ class BugDetector(object):
         try:
             outcome = container.execute(mission)
             self.recordOutcome(mission, outcome)
-            # self.__running.remove(mission)
             print("finished mission!")
             return outcome
         finally:
-            container.destroy()
+            houston.destroyContainer(container)
 
 
     def recordOutcome(self, mission, outcome):
