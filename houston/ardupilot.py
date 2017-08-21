@@ -117,7 +117,6 @@ class ArduPilot(System):
         vehicleMode = VehicleMode('GUIDED')
         DRONEKIT_SYSTEM.mode = vehicleMode
         DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
-        DRONEKIT_SYSTEM.parameters['ARMING_CHECK']=0
         while DRONEKIT_SYSTEM.parameters['DISARM_DELAY'] is not 0 and DRONEKIT_SYSTEM.is_armable is False: #TODO Implement timeout
             time.sleep(0.1)
             DRONEKIT_SYSTEM.mode = vehicleMode
@@ -399,7 +398,8 @@ class SetModeRTLBranch(Branch):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (state.read('homeLatitude'), state.read('homeLongitude'))
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        landTime = state.read('altitude') * TIME_PER_METER_TRAVELED
+        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET + landTime
         return timeout
 
 
@@ -547,8 +547,8 @@ class CircleBasedGotoGenerator(ActionGenerator):
 
 
     def constructWithoutState(self, env, values):
-        lon = values['latitude']
-        lat = values['longitude']
+        lat = values['latitude']
+        lon = values['longitude']
         heading = values['heading']
         dist = values['distance']
         params = {}
