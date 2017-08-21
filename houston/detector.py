@@ -188,7 +188,7 @@ class BugDetector(object):
         assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
 
         self.__maxNumActions = maxNumActions
-        self.__fetchLock = threading.Lock()
+        self._fetchLock = threading.Lock()
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
@@ -201,7 +201,7 @@ class BugDetector(object):
 
 
     def getNextMission(self):
-        self.__fetchLock.acquire()
+        self._fetchLock.acquire()
         try:
             while True:
                 self.tick()
@@ -215,7 +215,7 @@ class BugDetector(object):
                 return self.generateMission()
 
         finally:
-            self.__fetchLock.release()
+            self._fetchLock.release()
 
 
     def prepare(self, systm, image, resourceLimits):
@@ -289,6 +289,23 @@ class BugDetector(object):
                                   self.__failures,
                                   self.__resourceUsage,
                                   self.__resourceLimits)
+
+    def getNextMission(self):
+        self._fetchLock.acquire()
+        try:
+            while True:
+                self.tick()
+
+                # check if there are no jobs left
+                if self.exhausted():
+                    return None
+
+                # RANDOM:
+                self.__resourceUsage.numMissions += 1
+                return self.generateMission()
+
+        finally:
+            self._fetchLock.release()
 
 
     def getMaxNumActions(self):
@@ -467,6 +484,12 @@ class TreeBasedBugDetector(BugDetector):
         self.__queue = set()
         self.__running = set()
         self.expand(self.__seed)
+
+
+    def exhausted(self):
+        if super(TreeBasedBugDetector, self).exhausted():
+            return True
+        return self.__queue == set() and self.__running == set()
 
 
     def generateMissions(self):
