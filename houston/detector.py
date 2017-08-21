@@ -471,9 +471,7 @@ class TreeBasedBugDetector(BugDetector):
     def prune(self, path):
         assert (isinstance(path, BranchPath) and path is not None)
         printflush("Adding path to tabu list: {}".format(path))
-        for m in self.__queue:
-            if self.__intendedPaths[m].startswith(path):
-                self.__queue.remove(m)
+        self.__queue = set(m for m in self.__queue if not self.__intendedPaths[m].startswith(path))
 
 
     def prepare(self, systm, image, resourceLimits):
