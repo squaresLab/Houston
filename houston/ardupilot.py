@@ -547,8 +547,8 @@ class CircleBasedGotoGenerator(ActionGenerator):
 
 
     def constructWithoutState(self, env, values):
-        lon = values['latitude']
-        lat = values['longitude']
+        lat = values['latitude']
+        lon = values['longitude']
         heading = values['heading']
         dist = values['distance']
         params = {}
