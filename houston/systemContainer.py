@@ -135,6 +135,5 @@ class SystemContainer(object):
         if self.__verbose:
             print(self.__container.logs(stdout=True, stderr=True))
 
-        self.__container.kill()
         self.__container.remove(force=True)
         self.__container = None
