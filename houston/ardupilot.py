@@ -69,7 +69,6 @@ class ArduPilot(System):
         variables['homeLongitude'] = \
             InternalVariable('homeLongitude', lambda: 149.165085) # Fixed
         variables['altitude'] = \
-            InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt, 0.5)
             InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt, 1.0)
         variables['latitude'] = \
             InternalVariable('latitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lat, 0.00002)
@@ -310,7 +309,6 @@ class SetModeLandBranch(Branch):
     def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'LAND'),
-            Estimator('armed', lambda action, state, env: False if state.read('altitude') < 0.3 else True),
             FixedEstimator('armed', False),
             Estimator('latitude', lambda action, state, env: state.read('latitude')),
             Estimator('longitude', lambda action, state, env: state.read('longitude')),
