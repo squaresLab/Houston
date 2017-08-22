@@ -38,17 +38,21 @@ class MissionPoolWorker(threading.Thread):
 
 
     def run(self):
-        while True:
-            m = self.__detector.getNextMission()
-            if m is None:
-                return
-            self.__prepareContainer()
-            self.__detector.executeMission(m, self.__container)
+        try:
+            while True:
+                m = self.__detector.getNextMission()
+                if m is None:
+                    return
+                self.__prepareContainer()
+                self.__detector.executeMission(m, self.__container)
+        finally:
+            self.shutdown()
 
-    
-    def __del__(self):
+
+    def shutdown(self):
         if self.__container is not None:
             houston.destroyContainer(self.__container)
+            self.__container = None
 
 
 class ResourceUsage(object):
@@ -263,7 +267,7 @@ class BugDetector(object):
         trial.
         """
         for worker in self.__workers:
-            del worker
+            worker.shutdown()
         self.__workers = []
 
 
