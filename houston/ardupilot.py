@@ -48,10 +48,10 @@ except ImportError as e:
     ARDUPILOT_INSTALLED = False
     print("Import warning: {}".format(e))
 
-SPEEDUP = 5
+SPEEDUP = 3
 DRONEKIT_SYSTEM = None
-TIME_PER_METER_TRAVELED = 0.7
-CONSTANT_TIMEOUT_OFFSET = 0.7
+TIME_PER_METER_TRAVELED = 1.0
+CONSTANT_TIMEOUT_OFFSET = 1.0
 
 class ArduPilot(System):
     """
@@ -411,12 +411,12 @@ class SetModeRTLBranch(Branch):
         # Distance from current coor to home coor
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
         # Land times and adjustment time for altitude
-        totalLandTime = state.read('altitude') * TIME_PER_METER_TRAVELED
-        totalGoUpDownTime = math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED
+        totalLandTime = (state.read('altitude') * TIME_PER_METER_TRAVELED)/SPEEDUP
+        totalGoUpDownTime = (math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED)/SPEEDUP
         # Land and adjustment time for altitude added
         goUpDownAndLandTime = totalGoUpDownTime + totalLandTime
         # Go to home lat and lon time travel.
-        gotoTotalTime = totalDistance * TIME_PER_METER_TRAVELED
+        gotoTotalTime = (totalDistance * TIME_PER_METER_TRAVELED)/ SPEEDUP
         # Total timeout
         timeout = totalGoUpDownTime + gotoTotalTime + CONSTANT_TIMEOUT_OFFSET
         return timeout
@@ -491,7 +491,7 @@ class GotoNormalBranch(Branch):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        timeout = ((totalDistance * TIME_PER_METER_TRAVELED)/SPEEDUP) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
@@ -631,7 +631,7 @@ class TakeoffNormalBranch(Branch):
 
 
     def computeTimeout(self, action, state, environment):
-        timeout = (action.read('altitude') * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        timeout = ((action.read('altitude') * TIME_PER_METER_TRAVELED)/SPEEDUP) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
