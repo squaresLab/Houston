@@ -50,8 +50,8 @@ except ImportError as e:
 
 
 DRONEKIT_SYSTEM = None
-TIME_PER_METER_TRAVELED = 1.0
-CONSTANT_TIMEOUT_OFFSET = 1.0
+TIME_PER_METER_TRAVELED = 0.7
+CONSTANT_TIMEOUT_OFFSET = 0.7
 
 class ArduPilot(System):
     """
