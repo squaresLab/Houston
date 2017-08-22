@@ -18,12 +18,13 @@ from branch import BranchID, BranchPath
 class MissionPoolWorker(threading.Thread):
     def __init__(self, detector):
         super(MissionPoolWorker, self).__init__()
+        print("creating worker...")
         self.daemon = True # mark as a daemon thread
         self.__detector = detector
         self.__container = houston.createContainer(self.__detector.getSystem(),
                                                    self.__detector.getImage())
         self.__resetCounter()
-        self.start()
+        # self.start()
         
 
     def __resetCounter(self):
@@ -39,19 +40,22 @@ class MissionPoolWorker(threading.Thread):
 
 
     def run(self):
-        try:
-            while True:
-                m = self.__detector.getNextMission()
-                if m is None:
-                    return
-                self.__prepareContainer()
-                self.__detector.executeMission(m, self.__container)
-        finally:
-            self.shutdown()
+        print("running worker: {}".format(self))
+        #try:
+        while True:
+            m = self.__detector.getNextMission()
+            if m is None:
+                return
+            self.__prepareContainer()
+            self.__detector.executeMission(m, self.__container)
+        #finally:
+        #    self.shutdown()
 
 
     def shutdown(self):
+        print("SHUTTING DOWN WORKER: {}".format(self))
         if self.__container is not None:
+            print("MY CONTAINER IS: {}".format(self.__container))
             houston.destroyContainer(self.__container)
             self.__container = None
 
@@ -259,18 +263,7 @@ class BugDetector(object):
         self.__outcomes = {}
         self.__failures = set()
         self._rng = random.Random(seed)
-        self.__workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
-
-
-    def cleanup(self):
-        """
-        Cleans up the state of this bug detector at the end of a bug detection
-        trial.
-        """
-        for worker in self.__workers:
-            worker.shutdown()
-        self.__workers = []
-
+            
 
     def exhausted(self):
         """
@@ -294,15 +287,30 @@ class BugDetector(object):
         :returns    a summary of the detection process in the form of a \
                     BugDetectionSummary object
         """
-        self.prepare(systm, image, seed, resourceLimits)
         try:
+            self.prepare(systm, image, seed, resourceLimits)
+            self.__workers = []
+            print("constructing workers...")
+            for _ in range(self.__threads):
+                self.__workers.append(MissionPoolWorker(self))
+            print("constructed workers")
+            print("starting workers...")
+            for w in self.__workers:
+                w.start()
+            print("started all workers")
             while True:
                 if not any(w.isAlive() for w in self.__workers):
                     break
+                time.sleep(0.2)
+
             self.tick()
             return self.summarise()
         finally:
-            self.cleanup()
+            print("shutting down...")
+            for worker in self.__workers:
+                print("killing worker: {}".format(worker))
+                worker.shutdown()
+            self.__workers = []
 
 
     def tick(self):
