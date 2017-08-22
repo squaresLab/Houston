@@ -1,5 +1,6 @@
 import branch
 import state
+import random
 
 class Action(object):
     """
@@ -95,11 +96,12 @@ class Parameter(object):
         return self.__valueRange
 
 
-    def generate(self):
+    def generate(self, rng):
         """
         Returns a sample (random)
         """
-        return self.__valueRange.sample()
+        assert (isinstance(rng, random.Random) and rng is not None)
+        return self.__valueRange.sample(rng)
 
 
     def getType(self):
@@ -222,11 +224,12 @@ class ActionSchema(object):
         raise Exception("failed to resolve branch")
 
 
-    def generate(self):
+    def generate(self, rng):
         """
         Generates an action belonging to this schema at random.
         """
-        values = {p.getName(): p.generate() for p in self.__parameters}
+        assert (isinstance(rng, random.Random) and rng is not None)
+        values = {p.getName(): p.generate(rng) for p in self.__parameters}
         return Action(self.__name, values)
 
 
@@ -391,13 +394,15 @@ class ActionGenerator(object):
         return self.__schemaName
 
 
-    def generateActionWithState(self, currentState, env):
-        values = {p.getName(): p.generate() for p in self.__parameters}
+    def generateActionWithState(self, currentState, env, rng):
+        assert (isinstance(rng, random.Random) and rng is not None)
+        values = {p.getName(): p.generate(rng) for p in self.__parameters}
         values = self.constructWithState(currentState, env, values)
         return Action(self.__schemaName, values)
 
 
-    def generateActionWithoutState(self, env):
-        values = {p.getName(): p.generate() for p in self.__parameters}
+    def generateActionWithoutState(self, env, rng):
+        assert (isinstance(rng, random.Random) and rng is not None)
+        values = {p.getName(): p.generate(rng) for p in self.__parameters}
         values = self.constructWithoutState(env, values)
         return Action(self.__schemaName, values)
