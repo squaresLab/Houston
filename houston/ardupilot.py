@@ -118,13 +118,12 @@ class ArduPilot(System):
         vehicleMode = VehicleMode('GUIDED')
         DRONEKIT_SYSTEM.mode = vehicleMode
         DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
-        DRONEKIT_SYSTEM.parameters['LAND_DISARMDELAY']=0
         DRONEKIT_SYSTEM.parameters['RTL_ALT']=0
+
         while DRONEKIT_SYSTEM.parameters['DISARM_DELAY'] is not 0 and DRONEKIT_SYSTEM.is_armable is False: #TODO Implement timeout
             time.sleep(0.1)
             DRONEKIT_SYSTEM.mode = vehicleMode
             DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
-            DRONEKIT_SYSTEM.parameters['LAND_DISARMDELAY']=0
             DRONEKIT_SYSTEM.parameters['RTL_ALT']=0
 
 
