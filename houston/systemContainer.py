@@ -64,7 +64,7 @@ class SystemContainer(object):
         self.__container = DOCKER_CLIENT.containers.run(self.__image,
                                                          command,
                                                          network_mode='bridge',
-                                                         log_config={'type':'none'},
+                                                         # log_config={'type':'none'},
                                                          ports=ports,
                                                          volumes=volumes,
                                                          detach=True)
