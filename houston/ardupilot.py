@@ -70,6 +70,7 @@ class ArduPilot(System):
             InternalVariable('homeLongitude', lambda: 149.165085) # Fixed
         variables['altitude'] = \
             InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt, 0.5)
+            InternalVariable('altitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.alt, 1.0)
         variables['latitude'] = \
             InternalVariable('latitude', lambda: DRONEKIT_SYSTEM.location.global_relative_frame.lat, 0.00002)
         variables['longitude'] = \
