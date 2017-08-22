@@ -1,5 +1,7 @@
 try:
     import docker
+    DOCKER_CLIENT = docker.from_env()
+
 except ImportError:
     pass
 
@@ -58,14 +60,12 @@ class SystemContainer(object):
         for path in HOUSTON_SCRIPT_PATHS:
             volumes[path] = {'bind': path, 'mode': 'ro'}
 
-        client = docker.from_env()
-        self.__container = client.containers.run(self.__image,
-                                                 command,
-                                                 network_mode='bridge',
-                                                 # log_config={'type':'none'},
-                                                 ports=ports,
-                                                 volumes=volumes,
-                                                 detach=True)
+        self.__container = DOCKER_CLIENT.containers.run(self.__image,
+                                                        command,
+                                                        network_mode='bridge',
+                                                        ports=ports,
+                                                        volumes=volumes,
+                                                        detach=True)
 
         # blocks until server is running
         for line in self.__container.logs(stream=True):
