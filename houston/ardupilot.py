@@ -48,7 +48,7 @@ except ImportError as e:
     ARDUPILOT_INSTALLED = False
     print("Import warning: {}".format(e))
 
-
+SPEEDUP = 3
 DRONEKIT_SYSTEM = None
 TIME_PER_METER_TRAVELED = 1.0
 CONSTANT_TIMEOUT_OFFSET = 1.0
@@ -104,7 +104,7 @@ class ArduPilot(System):
         args = [
             "--model=quad",
             "--home=-35.362938,149.165085,584,270",
-            "--speedup=3"
+            "--speedup={}".format(SPEEDUP)
         ]
 
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
@@ -119,11 +119,13 @@ class ArduPilot(System):
         DRONEKIT_SYSTEM.mode = vehicleMode
         DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
         DRONEKIT_SYSTEM.parameters['LAND_DISARMDELAY']=0
+        DRONEKIT_SYSTEM.parameters['RTL_ALT']=0
         while DRONEKIT_SYSTEM.parameters['DISARM_DELAY'] is not 0 and DRONEKIT_SYSTEM.is_armable is False: #TODO Implement timeout
             time.sleep(0.1)
             DRONEKIT_SYSTEM.mode = vehicleMode
             DRONEKIT_SYSTEM.parameters['DISARM_DELAY']=0
             DRONEKIT_SYSTEM.parameters['LAND_DISARMDELAY']=0
+            DRONEKIT_SYSTEM.parameters['RTL_ALT']=0
 
 
     def setUpOld(self, mission):
@@ -213,7 +215,20 @@ class ArmActionSchema(ActionSchema):
 
 
     def dispatch(self, action, state, environment):
-        DRONEKIT_SYSTEM.armed = True
+
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, #command
+            0,    #confirmation
+            1,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+        #DRONEKIT_SYSTEM.armed = True
         while not DRONEKIT_SYSTEM.armed:
             time.sleep(0.1)
 
@@ -262,11 +277,52 @@ class SetModeActionSchema(ActionSchema):
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
+    def send_RTL(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, #command
+            0,    #confirmation
+            0,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+    def send_LAND(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_LAND, #command
+            0,    #confirmation
+            0,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+
+    def send_LOITER(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, #command
+            0,    #confirmation
+            0,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+
     def dispatch(self, action, state, environment):
         vehicleMode = VehicleMode(action.read('mode'))
-        DRONEKIT_SYSTEM.mode = vehicleMode
 
         if action.read('mode') == 'RTL':
+            self.send_RTL()
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
@@ -287,6 +343,7 @@ class SetModeActionSchema(ActionSchema):
                 time.sleep(0.2)
 
         elif action.read('mode') == 'LAND':
+            self.send_LAND()
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
             while not DRONEKIT_SYSTEM.mode == vehicleMode:
@@ -299,10 +356,16 @@ class SetModeActionSchema(ActionSchema):
             while DRONEKIT_SYSTEM.armed:
                 time.sleep(0.2)
 
-        else: # TODO as we add more modes this would have to change
+        elif action.read('mode') == 'LOITER': # TODO as we add more modes this would have to change
+            self.send_LOITER()
             while not DRONEKIT_SYSTEM.mode == vehicleMode:
                 time.sleep(0.1)
-
+        elif action.read('mode') == 'GUIDED':
+            DRONEKIT_SYSTEM.mode = vehicleMode
+            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+                time.sleep(0.1)
+        else:
+            raise Exception
 
 class SetModeLandBranch(Branch):
     """
@@ -397,7 +460,7 @@ class SetModeRTLBranch(Branch):
     def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'RTL'),
-            FixedEstimator('armed', False),
+            Estimator('armed', lambda action, state, env: state.read('armed') if state.read('altitude') < 0.3 else False),
             Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
             Estimator('longitude', lambda action, state, env: state.read('homeLongitude')),
             Estimator('altitude', lambda action, state, env: 0.0)
@@ -411,12 +474,12 @@ class SetModeRTLBranch(Branch):
         # Distance from current coor to home coor
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
         # Land times and adjustment time for altitude
-        totalLandTime = state.read('altitude') * TIME_PER_METER_TRAVELED
-        totalGoUpDownTime = math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED
+        totalLandTime = (state.read('altitude') * TIME_PER_METER_TRAVELED)
+        totalGoUpDownTime = (math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED)
         # Land and adjustment time for altitude added
         goUpDownAndLandTime = totalGoUpDownTime + totalLandTime
         # Go to home lat and lon time travel.
-        gotoTotalTime = totalDistance * TIME_PER_METER_TRAVELED
+        gotoTotalTime = (totalDistance * TIME_PER_METER_TRAVELED)
         # Total timeout
         timeout = totalGoUpDownTime + gotoTotalTime + CONSTANT_TIMEOUT_OFFSET
         return timeout
@@ -480,9 +543,9 @@ class GotoNormalBranch(Branch):
     """
     def __init__(self, schema):
         estimators = [
-            Estimator('latitude', lambda action, state, env: action.read('latitude')),
-            Estimator('longitude', lambda action, state, env: action.read('longitude')),
-            Estimator('altitude', lambda action, state, env: action.read('altitude'))
+            Estimator('latitude', lambda action, state, env: state.read('latitude') if state.read('mode') == 'LOITER' else action.read('latitude')),
+            Estimator('longitude', lambda action, state, env: state.read('longitude') if state.read('mode') == 'LOITER' else action.read('longitude')),
+            Estimator('altitude', lambda action, state, env: 0.0 if state.read('mode') == 'LOITER' else action.read('altitude'))
         ]
         super(GotoNormalBranch, self).__init__('normal', schema, estimators)
 
@@ -609,7 +672,18 @@ class TakeoffActionSchema(ActionSchema):
 
 
     def dispatch(self, action, state, environment):
-        DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
+
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, #command
+            0,    #confirmation
+            1,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, action.read('altitude'))    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
 
         expectedAlt = action.read('altitude')
         currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
