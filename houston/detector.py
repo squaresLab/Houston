@@ -230,7 +230,6 @@ class BugDetector(object):
         Prepares the state of the bug detector immediately before beginning a
         bug detection trial.
         """
-        print("WHAT'S GOING ON?")
         self.__systm = systm
         self.__image = image
         self.__resourceUsage = ResourceUsage()
@@ -239,7 +238,6 @@ class BugDetector(object):
         self.__history = []
         self.__outcomes = {}
         self.__failures = set()
-        print("preparing RNG")
         self._rng = random.Random(seed)
         self.__workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
 
