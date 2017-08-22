@@ -48,7 +48,7 @@ except ImportError as e:
     ARDUPILOT_INSTALLED = False
     print("Import warning: {}".format(e))
 
-
+SPEEDUP = 5
 DRONEKIT_SYSTEM = None
 TIME_PER_METER_TRAVELED = 0.7
 CONSTANT_TIMEOUT_OFFSET = 0.7
@@ -104,7 +104,7 @@ class ArduPilot(System):
         args = [
             "--model=quad",
             "--home=-35.362938,149.165085,584,270",
-            "--speedup=3"
+            "--speedup={}".format(SPEEDUP)
         ]
 
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter')
