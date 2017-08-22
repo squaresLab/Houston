@@ -283,6 +283,9 @@ class SetModeActionSchema(ActionSchema):
                 currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
+            while DRONEKIT_SYSTEM.armed:
+                time.sleep(0.2)
+
         elif action.read('mode') == 'LAND':
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
