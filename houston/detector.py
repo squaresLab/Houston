@@ -53,9 +53,8 @@ class MissionPoolWorker(threading.Thread):
 
 
     def shutdown(self):
-        print("SHUTTING DOWN WORKER: {}".format(self))
+        print("shutting down worker: {}".format(self))
         if self.__container is not None:
-            print("MY CONTAINER IS: {}".format(self.__container))
             houston.destroyContainer(self.__container)
             self.__container = None
 
@@ -256,9 +255,7 @@ class BugDetector(object):
         """
         self.__systm = systm
         self.__image = image
-        self.__resourceUsage = ResourceUsage()
         self.__resourceLimits = resourceLimits
-        self.__startTime = timeit.default_timer()
         self.__history = []
         self.__outcomes = {}
         self.__failures = set()
@@ -289,11 +286,18 @@ class BugDetector(object):
         """
         try:
             self.prepare(systm, image, seed, resourceLimits)
+
+            # initialise worker threads
             self.__workers = []
             print("constructing workers...")
             for _ in range(self.__threads):
                 self.__workers.append(MissionPoolWorker(self))
             print("constructed workers")
+            
+            # begin tracking resource usage
+            self.__resourceUsage = ResourceUsage()
+            self.__startTime = timeit.default_timer()
+
             print("starting workers...")
             for w in self.__workers:
                 w.start()
