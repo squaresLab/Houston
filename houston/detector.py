@@ -18,6 +18,7 @@ from branch import BranchID, BranchPath
 class MissionPoolWorker(threading.Thread):
     def __init__(self, detector):
         super(MissionPoolWorker, self).__init__()
+        self.daemon = True # mark as a daemon thread
         self.__detector = detector
         self.__container = houston.createContainer(self.__detector.getSystem(),
                                                    self.__detector.getImage())
