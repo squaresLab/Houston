@@ -19,6 +19,8 @@ class MissionPoolWorker(threading.Thread):
     def __init__(self, detector):
         super(MissionPoolWorker, self).__init__()
         self.__detector = detector
+        self.__container = houston.createContainer(detector.getSystem(),
+                                                   detector.getImage())
         self.start()
 
 
@@ -27,7 +29,11 @@ class MissionPoolWorker(threading.Thread):
             m = self.__detector.getNextMission()
             if m is None:
                 return
-            self.__detector.executeMission(m)
+            self.__detector.executeMission(m, self.__container)
+
+    
+    def __del__(self):
+        houston.destroyContainer(self.__container)
 
 
 class ResourceUsage(object):
@@ -231,6 +237,7 @@ class BugDetector(object):
         self.__history = []
         self.__outcomes = {}
         self.__failures = set()
+        self.__workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
 
 
     def cleanup(self):
@@ -238,7 +245,9 @@ class BugDetector(object):
         Cleans up the state of this bug detector at the end of a bug detection
         trial.
         """
-        pass
+        for worker in self.__workers:
+            del worker
+        self.__workers = []
 
 
     def exhausted(self):
@@ -264,8 +273,7 @@ class BugDetector(object):
         """
         self.prepare(systm, image, resourceLimits)
         try:
-            workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
-            for worker in workers:
+            for worker in self.__workers:
                 worker.join()
             self.tick()
             return self.summarise()
@@ -315,6 +323,10 @@ class BugDetector(object):
     def getSystem(self):
         return self.__systm
 
+
+    def getImage(self):
+        return self.__image
+
     
     def getResourceUsage(self):
         return self.__resourceUsage
@@ -363,16 +375,12 @@ class BugDetector(object):
         raise NotImplementedError
 
 
-    def executeMission(self, mission):
+    def executeMission(self, mission, container):
         print("executing mission...")
-        container = houston.createContainer(self.__systm, self.__image)
-        try:
-            outcome = container.execute(mission)
-            self.recordOutcome(mission, outcome)
-            print("finished mission!")
-            return outcome
-        finally:
-            houston.destroyContainer(container)
+        outcome = container.execute(mission)
+        self.recordOutcome(mission, outcome)
+        print("finished mission!")
+        return outcome
 
 
     def recordOutcome(self, mission, outcome):
