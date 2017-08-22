@@ -295,6 +295,10 @@ class SetModeActionSchema(ActionSchema):
             while currentAlt > 0.1:
                 time.sleep(0.2)
                 currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+
+            while DRONEKIT_SYSTEM.armed:
+                time.sleep(0.2)
+
         else: # TODO as we add more modes this would have to change
             while not DRONEKIT_SYSTEM.mode == vehicleMode:
                 time.sleep(0.1)
