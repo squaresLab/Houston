@@ -303,25 +303,13 @@ class SetModeActionSchema(ActionSchema):
             # send command to vehicle
         DRONEKIT_SYSTEM.send_mavlink(msg)
 
+
     def send_LOITER(self):
         msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
             0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, #command
+            mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, #command
             0,    #confirmation
             0,    # param 1
-            0,    # param 2,
-            0,    # param 3,
-            0,    # param 4,
-            0, 0, 0)    # param 5 ~ 7 not used
-            # send command to vehicle
-        DRONEKIT_SYSTEM.send_mavlink(msg)
-
-    def send_GUIDED(self):
-        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
-            0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, #command
-            0,    #confirmation
-            1,    # param 1
             0,    # param 2,
             0,    # param 3,
             0,    # param 4,
