@@ -11,9 +11,6 @@ import requests
 import mission
 
 
-DOCKER_CLIENT = docker.from_env()
-
-
 # Find the location of Houston on disk
 # PATH_TO_SITE_PKGS = site.getsitepackages()[0]
 PATH_TO_HOUSTON_EGG = os.path.dirname(os.path.dirname(houston.__file__))
@@ -61,13 +58,14 @@ class SystemContainer(object):
         for path in HOUSTON_SCRIPT_PATHS:
             volumes[path] = {'bind': path, 'mode': 'ro'}
 
-        self.__container = DOCKER_CLIENT.containers.run(self.__image,
-                                                         command,
-                                                         network_mode='bridge',
-                                                         # log_config={'type':'none'},
-                                                         ports=ports,
-                                                         volumes=volumes,
-                                                         detach=True)
+        client = docker.from_env()
+        self.__container = client.containers.run(self.__image,
+                                                 command,
+                                                 network_mode='bridge',
+                                                 # log_config={'type':'none'},
+                                                 ports=ports,
+                                                 volumes=volumes,
+                                                 detach=True)
 
         # blocks until server is running
         for line in self.__container.logs(stream=True):
