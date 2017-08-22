@@ -672,7 +672,6 @@ class TakeoffActionSchema(ActionSchema):
 
 
     def dispatch(self, action, state, environment):
-        DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
 
         msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
             0, 0,    # target_system, target_component
