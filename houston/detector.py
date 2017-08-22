@@ -296,8 +296,9 @@ class BugDetector(object):
         """
         self.prepare(systm, image, seed, resourceLimits)
         try:
-            for worker in self.__workers:
-                worker.join()
+            while True:
+                if not any(w.isAlive() for w in self.__workers):
+                    break
             self.tick()
             return self.summarise()
         finally:
