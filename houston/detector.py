@@ -19,9 +19,22 @@ class MissionPoolWorker(threading.Thread):
     def __init__(self, detector):
         super(MissionPoolWorker, self).__init__()
         self.__detector = detector
-        self.__container = houston.createContainer(detector.getSystem(),
-                                                   detector.getImage())
+        self.__container = houston.createContainer(self.__detector.getSystem(),
+                                                   self.__detector.getImage())
+        self.__resetCounter()
         self.start()
+        
+
+    def __resetCounter(self):
+        self.__counter = 0
+        self.__reset = random.randint(3, 5)
+
+
+    def __prepareContainer(self):
+        if self.__counter == self.__reset:
+            self.__resetCounter()
+            self.__container.reset()
+        self.__counter += 1
 
 
     def run(self):
@@ -29,11 +42,13 @@ class MissionPoolWorker(threading.Thread):
             m = self.__detector.getNextMission()
             if m is None:
                 return
+            self.__prepareContainer()
             self.__detector.executeMission(m, self.__container)
 
     
     def __del__(self):
-        houston.destroyContainer(self.__container)
+        if self.__container is not None:
+            houston.destroyContainer(self.__container)
 
 
 class ResourceUsage(object):

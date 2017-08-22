@@ -43,9 +43,13 @@ class SystemContainer(object):
         self.__verbose = verbose
         self.__systemIdentifier = iden
         self.__port = port
+        self.__image = image
+        self.__prepare()
 
-        command = 'houstonserver {}'.format(port)
-        ports = {port: port}
+
+    def __prepare(self):
+        command = 'houstonserver {}'.format(self.__port)
+        ports = {self.__port: self.__port}
 
         # prepare Houston library and scripts for auto-mounting
         volumes = {
@@ -55,19 +59,24 @@ class SystemContainer(object):
             volumes[path] = {'bind': path, 'mode': 'ro'}
 
         client = docker.from_env()
-        self.__container = client.containers.run(image,
+        self.__container = client.containers.run(self.__image,
                                                  command,
                                                  network_mode='bridge',
                                                  ports=ports,
                                                  volumes=volumes,
                                                  detach=True)
 
-        # blocks until server is running
+         # blocks until server is running
         for line in self.__container.logs(stream=True):
             line = line.strip()
             if line.startswith('* Running on http://'):
                 break
-                                                 
+
+
+    def reset(self):
+        self.destroy()
+        self.__prepare()
+
 
     def ready(self):
         """
