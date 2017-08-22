@@ -193,6 +193,7 @@ class BugDetector(object):
         assert (isinstance(actionGenerators, list) and actionGenerators is not None)
         assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
 
+        self._rng = None
         self.__maxNumActions = maxNumActions
         self._fetchLock = threading.Lock()
         self._contentsLock = threading.Lock()
@@ -224,11 +225,12 @@ class BugDetector(object):
             self._fetchLock.release()
 
 
-    def prepare(self, systm, image, resourceLimits):
+    def prepare(self, systm, image, seed, resourceLimits):
         """
         Prepares the state of the bug detector immediately before beginning a
         bug detection trial.
         """
+        print("WHAT'S GOING ON?")
         self.__systm = systm
         self.__image = image
         self.__resourceUsage = ResourceUsage()
@@ -237,6 +239,8 @@ class BugDetector(object):
         self.__history = []
         self.__outcomes = {}
         self.__failures = set()
+        print("preparing RNG")
+        self._rng = random.Random(seed)
         self.__workers = [MissionPoolWorker(self) for _ in range(self.__threads)]
 
 
@@ -258,12 +262,13 @@ class BugDetector(object):
         return self.__resourceLimits.reached(self.__resourceUsage)
 
 
-    def detect(self, systm, image, resourceLimits):
+    def detect(self, systm, image, seed, resourceLimits):
         """
 
         :param      systm: the system under test
         :param      image: the name of the Dockerfile that should be used to \
                         containerise the system under test
+        :param      seed:   seed for the RNG
         :param      resourceLimits: a description of the resources available \
                         to the detection process, given as a ResourceLimits \
                         object
@@ -271,7 +276,7 @@ class BugDetector(object):
         :returns    a summary of the detection process in the form of a \
                     BugDetectionSummary object
         """
-        self.prepare(systm, image, resourceLimits)
+        self.prepare(systm, image, seed, resourceLimits)
         try:
             for worker in self.__workers:
                 worker.join()
@@ -371,7 +376,7 @@ class BugDetector(object):
         return None
 
 
-    def generateMission(self):
+    def generateMission(self, rng):
         raise NotImplementedError
 
 
@@ -510,7 +515,7 @@ class TreeBasedBugDetector(BugDetector):
                     # check if there is a job in the queue
                     if self.__queue != set():
                         printflush("Generating mission")
-                        mission = random.sample(self.__queue, 1)[0]
+                        mission = self._rng.sample(self.__queue, 1)[0]
                         self.__queue.remove(mission)
                         self.__running.add(mission)
                         self.getResourceUsage().numMissions += 1
@@ -558,8 +563,8 @@ class TreeBasedBugDetector(BugDetector):
         """
         generator = self.getGenerator(branch.getSchema())
         if generator is not None:
-            return generator.generateActionWithState(state, env)
-        return branch.generate(env, state) 
+            return generator.generateActionWithState(state, env, self._rng)
+        return branch.generate(env, state, self._rng) 
 
 
 class RandomBugDetectorSummary(BugDetectorSummary):
@@ -596,8 +601,8 @@ class RandomBugDetector(BugDetector):
     def generateAction(self, schema):
        generator = self.getGenerator(schema)
        if generator is None:
-           return schema.generate()
-       return generator.generateActionWithoutState(self.__env)
+           return schema.generate(self._rng)
+       return generator.generateActionWithoutState(self.__env, self._rng)
 
 
     def generateMission(self):
@@ -608,8 +613,8 @@ class RandomBugDetector(BugDetector):
         initialState = self.__initialState
 
         actions = []
-        for _ in range(random.randint(1, maxNumActions)):
-            schema = random.choice(schemas)
+        for _ in range(self._rng.randint(1, maxNumActions)):
+            schema = self._rng.choice(schemas)
             actions.append(self.generateAction(schema))
 
         return Mission(env, initialState, actions)
