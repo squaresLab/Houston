@@ -1,6 +1,7 @@
 import state
 import action
-import mission # TODO: CIRCULAR
+import mission
+import random
 
 from util import printflush
 
@@ -58,7 +59,7 @@ class Branch(object):
         return BranchID(self.getSchemaName(), self.__name)
 
 
-    def generate(self, initialState, env):
+    def generate(self, initialState, env, rng):
         """
         Generates an action that would cause the system to take this branch.
 
@@ -66,6 +67,7 @@ class Branch(object):
                                 executing the generated action.
         :param  env:            the environment in which the mission will be \
                                 conducted.
+        :param  rng:            the random number generator
         """
         raise NotImplementedError
 
@@ -155,8 +157,9 @@ class IdleBranch(Branch):
         return True
 
 
-    def generate(self, state, environment):
-        return self.getSchema().generate()
+    def generate(self, state, environment, rng):
+        assert (isinstance(rng, random.Random) and rng is not None)
+        return self.getSchema().generate(rng)
 
 
 class BranchID(object):
