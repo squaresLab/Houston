@@ -6,7 +6,7 @@ class ValueRange(object):
     or setting.
     """
 
-    def sample(self, rng):
+    def sample(self):
         """
         Uses uniform selection to sample a single value from this range.
         """
