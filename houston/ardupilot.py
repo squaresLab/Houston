@@ -480,9 +480,9 @@ class GotoNormalBranch(Branch):
     """
     def __init__(self, schema):
         estimators = [
-            Estimator('latitude', lambda action, state, env: action.read('latitude')),
-            Estimator('longitude', lambda action, state, env: action.read('longitude')),
-            Estimator('altitude', lambda action, state, env: action.read('altitude'))
+            Estimator('latitude', lambda action, state, env: state.read('latitude') if state.read('mode') == 'LOITER' else action.read('latitude')),
+            Estimator('longitude', lambda action, state, env: state.read('longitude') if state.read('mode') == 'LOITER' else action.read('longitude')),
+            Estimator('altitude', lambda action, state, env: 0.0 if state.read('mode') == 'LOITER' else action.read('altitude'))
         ]
         super(GotoNormalBranch, self).__init__('normal', schema, estimators)
 
