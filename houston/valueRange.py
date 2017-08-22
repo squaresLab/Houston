@@ -6,7 +6,7 @@ class ValueRange(object):
     or setting.
     """
 
-    def sample(self):
+    def sample(self, rng):
         """
         Uses uniform selection to sample a single value from this range.
         """
@@ -50,8 +50,9 @@ class DiscreteValueRange(ValueRange):
         return self.__size
 
 
-    def sample(self):
-        return random.choice(self.__values)
+    def sample(self, rng):
+        assert (isinstance(rng, random.Random) and rng is not None)
+        return rng.choice(self.__values)
 
 
     def type(self):
@@ -81,8 +82,9 @@ class ContinuousValueRange(ValueRange):
         self.__inclusive = inclusive
 
 
-    def sample(self):
-        return random.uniform(self.__min_value, self.__max_value)
+    def sample(self, rng):
+        assert (isinstance(rng, random.Random) and rng is not None)
+        return rng.uniform(self.__min_value, self.__max_value)
 
 
     def type(self):
