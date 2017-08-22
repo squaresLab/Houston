@@ -277,11 +277,64 @@ class SetModeActionSchema(ActionSchema):
 
         super(SetModeActionSchema, self).__init__('setmode', parameters, branches)
 
+    def send_RTL(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, #command
+            0,    #confirmation
+            0,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+    def send_LAND(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_LAND, #command
+            0,    #confirmation
+            0,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+    def send_LOITER(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, #command
+            0,    #confirmation
+            0,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+    def send_GUIDED(self):
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, #command
+            0,    #confirmation
+            1,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, 0)    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
+
     def dispatch(self, action, state, environment):
         vehicleMode = VehicleMode(action.read('mode'))
-        DRONEKIT_SYSTEM.mode = vehicleMode
 
         if action.read('mode') == 'RTL':
+            self.send_RTL()
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
             currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
             currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
@@ -302,6 +355,7 @@ class SetModeActionSchema(ActionSchema):
                 time.sleep(0.2)
 
         elif action.read('mode') == 'LAND':
+            self.send_LAND()
             currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
             while not DRONEKIT_SYSTEM.mode == vehicleMode:
@@ -314,10 +368,16 @@ class SetModeActionSchema(ActionSchema):
             while DRONEKIT_SYSTEM.armed:
                 time.sleep(0.2)
 
-        else: # TODO as we add more modes this would have to change
+        elif action.read('mode') == 'LOITER': # TODO as we add more modes this would have to change
+            self.send_LOITER()
             while not DRONEKIT_SYSTEM.mode == vehicleMode:
                 time.sleep(0.1)
-
+        elif action.read('mode') == 'GUIDED':
+            DRONEKIT_SYSTEM.mode = vehicleMode
+            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+                time.sleep(0.1)
+        else:
+            raise Exception
 
 class SetModeLandBranch(Branch):
     """
@@ -426,12 +486,12 @@ class SetModeRTLBranch(Branch):
         # Distance from current coor to home coor
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
         # Land times and adjustment time for altitude
-        totalLandTime = (state.read('altitude') * TIME_PER_METER_TRAVELED)/SPEEDUP
-        totalGoUpDownTime = (math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED)/SPEEDUP
+        totalLandTime = (state.read('altitude') * TIME_PER_METER_TRAVELED)
+        totalGoUpDownTime = (math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED)
         # Land and adjustment time for altitude added
         goUpDownAndLandTime = totalGoUpDownTime + totalLandTime
         # Go to home lat and lon time travel.
-        gotoTotalTime = (totalDistance * TIME_PER_METER_TRAVELED)/ SPEEDUP
+        gotoTotalTime = (totalDistance * TIME_PER_METER_TRAVELED)
         # Total timeout
         timeout = totalGoUpDownTime + gotoTotalTime + CONSTANT_TIMEOUT_OFFSET
         return timeout
@@ -506,7 +566,7 @@ class GotoNormalBranch(Branch):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        timeout = ((totalDistance * TIME_PER_METER_TRAVELED)/SPEEDUP) + CONSTANT_TIMEOUT_OFFSET
+        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
@@ -658,7 +718,7 @@ class TakeoffNormalBranch(Branch):
 
 
     def computeTimeout(self, action, state, environment):
-        timeout = ((action.read('altitude') * TIME_PER_METER_TRAVELED)/SPEEDUP) + CONSTANT_TIMEOUT_OFFSET
+        timeout = (action.read('altitude') * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
