@@ -487,7 +487,7 @@ class GotoNormalBranch(Branch):
 
 
     def isApplicable(self, action, state, environment):
-        return state.read('armed') and state.read('altitude') > 0.3 and state.read('mode') == 'GUIDED'
+        return state.read('armed') and state.read('altitude') > 0.3
 
 
     def isSatisfiable(self, state, environment):
