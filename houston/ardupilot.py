@@ -397,6 +397,7 @@ class SetModeRTLBranch(Branch):
     def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'RTL'),
+            FixedEstimator('armed', False),
             Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
             Estimator('longitude', lambda action, state, env: state.read('homeLongitude')),
             Estimator('altitude', lambda action, state, env: 0.0)
