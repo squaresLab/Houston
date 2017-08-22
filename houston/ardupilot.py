@@ -626,6 +626,18 @@ class TakeoffActionSchema(ActionSchema):
     def dispatch(self, action, state, environment):
         DRONEKIT_SYSTEM.simple_takeoff(action.getValue('altitude'))
 
+        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, #command
+            0,    #confirmation
+            1,    # param 1
+            0,    # param 2,
+            0,    # param 3,
+            0,    # param 4,
+            0, 0, action.read('altitude'))    # param 5 ~ 7 not used
+            # send command to vehicle
+        DRONEKIT_SYSTEM.send_mavlink(msg)
+
         expectedAlt = action.read('altitude')
         currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
 
