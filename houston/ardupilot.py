@@ -311,6 +311,7 @@ class SetModeLandBranch(Branch):
         estimators = [
             FixedEstimator('mode', 'LAND'),
             Estimator('armed', lambda action, state, env: False if state.read('altitude') < 0.3 else True),
+            FixedEstimator('armed', False),
             Estimator('latitude', lambda action, state, env: state.read('latitude')),
             Estimator('longitude', lambda action, state, env: state.read('longitude')),
             Estimator('altitude', lambda action, state, env: 0.0)
