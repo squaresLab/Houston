@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import subprocess as sub
+import math
 
 import houston
 
@@ -407,9 +408,17 @@ class SetModeRTLBranch(Branch):
     def computeTimeout(self, action, state, environment):
         fromLocation = (state.read('latitude'), state.read('longitude'))
         toLocation   = (state.read('homeLatitude'), state.read('homeLongitude'))
+        # Distance from current coor to home coor
         totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        landTime = state.read('altitude') * TIME_PER_METER_TRAVELED
-        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET + landTime
+        # Land times and adjustment time for altitude
+        totalLandTime = state.read('altitude') * TIME_PER_METER_TRAVELED
+        totalGoUpDownTime = math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED
+        # Land and adjustment time for altitude added
+        goUpDownAndLandTime = totalGoUpDownTime + totalLandTime
+        # Go to home lat and lon time travel.
+        gotoTotalTime = totalDistance * TIME_PER_METER_TRAVELED
+        # Total timeout
+        timeout = totalGoUpDownTime + gotoTotalTime + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
