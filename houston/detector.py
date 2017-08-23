@@ -285,7 +285,9 @@ class BugDetector(object):
                     BugDetectionSummary object
         """
         try:
+            print("Preparing...")
             self.prepare(systm, image, seed, resourceLimits)
+            print("Prepared")
 
             # initialise worker threads
             self.__workers = []
@@ -572,7 +574,7 @@ class TreeBasedBugDetector(BugDetector):
         state = self.getEndState(mission)
         env = mission.getEnvironment()
         path = self.getExecutedPath(mission)
-      
+
         # if we've hit the action limit, don't expand
         maxNumActions = self.getMaxNumActions()
         if maxNumActions is not None and maxNumActions == mission.size():
@@ -595,7 +597,7 @@ class TreeBasedBugDetector(BugDetector):
         generator = self.getGenerator(branch.getSchema())
         if generator is not None:
             return generator.generateActionWithState(state, env, self._rng)
-        return branch.generate(env, state, self._rng) 
+        return branch.generate(state, env, self._rng) 
 
 
 class RandomBugDetectorSummary(BugDetectorSummary):

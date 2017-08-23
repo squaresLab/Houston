@@ -69,6 +69,7 @@ class Branch(object):
                                 conducted.
         :param  rng:            the random number generator
         """
+        print("OH NO!")
         raise NotImplementedError
 
 
