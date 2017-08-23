@@ -515,8 +515,8 @@ class TreeBasedBugDetector(BugDetector):
         self.__queue = set(m for m in self.__queue if not self.__intendedPaths[m].startswith(path))
 
 
-    def prepare(self, systm, image, resourceLimits):
-        super(TreeBasedBugDetector, self).prepare(systm, image, resourceLimits)
+    def prepare(self, systm, image, seed, resourceLimits):
+        super(TreeBasedBugDetector, self).prepare(systm, image, seed, resourceLimits)
 
         self.__flaky = set()
         self.__intendedPaths = {}
