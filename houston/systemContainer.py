@@ -68,7 +68,7 @@ class SystemContainer(object):
                                                  volumes=volumes,
                                                  detach=True)
 
-         # blocks until server is running
+        # blocks until server is running
         for line in self.__container.logs(stream=True):
             line = line.strip()
             if line.startswith('* Running on http://'):
