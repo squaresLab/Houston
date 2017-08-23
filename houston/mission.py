@@ -207,6 +207,6 @@ class CrashedMissionOutcome(MissionOutcome):
 
 
     def toJSON(self):
-        missionOutcomeJSON = super(CrashedMissionOutcome, self).toJSON()
-        missionOutcomeJSON['crashed'] = True
-        return missionOutcomeJSON
+        jsn = super(CrashedMissionOutcome, self).toJSON()
+        jsn['crashed'] = True
+        return jsn
