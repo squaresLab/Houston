@@ -1,6 +1,5 @@
 try:
     import docker
-    DOCKER_CLIENT = docker.from_env()
 
 except ImportError:
     pass
@@ -60,6 +59,7 @@ class SystemContainer(object):
         for path in HOUSTON_SCRIPT_PATHS:
             volumes[path] = {'bind': path, 'mode': 'ro'}
 
+        DOCKER_CLIENT = docker.from_env()
         self.__container = DOCKER_CLIENT.containers.run(self.__image,
                                                         command,
                                                         network_mode='bridge',
