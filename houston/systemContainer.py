@@ -122,21 +122,17 @@ class SystemContainer(object):
         startTime = timeit.default_timer()
 
         for attempts in range(MAX_NUM_ATTEMPTS):
-
             try:
                 r = requests.post(url, json=jsn)
                 outcome = mission.MissionOutcome.fromJSON(r.json())
                 if self.__verbose:
                     print(outcome.toJSON())
+                return outcome
             except ValueError:
-                if attempts <= MAX_NUM_ATTEMPTS:
-                    self.reset()
-                    continue
-            return outcome
+                self.reset()
 
         totalTime = timeit.default_timer() - startTime
         return mission.CrashedMissionOutcome(totalTime)
-
 
 
     def destroy(self):
