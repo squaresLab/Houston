@@ -29,7 +29,7 @@ class MissionPoolWorker(threading.Thread):
 
     def __resetCounter(self):
         self.__counter = 0
-        self.__reset = -1 #random.randint(3, 5) # never reset!
+        self.__reset = random.randint(3, 5)
 
 
     def __prepareContainer(self):
