@@ -10,6 +10,7 @@ import site
 import sys
 import requests
 import mission
+import timeit
 
 
 # Find the location of Houston on disk
@@ -18,7 +19,7 @@ PATH_TO_HOUSTON_EGG = os.path.dirname(os.path.dirname(houston.__file__))
 HOUSTON_SCRIPT_PATHS = [ # TODO: use `which` command
     '/usr/local/bin/houstonserver'
 ]
-
+MAX_NUM_ATTEMPTS = 3
 
 class SystemContainer(object):
     """
@@ -59,15 +60,15 @@ class SystemContainer(object):
         for path in HOUSTON_SCRIPT_PATHS:
             volumes[path] = {'bind': path, 'mode': 'ro'}
 
-        DOCKER_CLIENT = docker.from_env()
-        self.__container = DOCKER_CLIENT.containers.run(self.__image,
-                                                        command,
-                                                        network_mode='bridge',
-                                                        ports=ports,
-                                                        volumes=volumes,
-                                                        detach=True)
+        client = docker.from_env()
+        self.__container = client.containers.run(self.__image,
+                                                 command,
+                                                 network_mode='bridge',
+                                                 ports=ports,
+                                                 volumes=volumes,
+                                                 detach=True)
 
-        # blocks until server is running
+         # blocks until server is running
         for line in self.__container.logs(stream=True):
             line = line.strip()
             if line.startswith('* Running on http://'):
@@ -114,18 +115,28 @@ class SystemContainer(object):
         """
         assert(isinstance(msn, mission.Mission))
         assert(not msn is None)
+
         jsn = msn.toJSON()
         jsn = {'system': self.systemIdentifier(), 'mission': jsn}
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
-        r = requests.post(url, json=jsn)
+        startTime = timeit.default_timer()
 
-        outcome = mission.MissionOutcome.fromJSON(r.json())
-        if self.__verbose:
-            print(outcome.toJSON())
+        for attempts in range(MAX_NUM_ATTEMPTS):
 
-        # TODO: add timeout
-        # TODO: handle unexpected responses
-        return outcome
+            try:
+                r = requests.post(url, json=jsn)
+                outcome = mission.MissionOutcome.fromJSON(r.json())
+                if self.__verbose:
+                    print(outcome.toJSON())
+            except ValueError:
+                if attempts <= MAX_NUM_ATTEMPTS:
+                    self.reset()
+                    continue
+            return outcome
+
+        totalTime = timeit.default_timer() - startTime
+        return mission.CrashedMissionOutcome(totalTime)
+
 
 
     def destroy(self):
