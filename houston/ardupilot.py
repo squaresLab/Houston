@@ -255,8 +255,8 @@ class ArmNormalBranch(Branch):
         return self.isApplicable(None, state, environment)
 
 
-    def generate(self, state, environment):
-        return self.getSchema().generate()
+    def generate(self, state, environment, rng):
+        return self.getSchema().generate(rng)
 
 
 class SetModeActionSchema(ActionSchema):
@@ -393,7 +393,7 @@ class SetModeLandBranch(Branch):
         return True
 
 
-    def generate(self, state, environment):
+    def generate(self, state, environment, rng):
         return Action(self.getSchemaName(), {'mode': 'LAND'})
 
 
@@ -420,7 +420,7 @@ class SetModeGuidedBranch(Branch):
         return True
 
 
-    def generate(self, state, environment):
+    def generate(self, state, environment, rng):
         return Action(self.getSchemaName(), {'mode': 'GUIDED'})
 
 
@@ -448,7 +448,7 @@ class SetModeLoiterBranch(Branch):
         return True
 
 
-    def generate(self, state, environment):
+    def generate(self, state, environment, rng):
         return Action(self.getSchemaName(), {'mode': 'LOITER'})
 
 
@@ -492,7 +492,7 @@ class SetModeRTLBranch(Branch):
         return True
 
 
-    def generate(self, state, environment):
+    def generate(self, state, environment, rng):
         return Action(self.getSchemaName(), {'mode': 'RTL'})
 
 
@@ -565,8 +565,8 @@ class GotoNormalBranch(Branch):
         return self.isApplicable(None, state, environment)
 
 
-    def generate(self, state, environment):
-        return self.getSchema().generate()
+    def generate(self, state, environment, rng):
+        return self.getSchema().generate(rng)
 
 
 class DistanceBasedGoToGenerator(ActionGenerator):
@@ -715,8 +715,8 @@ class TakeoffNormalBranch(Branch):
     def isSatisfiable(self, state, environment):
         return self.isApplicable(None, state, environment)
 
-    def generate(self, initialState, env):
-        return self.getSchema().generate()
+    def generate(self, initialState, env, rng):
+        return self.getSchema().generate(rng)
 
 
 def maxExpectedBatteryUsage(latitude, longitude, altitude):
