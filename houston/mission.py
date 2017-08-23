@@ -199,3 +199,14 @@ class MissionOutcome(object):
         Returns true if this mission was unsuccessful.
         """
         return not self.passed()
+
+
+class CrashedMissionOutcome(MissionOutcome):
+    def __init__(self, totalTime):
+        super(CrashedMissionOutcome, self).__init__(False, [], 0.0, totalTime)
+
+
+    def toJSON(self):
+        missionOutcomeJSON = super(CrashedMissionOutcome, self).toJSON()
+        missionOutcomeJSON['crashed'] = True
+        return missionOutcomeJSON
