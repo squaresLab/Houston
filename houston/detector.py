@@ -128,7 +128,7 @@ class BugDetectorSummary(object):
     @staticmethod
     def fromJSON(jsn):
         jsn = jsn['summary']
-        systm = jsn['settings']['system']
+        systm = houston.getSystem(jsn['settings']['system'])
         image = jsn['settings']['image']
 
         resourceUsage = ResourceUsage.fromJSON(jsn['resources']['used'])
