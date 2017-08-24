@@ -69,9 +69,9 @@ class ResourceUsage(object):
     Simple data structure used to maintain track of what resources have been
     consumed over the course of a bug detection trial.
     """
-    def __init__(self):
-        self.numMissions = 0
-        self.runningTime = 0.0
+    def __init__(self, numMissions = 0, runningTime = 0.0):
+        self.numMissions = numMissions
+        self.runningTime = runningTime
 
 
     def toJSON(self):
@@ -84,7 +84,7 @@ class ResourceUsage(object):
 class ResourceLimits(object):
     @staticmethod
     def fromJSON(jsn):
-        return ResourceLimits(jsn['numMissions'], jsn['runningTime'])
+        return ResourceLimits(numMissions =  jsn['numMissions'], runningTime = jsn['runningTime'])
 
 
     """
