@@ -436,6 +436,14 @@ class BugDetector(object):
 
 
 class TreeBasedBugDetectorSummary(BugDetectorSummary):
+    @staticmethod
+    def fromJSON(jsn):
+        base = BugDetectorSummary.fromJSON(jsn)
+        flaky = [f['mission'] for f in jsn['summary']['flaky']]
+        flaky = [Mission.fromJSON(f) for f in flaky]
+        return TreeBasedBugDetectorSummary(base, flaky)
+
+
     """
     Used to provide a summary of a tree-based bug detection trial.
     """
@@ -601,6 +609,12 @@ class TreeBasedBugDetector(BugDetector):
 
 
 class RandomBugDetectorSummary(BugDetectorSummary):
+    @staticmethod
+    def fromJSON(jsn):
+        base = BugDetectorSummary.fromJSON(jsn)
+        return RandomBugDetectorSummary(base)
+
+
     def __init__(self, base):
         assert (isinstance(base, BugDetectorSummary) and base is not None)
         super(RandomBugDetectorSummary, self).__init__(base.getSystem(),
