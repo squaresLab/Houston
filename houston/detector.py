@@ -205,6 +205,14 @@ class BugDetectorSummary(object):
 
         return {'summary': summary}
 
+    
+    def getNumMissions(self):
+        return len(self.__history)
+
+    
+    def getNumFailures(self):
+        return len(self.__failures)
+
 
     def getImage(self):
         return self.__image
@@ -494,6 +502,10 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
                                                           base.getResourceUsage(),
                                                           base.getResourceLimits())
         self.__flaky = flaky
+
+
+    def getNumFlaky(self):
+        return len(self.__flaky)
 
 
     def toJSON(self):
