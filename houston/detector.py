@@ -60,6 +60,11 @@ class MissionPoolWorker(threading.Thread):
 
 
 class ResourceUsage(object):
+    @staticmethod
+    def fromJSON(jsn):
+        return ResourceUsage(jsn['numMissions'], jsn['runningTime'])
+
+
     """
     Simple data structure used to maintain track of what resources have been
     consumed over the course of a bug detection trial.
@@ -77,6 +82,11 @@ class ResourceUsage(object):
 
 
 class ResourceLimits(object):
+    @staticmethod
+    def fromJSON(jsn):
+        return ResourceLimits(jsn['numMissions'], jsn['runningTime'])
+
+
     """
     A convenience class used to impose limits on the bug detection process.
     """
