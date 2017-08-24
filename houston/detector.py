@@ -482,7 +482,7 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
     def fromJSON(jsn):
         base = BugDetectorSummary.fromJSON(jsn)
         flaky = [f['mission'] for f in jsn['summary']['flaky']]
-        flaky = [Mission.fromJSON(f) for f in flaky]
+        flaky = set(Mission.fromJSON(f) for f in flaky)
         return TreeBasedBugDetectorSummary(base, flaky)
 
 
