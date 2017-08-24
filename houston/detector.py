@@ -137,7 +137,7 @@ class BugDetectorSummary(object):
         history = \
             [Mission.fromJSON(m['mission']) for m in jsn['history']]
         failures = \
-            [Mission.fromJSON(m['mission']) for m in jsn['failures']]
+            set(Mission.fromJSON(m['mission']) for m in jsn['failures'])
 
         outcomes = \
             [(h['mission'], h['outcome']) for h in jsn['history']]
