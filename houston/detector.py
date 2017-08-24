@@ -158,7 +158,8 @@ class BugDetectorSummary(object):
                     were imposed during the bug detection process.
         """
         assert (isinstance(systm, system.System) and systm is not None)
-        assert (isinstance(image, str) and image is not None)
+        assert (isinstance(image, str) or isinstance(image, unicode))
+        assert (image is not None)
         assert (isinstance(resourceUsage, ResourceUsage) and resourceUsage is not None)
         assert (isinstance(resourceLimits, ResourceLimits) and resourceLimits is not None)
         assert (isinstance(history, list) and history is not None)
