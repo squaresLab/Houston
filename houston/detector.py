@@ -140,7 +140,9 @@ class BugDetectorSummary(object):
             [Mission.fromJSON(m['mission']) for m in jsn['failures']]
 
         outcomes = \
-            [(Mission.fromJSON(m), MissionOutcome.fromJSON(o)) for (m, o) in jsn['outcomes'].items()]
+            [(h['mission'], h['outcome']) for h in jsn['history']]
+        outcomes = \
+            [(Mission.fromJSON(m), MissionOutcome.fromJSON(o)) for (m, o) in outcomes]
         outcomes = {m: o for (m, o) in outcomes}
 
         return BugDetectorSummary(systm, image, history, outcomes, failures, resourceUsage, resourceLimits)
