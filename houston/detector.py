@@ -115,6 +115,27 @@ class ResourceLimits(object):
 
 
 class BugDetectorSummary(object):
+    @staticmethod
+    def fromJSON(jsn):
+        jsn = jsn['summary']
+        systm = jsn['settings']['system']
+        image = jsn['settings']['image']
+
+        resourceUsage = ResourceUsage.fromJSON(jsn['resources']['used'])
+        resourceLimits = ResourceLimits.fromJSON(jsn['resources']['limits'])
+
+        history = \
+            [Mission.fromJSON(m['mission']) for m in jsn['history']]
+        failures = \
+            [Mission.fromJSON(m['mission']) for m in jsn['failures']]
+
+        outcomes = \
+            [(Mission.fromJSON(m), MissionOutcome.fromJSON(o)) for (m, o) in jsn['outcomes'].items()]
+        outcomes = {m: o for (m, o) in outcomes}
+
+        return BugDetectorSummary(systm, image, history, outcomes, failures, resourceUsage, resourceLimits)
+
+
     def __init__(self, systm, image, history, outcomes, failures, resourceUsage, resourceLimits):
         """
         Constructs a summary of a bug detection process.
