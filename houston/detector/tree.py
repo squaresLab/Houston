@@ -1,3 +1,6 @@
+from base import BugDetectorSummary, BugDetector
+
+
 class TreeBasedBugDetectorSummary(BugDetectorSummary):
     """
     Used to provide a summary of a test generation trial that used the

@@ -1,67 +1,27 @@
-import copy
-import random
 import timeit
-import houston
-import system
-import time
+import random
+import copy
 import threading
+import houston.houston
+import houston.system # TODO this is a bad module name
 
-from util import printflush
 
-from multiprocessing.pool import ThreadPool
-
+from branch import BranchID, BranchPath
+from resources import ResourceUsage, ResourceLimits
 from mission import Mission, MissionOutcome
 from action import ActionOutcome, Action, ActionGenerator
-from branch import BranchID, BranchPath
-
-
-class MissionPoolWorker(threading.Thread):
-    def __init__(self, detector):
-        super(MissionPoolWorker, self).__init__()
-        print("creating worker...")
-        self.daemon = True # mark as a daemon thread
-        self.__detector = detector
-        self.__container = houston.createContainer(self.__detector.getSystem(),
-                                                   self.__detector.getImage())
-        self.__resetCounter()
-        # self.start()
-        
-
-    def __resetCounter(self):
-        self.__counter = 0
-        self.__reset = random.randint(3, 5)
-
-
-    def __prepareContainer(self):
-        if self.__counter == self.__reset:
-            self.__resetCounter()
-            self.__container.reset()
-        self.__counter += 1
-
-
-    def run(self):
-        print("running worker: {}".format(self))
-        #try:
-        while True:
-            m = self.__detector.getNextMission()
-            if m is None:
-                return
-            self.__prepareContainer()
-            self.__detector.executeMission(m, self.__container)
-        #finally:
-        #    self.shutdown()
-
-
-    def shutdown(self):
-        print("shutting down worker: {}".format(self))
-        if self.__container is not None:
-            houston.destroyContainer(self.__container)
-            self.__container = None
 
 
 class BugDetectorSummary(object):
+    """
+    Provides a summary of a test generation trial.
+    """
     @staticmethod
     def fromJSON(jsn):
+        """
+        Constructs a summary of a past test generation trial from its
+        JSON-based description.
+        """
         jsn = jsn['summary']
         systm = houston.getSystem(jsn['settings']['system'])
         image = jsn['settings']['image']
@@ -113,7 +73,7 @@ class BugDetectorSummary(object):
 
     def toJSON(self):
         """
-        Transforms this bug detection summary into a JSON format.
+        Serialises this summary into a JSON format.
         """
         resources = {
             'used': self.__resourceUsage.toJSON(),
@@ -179,6 +139,49 @@ class BugDetectorSummary(object):
 
     def getResourceLimits(self):
         return self.__resourceLimits
+
+
+class MissionPoolWorker(threading.Thread):
+    def __init__(self, detector):
+        super(MissionPoolWorker, self).__init__()
+        print("creating worker...")
+        self.daemon = True # mark as a daemon thread
+        self.__detector = detector
+        self.__container = houston.createContainer(self.__detector.getSystem(),
+                                                   self.__detector.getImage())
+        self.__resetCounter()
+        
+
+    def __resetCounter(self):
+        self.__counter = 0
+        self.__reset = random.randint(3, 5)
+
+
+    def __prepareContainer(self):
+        if self.__counter == self.__reset:
+            self.__resetCounter()
+            self.__container.reset()
+        self.__counter += 1
+
+
+    def run(self):
+        print("running worker: {}".format(self))
+        #try:
+        while True:
+            m = self.__detector.getNextMission()
+            if m is None:
+                return
+            self.__prepareContainer()
+            self.__detector.executeMission(m, self.__container)
+        #finally:
+        #    self.shutdown()
+
+
+    def shutdown(self):
+        print("shutting down worker: {}".format(self))
+        if self.__container is not None:
+            houston.destroyContainer(self.__container)
+            self.__container = None
 
 
 class BugDetector(object):
@@ -410,62 +413,3 @@ class BugDetector(object):
 
         if outcome.failed():
             self.__failures.add(mission)
-
-
-class RandomBugDetectorSummary(BugDetectorSummary):
-    @staticmethod
-    def fromJSON(jsn):
-        base = BugDetectorSummary.fromJSON(jsn)
-        return RandomBugDetectorSummary(base)
-
-
-    def __init__(self, base):
-        assert (isinstance(base, BugDetectorSummary) and base is not None)
-        super(RandomBugDetectorSummary, self).__init__(base.getSystem(),
-                                                       base.getImage(),
-                                                       base.getHistory(),
-                                                       base.getOutcomes(),
-                                                       base.getFailures(),
-                                                       base.getResourceUsage(),
-                                                       base.getResourceLimits())
-
-
-    def toJSON(self):
-        jsn = super(RandomBugDetectorSummary, self).toJSON()
-        jsn['summary']['settings']['algorithm'] = 'random'
-        return jsn
-
-
-class RandomBugDetector(BugDetector):
-    def __init__(self, initialState, env, threads = 1, actionGenerators = [], maxNumActions = 10):
-        super(RandomBugDetector, self).__init__(threads, actionGenerators, maxNumActions)
-        self.__initialState = initialState
-        self.__env = env
-
-
-    def summarise(self):
-        summary = super(RandomBugDetector, self).summarise()
-        summary = RandomBugDetectorSummary(summary)
-        return summary
-
-
-    def generateAction(self, schema):
-       generator = self.getGenerator(schema)
-       if generator is None:
-           return schema.generate(self._rng)
-       return generator.generateActionWithoutState(self.__env, self._rng)
-
-
-    def generateMission(self):
-        systm = self.getSystem()
-        schemas = systm.getActionSchemas().values()
-        maxNumActions = self.getMaxNumActions()
-        env = self.__env
-        initialState = self.__initialState
-
-        actions = []
-        for _ in range(self._rng.randint(1, maxNumActions)):
-            schema = self._rng.choice(schemas)
-            actions.append(self.generateAction(schema))
-
-        return Mission(env, initialState, actions)
