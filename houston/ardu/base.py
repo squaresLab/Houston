@@ -7,7 +7,10 @@ import geopy.distance
 
 from houston.system import System
 from houston.util import printflush
-from houston.state import InternalVariable, ExternalVariable
+from houston.action import ActionSchema
+from houston.state import   StateVariable, \
+                            InternalVariable, \
+                            ExternalVariable
 
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
@@ -39,7 +42,7 @@ class BaseSystem(System):
     """
 
 
-    def __init__(self, speedup=3.0, variables, schemas):
+    def __init__(self, variables, schemas, speedup=3.0):
         """
         
 
@@ -48,6 +51,10 @@ class BaseSystem(System):
             variables (list of Variable): TODO
             schemas (list of ActionSchema): TODO
         """
+        assert (isinstance(variables, list))
+        assert (all(isinstance(v, Variable) for v in variables))
+        assert (isinstance(schemas, list))
+        assert (all(isinstance(s, ActionSchema) for s in schemas))
         assert (isinstance(speedup, float))
         assert (speedup != 0.0)
 
@@ -73,7 +80,7 @@ class BaseSystem(System):
         """
         Returns a JSON-based description of this system.
         """
-        jsn = super(ArduBaseSystem, self).toJSON()
+        jsn = super(BaseSystem, self).toJSON()
         jsn['settings'] = {
             'speedup': self.__speedup
         }
