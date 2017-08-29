@@ -7,7 +7,7 @@ execute this mission, and returns a summary of its outcome in a JSON format.
 import sys
 import flask
 import json
-import houston
+import mgr as manager
 import ardupilot
 
 
@@ -32,7 +32,8 @@ def executeMission():
     assert('mission' in flask.request.json)
 
     systm = flask.request.json['system']
-    systm = houston.getSystem(systm)
+    systmCls = mgr.getSystemClassByName(systm['type'])
+    systm = systmCls.fromJSON(systm)
 
     msn = flask.request.json['mission']
     msn = houston.mission.Mission.fromJSON(msn)
