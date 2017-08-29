@@ -4,9 +4,9 @@ import os
 import sys
 import subprocess as sub
 import math
-import houston
 import geopy
 import geopy.distance
+import houston.houston
 
 from util       import printflush
 from system     import System
@@ -35,9 +35,9 @@ TIME_PER_METER_TRAVELED = 1.0
 CONSTANT_TIMEOUT_OFFSET = 1.0
 
 
-class ArduPilot(System):
+class ArduCopter(System):
     """
-    Description of the ArduPilot system
+    Description of the ArduCopter system
 
     Attributes:
         __sitl (dronekit_sitl.SITL): a wrapper for the SITL simulator used to
