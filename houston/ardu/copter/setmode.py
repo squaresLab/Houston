@@ -1,7 +1,15 @@
+import time
+
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
 from houston.valueRange import DiscreteValueRange
+
+
+try:
+    import dronekit
+except ImportError:
+    pass
 
 
 class SetModeSchema(ActionSchema):
@@ -30,10 +38,37 @@ class SetModeSchema(ActionSchema):
 
         super(SetModeSchema, self).__init__('setmode', parameters, branches)
 
-    def send_RTL(self):
-        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
-            0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, #command
+    # these send commands are all almost identical?    
+    def sendRTL(self, vehicle):
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0, 0, 0)
+        vehicle.send_mavlink(msg)
+
+
+    def sendLAND(self, vehicle):
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_NAV_LAND,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0, 0, 0)
+        vehicle.send_mavlink(msg)
+
+
+    def sendLOITER(self, vehicle):
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM,
             0,    #confirmation
             0,    # param 1
             0,    # param 2,
@@ -41,84 +76,61 @@ class SetModeSchema(ActionSchema):
             0,    # param 4,
             0, 0, 0)    # param 5 ~ 7 not used
             # send command to vehicle
-        DRONEKIT_SYSTEM.send_mavlink(msg)
-
-    def send_LAND(self):
-        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
-            0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_NAV_LAND, #command
-            0,    #confirmation
-            0,    # param 1
-            0,    # param 2,
-            0,    # param 3,
-            0,    # param 4,
-            0, 0, 0)    # param 5 ~ 7 not used
-            # send command to vehicle
-        DRONEKIT_SYSTEM.send_mavlink(msg)
+        vehicle.send_mavlink(msg)
 
 
-    def send_LOITER(self):
-        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
-            0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, #command
-            0,    #confirmation
-            0,    # param 1
-            0,    # param 2,
-            0,    # param 3,
-            0,    # param 4,
-            0, 0, 0)    # param 5 ~ 7 not used
-            # send command to vehicle
-        DRONEKIT_SYSTEM.send_mavlink(msg)
-
-
-    def dispatch(self, action, state, environment):
-        vehicleMode = VehicleMode(action.read('mode'))
+    def dispatch(self, system, action, state, environment):
+        vehicle = system.getVehicle()
+        vehicleMode = dronekit.VehicleMode(action.read('mode'))
 
         if action.read('mode') == 'RTL':
-            self.send_RTL()
-            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
-            currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
-            currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+            self.sendRTL(vehicle)
+            currentAlt = vehicle.location.global_relative_frame.alt
+            currentLat  = vehicle.location.global_relative_frame.lat
+            currentLon = vehicle.location.global_relative_frame.lon
             toLocation = (state.read('homeLatitude'), state.read('homeLongitude'))
             fromLocation = (currentLat, currentLon)
 
-            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+            while not vehicle.mode == vehicleMode:
                 time.sleep(0.2)
 
             while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3 and \
                 currentAlt > 0.1:
                 time.sleep(0.2)
-                currentLat = DRONEKIT_SYSTEM.location.global_relative_frame.lat
-                currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
-                currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+                currentLat = vehicle.location.global_relative_frame.lat
+                currentLon = vehicle.location.global_relative_frame.lon
+                currentAlt = vehicle.location.global_relative_frame.alt
 
-            while DRONEKIT_SYSTEM.armed:
+            while vehicle.armed:
                 time.sleep(0.2)
 
         elif action.read('mode') == 'LAND':
-            self.send_LAND()
-            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+            self.sendLAND(vehicle)
+            currentAlt = vehicle.location.global_relative_frame.alt
 
-            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+            while not vehicle.mode == vehicleMode:
                 time.sleep(0.2)
 
             while currentAlt > 0.1:
                 time.sleep(0.2)
-                currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+                currentAlt = vehicle.location.global_relative_frame.alt
 
-            while DRONEKIT_SYSTEM.armed:
+            while vehicle.armed:
                 time.sleep(0.2)
 
         elif action.read('mode') == 'LOITER': # TODO as we add more modes this would have to change
-            self.send_LOITER()
-            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+            self.sendLOITER(vehicle)
+            while not vehicle.mode == vehicleMode:
                 time.sleep(0.1)
+
         elif action.read('mode') == 'GUIDED':
-            DRONEKIT_SYSTEM.mode = vehicleMode
-            while not DRONEKIT_SYSTEM.mode == vehicleMode:
+            vehicle.mode = vehicleMode
+            while not vehicle.mode == vehicleMode:
                 time.sleep(0.1)
+
         else:
-            raise Exception
+            raise Exception("unexpected mode")
+
 
 class SetModeLand(Branch):
     """
