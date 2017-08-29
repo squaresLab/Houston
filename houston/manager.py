@@ -10,9 +10,9 @@ A lock is required to mutate the set of containers/ports
 __manager_lock = threading.Lock()
 
 """
-A registry of systems known to Houston, indexed by their identifiers.
+A registry of system classes known to Houston, indexed by their identifiers.
 """
-__systems = {}
+__systemClasses = {}
 
 """
 The pool of ports that are open and available to be used.
@@ -25,18 +25,16 @@ The set of containers that are actively in use.
 __containers = set()
 
 
-def registerSystem(systm):
+def registerSystemClass(name, cls):
     """
-    Registers a system with Houston.
+    Registers a system class with Houston.
 
     @TODO   we could perform this automatically using magic methods / class hooks
     """
-    global __systems
-    assert (isinstance(systm, system.System) and not systm is None)
-    iden = systm.getIdentifier()
-    if iden in __systems:
-        raise Error("system already registered with name: {}".format(iden))
-    __systems[iden] = systm
+    global __systemClasses
+    if name in __systemClasses:
+        raise Error("system class already registered with name: {}".format(name))
+    __systemClasses[name] = cls
 
 
 def setPortRange(start, end):
@@ -59,12 +57,33 @@ def setPortRange(start, end):
     __manager_lock.release()
 
 
-def getSystem(identifier):
+def getClassNameOfSystem(systm):
     """
-    Returns the system associated with a given identifier.
+    Returns the name of the system class for a given system.
     """
-    assert (isinstance(identifier, str) or isinstance(identifier, unicode))
-    return __systems[identifier]
+    assert (isinstance(systm, system.System))
+    cls = type(systm)
+    return getNameOfSystemClass(cls)
+
+
+def getNameOfSystemClass(cls):
+    """
+    Returns the name associated with a given system class.
+    """
+    for (n, kls) in __systemClasses:
+        if kls == cls:
+            return n
+
+    err = "attempted to determine name of unregistered system class: {}".format(cls)
+    raise Exception(cls)
+
+
+def getSystemClassByName(name):
+    """
+    Returns the system class associated with a given name.
+    """
+    assert (isinstance(name, str) or isinstance(name, unicode))
+    return __systemClasses[name]
 
 
 def destroyContainer(cntr):
