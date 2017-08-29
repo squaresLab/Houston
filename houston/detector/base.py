@@ -53,14 +53,13 @@ class BugDetectorSummary(object):
         :params resourceLimits: a description of the resources limits that \
                     were imposed during the bug detection process.
         """
-        assert (isinstance(systm, system.System) and systm is not None)
+        assert (isinstance(systm, System))
         assert (isinstance(image, str) or isinstance(image, unicode))
-        assert (image is not None)
-        assert (isinstance(resourceUsage, ResourceUsage) and resourceUsage is not None)
-        assert (isinstance(resourceLimits, ResourceLimits) and resourceLimits is not None)
-        assert (isinstance(history, list) and history is not None)
-        assert (isinstance(outcomes, dict) and outcomes is not None)
-        assert (isinstance(failures, set) and failures is not None)
+        assert (isinstance(resourceUsage, ResourceUsage))
+        assert (isinstance(resourceLimits, ResourceLimits))
+        assert (isinstance(history, list))
+        assert (isinstance(outcomes, dict))
+        assert (isinstance(failures, set))
         assert (all(isinstance(m, Mission) for m in failures))
 
         self.__systm = systm
@@ -190,11 +189,11 @@ class BugDetector(object):
     Bug detectors are responsible for finding bugs in a given system under test.
     """
     def __init__(self, threads = 1, actionGenerators = [], maxNumActions = 10):
-        assert (isinstance(maxNumActions, int) and maxNumActions is not None)
+        assert (isinstance(maxNumActions, int))
         assert (maxNumActions >= 1)
-        assert (isinstance(threads, int) and threads is not None)
+        assert (isinstance(threads, int))
         assert (threads >= 1)
-        assert (isinstance(actionGenerators, list) and actionGenerators is not None)
+        assert (isinstance(actionGenerators, list))
         assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
 
         self._rng = None
@@ -372,7 +371,7 @@ class BugDetector(object):
         """
         Returns the end state after executing a given mission.
         """
-        assert (isinstance(m, Mission) and m is not None)
+        assert (isinstance(m, Mission))
         if m.isEmpty():
             return m.getInitialState()
         outcome = self.__outcomes[m]
