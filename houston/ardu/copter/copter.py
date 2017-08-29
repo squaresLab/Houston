@@ -6,7 +6,7 @@ import subprocess as sub
 import math
 import geopy
 import geopy.distance
-import houston.houston
+import houston.manager as mgr
 
 from util       import printflush
 from system     import System
@@ -125,4 +125,4 @@ class ArduCopter(System):
 
 
 # Register the ArduCopter system
-houston.registerSystem(ArduCopter())
+mgr.registerSystem(ArduCopter())

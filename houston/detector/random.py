@@ -1,5 +1,5 @@
-from base import BugDetector, BugDetectorSummary
-from mission import Mission
+from houston.base import BugDetector, BugDetectorSummary
+from houston.mission import Mission
 
 
 class RandomBugDetectorSummary(BugDetectorSummary):
