@@ -12,6 +12,8 @@ import requests
 import mission
 import timeit
 
+from system import System
+
 
 # Find the location of Houston on disk
 # PATH_TO_SITE_PKGS = site.getsitepackages()[0]
@@ -21,29 +23,38 @@ HOUSTON_SCRIPT_PATHS = [ # TODO: use `which` command
 ]
 MAX_NUM_ATTEMPTS = 3
 
+
 class SystemContainer(object):
     """
-    System proxies are used to
 
-    - ensures clean-up
+    Attributes:
+        __system (System): the system under test
+        __verbose (bool): used to specify whether detailed logs should be
+            dumped to the stdout before destruction of the container.
+        __image (string): the name of the Docker image used by this container.
+        __port (int): the number of the port that the Houston server should be
+            forwarded to (on the host machine).
     """
-    def __init__(self, iden, image, port, verbose=False):
+    def __init__(self, system, image, port, verbose=False):
         """
         Constructs a new SystemContainer
 
-        :param  iden:       the identifier of the system to which this container\
-                            belongs
+        :param  system:     the system under test
         :param  image:      the name of the Docker image to use for this container
         :param  port:       the number of the port that the Houston server should\
                             run on
         :param  verbose:    a flag indicating whether the output from this \
                             container should be dumped before its destruction.
         """
-        assert (isinstance(port, int) and not port is None)
+        assert (isinstance(system, System))
+        assert (isinstance(port, int))
+        assert (isinstance(verbose, bool))
+        assert (isinstance(image, str) or isinstance(image, unicode))
+        assert (image != "")
         assert (port >= 1024 and port < 65535)
 
         self.__verbose = verbose
-        self.__systemIdentifier = iden
+        self.__system = system
         self.__port = port
         self.__image = image
         self.__prepare()
@@ -88,13 +99,6 @@ class SystemContainer(object):
         return True
 
 
-    def systemIdentifier(self):
-        """
-        Returns the identifier of the system to which this container belongs.
-        """
-        return self.__systemIdentifier
-
-
     def port(self):
         """
         Returns the port in use by this container.
@@ -117,7 +121,7 @@ class SystemContainer(object):
         assert(not msn is None)
 
         jsn = msn.toJSON()
-        jsn = {'system': self.systemIdentifier(), 'mission': jsn}
+        jsn = {'system': self.system(), 'mission': jsn}
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
         startTime = timeit.default_timer()
 
