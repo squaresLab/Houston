@@ -45,15 +45,27 @@ class ArduCopter(houston.system.System):
 
     Attributes:
         __sitl (dronekit_sitl.SITL): a wrapper for the SITL simulator used to
-            conduct the missions
+            conduct the missions.
         __vehicle (dronekit.Vehicle): a connection to the vehicle under test,
-            provided by dronekit
+            provided by dronekit.
+        __speedup (float): speedup multiplier used by SITL.
     """
+    @staticmethod
+    def fromJSON(jsn):
+        assert (isinstance(jsn, dict))
+        assert ('settings' in jsn)
+        settings = jsn['settings']
+        speedup = settings['speedup']
+        return ArduCopter(speedup=speedup)
 
-    def __init__(self):
+
+    def __init__(self, speedup=3.0):
+        assert (isinstance(speedup, float))
+        assert (speedup != 0.0)
+
         self.__sitl = None
         self.__vehicle = None
-        self.__speedup = 3
+        self.__speedup = speedup
 
         variables = [
             InternalVariable('homeLatitude', lambda: -35.362938), # TODO: fixed
@@ -73,6 +85,17 @@ class ArduCopter(houston.system.System):
         ]
 
         super(ArduCopter, self).__init__('arducopter', variables, schemas)
+
+    
+    def toJSON(self):
+        """
+        Returns a JSON-based description of this system.
+        """
+        jsn = super(ArduCopter, self).toJSON()
+        jsn['settings'] = {
+            'speedup': self.__speedup
+        }
+        return jsn
 
 
     def installed(self):
@@ -127,5 +150,5 @@ class ArduCopter(houston.system.System):
         self.__sitl = None
 
 
-# Register the ArduCopter system
-mgr.registerSystem(ArduCopter())
+# Register the ArduCopter system type
+mgr.registerSystem('copter', ArduCopter)
