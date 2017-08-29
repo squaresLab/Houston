@@ -84,7 +84,7 @@ class ArduCopter(houston.system.System):
             setmode.SetModeSchema()
         ]
 
-        super(ArduCopter, self).__init__('arducopter', variables, schemas)
+        super(ArduCopter, self).__init__(variables, schemas)
 
     
     def toJSON(self):
@@ -151,4 +151,4 @@ class ArduCopter(houston.system.System):
 
 
 # Register the ArduCopter system type
-mgr.registerSystem('copter', ArduCopter)
+mgr.registerSystemClass('arducopter', ArduCopter)

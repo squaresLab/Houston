@@ -123,15 +123,11 @@ def createContainer(systm, image, verbose=False):
     global __manager_lock
 
     assert (isinstance(systm, system.System))
-    assert (not system is None)
-
-    iden = systm.getIdentifier()
-    assert (iden in __systems)
 
     __manager_lock.acquire()
     port = random.sample(__port_pool, 1)[0]
     __port_pool.remove(port)
-    container = systemContainer.SystemContainer(iden, image, port, verbose=verbose)
+    container = systemContainer.SystemContainer(systm, image, port, verbose=verbose)
     __containers.add(container)
     __manager_lock.release()
 

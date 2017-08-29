@@ -12,14 +12,21 @@ setup(
     url='https://github.com/ChrisTimperley/Houston',
     license='mit',
     #dependency_links=['https://hg.python.org/cpython/raw-file/2.7/Lib/xmlrpclib.py#egg=xmlrpclib-2.7'],
-    install_required = [
-        'flask', 'docker', 'pexpect', 'geopy'
+    install_requires = [
+        'flask',
+        'docker',
+        'pexpect',
+        'geopy'
     ],
     packages = [
-        'houston', 'houston.ardu', 'houston.ardu.copter'
+        'houston',
+        'houston.detector',
+        'houston.ardu',
+        'houston.ardu.copter'
     ],
     package_dir = {
         'houston': 'houston',
+        'houston.detector': 'houston/detector',
         'houston.ardu': 'houston/ardu',
         'houston.ardu.copter': 'houston/ardu/copter'
     },

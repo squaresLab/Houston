@@ -6,7 +6,7 @@ import geopy.distance
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
-from houston.valueRange import ContinuousValueRange
+from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 
 
 class GoToSchema(ActionSchema):

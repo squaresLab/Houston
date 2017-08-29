@@ -2,10 +2,11 @@ import timeit
 import random
 import copy
 import threading
-import houston.houston
+import manager as mgr
 import houston.system # TODO this is a bad module name
 
 
+from system import System
 from branch import BranchID, BranchPath
 from resources import ResourceUsage, ResourceLimits
 from mission import Mission, MissionOutcome
@@ -23,7 +24,7 @@ class BugDetectorSummary(object):
         JSON-based description.
         """
         jsn = jsn['summary']
-        systm = houston.getSystem(jsn['settings']['system'])
+        systm = System.fromJSON(jsn['settings']['system'])
         image = jsn['settings']['image']
 
         resourceUsage = ResourceUsage.fromJSON(jsn['resources']['used'])
@@ -90,7 +91,7 @@ class BugDetectorSummary(object):
 
         summary = {
             'settings': {
-                'system': self.__systm.getIdentifier(),
+                'system': self.__systm.toJSON(),
                 'image': self.__image
             },
             'resources': resources,
@@ -147,8 +148,8 @@ class MissionPoolWorker(threading.Thread):
         print("creating worker...")
         self.daemon = True # mark as a daemon thread
         self.__detector = detector
-        self.__container = houston.createContainer(self.__detector.getSystem(),
-                                                   self.__detector.getImage())
+        self.__container = mgr.createContainer(self.__detector.getSystem(),
+                                               self.__detector.getImage())
         self.__resetCounter()
         
 
@@ -180,7 +181,7 @@ class MissionPoolWorker(threading.Thread):
     def shutdown(self):
         print("shutting down worker: {}".format(self))
         if self.__container is not None:
-            houston.destroyContainer(self.__container)
+            mgr.destroyContainer(self.__container)
             self.__container = None
 
 

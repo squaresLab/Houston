@@ -18,8 +18,8 @@ class TreeBasedBugDetectorSummary(BugDetectorSummary):
         """
         TODO: aspects of this feel hacky.
         """
-        assert (isinstance(base, BugDetectorSummary) and base is not None)
-        assert (isinstance(flaky, set) and flaky is not None)
+        assert (isinstance(base, BugDetectorSummary))
+        assert (isinstance(flaky, set))
         assert (all(isinstance(m, Mission) for m in flaky))
 
         super(TreeBasedBugDetectorSummary, self).__init__(base.getSystem(),
@@ -94,7 +94,7 @@ class TreeBasedBugDetector(BugDetector):
 
 
     def prune(self, path):
-        assert (isinstance(path, BranchPath) and path is not None)
+        assert (isinstance(path, BranchPath))
         printflush("Adding path to tabu list: {}".format(path))
         self.__queue = set(m for m in self.__queue if not self.__intendedPaths[m].startswith(path))
 
