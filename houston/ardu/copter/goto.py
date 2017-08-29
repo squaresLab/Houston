@@ -8,6 +8,11 @@ from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 
+try:
+    from dronekit import LocationGlobalRelative
+except ImportError:
+    pass
+
 
 class GoToSchema(ActionSchema):
     def __init__(self):

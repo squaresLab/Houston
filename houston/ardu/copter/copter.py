@@ -23,6 +23,7 @@ from houston.state import InternalVariable, ExternalVariable
 try:
     import statistics # TODO where is this used?
     import dronekit
+    import dronekit_sitl
 
     SAMPLE_BATTERY = []
     SAMPLE_TIME    = []
@@ -126,7 +127,7 @@ class ArduCopter(houston.system.System):
                            restart=False,
                            wd='/experiment/') # TODO: HARDCODED
 
-        connectString = __sitl.connection_string()
+        connectString = self.__sitl.connection_string()
         printflush(connectString)
         self.__vehicle = dronekit.connect(connectString, wait_ready=True)
         self.__vehicle.wait_ready('autopilot_version')
