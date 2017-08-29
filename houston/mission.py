@@ -1,6 +1,6 @@
-import copy
-import system
 import state
+import branch
+import action
 
 class Mission(object):
     """
@@ -21,7 +21,7 @@ class Mission(object):
 
         env = state.Environment.fromJSON(jsn['environment'])
         initialState = state.State.fromJSON(jsn['initialState'])
-        actions = [Action.fromJSON(action) for action in jsn['actions']]
+        actions = [action.Action.fromJSON(a) for a in jsn['actions']]
 
         return Mission(env, initialState, actions)
 
@@ -35,7 +35,6 @@ class Mission(object):
         :param  external:       a description of the initial external state
         :param  actions:        a list of actions
         """
-        assert(actions != [])
         assert(isinstance(environment, state.Environment) and not environment is None)
         assert(isinstance(initialState, state.State) and not initialState is None)
 
@@ -52,12 +51,48 @@ class Mission(object):
         return self.__environment
 
 
+    def isEmpty(self):
+        """
+        Returns True if this mission contains no actions.
+        """
+        return self.__actions == []
+
+
     def getInitialState(self):
         return self.__initialState
 
 
     def getActions(self):
-        return copy.copy(self.__actions)
+        return self.__actions[:]
+
+
+    def size(self):
+        """
+        Returns the number of actions in this mission.
+        """
+        return len(self.__actions)
+
+
+    def getExpectedMissionDuration(self, system):
+        """
+        Returns the expected time that the mission is going to take based on each
+        action timeout.
+        """
+        durationTime = 0.0
+        schemas = system.getActionSchemas()
+        for a in self.__actions:
+            durationTime += schemas[a.getSchemaName()].computeTimeout(a, self.__initialState, self.__environment)
+        return durationTime
+
+
+    def extended(self, act):
+        """
+        Returns a variant of this mission with a given action added onto the
+        end.
+        """
+        assert (isinstance(act, action.Action) and act is not None)
+        actions = self.__actions + [act]
+        return Mission(self.__environment, self.__initialState, actions)
 
 
     def toJSON(self):
@@ -69,14 +104,6 @@ class Mission(object):
             'initialState': self.__initialState.toJSON(),
             'actions': [a.toJSON() for a in self.__actions]
         }
-
-
-#class MissionContext(object):
-#    """
-#    Mission contexts are used to describe a context in which a mission should
-#    take place. Context is given by the initial state of the environment, and
-#    the initial values of the internal and external system variables.
-#    """
 
 
 class MissionOutcome(object):
@@ -92,13 +119,17 @@ class MissionOutcome(object):
         assert(isinstance(jsn, dict) and not jsn is None)
         assert('passed' in jsn)
         assert('actions' in jsn)
+        assert('setupTime' in jsn)
+        assert('totalTime' in jsn)
         assert(isinstance(jsn['passed'], bool))
         assert(isinstance(jsn['actions'], list))
-        actions = [ActionOutcome.fromJSON(a) for a in jsn['actions']]
-        return MissionOutcome(jsn['passed'], actions)
+        assert(isinstance(jsn['setupTime'], float))
+        assert(isinstance(jsn['totalTime'], float))
+        actions = [action.ActionOutcome.fromJSON(a) for a in jsn['actions']]
+        return MissionOutcome(jsn['passed'], actions, jsn['setupTime'], jsn['totalTime'])
 
 
-    def __init__(self, passed, outcomes):
+    def __init__(self, passed, outcomes, setupTime, totalTime):
         """
         Constructs a MissionOutcome object.
 
@@ -109,6 +140,8 @@ class MissionOutcome(object):
         """
         self.__passed = passed
         self.__outcomes  = outcomes
+        self.__setupTime = setupTime
+        self.__totalTime = totalTime
 
 
     def toJSON(self):
@@ -117,7 +150,9 @@ class MissionOutcome(object):
         """
         return {
             'passed': self.__passed,
-            'actions': [outcome.toJSON() for outcome in  self.__outcomes]
+            'actions': [outcome.toJSON() for outcome in  self.__outcomes],
+            'setupTime': self.__setupTime,
+            'totalTime': self.__totalTime
         }
 
 
@@ -128,169 +163,50 @@ class MissionOutcome(object):
     def __repr__(self):
         return str(self)
 
-
-class ActionOutcome(object):
-    @staticmethod
-    def fromJSON(jsn):
+    
+    def getExecutedPath(self):
         """
-        TODO
+        Returns the branch path that was taken by this mission execution.
         """
-        assert (isinstance(jsn, dict) and not jsn is None)
-        assert ('successful' in jsn)
-        assert ('action' in jsn)
-        assert ('stateBefore' in jsn)
-        assert ('stateAfter' in jsn)
-        assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
-
-        return ActionOutcome(Action.fromJSON(jsn['action']),
-                             jsn['successful'],
-                             state.State.fromJSON(jsn['stateBefore']),
-                             state.State.fromJSON(jsn['stateAfter']))
+        return branch.BranchPath([a.getBranchID() for a in self.__outcomes])
 
 
-    """
-    Used to describe the outcome of an action execution in terms of system state.
-    """
-    def __init__(self, action, successful, stateBefore, stateAfter):
+    def getEndState(self):
         """
-        Constructs a ActionOutcome.
-
-        :param  action      the action that was performed
-        :param  stateBefore the state of the system immediately prior to execution
-        :param  stateAfter  the state of the system immediately after execution
+        Returns a description of the state of the system immediately after the
+        execution of this mission.
         """
-        assert (isinstance(action, Action) and not action is None)
-        assert (isinstance(successful, bool) and not successful is None)
-        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
-        assert (isinstance(stateAfter, state.State) and not stateAfter is None)
+        return self.__outcomes[-1].getEndState()
 
-        self.__action = action
-        self.__successful = successful
-        self.__stateBefore = stateBefore
-        self.__stateAfter = stateAfter
+
+    def getStartState(self):
+        """
+        Returns a description of the state of the system immediately before the
+        execution of this mission.
+        """
+        return self.__outcomes[0].getStartState()
+
+
+    def passed(self):
+        """
+        :see `successful`
+        """
+        return self.__passed
+
+
+    def failed(self):
+        """
+        Returns true if this mission was unsuccessful.
+        """
+        return not self.passed()
+
+
+class CrashedMissionOutcome(MissionOutcome):
+    def __init__(self, totalTime):
+        super(CrashedMissionOutcome, self).__init__(False, [], 0.0, totalTime)
 
 
     def toJSON(self):
-        """
-        Returns a JSON description of this action outcome.
-        """
-        return {
-            'action': self.__action.toJSON(),
-            'successful': self.__successful,
-            'stateBefore': self.__stateBefore.toJSON(),
-            'stateAfter': self.__stateAfter.toJSON()
-        }
-
-
-class Action(object):
-    """
-    Description of the concept of "Actions".
-    """
-
-    @staticmethod
-    def fromJSON(jsn):
-        """
-        Constructs an Action object from its JSON description.
-        """
-        assert (isinstance(jsn, dict) and not jsn is None)
-        assert ('kind' in jsn)
-        assert ('parameters' in jsn)
-        return Action(jsn['kind'], jsn['parameters'])
-
-
-    def __init__(self, kind, values):
-        """
-        Constructs an Action description.
-
-        :param  kind    the name of the schema to which the action belongs
-        :param  values  a dictionary of parameter values for the action
-        """
-        assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
-        assert (isinstance(values, dict) and not values is None)
-        self.__kind = kind
-        self.__values = copy.copy(values)
-
-
-    def getSchemaName(self):
-        """
-        Returns the name of the schema to which this action belongs.
-        """
-        return self.__kind
-
-
-    def getValue(self, value):
-        """
-        Returns an value of a specific parameter for this action.
-        """
-        return self.__values[value]
-
-
-    def getValues(self):
-        """
-        Returns a copy of the parameters for this action.
-        """
-        return copy.copy(self.__values)
-
-
-    def toJSON(self):
-        """
-        Returns a JSON description of this action.
-        """
-        return {
-            'kind': self.__kind,
-            'parameters': self.getValues()
-        }
-
-
-class Parameter(object):
-    """
-    Docstring.
-    """
-
-    def __init__(self, name, valueRange, description):
-        """
-        Constructs a Parameter object.
-
-        :param  name:           the name of this parameter
-        :param  valueRange:     the range of possible values for this parameter,\
-                                given as a ValueRange object.
-        :param  description:    a short description of the parameter
-        """
-        self.__name = name
-        self.__valueRange = valueRange
-        self.__description = description
-
-
-    def getValueRange(self):
-        """
-        Returns the range of possible values for this parameter.
-        """
-        return self.__valueRange
-
-
-    def generate(self):
-        """
-        Returns a sample (random)
-        """
-        return self.__valueRange.sample()
-
-
-    def getType(self):
-        """
-        Returns the type of this parameter
-        """
-        return self.__valueRange.getType()
-
-
-    def getDescription(self):
-        """
-        Returns a description of this parameter
-        """
-        return self.__description
-
-
-    def getName(self):
-        """
-        Returns the name of this parameter.
-        """
-        return self.__name
+        jsn = super(CrashedMissionOutcome, self).toJSON()
+        jsn['crashed'] = True
+        return jsn

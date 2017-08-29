@@ -2,6 +2,12 @@ import random
 import system
 import mission
 import systemContainer
+import threading
+
+"""
+A lock is required to mutate the set of containers/ports
+"""
+__manager_lock = threading.Lock()
 
 """
 A registry of systems known to Houston, indexed by their identifiers.
@@ -11,7 +17,7 @@ __systems = {}
 """
 The pool of ports that are open and available to be used.
 """
-__port_pool = set(i for i in range(3000, 3500))
+__port_pool = set(i for i in range(10000, 10500))
 
 """
 The set of containers that are actively in use.
@@ -33,6 +39,26 @@ def registerSystem(systm):
     __systems[iden] = systm
 
 
+def setPortRange(start, end):
+    """
+    Updates the set of ports that are available to Houston. This should not
+    be called whilst containers are being provisioned, or missions are being
+    executed.
+    """
+    global __port_pool
+    global __manager_lock
+
+    assert (isinstance(start, int) and start is not None)
+    assert (start >= 1024 and start < 65535)
+    assert (isinstance(end, int) and end is not None)
+    assert (end >= 1024 and end < 65535)
+    assert (start < end)  
+
+    __manager_lock.acquire()
+    __port_pool = set(i for i in range(start, end))
+    __manager_lock.release()
+
+
 def getSystem(identifier):
     """
     Returns the system associated with a given identifier.
@@ -48,15 +74,19 @@ def destroyContainer(cntr):
     """
     global __port_pool
     global __containers
+    global __manager_lock
 
     assert (isinstance(cntr, systemContainer.SystemContainer) and not cntr is None)
 
-    __port_pool.add(cntr.port())
+    __manager_lock.acquire()
+    port = cntr.port()
+    __port_pool.add(port)
     __containers.remove(cntr)
     cntr.destroy()
+    __manager_lock.release()
 
 
-def createContainer(systm, image):
+def createContainer(systm, image, verbose=False):
     """
     Constructs a fresh, ephemeral container for a given system using a
     specified Docker image.
@@ -64,11 +94,14 @@ def createContainer(systm, image):
     :param  systm:  the System object
     :param  image:  the name of the Docker image that should be used to spawn\
                     the container
+    :param  verbose:    a flag indicating whether the outputs of the container \
+                        should be printed to the stdout upon its destruction
 
     :returns    A new SystemContainer for the given system
     """
     global __port_pool
     global __containers
+    global __manager_lock
 
     assert (isinstance(systm, system.System))
     assert (not system is None)
@@ -76,12 +109,11 @@ def createContainer(systm, image):
     iden = systm.getIdentifier()
     assert (iden in __systems)
 
-    # TODO: ensure the port is returned to the pool once we're done with the
-    #       container
-    port = random.choice(list(__port_pool))
+    __manager_lock.acquire()
+    port = random.sample(__port_pool, 1)[0]
     __port_pool.remove(port)
-
-    container = systemContainer.SystemContainer(iden, image, port)
+    container = systemContainer.SystemContainer(iden, image, port, verbose=verbose)
     __containers.add(container)
+    __manager_lock.release()
 
     return container

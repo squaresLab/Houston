@@ -1,15 +1,21 @@
-import thread
-import time
 import copy
 import json
 import state
-import mission
+import timeit
+import signal
+import math
+
+from mission import Mission, MissionOutcome
+from action import ActionSchema, ActionOutcome, Action
+from branch import BranchID, Branch, BranchPath
+
+from util import TimeoutError
+
 
 class System(object):
     """
     Description of System.
     """
-
 
     def __init__(self, identifier, variables, schemas):
         """
@@ -20,22 +26,19 @@ class System(object):
         :param  variables:  a dictionary of system variables, indexed by name
         :param  schemas:    a dictionary of action schemas, indexed by name
         """
-        assert (isinstance(identifier, str) and not None)
-        assert (isinstance(variables, dict) and not None)
+        assert (isinstance(identifier, str) and identifier is not None)
+        assert (isinstance(variables, list) and variables is not None)
+        assert (isinstance(schemas, list) and schemas is not None)
+
         self.__identifier = identifier
-        self.__variables = variables
-        self.__schemas = schemas
+
+        self.__variables = {v.getName(): v for v in variables}
+        self.__schemas = {s.getName(): s for s in schemas}
 
 
     def installed(self):
         """
         Returns true if this system is installed on this machine.
-        """
-        raise NotImplementedError
-
-    def systemAlive(self):
-        """
-        Returns true if system is running.
         """
         raise NotImplementedError
 
@@ -45,6 +48,22 @@ class System(object):
         Returns the unique identifier (i.e., the name) for this system.
         """
         return self.__identifier
+
+
+    def getBranches(self):
+        """
+        Returns a list of the branches for this system.
+        """
+        return [b for s in self.__schemas.values() for b in s.getBranches()]
+
+
+    def getBranch(self, iden):
+        """
+        Returns an outcome branch for this sytem provided its identifier.
+        """
+        assert (isinstance(iden, BranchID) and iden is not None)
+        schema = self.__schemas[iden.getActionName()]
+        return schema.getBranch(iden)
 
 
     def setUp(self, mission):
@@ -73,57 +92,57 @@ class System(object):
                 MissionOutcome
         """
         assert (self.installed())
+        timeBeforeSetup = timeit.default_timer()
         self.setUp(msn)
+        totalSetupTime = timeit.default_timer() - timeBeforeSetup
 
         env = msn.getEnvironment()
+        outcomes = []
 
         try:
 
-            outcomes = []
+            # execute each action in sequence
             for action in msn.getActions():
                 schema = self.__schemas[action.getSchemaName()]
-                stateStart = self.getState()
-                stateCurrent = stateStart
 
-                # check for precondition violations
-                (satisfied, violations) = \
-                    schema.satisfiedPreconditions(action, stateStart, env)
-                if not satisfied:
-                    outcome = mission.ActionOutcome(action, False, stateStart, stateStart)
-                    outcomes.append(outcome)
-                    return mission.MissionOutcome(False, outcomes)
+                # compute expected state
+                initialState = self.getState()
 
-                # dispatch
-                # TODO: just pass the action object?
-                schema.dispatch(action.getValues())
+                # resolve the branch and compute the expected outcome
+                branch = schema.resolveBranch(action, initialState, env)
+                expected = branch.computeExpectedState(action, initialState, env)
+
+                # enforce a timeout
+                timeout = schema.computeTimeout(action, initialState, env)
+                signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
+                signal.alarm(int(math.ceil(timeout)))
+
+                timeBefore = timeit.default_timer()
+
+                try:
+                    schema.dispatch(self, action, initialState, env)
+                except TimeoutError:
+                    pass
+                finally:
+                    signal.alarm(0) # does this reset the alarm?
+
+                timeAfter = timeit.default_timer()
+                timeElapsed = timeAfter - timeBefore
+
                 print('Doing: {}'.format(action.getSchemaName()))
 
-                # loop until postconditions are satisfied, or an invariant is violated
-                while True:
-                    stateCurrent = self.getState()
+                # compare the observed and expected states
+                observed = self.getState()
+                passed = expected.isExpected(self.__variables, observed)
+                outcome = ActionOutcome(action, passed, initialState, observed, timeElapsed, branch.getID())
+                outcomes.append(outcome)
 
-                    # check for invariant violations
-                    (satisfied, violations) = \
-                        schema.satisfiedInvariants(action, stateCurrent, env)
-                    if not satisfied:
-                        outcome = mission.ActionOutcome(action, False, stateStart, stateCurrent)
-                        outcomes.append(outcome)
-                        return mission.MissionOutcome(False, outcomes)
-
-                    # check if postconditions are satisfied
-                    (satisfied, violations) = \
-                        schema.satisfiedPostConditions(action, stateCurrent, env)
-                    if satisfied:
-                        outcome = mission.ActionOutcome(action, True, stateStart, stateCurrent)
-                        outcomes.append(outcome)
-                        break
-
-                    time.sleep(0.5) # TODO: parameterise
-
-                    # TODO: enforce a time-out!\
-
-
-            return mission.MissionOutcome(True, outcomes)
+                if not passed:
+                    totalTime = timeit.default_timer() - timeBeforeSetup
+                    return MissionOutcome(False, outcomes, totalSetupTime, \
+                                                                        totalTime)
+            totalTime = timeit.default_timer() - timeBeforeSetup
+            return MissionOutcome(True, outcomes, totalSetupTime, totalTime)
 
         finally:
             self.tearDown(msn)
@@ -145,165 +164,3 @@ class System(object):
         Returns a copy of action schemas
         """
         return copy.deepcopy(self.__schemas)
-
-
-class ActionSchema(object):
-    """
-    Action schemas are responsible for describing the kinds of actions that
-    can be performed within a given system. Action schemas describe actions
-    both syntactically, in terms of parameters, and semantically, in terms of
-    preconditions, postconditions, and invariants.
-    """
-
-    def __init__(self, name, parameters, preconditions, invariants, postconditions,
-        estimators):
-        """
-        Constructs an ActionSchema object.
-
-        :param  name            name of the action schema
-        :param  parameters      a list of the parameters for this action schema
-        :param  preconditions   predicates that must be met before the action
-                                can be executed.
-        :param  invariants      predicates that should be met at all times during
-                                the execution of an action.
-        :param  postconditions  predicates that must be met after the action is
-                                completed.
-        :param  estimator       a list of state estimators.
-        """
-        assert (isinstance(name, str) and not name is None)
-        assert (len(name) > 0)
-        assert (isinstance(parameters, list) and not parameters is None)
-        assert (isinstance(preconditions, list) and not preconditions is None)
-        assert (isinstance(postconditions, list) and not postconditions is None)
-        assert (isinstance(invariants, list) and not invariants is None)
-        assert (isinstance(estimators, list) and not estimators is None)
-
-        self.__name           = name
-        self.__parameters     = parameters
-        self.__preconditions  = preconditions
-        self.__invariants     = invariants
-        self.__postconditions = postconditions
-        self.__estimators     = estimators
-
-
-    def getName(self):
-        """
-        Returns the name of this schema.
-        """
-        return self.__name
-
-
-    def dispatch(self, action):
-        """
-        Responsible for invoking an action belonging to this schema.
-
-        :param  action  an Action belonging to this schema
-        """
-        raise UnimplementedError
-
-
-    def getParameters(self):
-        """
-        Returns the parameters being hold for the current action schema. This is
-        used to generate actions
-        """
-        return copy.deepcopy(self.__parameters)
-
-
-    def getPreconditions(self):
-        """
-        Returns the preconditions being hold for the current action schema. This
-        is used to generate and validate actions.
-        """
-        return copy.deepcopy(self.__preconditions)
-
-
-    def satisfiedPostConditions(self, action, currentState, env):
-        """
-        Checks that the postconditions are met. Returns a tuple, with a boolean
-        holding the success or failure of the check, and a list with the name of
-        the postconditions that were not met (if any).
-
-        :param  action              the action that is to be executed.
-        :param  currentState        the state of the system immediately prior to
-                                    the execution of the action.
-        :param  env                 the environment in which the action will be
-                                    executed.
-        """
-        #print 'Doing postconditions. Action: {}'.format(parameters.getKind())
-
-        postconditionsFailed = []
-        success = True
-        for postcondition in self.__postconditions:
-            if not postcondition.check(action, currentState, env):
-                postconditionsFailed.append(postcondition.getName())
-                success = False
-        return (success, postconditionsFailed)
-
-
-    def satisfiedPreconditions(self, action, currentState, env):
-        """
-        Checks that the preconditions are met. Returns a tuple, with a boolean
-        holding the success or failure of the check, and a list with the name of
-        the preconditions that were not met (if any).
-
-        :param  action              the action that is to be executed.
-        :param  currentState        the state of the system immediately prior to
-                                    the execution of the action.
-        :param  env                 the environment in which the action will be
-                                    executed.
-        """
-        #print 'Doing precondition. Action: {}'.format(parameters.getKind())
-
-        preconditionsFailed = []
-        success = True
-        for precondition in self.__preconditions:
-            if not precondition.check(action, currentState, env):
-                preconditionsFailed.append(precondition.getName())
-                success = False
-        return (success, preconditionsFailed)
-
-
-    def satisfiedInvariants(self, action, currentState, env):
-        """
-        Checks that the invariants are met. Returns a tuple, with a boolean
-        holding the success or failure of the check, and a list with the name of
-        the invariants that were not met (if any).
-
-        :param  action              the action that is to be executed.
-        :param  currentState        the state of the system immediately prior to
-                                    the execution of the action.
-        :param  env                 the environment in which the action will be
-                                    executed.
-        """
-        #print 'Doing invariants. Action: {}'.format(parameters.getKind())
-        invariantsFailed    = []
-        success             = True
-        for invariant in self.__invariants:
-            if not invariant.check(action, currentState, env):
-                invariantsFailed.append(invariant.getName())
-                success = False
-        return (success, invariantsFailed)
-
-
-    def estimateState(self, action, initialState, environment):
-        """
-        Estimates the resulting system state after executing an action
-        belonging to this schema in a given initial state.
-
-        :param  action:         the action for which an outcome should be \
-                                estimated.
-        :param  initialState:   the initial state of the system, immediately \
-                                prior to executing the action.
-        :param  environment:    a description of the environment in which the \
-                                action should take place.
-
-        :return An estimate of the resulting system state
-        """
-        values = initialState.getValues()
-
-        for estimator in self.__estimators:
-            var = estimator.getVariableName()
-            values[var] = estimator.estimate(action, initialState, environment)
-
-        return state.State(values)

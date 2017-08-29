@@ -8,7 +8,20 @@ import time
 from math import acos, atan2, cos, pi, sqrt
 from subprocess import PIPE, Popen, call, check_call
 
-import pexpect
+try:
+    import pexpect
+except ImportError:
+    pass
+
+
+class TimeoutError(Exception):
+    @staticmethod
+    def produce(msg=None):
+        raise TimeoutError(msg)
+
+def printflush(s):
+    print(s)
+    sys.stdout.flush()
 
 
 if (sys.version_info[0] >= 3):

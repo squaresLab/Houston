@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='houston',
-    version='0.0.1',
+    version='0.1.0',
     description='TBA',
     long_description='TBA',
     # need to modify to have multiple authors!
@@ -12,8 +12,17 @@ setup(
     url='https://github.com/ChrisTimperley/Houston',
     license='mit',
     #dependency_links=['https://hg.python.org/cpython/raw-file/2.7/Lib/xmlrpclib.py#egg=xmlrpclib-2.7'],
-    install_required=['flask', 'docker'],
-    packages=['houston'],
+    install_required = [
+        'flask', 'docker', 'pexpect', 'geopy'
+    ],
+    packages = [
+        'houston', 'houston.ardu', 'houston.ardu.copter'
+    ],
+    package_dir = {
+        'houston': 'houston',
+        'houston.ardu': 'houston/ardu',
+        'houston.ardu.copter': 'houston/ardu/copter'
+    },
     entry_points = {
         'console_scripts': [ 'houstonserver = houston.server:main' ]
     }
