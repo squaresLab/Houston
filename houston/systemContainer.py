@@ -38,7 +38,7 @@ class SystemContainer(object):
         __container (docker.Container): the Docker container underlying this
             system container.
     """
-    def __init__(self, system, image, port, verbose=True):
+    def __init__(self, system, image, port, verbose=False):
         """
         Constructs a new SystemContainer
 
@@ -127,7 +127,6 @@ class SystemContainer(object):
         Executes a given mission inside this container and returns the result.
         """
         assert(isinstance(msn, mission.Mission))
-        assert(not msn is None)
 
         jsn = {'system': self.__system.toJSON(),
                'mission': msn.toJSON()}
