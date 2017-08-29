@@ -78,6 +78,13 @@ class ArduCopter(houston.system.System):
     def installed(self):
         return ARDUPILOT_INSTALLED
 
+    
+    def getVehicle(self):
+        """
+        Uses dronekit to provide a connection to the system under test
+        """
+        return self.__vehicle
+
 
     def setUp(self, mission):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
