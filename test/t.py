@@ -94,7 +94,7 @@ try:
     cntr = None
     cntr = mgr.createContainer(system, image, verbose=True)
     outcome = cntr.execute(mission)
-    print(outcome)
+    #print(outcome.toJSON())
 finally:
     if cntr:
         mgr.destroyContainer(cntr)

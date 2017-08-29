@@ -90,7 +90,6 @@ class SystemContainer(object):
         # blocks until server is running
         for line in self.__container.logs(stream=True):
             line = line.strip()
-            print(line)
             if line.startswith('* Running on http://'):
                 break
 
@@ -136,13 +135,12 @@ class SystemContainer(object):
         for attempts in range(MAX_NUM_ATTEMPTS):
             try:
                 r = requests.post(url, json=jsn)
-                print(r.json())
                 outcome = mission.MissionOutcome.fromJSON(r.json())
-                if self.__verbose:
-                    print(outcome.toJSON())
+                #if self.__verbose:
+                #    print(outcome.toJSON())
                 return outcome
             except ValueError:
-                print("mission attempt failed: resetting container")
+                printflush("mission attempt failed: resetting container")
                 self.reset()
 
         totalTime = timeit.default_timer() - startTime
@@ -154,7 +152,7 @@ class SystemContainer(object):
         Destroys the attached Docker container.
         """
         if self.__verbose:
-            print(self.__container.logs(stdout=True, stderr=True))
+            printflush(self.__container.logs(stdout=True, stderr=True))
 
         if self.__container is not None:
             self.__container.remove(force=True)
