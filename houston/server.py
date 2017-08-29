@@ -8,7 +8,7 @@ import sys
 import flask
 import json
 import mgr as manager
-import ardupilot
+import ardu
 
 
 app = flask.Flask(__name__)
