@@ -23,6 +23,16 @@ class System(object):
         __schemas (dict of ActionSchema): TODO
     """
 
+    @staticmethod
+    def fromJSON(jsn):
+        """
+        Constructs a system from its JSON description.
+        """
+        assert (isinstance(jsn, dict))
+        cls = mgr.getSystemClassByName(jsn['type'])
+        return cls.fromJSON(jsn)
+
+
     def __init__(self, variables, schemas):
         """
         Constructs a new System.
