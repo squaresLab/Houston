@@ -120,8 +120,8 @@ class SystemContainer(object):
         assert(isinstance(msn, mission.Mission))
         assert(not msn is None)
 
-        jsn = msn.toJSON()
-        jsn = {'system': self.system(), 'mission': jsn}
+        jsn = {'system': self.__system.toJSON(),
+               'mission': msn.toJSON()}
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
         startTime = timeit.default_timer()
 
