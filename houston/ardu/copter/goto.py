@@ -1,7 +1,7 @@
-from houton.action import ActionSchema, Parameter, Action, ActionGenerator
-from houston.branch import Branch
+from houston.action import ActionSchema, Parameter, Action, ActionGenerator
+from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
-from houston.util import DiscreteValueRange
+from houston.valueRange import ContinuousValueRange
 
 
 class GoToSchema(ActionSchema):
@@ -51,7 +51,7 @@ class GotoNormally(Branch):
             Estimator('longitude', lambda action, state, env: state.read('longitude') if state.read('mode') == 'LOITER' else action.read('longitude')),
             Estimator('altitude', lambda action, state, env: 0.0 if state.read('mode') == 'LOITER' else action.read('altitude'))
         ]
-        super(GotoNormalBranch, self).__init__('normal', schema, estimators)
+        super(GotoNormally, self).__init__('normal', schema, estimators)
 
 
     def computeTimeout(self, action, state, environment):

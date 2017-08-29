@@ -6,11 +6,16 @@ import subprocess as sub
 import math
 import geopy
 import geopy.distance
+import houston.system
 import houston.manager as mgr
 
-from util       import printflush
-from system     import System
-from state      import InternalVariable, ExternalVariable
+import arm
+import goto
+import setmode
+import takeoff
+
+from houston.util import printflush
+from houston.state import InternalVariable, ExternalVariable
 
 # Attempt to import the modules necessary to interact with ArduPilot. If the
 # necessary modules can't be imported, we report ArduPilot as uninstalled and
@@ -34,7 +39,7 @@ TIME_PER_METER_TRAVELED = 1.0
 CONSTANT_TIMEOUT_OFFSET = 1.0
 
 
-class ArduCopter(System):
+class ArduCopter(houston.system.System):
     """
     Description of the ArduCopter system
 
@@ -70,10 +75,10 @@ class ArduCopter(System):
             InternalVariable('mode', lambda : self.__vehicle.mode.name)
 
         schemas = {
-            'goto'   : GoToSchema(),
-            'takeoff': TakeoffSchema(),
-            'arm'    : ArmSchema(),
-            'setmode'   : SetModeSchema()
+            'goto': goto.GoToSchema(),
+            'takeoff': takeoff.TakeoffSchema(),
+            'arm' : arm.ArmSchema(),
+            'setmode': setmode.SetModeSchema()
         }
 
         super(ArduCopter, self).__init__('arducopter', variables, schemas)

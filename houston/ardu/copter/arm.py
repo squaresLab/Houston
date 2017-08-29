@@ -1,7 +1,12 @@
-class ArmActionSchema(ActionSchema):
+from houston.action import ActionSchema, Parameter, Action, ActionGenerator
+from houston.branch import Branch, IdleBranch
+from houston.state import Estimator, FixedEstimator
+from houston.valueRange import DiscreteValueRange
+
+
+class ArmSchema(ActionSchema):
     """
-    TODO: docstring for ArmActionSchema.
-    
+    TODO: docstring
     
     Behaviours:
    
@@ -13,10 +18,10 @@ class ArmActionSchema(ActionSchema):
     def __init__(self):
         parameters = []
         branches = [
-            ArmNormalBranch(self),
+            ArmNormally(self),
             IdleBranch(self)
         ]
-        super(ArmActionSchema, self).__init__('arm', parameters, branches)
+        super(ArmSchema, self).__init__('arm', parameters, branches)
 
 
     def dispatch(self, action, state, environment):
@@ -37,7 +42,7 @@ class ArmActionSchema(ActionSchema):
             time.sleep(0.1)
 
 
-class ArmNormalBranch(Branch):
+class ArmNormally(Branch):
     """
     Description.
     """
@@ -45,7 +50,7 @@ class ArmNormalBranch(Branch):
         estimators = [
             FixedEstimator('armed', True)
         ]
-        super(ArmNormalBranch, self).__init__('normal', schema, estimators)
+        super(ArmNormally, self).__init__('normal', schema, estimators)
 
 
     def computeTimeout(self, action, state, environment):
