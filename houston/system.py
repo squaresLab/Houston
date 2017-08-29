@@ -16,6 +16,11 @@ from util import TimeoutError
 class System(object):
     """
     Description of System.
+
+
+    Attributes:
+        __variables (dict of Variable): TODO
+        __schemas (dict of ActionSchema): TODO
     """
 
     def __init__(self, variables, schemas):
