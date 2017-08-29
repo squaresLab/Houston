@@ -90,7 +90,7 @@ class ArduCopter(houston.system.System):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
         args = [
             "--model=quad",
-            "--home=-35.362938,149.165085,584,270",
+            "--home=-35.362938,149.165085,584,270", # TODO: HARDCODED
             "--speedup={}".format(self.__speedup)
         ]
 

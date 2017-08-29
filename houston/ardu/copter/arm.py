@@ -1,3 +1,5 @@
+import arm
+
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
@@ -24,21 +26,21 @@ class ArmSchema(ActionSchema):
         super(ArmSchema, self).__init__('arm', parameters, branches)
 
 
-    def dispatch(self, action, state, environment):
-        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
+    def dispatch(self, system, action, state, environment):
+        vehicle = system.getVehicle()
+        msg = vehicle.message_factory.command_long_encode(
             0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, #command
-            0,    #confirmation
-            1,    # param 1
-            0,    # param 2,
-            0,    # param 3,
-            0,    # param 4,
-            0, 0, 0)    # param 5 ~ 7 not used
-            # send command to vehicle
-        DRONEKIT_SYSTEM.send_mavlink(msg)
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0, 0, 0)
+        vehicle.send_mavlink(msg)
 
-        #DRONEKIT_SYSTEM.armed = True
-        while not DRONEKIT_SYSTEM.armed:
+        # TODO: why aren't we using "DRONEKIT_SYSTEM.armed = True"?
+        while not vehicle.armed:
             time.sleep(0.1)
 
 
