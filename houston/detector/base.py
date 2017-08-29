@@ -1,3 +1,4 @@
+import time
 import timeit
 import random
 import copy
