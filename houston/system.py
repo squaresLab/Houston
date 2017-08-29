@@ -36,6 +36,13 @@ class System(object):
         self.__schemas = {s.getName(): s for s in schemas}
 
 
+    def toJSON(self):
+        """
+        Returns a JSON-based description of this system.
+        """
+        raise NotImplementedError
+
+
     def installed(self):
         """
         Returns true if this system is installed on this machine.
