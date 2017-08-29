@@ -182,11 +182,17 @@ class ActionSchema(object):
         return self.__branches[iden.getBranchName()]
 
 
-    def dispatch(self, action, state, environment):
+    def dispatch(self, system, action, state, environment):
         """
         Responsible for invoking an action belonging to this schema.
 
-        :param  action  an Action belonging to this schema
+        Args:
+            system (System): the system under test
+            action (Action): the action that is to be dispatched
+            state (State): the state of the system immediately prior to the
+                call to this method
+            environment (Environment): a description of the environment in
+                which the action is being performed
         """
         raise UnimplementedError
 

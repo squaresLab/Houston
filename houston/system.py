@@ -120,7 +120,7 @@ class System(object):
                 timeBefore = timeit.default_timer()
 
                 try:
-                    schema.dispatch(action, initialState, env)
+                    schema.dispatch(self, action, initialState, env)
                 except TimeoutError:
                     pass
                 finally:
