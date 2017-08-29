@@ -89,9 +89,10 @@ class Parameter(object):
                 parameter, given as a ValueRange object.
         """
         # TODO: type checking
+        assert (isinstance(name, str) or isinstance(name, unicode))
+        assert (isinstance(valueRange, valueRange.ValueRange))
         self.__name = name
         self.__valueRange = valueRange
-        self.__description = description
 
 
     def getValueRange(self):
