@@ -30,7 +30,6 @@ except ImportError as e:
     print("Import warning: {}".format(e))
 
 
-SPEEDUP = 3 # TODO: should be a system parameter
 TIME_PER_METER_TRAVELED = 1.0
 CONSTANT_TIMEOUT_OFFSET = 1.0
 
@@ -49,6 +48,7 @@ class ArduCopter(System):
     def __init__(self):
         self.__sitl = None
         self.__vehicle = None
+        self.__speedup = 3
 
         variables = {}
         # TODO: this is very tricky; we'll need to do something clever here
@@ -88,19 +88,23 @@ class ArduCopter(System):
         args = [
             "--model=quad",
             "--home=-35.362938,149.165085,584,270",
-            "--speedup={}".format(SPEEDUP)
+            "--speedup={}".format(self.__speedup)
         ]
 
         binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter') # TODO: HARDCODED
         self.__sitl = dronekit_sitl.SITL(binary,
                                          defaults_filepath='/experiment/source/Tools/autotest/default_params/copter.parm') # TODO: HARDCODED
-        self.__sitl.launch(args, verbose=True, await_ready=True, restart=False,  wd='/experiment/')
+        self.__sitl.launch(args,
+                           verbose=True,
+                           await_ready=True,
+                           restart=False,
+                           wd='/experiment/') # TODO: HARDCODED
 
         connectString = __sitl.connection_string()
         printflush(connectString)
-
         self.__vehicle = dronekit.connect(connectString, wait_ready=True)
         self.__vehicle.wait_ready('autopilot_version')
+
         vehicleMode = dronekit.VehicleMode('GUIDED')
         self.__vehicle.mode = vehicleMode
         self.__vehicle.parameters['DISARM_DELAY'] = 0
