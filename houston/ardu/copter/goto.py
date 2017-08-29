@@ -1,3 +1,8 @@
+import time
+import math
+import geopy
+import geopy.distance
+
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
@@ -20,25 +25,26 @@ class GoToSchema(ActionSchema):
         super(GoToSchema, self).__init__('goto', parameters, branches)
 
 
-    def dispatch(self, action, state, environment):
-        DRONEKIT_SYSTEM.simple_goto(LocationGlobalRelative(
+    def dispatch(self, system, action, state, environment):
+        vehicle = system.getVehicle()
+        vehicle.simple_goto(LocationGlobalRelative(
             action.read('latitude'),
             action.read('longitude'),
             action.read('altitude'))
         )
-        currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
-        currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+        currentLat  = vehicle.location.global_relative_frame.lat
+        currentLon = vehicle.location.global_relative_frame.lon
         toLocation = (action.getValue('latitude'), action.getValue('longitude'))
         fromLocation = (currentLat, currentLon)
 
         while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3:
-            time.sleep(.2)
-            currentLat  = DRONEKIT_SYSTEM.location.global_relative_frame.lat
-            currentLon = DRONEKIT_SYSTEM.location.global_relative_frame.lon
+            time.sleep(0.2)
+            currentLat  = vehicle.location.global_relative_frame.lat
+            currentLon = vehicle.location.global_relative_frame.lon
 
         while math.fabs(currentAlt - action.read('altitude')) > 0.3:
-            time.sleep(.2)
-            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+            time.sleep(0.2)
+            currentAlt = vehicle.location.global_relative_frame.alt
 
 
 class GotoNormally(Branch):
