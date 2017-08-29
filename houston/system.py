@@ -4,6 +4,7 @@ import state
 import timeit
 import signal
 import math
+import manager as mgr
 
 from mission import Mission, MissionOutcome
 from action import ActionSchema, ActionOutcome, Action
@@ -17,20 +18,15 @@ class System(object):
     Description of System.
     """
 
-    def __init__(self, identifier, variables, schemas):
+    def __init__(self, variables, schemas):
         """
         Constructs a new System.
 
-        :param  identifier: a unique string identifier (i.e., a name) for this\
-                            system
         :param  variables:  a dictionary of system variables, indexed by name
         :param  schemas:    a dictionary of action schemas, indexed by name
         """
-        assert (isinstance(identifier, str) and identifier is not None)
         assert (isinstance(variables, list) and variables is not None)
         assert (isinstance(schemas, list) and schemas is not None)
-
-        self.__identifier = identifier
 
         self.__variables = {v.getName(): v for v in variables}
         self.__schemas = {s.getName(): s for s in schemas}
@@ -40,7 +36,9 @@ class System(object):
         """
         Returns a JSON-based description of this system.
         """
-        raise NotImplementedError
+        return {
+            'type': mgr.getClassNameOfSystem(self)
+        }
 
 
     def installed(self):
@@ -48,13 +46,6 @@ class System(object):
         Returns true if this system is installed on this machine.
         """
         raise NotImplementedError
-
-
-    def getIdentifier(self):
-        """
-        Returns the unique identifier (i.e., the name) for this system.
-        """
-        return self.__identifier
 
 
     def getBranches(self):
