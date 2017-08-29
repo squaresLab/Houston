@@ -5,6 +5,8 @@ import branch
 import state
 import random
 
+from valueRange import ValueRange
+
 
 class Action(object):
     """
@@ -90,7 +92,7 @@ class Parameter(object):
         """
         # TODO: type checking
         assert (isinstance(name, str) or isinstance(name, unicode))
-        assert (isinstance(valueRange, valueRange.ValueRange))
+        assert (isinstance(valueRange, ValueRange))
         self.__name = name
         self.__valueRange = valueRange
 
