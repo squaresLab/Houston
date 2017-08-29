@@ -1,7 +1,14 @@
+import time
+
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
 from houston.valueRange import ContinuousValueRange
+
+try:
+    import dronekit
+except ImportError:
+    pass
 
 
 class TakeoffSchema(ActionSchema):
@@ -23,25 +30,20 @@ class TakeoffSchema(ActionSchema):
         super(TakeoffSchema, self).__init__('takeoff', parameters, branches)
 
 
-    def dispatch(self, action, state, environment):
-        msg = DRONEKIT_SYSTEM.message_factory.command_long_encode(
-            0, 0,    # target_system, target_component
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, #command
-            0,    #confirmation
-            1,    # param 1
-            0,    # param 2,
-            0,    # param 3,
-            0,    # param 4,
-            0, 0, action.read('altitude'))    # param 5 ~ 7 not used
-            # send command to vehicle
-        DRONEKIT_SYSTEM.send_mavlink(msg)
+    def dispatch(self, system, action, state, environment):
+        vehicle = system.getVehicle()
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            0, 1, 0, 0, 0, 0, 0, action.read('altitude'))
+        vehicle.send_mavlink(msg)
 
         expectedAlt = action.read('altitude')
-        currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+        currentAlt = vehicle.location.global_relative_frame.alt
 
-        while currentAlt < expectedAlt - 0.3: # OFFSET
-            time.sleep(.1)
-            currentAlt = DRONEKIT_SYSTEM.location.global_relative_frame.alt
+        while currentAlt < (expectedAlt - 0.3): # OFFSET
+            time.sleep(0.1)
+            currentAlt = vehicle.location.global_relative_frame.alt
 
 
 class TakeoffNormally(Branch):
