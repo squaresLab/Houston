@@ -1,4 +1,8 @@
 from base import BugDetectorSummary, BugDetector
+from houston.system import System
+from houston.branch import BranchID, BranchPath
+from houston.mission import Mission, MissionOutcome
+from houston.action import ActionOutcome, Action, ActionGenerator
 
 
 class TreeBasedBugDetectorSummary(BugDetectorSummary):

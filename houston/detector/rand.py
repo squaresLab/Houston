@@ -1,4 +1,4 @@
-from houston.base import BugDetector, BugDetectorSummary
+from houston.detector.base import BugDetector, BugDetectorSummary
 from houston.mission import Mission
 
 

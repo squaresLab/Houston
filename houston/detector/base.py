@@ -2,15 +2,14 @@ import timeit
 import random
 import copy
 import threading
-import manager as mgr
-import houston.system # TODO this is a bad module name
+import houston.manager as mgr
 
 
-from system import System
-from branch import BranchID, BranchPath
 from resources import ResourceUsage, ResourceLimits
-from mission import Mission, MissionOutcome
-from action import ActionOutcome, Action, ActionGenerator
+from houston.system import System
+from houston.branch import BranchID, BranchPath
+from houston.mission import Mission, MissionOutcome
+from houston.action import ActionOutcome, Action, ActionGenerator
 
 
 class BugDetectorSummary(object):
@@ -155,7 +154,7 @@ class MissionPoolWorker(threading.Thread):
 
     def __resetCounter(self):
         self.__counter = 0
-        self.__reset = random.randint(3, 5)
+        self.__reset = random.randint(3, 5) # TODO: use RNG
 
 
     def __prepareContainer(self):
