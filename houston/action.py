@@ -79,7 +79,7 @@ class Parameter(object):
     Docstring.
     """
 
-    def __init__(self, name, valueRange, description='N/A'):
+    def __init__(self, name, valueRange):
         """
         Constructs a Parameter object.
 
@@ -87,7 +87,6 @@ class Parameter(object):
             name (str):                 the name of this parameter.
             valueRange (ValueRange):    the range of possible values for this
                 parameter, given as a ValueRange object.
-            description (str):          a short description of the parameter.
         """
         # TODO: type checking
         self.__name = name
@@ -115,13 +114,6 @@ class Parameter(object):
         Returns the type of this parameter
         """
         return self.__valueRange.getType()
-
-
-    def getDescription(self):
-        """
-        Returns a description of this parameter
-        """
-        return self.__description
 
 
     def getName(self):
