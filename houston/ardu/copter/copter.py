@@ -6,14 +6,13 @@ import subprocess as sub
 import math
 import geopy
 import geopy.distance
-import houston.system
-import houston.manager as mgr
 
 import arm
 import goto
 import setmode
 import takeoff
 
+from houston.system import System
 from houston.util import printflush
 from houston.state import InternalVariable, ExternalVariable
 
@@ -40,7 +39,7 @@ TIME_PER_METER_TRAVELED = 1.0
 CONSTANT_TIMEOUT_OFFSET = 1.0
 
 
-class ArduCopter(houston.system.System):
+class ArduCopter(System):
     """
     Description of the ArduCopter system
 
@@ -152,4 +151,4 @@ class ArduCopter(houston.system.System):
 
 
 # Register the ArduCopter system type
-mgr.registerSystemClass('arducopter', ArduCopter)
+System.register('arducopter', ArduCopter)

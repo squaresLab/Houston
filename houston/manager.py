@@ -10,11 +10,6 @@ A lock is required to mutate the set of containers/ports
 __manager_lock = threading.Lock()
 
 """
-A registry of system classes known to Houston, indexed by their identifiers.
-"""
-__systemClasses = {}
-
-"""
 The pool of ports that are open and available to be used.
 """
 __port_pool = set(i for i in range(10000, 10500))
@@ -23,18 +18,6 @@ __port_pool = set(i for i in range(10000, 10500))
 The set of containers that are actively in use.
 """
 __containers = set()
-
-
-def registerSystemClass(name, cls):
-    """
-    Registers a system class with Houston.
-
-    @TODO   we could perform this automatically using magic methods / class hooks
-    """
-    global __systemClasses
-    if name in __systemClasses:
-        raise Error("system class already registered with name: {}".format(name))
-    __systemClasses[name] = cls
 
 
 def setPortRange(start, end):
@@ -55,35 +38,6 @@ def setPortRange(start, end):
     __manager_lock.acquire()
     __port_pool = set(i for i in range(start, end))
     __manager_lock.release()
-
-
-def getClassNameOfSystem(systm):
-    """
-    Returns the name of the system class for a given system.
-    """
-    assert (isinstance(systm, system.System))
-    cls = type(systm)
-    return getNameOfSystemClass(cls)
-
-
-def getNameOfSystemClass(cls):
-    """
-    Returns the name associated with a given system class.
-    """
-    for (n, kls) in __systemClasses.items():
-        if kls == cls:
-            return n
-
-    err = "attempted to determine name of unregistered system class: {}".format(cls)
-    raise Exception(cls)
-
-
-def getSystemClassByName(name):
-    """
-    Returns the system class associated with a given name.
-    """
-    assert (isinstance(name, str) or isinstance(name, unicode))
-    return __systemClasses[name]
 
 
 def destroyContainer(cntr):

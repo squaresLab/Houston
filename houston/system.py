@@ -12,7 +12,6 @@ from branch import BranchID, Branch, BranchPath
 
 from util import TimeoutError
 
-
 class System(object):
     """
     Description of System.
@@ -23,13 +22,30 @@ class System(object):
         __schemas (dict of ActionSchema): TODO
     """
 
+
+    """
+    A registry of system types known to Houston, indexed by name.
+    """
+    _system_types = {}
+
+
+    @staticmethod
+    def register(name, cls):
+        """
+        Registers a system type under a given name.
+        """
+        if name in System._system_types:
+            raise Error("system class already registered with name: {}".format(name))
+        System._system_types[name] = cls
+
+
     @staticmethod
     def fromJSON(jsn):
         """
         Constructs a system from its JSON description.
         """
         assert (isinstance(jsn, dict))
-        cls = mgr.getSystemClassByName(jsn['type'])
+        cls = System._system_types[jsn['type']]
         return cls.fromJSON(jsn)
 
 
@@ -46,13 +62,26 @@ class System(object):
         self.__variables = {v.getName(): v for v in variables}
         self.__schemas = {s.getName(): s for s in schemas}
 
+    
+    def typeName(self):
+        """
+        Returns the name used by the type of this system.
+        """
+        cls = type(self)
+        for (n, kls) in System._system_types.items():
+            if kls == cls:
+                return n
+
+        err = "attempted to determine name of unregistered system class: {}".format(cls)
+        raise Exception(cls)
+
 
     def toJSON(self):
         """
         Returns a JSON-based description of this system.
         """
         return {
-            'type': mgr.getClassNameOfSystem(self)
+            'type': self.typeName()
         }
 
 
