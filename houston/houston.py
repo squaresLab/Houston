@@ -7,7 +7,7 @@ import threading
 """
 A lock is required to mutate the set of containers/ports
 """
-manager_lock = threading.Lock()
+__manager_lock = threading.Lock()
 
 """
 A registry of systems known to Houston, indexed by their identifiers.
@@ -46,7 +46,7 @@ def setPortRange(start, end):
     executed.
     """
     global __port_pool
-    global manager_lock
+    global __manager_lock
 
     assert (isinstance(start, int) and start is not None)
     assert (start >= 1024 and start < 65535)
@@ -54,9 +54,9 @@ def setPortRange(start, end):
     assert (end >= 1024 and end < 65535)
     assert (start < end)  
 
-    manager_lock.acquire()
+    __manager_lock.acquire()
     __port_pool = set(i for i in range(start, end))
-    manager_lock.release()
+    __manager_lock.release()
 
 
 def getSystem(identifier):
@@ -74,16 +74,16 @@ def destroyContainer(cntr):
     """
     global __port_pool
     global __containers
-    global manager_lock
+    global __manager_lock
 
     assert (isinstance(cntr, systemContainer.SystemContainer) and not cntr is None)
 
-    manager_lock.acquire()
+    __manager_lock.acquire()
     port = cntr.port()
     __port_pool.add(port)
     __containers.remove(cntr)
     cntr.destroy()
-    manager_lock.release()
+    __manager_lock.release()
 
 
 def createContainer(systm, image, verbose=False):
@@ -101,7 +101,7 @@ def createContainer(systm, image, verbose=False):
     """
     global __port_pool
     global __containers
-    global manager_lock
+    global __manager_lock
 
     assert (isinstance(systm, system.System))
     assert (not system is None)
@@ -109,11 +109,11 @@ def createContainer(systm, image, verbose=False):
     iden = systm.getIdentifier()
     assert (iden in __systems)
 
-    manager_lock.acquire()
+    __manager_lock.acquire()
     port = random.sample(__port_pool, 1)[0]
     __port_pool.remove(port)
     container = systemContainer.SystemContainer(iden, image, port, verbose=verbose)
     __containers.add(container)
-    manager_lock.release()
+    __manager_lock.release()
 
     return container
