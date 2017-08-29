@@ -1,6 +1,10 @@
+"""
+TODO: module description
+"""
 import branch
 import state
 import random
+
 
 class Action(object):
     """
@@ -22,8 +26,9 @@ class Action(object):
         """
         Constructs an Action description.
 
-        :param  kind    the name of the schema to which the action belongs
-        :param  values  a dictionary of parameter values for the action
+        Args:
+            kind    (str):  the name of the schema to which the action belongs
+            values  (dict): a dictionary of parameter values for the action
         """
         assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
         assert (isinstance(values, dict) and not values is None)
@@ -78,10 +83,11 @@ class Parameter(object):
         """
         Constructs a Parameter object.
 
-        :param  name:           the name of this parameter
-        :param  valueRange:     the range of possible values for this parameter,\
-                                given as a ValueRange object.
-        :param  description:    a short description of the parameter
+        Args:
+            name (str):                 the name of this parameter.
+            valueRange (ValueRange):    the range of possible values for this
+                parameter, given as a ValueRange object.
+            description (str):          a short description of the parameter.
         """
         # TODO: type checking
         self.__name = name
@@ -137,10 +143,12 @@ class ActionSchema(object):
         """
         Constructs an ActionSchema object.
 
-        :param  name            name of the action schema
-        :param  parameters      a list of the parameters for this action schema
-        :param  branches        a list of the possible outcomes for actions \
-                                belonging to this schema. If none of the \
+        Args:
+            name (str): name of the action schema
+            parameters (list of Parameter): a list of the parameters for this
+                action schema
+            branches (list of Branch): a list of the possible outcomes for
+                actions belonging to this schema.
 
         """
         assert (isinstance(name, str) and not name is None)
