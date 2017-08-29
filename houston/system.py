@@ -26,11 +26,14 @@ class System(object):
         :param  variables:  a dictionary of system variables, indexed by name
         :param  schemas:    a dictionary of action schemas, indexed by name
         """
-        assert (isinstance(identifier, str) and not None)
-        assert (isinstance(variables, dict) and not None)
+        assert (isinstance(identifier, str) and identifier is not None)
+        assert (isinstance(variables, list) and variables is not None)
+        assert (isinstance(schemas, list) and schemas is not None)
+
         self.__identifier = identifier
-        self.__variables = variables
-        self.__schemas = schemas
+
+        self.__variables = {v.getName(): v for v in variables}
+        self.__schemas = {s.getName(): s for s in schemas}
 
 
     def installed(self):

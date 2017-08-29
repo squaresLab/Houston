@@ -55,31 +55,22 @@ class ArduCopter(houston.system.System):
         self.__vehicle = None
         self.__speedup = 3
 
-        variables = {}
-        # TODO: this is very tricky; we'll need to do something clever here
-        variables['homeLatitude'] = \
-            InternalVariable('homeLatitude', lambda: -35.362938) # Fixed
-        variables['homeLongitude'] = \
-            InternalVariable('homeLongitude', lambda: 149.165085) # Fixed
-        variables['altitude'] = \
-            InternalVariable('altitude', lambda: self.__vehicle.location.global_relative_frame.alt, 1.0)
-        variables['latitude'] = \
-            InternalVariable('latitude', lambda: self.__vehicle.location.global_relative_frame.lat, 0.00002)
-        variables['longitude'] = \
-            InternalVariable('longitude', lambda: self.__vehicle.location.global_relative_frame.lon, 0.00002)
-        variables['armable'] = \
-            InternalVariable('armable', lambda: self.__vehicle.is_armable)
-        variables['armed'] = \
-            InternalVariable('armed', lambda: self.__vehicle.armed)
-        variables['mode'] = \
-            InternalVariable('mode', lambda : self.__vehicle.mode.name)
-
-        schemas = {
-            'goto': goto.GoToSchema(),
-            'takeoff': takeoff.TakeoffSchema(),
-            'arm' : arm.ArmSchema(),
-            'setmode': setmode.SetModeSchema()
-        }
+        variables = [
+            InternalVariable('homeLatitude', lambda: -35.362938), # TODO: fixed
+            InternalVariable('homeLongitude', lambda: 149.165085), # TODO: fixed
+            InternalVariable('altitude', lambda: self.__vehicle.location.global_relative_frame.alt, 1.0),
+            InternalVariable('latitude', lambda: self.__vehicle.location.global_relative_frame.lat, 0.00002),
+            InternalVariable('longitude', lambda: self.__vehicle.location.global_relative_frame.lon, 0.00002),
+            InternalVariable('armable', lambda: self.__vehicle.is_armable),
+            InternalVariable('armed', lambda: self.__vehicle.armed),
+            InternalVariable('mode', lambda : self.__vehicle.mode.name),
+        ]
+        schemas = [
+            goto.GoToSchema(),
+            takeoff.TakeoffSchema(),
+            arm.ArmSchema(),
+            setmode.SetModeSchema()
+        ]
 
         super(ArduCopter, self).__init__('arducopter', variables, schemas)
 

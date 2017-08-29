@@ -195,7 +195,7 @@ class StateVariable(object):
     """
     Returns the name of this system variable
     """
-    def name(self):
+    def getName(self):
         return self.__name
 
 
