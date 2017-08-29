@@ -13,6 +13,7 @@ import mission
 import timeit
 
 from system import System
+from util import printflush
 
 
 # Find the location of Houston on disk
@@ -34,8 +35,10 @@ class SystemContainer(object):
         __image (string): the name of the Docker image used by this container.
         __port (int): the number of the port that the Houston server should be
             forwarded to (on the host machine).
+        __container (docker.Container): the Docker container underlying this
+            system container.
     """
-    def __init__(self, system, image, port, verbose=False):
+    def __init__(self, system, image, port, verbose=True):
         """
         Constructs a new SystemContainer
 
@@ -57,10 +60,15 @@ class SystemContainer(object):
         self.__system = system
         self.__port = port
         self.__image = image
+        self.__container = None
         self.__prepare()
 
 
     def __prepare(self):
+        if self.__container is not None and self.__verbose:
+            printflush(self.__container.logs(stdout=True, stderr=True))
+
+        print("preparing container: {}".format(self))
         command = 'houstonserver {}'.format(self.__port)
         ports = {self.__port: self.__port}
 
@@ -82,6 +90,7 @@ class SystemContainer(object):
         # blocks until server is running
         for line in self.__container.logs(stream=True):
             line = line.strip()
+            print(line)
             if line.startswith('* Running on http://'):
                 break
 
@@ -128,11 +137,13 @@ class SystemContainer(object):
         for attempts in range(MAX_NUM_ATTEMPTS):
             try:
                 r = requests.post(url, json=jsn)
+                print(r.json())
                 outcome = mission.MissionOutcome.fromJSON(r.json())
                 if self.__verbose:
                     print(outcome.toJSON())
                 return outcome
             except ValueError:
+                print("mission attempt failed: resetting container")
                 self.reset()
 
         totalTime = timeit.default_timer() - startTime
@@ -146,5 +157,6 @@ class SystemContainer(object):
         if self.__verbose:
             print(self.__container.logs(stdout=True, stderr=True))
 
-        self.__container.remove(force=True)
-        self.__container = None
+        if self.__container is not None:
+            self.__container.remove(force=True)
+            self.__container = None

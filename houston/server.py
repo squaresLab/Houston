@@ -7,8 +7,11 @@ execute this mission, and returns a summary of its outcome in a JSON format.
 import sys
 import flask
 import json
-import mgr as manager
+import manager as mgr
 import ardu
+
+from system import System
+from mission import Mission
 
 
 app = flask.Flask(__name__)
@@ -32,11 +35,10 @@ def executeMission():
     assert('mission' in flask.request.json)
 
     systm = flask.request.json['system']
-    systmCls = mgr.getSystemClassByName(systm['type'])
-    systm = systmCls.fromJSON(systm)
-
     msn = flask.request.json['mission']
-    msn = houston.mission.Mission.fromJSON(msn)
+
+    systm = System.fromJSON(systm)
+    msn = Mission.fromJSON(msn)
 
     outcome = systm.execute(msn)
     outcome = outcome.toJSON()
@@ -60,7 +62,7 @@ def main():
         exit(1)
 
     portNumber = int(sys.argv[1])
-    app.run(host='0.0.0.0', port=portNumber, use_reloader=False, debug=True)
+    app.run(host='0.0.0.0', port=portNumber, use_reloader=False) #debug=True)
 
 if __name__ == "__main__":
     main()

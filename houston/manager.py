@@ -70,7 +70,7 @@ def getNameOfSystemClass(cls):
     """
     Returns the name associated with a given system class.
     """
-    for (n, kls) in __systemClasses:
+    for (n, kls) in __systemClasses.items():
         if kls == cls:
             return n
 

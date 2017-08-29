@@ -14,7 +14,7 @@ setup(
     #dependency_links=['https://hg.python.org/cpython/raw-file/2.7/Lib/xmlrpclib.py#egg=xmlrpclib-2.7'],
     install_requires = [
         'flask',
-        'docker',
+        # 'docker',
         'pexpect',
         'geopy'
     ],
