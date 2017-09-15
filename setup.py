@@ -15,6 +15,7 @@ setup(
     install_requires = [
         'flask',
         # 'docker',
+        'pathos',
         'pexpect',
         'geopy'
     ],
