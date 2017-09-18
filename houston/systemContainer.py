@@ -142,6 +142,9 @@ class SystemContainer(object):
             except ValueError:
                 printflush("mission attempt failed: resetting container")
                 self.reset()
+            except:
+                printflush("Unexpected server error: {}".format(self.__container.logs()))
+                raise
 
         totalTime = timeit.default_timer() - startTime
         return mission.CrashedMissionOutcome(totalTime)
