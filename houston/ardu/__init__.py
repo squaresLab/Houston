@@ -1,4 +1,4 @@
-import base
-from copter import ArduCopter
-from rover import ArduRover
+import houston.base
+from houston.copter import ArduCopter
+from houston.rover import ArduRover
 # from plane import ArduPlane
