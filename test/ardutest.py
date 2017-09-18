@@ -1,10 +1,16 @@
-from system import *
-from ardupilot import *
-from state import *
-from mission import *
-import houston
+#!/usr/bin/env python
+from houston.ardu.copter import ArduCopter
+from houston.state import State, Environment
+from houston.mission import Mission
+from houston.action import Action
+
+import houston.manager as mgr
+
+
 if __name__ == "__main__":
-    system = houston.getSystem('ardupilot')
+    system = ArduCopter()
+
+    # construct a mission
     actions = [
         Action("setmode", {
             'mode': 'GUIDED'
@@ -29,7 +35,14 @@ if __name__ == "__main__":
         "orientation": 12.0,
         "battery": 30.0
     })
+    mission = Mission(environment, initial, actions)
 
+    # create a container for the mission execution
+    image = 'houston-icse-2018:base'
+    container = mgr.createContainer(system, image)
 
-    missionOutcome = system.execute(Mission(environment, initial, actions)).toJSON()
-    print missionOutcome
+    try:
+        outcome = container.execute(mission)
+        print(outcome)
+    finally:
+        mgr.destroyContainer(container)
