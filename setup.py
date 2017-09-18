@@ -15,7 +15,7 @@ setup(
     install_requires = [
         'flask',
         # 'docker',
-        'pathos',
+        # 'pathos', (this is a dependency of the experiment)
         'pexpect',
         'geopy'
     ],
