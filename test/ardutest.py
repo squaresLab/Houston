@@ -40,6 +40,7 @@ if __name__ == "__main__":
     # create a container for the mission execution
     image = 'houston-icse-2018:base'
     container = mgr.createContainer(system, image)
+    print("built container")
 
     try:
         outcome = container.execute(mission)
