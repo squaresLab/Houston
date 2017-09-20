@@ -1,10 +1,13 @@
 import random
+import threading
 
 from houston.system import System
+from houston.generator.resources import ResourceUsage, ResourceLimits
+
 
 class MissionGenerator(object):
 
-    def __init__(self, system, image, threads, max_num_actions):
+    def __init__(self, system, image, threads = 1, action_generators = [],  max_num_actions = 10):
         assert isinstance(system, System)
         assert isinstance(image, str)
         assert isinstance(threads, int)
@@ -20,10 +23,15 @@ class MissionGenerator(object):
         self._fetch_lock = threading.Lock()
         self._contents_lock = threading.Lock()
 
-        self.__rng = None
-        self.__resource_limits = None
-        self.__resource_usage = None
-        self.__start_time = None
+
+        # transform the list of generators into a dictionary, indexed by the
+        # name of the associated action schema
+        self.__threads = threads
+        self.__action_generators = {}
+        for g in action_generators:
+            name = g.schema_name
+            assert name not in self.__action_generators
+            self.__action_generators[name] = g
 
 
     @property
@@ -85,9 +93,41 @@ class MissionGenerator(object):
     def generate(self, seed, resource_limits):
         assert isinstance(seed, int)
 
-        self.prepare(system, resource_limits)
+        try:
+            print("Preparing..."),
+            self.prepare(seed, resource_limits)
+            print("[OK]")
 
-        self.__start_time = timeit.default_timer()
+            # initialise worker threads
+            self.__workers = []
+            print("constructing workers...")
+            for _ in range(self.__threads):
+                self.__workers.append(MissionPoolWorker(self))
+            print("constructed workers")
+            
+            # begin tracking resource usage
+            self.__resource_usage = ResourceUsage()
+            self.__start_time = timeit.default_timer()
+
+            print("starting workers...")
+            for w in self.__workers:
+                w.start()
+            print("started all workers")
+            while True:
+                if not any(w.is_alive() for w in self.__workers):
+                    break
+                time.sleep(0.2)
+
+            self.tick()
+            return self.summarise()
+        finally:
+            print("shutting down...")
+            for worker in self.__workers:
+                print("killing worker: {}".format(worker))
+                worker.shutdown()
+            self.__workers = []
+
+
 
         
         # return a reduced mission suite
@@ -144,18 +184,3 @@ class MissionGenerator(object):
 
         finally:
             self._fetch_lock.release()
-
-
-class RandomMissionGenerator(MissionGenerator):
-    def __init__(self):
-        pass
-
-
-    def generate_mission(self):
-        schemas = self.system.schemas.values()
-        actions = []
-        for _ in range(self.rng.randint(1, self.max_num_actions)):
-            schema = self.rng.choice(schemas)
-            actions.append(self.generate_action(schema))
-
-        return Mission(self.__env, self.__initial_state, actions)
