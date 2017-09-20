@@ -76,29 +76,31 @@ class BaseSystem(System):
         super(BaseSystem, self).__init__(variables, schemas)
 
     
-    def toJSON(self):
+    def to_json(self):
         """
         Returns a JSON-based description of this system.
         """
-        jsn = super(BaseSystem, self).toJSON()
+        jsn = super(BaseSystem, self).to_json()
         jsn['settings'] = {
             'speedup': self.__speedup
         }
         return jsn
 
 
+    @property
     def installed(self):
         return ARDUPILOT_INSTALLED
 
     
-    def getVehicle(self):
+    @property
+    def vehicle(self):
         """
         Uses dronekit to provide a connection to the system under test
         """
         return self.__vehicle
 
 
-    def setUp(self, mission):
+    def setup(self, mission):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
         args = [
             "--model=quad", # TODO: hardcoded
@@ -115,13 +117,13 @@ class BaseSystem(System):
                            restart=False,
                            wd='/experiment/') # TODO: HARDCODED
 
-        connectString = self.__sitl.connection_string()
-        printflush(connectString)
-        self.__vehicle = dronekit.connect(connectString, wait_ready=True)
+        connect_string = self.__sitl.connection_string()
+        printflush(connect_string)
+        self.__vehicle = dronekit.connect(connect_string, wait_ready=True)
         self.__vehicle.wait_ready('autopilot_version')
 
 
-    def tearDown(self, mission):
+    def tear_down(self, mission):
         self.__vehicle.close()
         self.__vehicle = None
         self.__sitl.stop()

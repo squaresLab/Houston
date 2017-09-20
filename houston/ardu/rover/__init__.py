@@ -17,8 +17,8 @@ class ArduRover(BaseSystem):
     Description of the ArduRover system
     """
     @staticmethod
-    def fromJSON(jsn):
-        assert (isinstance(jsn, dict))
+    def from_json(jsn):
+        assert isinstance(jsn, dict)
         assert ('settings' in jsn)
         settings = jsn['settings']
         speedup = settings['speedup']
@@ -36,8 +36,8 @@ class ArduRover(BaseSystem):
         super(ArduRover, self).__init__(variables, schemas, speedup=speedup)
 
     
-    def setUp(self, mission):
-        super(ArduRover, self).setUp(mission)
+    def setup(self, mission):
+        super(ArduRover, self).setup(mission)
         
         # TODO
 

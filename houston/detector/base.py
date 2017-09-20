@@ -18,33 +18,33 @@ class BugDetectorSummary(object):
     Provides a summary of a test generation trial.
     """
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         """
         Constructs a summary of a past test generation trial from its
         JSON-based description.
         """
         jsn = jsn['summary']
-        systm = System.fromJSON(jsn['settings']['system'])
+        systm = System.from_json(jsn['settings']['system'])
         image = jsn['settings']['image']
 
-        resourceUsage = ResourceUsage.fromJSON(jsn['resources']['used'])
-        resourceLimits = ResourceLimits.fromJSON(jsn['resources']['limits'])
+        resource_usage = ResourceUsage.from_json(jsn['resources']['used'])
+        resource_limits = ResourceLimits.from_json(jsn['resources']['limits'])
 
         history = \
-            [Mission.fromJSON(m['mission']) for m in jsn['history']]
+            [Mission.from_json(m['mission']) for m in jsn['history']]
         failures = \
-            set(Mission.fromJSON(m['mission']) for m in jsn['failures'])
+            set(Mission.from_json(m['mission']) for m in jsn['failures'])
 
         outcomes = \
             [(h['mission'], h['outcome']) for h in jsn['history']]
         outcomes = \
-            [(Mission.fromJSON(m), MissionOutcome.fromJSON(o)) for (m, o) in outcomes]
+            [(Mission.from_json(m), MissionOutcome.from_json(o)) for (m, o) in outcomes]
         outcomes = {m: o for (m, o) in outcomes}
 
-        return BugDetectorSummary(systm, image, history, outcomes, failures, resourceUsage, resourceLimits)
+        return BugDetectorSummary(systm, image, history, outcomes, failures, resource_usage, resource_limits)
 
 
-    def __init__(self, systm, image, history, outcomes, failures, resourceUsage, resourceLimits):
+    def __init__(self, systm, image, history, outcomes, failures, resource_usage, resource_limits):
         """
         Constructs a summary of a bug detection process.
 
@@ -67,30 +67,30 @@ class BugDetectorSummary(object):
         self.__history = history
         self.__outcomes = outcomes
         self.__failures = failures
-        self.__resourceUsage = copy.copy(resourceUsage)
-        self.__resourceLimits = resourceLimits
+        self.__resource_usage = copy.copy(resource_usage)
+        self.__resource_limits = resource_limits
 
 
-    def toJSON(self):
+    def to_json(self):
         """
         Serialises this summary into a JSON format.
         """
         resources = {
-            'used': self.__resourceUsage.toJSON(),
-            'limits': self.__resourceLimits.toJSON()
+            'used': self.__resourceUsage.to_json(),
+            'limits': self.__resourceLimits.to_json()
         }
 
         history = [(m, self.__outcomes[m]) for m in self.__history]
-        history = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in history]
+        history = [{'mission': m.to_json(), 'outcome': o.to_json()} for (m, o) in history]
 
 
         failures = [(m, self.__outcomes[m]) for m in self.__failures]
-        failures = [{'mission': m.toJSON(), 'outcome': o.toJSON()} for (m, o) in failures]
+        failures = [{'mission': m.to_json(), 'outcome': o.to_json()} for (m, o) in failures]
 
 
         summary = {
             'settings': {
-                'system': self.__systm.toJSON(),
+                'system': self.__systm.to_json(),
                 'image': self.__image
             },
             'resources': resources,
@@ -100,45 +100,54 @@ class BugDetectorSummary(object):
 
         return {'summary': summary}
 
-    
-    def getNumMissions(self):
+ 
+    @property
+    def num_missions(self):
         return len(self.__history)
 
     
-    def getNumFailures(self):
+    @property
+    def num_failures(self):
         return len(self.__failures)
 
-
-    def getImage(self):
+    
+    @property
+    def image(self):
         return self.__image
 
 
-    def getSystem(self):
+    @property
+    def system(self):
         return self.__systm
 
     
-    def getHistory(self):
+    @property
+    def history(self):
         return self.__history[:]
 
 
-    def getOutcome(self, m):
+    def outcome(self, m):
         return self.__outcomes[m]
 
     
-    def getOutcomes(self):
+    @property
+    def outcomes(self):
         return self.__outcomes.copy()
 
     
-    def getFailures(self):
+    @property
+    def failures(self):
         return self.__failures.copy()
 
 
-    def getResourceUsage(self):
-        return copy.copy(self.__resourceUsage)
+    @property
+    def resource_usage(self):
+        return copy.copy(self.__resource_usage)
 
 
-    def getResourceLimits(self):
-        return self.__resourceLimits
+    @property
+    def resource_limits(self):
+        return self.__resource_limits
 
 
 class MissionPoolWorker(threading.Thread):
@@ -147,19 +156,19 @@ class MissionPoolWorker(threading.Thread):
         print("creating worker...")
         self.daemon = True # mark as a daemon thread
         self.__detector = detector
-        self.__container = mgr.createContainer(self.__detector.getSystem(),
-                                               self.__detector.getImage())
-        self.__resetCounter()
+        self.__container = mgr.createContainer(self.__detector.system,
+                                               self.__detector.image)
+        self.__reset_counter()
         
 
-    def __resetCounter(self):
+    def __reset_counter(self):
         self.__counter = 0
         self.__reset = random.randint(3, 5) # TODO: use RNG
 
 
-    def __prepareContainer(self):
+    def __prepare_container(self):
         if self.__counter == self.__reset:
-            self.__resetCounter()
+            self.__reset_counter()
             self.__container.reset()
         self.__counter += 1
 
@@ -168,11 +177,11 @@ class MissionPoolWorker(threading.Thread):
         print("running worker: {}".format(self))
         #try:
         while True:
-            m = self.__detector.getNextMission()
+            m = self.__detector.get_next_mission()
             if m is None:
                 return
-            self.__prepareContainer()
-            self.__detector.executeMission(m, self.__container)
+            self.__prepare_container()
+            self.__detector.execute_mission(m, self.__container)
         #finally:
         #    self.shutdown()
 
@@ -180,7 +189,7 @@ class MissionPoolWorker(threading.Thread):
     def shutdown(self):
         print("shutting down worker: {}".format(self))
         if self.__container is not None:
-            mgr.destroyContainer(self.__container)
+            mgr.destroy_container(self.__container)
             self.__container = None
 
 
@@ -188,31 +197,31 @@ class BugDetector(object):
     """
     Bug detectors are responsible for finding bugs in a given system under test.
     """
-    def __init__(self, threads = 1, actionGenerators = [], maxNumActions = 10):
-        assert (isinstance(maxNumActions, int))
-        assert (maxNumActions >= 1)
-        assert (isinstance(threads, int))
+    def __init__(self, threads = 1, action_generators = [], max_num_actions = 10):
+        assert isinstance(max_num_actions, int)
+        assert (max_num_actions >= 1)
+        assert isinstance(threads, int)
         assert (threads >= 1)
-        assert (isinstance(actionGenerators, list))
-        assert (all(isinstance(g, ActionGenerator) for g in actionGenerators))
+        assert isinstance(action_generators, list)
+        assert all(isinstance(g, ActionGenerator) for g in action_generators)
 
         self._rng = None
-        self.__maxNumActions = maxNumActions
-        self._fetchLock = threading.Lock()
-        self._contentsLock = threading.Lock()
+        self.__max_num_actions = max_num_actions
+        self._fetch_lock = threading.Lock()
+        self._contents_lock = threading.Lock()
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
         self.__threads = threads
-        self.__actionGenerators = {}
-        for g in actionGenerators:
-            name = g.getSchemaName()
-            assert not (name in self.__actionGenerators)
-            self.__actionGenerators[name] = g
+        self.__action_generators = {}
+        for g in action_generators:
+            name = g.schema_name
+            assert not (name in self.__action_generators)
+            self.__action_generators[name] = g
 
 
-    def getNextMission(self):
-        self._fetchLock.acquire()
+    def get_next_mission(self):
+        self._fetch_lock.acquire()
         try:
             self.tick()
 
@@ -221,21 +230,21 @@ class BugDetector(object):
                 return None
 
             # RANDOM:
-            self.__resourceUsage.numMissions += 1
-            return self.generateMission()
+            self.__resource_usage.num_missions += 1
+            return self.generate_mission()
 
         finally:
-            self._fetchLock.release()
+            self._fetch_lock.release()
 
 
-    def prepare(self, systm, image, seed, resourceLimits):
+    def prepare(self, systm, image, seed, resource_limits):
         """
         Prepares the state of the bug detector immediately before beginning a
         bug detection trial.
         """
         self.__systm = systm
         self.__image = image
-        self.__resourceLimits = resourceLimits
+        self.__resource_limits = resource_limits
         self.__history = []
         self.__outcomes = {}
         self.__failures = set()
@@ -247,17 +256,17 @@ class BugDetector(object):
         Used to determine whether the resource limit for the current bug
         detection session has been hit.
         """
-        return self.__resourceLimits.reached(self.__resourceUsage)
+        return self.__resource_limits.reached(self.__resource_usage)
 
 
-    def detect(self, systm, image, seed, resourceLimits):
+    def detect(self, systm, image, seed, resource_limits):
         """
 
         :param      systm: the system under test
         :param      image: the name of the Dockerfile that should be used to \
                         containerise the system under test
         :param      seed:   seed for the RNG
-        :param      resourceLimits: a description of the resources available \
+        :param      resource_limits: a description of the resources available \
                         to the detection process, given as a ResourceLimits \
                         object
 
@@ -266,7 +275,7 @@ class BugDetector(object):
         """
         try:
             print("Preparing...")
-            self.prepare(systm, image, seed, resourceLimits)
+            self.prepare(systm, image, seed, resource_limits)
             print("Prepared")
 
             # initialise worker threads
@@ -277,15 +286,15 @@ class BugDetector(object):
             print("constructed workers")
             
             # begin tracking resource usage
-            self.__resourceUsage = ResourceUsage()
-            self.__startTime = timeit.default_timer()
+            self.__resource_usage = ResourceUsage()
+            self.__start_time = timeit.default_timer()
 
             print("starting workers...")
             for w in self.__workers:
                 w.start()
             print("started all workers")
             while True:
-                if not any(w.isAlive() for w in self.__workers):
+                if not any(w.is_alive() for w in self.__workers):
                     break
                 time.sleep(0.2)
 
@@ -300,8 +309,8 @@ class BugDetector(object):
 
 
     def tick(self):
-        self.__resourceUsage.runningTime = \
-            timeit.default_timer() - self.__startTime
+        self.__resourceUsage.running_time = \
+            timeit.default_timer() - self.__start_time
 
 
     def summarise(self):
@@ -313,11 +322,11 @@ class BugDetector(object):
                                   self.__history,
                                   self.__outcomes,
                                   self.__failures,
-                                  self.__resourceUsage,
-                                  self.__resourceLimits)
+                                  self.__resource_usage,
+                                  self.__resource_limits)
 
-    def getNextMission(self):
-        self._fetchLock.acquire()
+    def get_next_mission(self):
+        self._fetch_lock.acquire()
         try:
             while True:
                 self.tick()
@@ -327,81 +336,87 @@ class BugDetector(object):
                     return None
 
                 # RANDOM:
-                self.__resourceUsage.numMissions += 1
-                return self.generateMission()
+                self.__resource_usage.num_missions += 1
+                return self.generate_mission()
 
         finally:
-            self._fetchLock.release()
+            self._fetch_lock.release()
 
 
-    def getMaxNumActions(self):
-        return self.__maxNumActions
+    @property
+    def max_num_actions(self):
+        return self.__max_num_actions
 
 
-    def getSystem(self):
+    @property
+    def system(self):
         return self.__systm
 
 
-    def getImage(self):
+    @property
+    def image(self):
         return self.__image
 
     
-    def getResourceUsage(self):
-        return self.__resourceUsage
+    @property
+    def resource_usage(self):
+        return self.__resource_usage
 
 
-    def getNumThreads(self):
+    @property
+    def num_threads(self):
         """
-        Returns the number of threads specified.
+        The number of threads allocated to this test generator.
         """
         return self.__threads
 
     
-    def getExecutedPath(self, m):
+    def executed_path(self, m):
         """
         Returns the path that was taken when a given mission was executed.
         """
-        if m.isEmpty():
+        if m.is_empty():
             return BranchPath([])
         outcome = self.__outcomes[m]
-        return outcome.getExecutedPath()
+        return outcome.executed_path()
 
 
-    def getEndState(self, m):
+    @property
+    def end_state(self, m):
         """
         Returns the end state after executing a given mission.
         """
-        assert (isinstance(m, Mission))
-        if m.isEmpty():
-            return m.getInitialState()
+        assert isinstance(m, Mission)
+        if m.is_empty():
+            return m.initial_state
         outcome = self.__outcomes[m]
-        return outcome.getEndState()
+        return outcome.end_state
 
 
-    def getGenerator(self, schema):
+    def get_generator(self, schema):
         """
         Returns an available generator for a given action schema if there are
         non then it returns None.
         """
-        name = schema.getName()
-        if name in self.__actionGenerators:
-            return self.__actionGenerators[name]
+        name = schema.name
+        if name in self.__action_generators:
+            return self.__action_generators[name]
         return None
 
 
-    def generateMission(self, rng):
+    def generate_mission(self, rng):
         raise NotImplementedError
 
 
-    def executeMission(self, mission, container):
+    def execute_mission(self, mission, container):
         print("executing mission...")
         outcome = container.execute(mission)
-        self.recordOutcome(mission, outcome)
+        self.record_outcome(mission, outcome)
         print("finished mission!")
         return outcome
 
 
-    def recordOutcome(self, mission, outcome):
+    def record_outcome(self, mission, outcome):
         """
         Records the outcome of a given mission. The mission is logged to the
         history, and its outcome is stored in the outcome dictionary. If the

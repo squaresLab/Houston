@@ -14,11 +14,11 @@ class Action(object):
     """
 
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         """
         Constructs an Action object from its JSON description.
         """
-        assert (isinstance(jsn, dict) and not jsn is None)
+        assert isinstance(jsn, dict)
         assert ('kind' in jsn)
         assert ('parameters' in jsn)
         return Action(jsn['kind'], jsn['parameters'])
@@ -32,36 +32,31 @@ class Action(object):
             kind    (str):  the name of the schema to which the action belongs
             values  (dict): a dictionary of parameter values for the action
         """
-        assert ((isinstance(kind, str) or (isinstance(kind, unicode))) and not kind is None)
-        assert (isinstance(values, dict) and not values is None)
+        assert (isinstance(kind, str) or isinstance(kind, unicode))
+        assert isinstance(values, dict)
         self.__kind = kind
         self.__values = values.copy()
 
 
-    def getSchemaName(self):
+    @property
+    def schema(self):
         """
-        Returns the name of the schema to which this action belongs.
+        The name of the schema to which this action belongs.
         """
         return self.__kind
 
 
-    def read(self, value):
+    def __getattr__(self, param):
         """
         Returns the value for a specific parameter in this action.
         """
-        return self.getValue(value)
+        return self.__values[param]
 
 
-    def getValue(self, value):
+    @property
+    def values(self):
         """
-        Returns the value for a specific parameter in this action.
-        """
-        return self.__values[value]
-
-
-    def getValues(self):
-        """
-        Returns a copy of the parameters for this action.
+        Returns a copy of the parameter values used by this action.
         """
         return self.__values.copy()
 
@@ -72,7 +67,7 @@ class Action(object):
         """
         return {
             'kind': self.__kind,
-            'parameters': self.getValues()
+            'parameters': self.values
         }
 
 
@@ -81,47 +76,49 @@ class Parameter(object):
     Docstring.
     """
 
-    def __init__(self, name, valueRange):
+    def __init__(self, name, value_range):
         """
         Constructs a Parameter object.
 
         Args:
             name (str):                 the name of this parameter.
-            valueRange (ValueRange):    the range of possible values for this
+            value_range (ValueRange):   the range of possible values for this
                 parameter, given as a ValueRange object.
         """
         # TODO: type checking
         assert (isinstance(name, str) or isinstance(name, unicode))
-        assert (isinstance(valueRange, ValueRange))
+        assert (isinstance(value_range, ValueRange))
         self.__name = name
-        self.__valueRange = valueRange
+        self.__value_range = value_range
 
 
-    def getValueRange(self):
+    def values(self):
         """
-        Returns the range of possible values for this parameter.
+        The range of possible values for this parameter.
         """
-        return self.__valueRange
+        return self.__value_range
 
 
     def generate(self, rng):
         """
-        Returns a sample (random)
+        Returns a randomly-generated value for this parameter.
         """
         assert (isinstance(rng, random.Random) and rng is not None)
-        return self.__valueRange.sample(rng)
+        return self.__value_range.sample(rng)
 
 
-    def getType(self):
+    @property
+    def type(self):
         """
-        Returns the type of this parameter
+        The underlying type of this parameter.
         """
-        return self.__valueRange.getType()
+        return self.__value_range.type
 
-
-    def getName(self):
+    
+    @property
+    def name(self):
         """
-        Returns the name of this parameter.
+        The name of this parameter.
         """
         return self.__name
 
@@ -155,34 +152,36 @@ class ActionSchema(object):
         assert (len(branches) > 0)
 
         # unique branch names
-        assert (len(set(b.getName() for b in branches)) == len(branches))
+        assert (len(set(b.name for b in branches)) == len(branches))
 
         self.__name = name
         self.__parameters =  parameters
         self.__branches = branches
 
 
-    def getName(self):
+    @property
+    def name(self):
         """
-        Returns the name of this schema.
+        The name of this schema.
         """
         return self.__name
 
-
-    def getBranches(self):
+    
+    @property
+    def branches(self):
         """
-        Returns a list of the branches for this action schema.
+        A list of the branches for this action schema.
         """
         return self.__branches[:]
 
     
-    def getBranch(self, iden):
+    def get_branch(self, iden):
         """
         Returns a branch belonging to this action schema using its identifier.
         """
         assert (isinstance(iden, branch.BranchID) and iden is not None)
-        assert (iden.getActionName() == self.__name)
-        return self.__branches[iden.getBranchName()]
+        assert (iden.get_action_name() == self.__name)
+        return self.__branches[iden.get_branch_name()]
 
 
     def dispatch(self, system, action, state, environment):
@@ -200,7 +199,7 @@ class ActionSchema(object):
         raise UnimplementedError
 
 
-    def computeTimeout(self, action, state, environment):
+    def compute_timeout(self, action, state, environment):
         """
         Responsible for calculating the maximum time that this action shoud take.
 
@@ -210,25 +209,25 @@ class ActionSchema(object):
 
         :returns maximum time in seconds (as a float)
         """
-        branch = self.resolveBranch(action, state, environment)
-        return branch.computeTimeout(action, state, environment)
+        branch = self.resolve_branch(action, state, environment)
+        return branch.compute_timeout(action, state, environment)
 
 
-    def getParameters(self):
+    @property
+    def parameters(self):
         """
-        Returns the parameters being hold for the current action schema. This is
-        used to generate actions
+        A list of the parameters used to describe actions belonging to this schema.
         """
         return self.__parameters[:]
 
 
-    def resolveBranch(self, action, initialState, environment):
+    def resolve_branch(self, action, initial_state, environment):
         """
         Returns the branch that is appropiate for the current action, state, and
         environment based on the current action schema.
         """
         for b in self.__branches:
-            if b.isApplicable(action, initialState, environment):
+            if b.is_applicable(action, initial_state, environment):
                 return b
         raise Exception("failed to resolve branch")
 
@@ -238,7 +237,7 @@ class ActionSchema(object):
         Generates an action belonging to this schema at random.
         """
         assert (isinstance(rng, random.Random) and rng is not None)
-        values = {p.getName(): p.generate(rng) for p in self.__parameters}
+        values = {p.name: p.generate(rng) for p in self.__parameters}
         return Action(self.__name, values)
 
 
@@ -271,7 +270,7 @@ class ActionOutcome(object):
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
-    def __init__(self, action, successful, stateBefore, stateAfter, timeElapsed, branchID):
+    def __init__(self, action, successful, state_before, state_after, time_elapsed, branch_id):
         """
         Constructs a ActionOutcome.
 
@@ -283,19 +282,19 @@ class ActionOutcome(object):
         :param  branchID    the identifier of the branch that was taken \
                             during the execution of this action
         """
-        assert (isinstance(action, Action) and not action is None)
-        assert (isinstance(successful, bool) and not successful is None)
-        assert (isinstance(stateBefore, state.State) and not stateBefore is None)
-        assert (isinstance(stateAfter, state.State) and not stateAfter is None)
-        assert (isinstance(timeElapsed, float) and not timeElapsed is None)
-        assert (isinstance(branchID, branch.BranchID) and not branchID is None)
+        assert isinstance(action, Action)
+        assert isinstance(successful, bool)
+        assert isinstance(state_before, state.State)
+        assert isinstance(state_after, state.State)
+        assert isinstance(time_elapsed, float)
+        assert isinstance(branch_id, branch.BranchID)
 
         self.__action      = action
         self.__successful  = successful
-        self.__stateBefore = stateBefore
-        self.__stateAfter  = stateAfter
-        self.__timeElapsed = timeElapsed
-        self.__branchID = branchID
+        self.__state_before = state_before
+        self.__state_after  = state_after
+        self.__time_elapsed = time_elapsed
+        self.__branch_id = branch_id
 
 
     def toJSON(self):
@@ -305,10 +304,10 @@ class ActionOutcome(object):
         return {
             'action':       self.__action.toJSON(),
             'successful':   self.__successful,
-            'stateBefore':  self.__stateBefore.toJSON(),
-            'stateAfter':   self.__stateAfter.toJSON(),
-            'timeElapsed':  self.__timeElapsed,
-            'branchID':     self.__branchID.toJSON()
+            'stateBefore':  self.__state_before.toJSON(),
+            'stateAfter':   self.__state_after.toJSON(),
+            'timeElapsed':  self.__time_elapsed,
+            'branchID':     self.__branch_id.toJSON()
         }
 
     
@@ -316,23 +315,18 @@ class ActionOutcome(object):
         """
         Returns an identifier for the branch that was taken by this action.
         """
-        return self.__branchID
+        return self.__branch_id
 
 
+    @property
     def passed(self):
         """
-        :see `successful`
-        """
-        return self.successful()
-
-
-    def successful(self):
-        """
-        Returns true if this action was unsuccessful.
+        Returns true if this action was successful.
         """
         return self.__successful
 
-
+    
+    @property
     def failed(self):
         """
         Returns true if this action was unsuccessful.
@@ -340,25 +334,27 @@ class ActionOutcome(object):
         return not self.__successful
 
 
-    def getEndState(self):
+    @property
+    def state_after(self):
         """
-        Returns a description of the state of the system immediately after the
+        A description of the state of the system immediately after the
         execution of this action.
         """
-        return self.__stateAfter
+        return self.__state_after
 
 
-    def getStartState(self):
+    @property
+    def state_before(self):
         """
-        Returns a description of the state of the system immediately before the
+        A description of the state of the system immediately before the
         execution of this action.
         """
-        return self.__startBefore
+        return self.__start_before
 
 
 class ActionGenerator(object):
 
-    def __init__(self, schemaName, parameters = []):
+    def __init__(self, schema_name, parameters = []):
         """
         Constructs a new action generator.
 
@@ -366,14 +362,14 @@ class ActionGenerator(object):
                     produces actions.
         :params parameters: a list of the parameters to this generator.
         """
-        assert (isinstance(schemaName, str) and schemaName is not None)
+        assert (isinstance(schema_name, str) and schema_name is not None)
         assert (isinstance(parameters, list) and parameters is not None)
 
-        self.__schemaName = schemaName
+        self.__schema_name = schema_name
         self.__parameters = parameters
 
 
-    def constructWithState(self, currentState, env, values):
+    def construct_with_state(self, current_state, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -384,7 +380,7 @@ class ActionGenerator(object):
         raise NotImplementedError
 
 
-    def constructWithoutState(self, env, values):
+    def construct_without_state(self, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -395,23 +391,24 @@ class ActionGenerator(object):
         raise NotImplementedError
 
 
-    def getSchemaName(self):
+    @property
+    def schema_name(self):
         """
-        Returns the name of the schema to which actions generated by this
+        The name of the schema to which actions generated by this
         generator belong.
         """
-        return self.__schemaName
+        return self.__schema_name
 
 
-    def generateActionWithState(self, currentState, env, rng):
+    def generate_action_with_state(self, current_state, env, rng):
         assert (isinstance(rng, random.Random) and rng is not None)
-        values = {p.getName(): p.generate(rng) for p in self.__parameters}
-        values = self.constructWithState(currentState, env, values)
-        return Action(self.__schemaName, values)
+        values = {p.name: p.generate(rng) for p in self.__parameters}
+        values = self.construct_with_state(current_state, env, values)
+        return Action(self.__schema_name, values)
 
 
-    def generateActionWithoutState(self, env, rng):
+    def generate_action_without_state(self, env, rng):
         assert (isinstance(rng, random.Random) and rng is not None)
-        values = {p.getName(): p.generate(rng) for p in self.__parameters}
-        values = self.constructWithoutState(env, values)
-        return Action(self.__schemaName, values)
+        values = {p.name: p.generate(rng) for p in self.__parameters}
+        values = self.construct_without_state(env, values)
+        return Action(self.__schema_name, values)

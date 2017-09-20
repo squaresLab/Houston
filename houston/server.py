@@ -18,7 +18,7 @@ app = flask.Flask(__name__)
 
 
 @app.route("/executeMission", methods=["POST"])
-def executeMission():
+def execute_mission():
     """
     Executes a specified mission.
 
@@ -37,11 +37,11 @@ def executeMission():
     systm = flask.request.json['system']
     msn = flask.request.json['mission']
 
-    systm = System.fromJSON(systm)
-    msn = Mission.fromJSON(msn)
+    systm = System.from_json(systm)
+    msn = Mission.from_json(msn)
 
     outcome = systm.execute(msn)
-    outcome = outcome.toJSON()
+    outcome = outcome.to_json()
     return flask.jsonify(outcome)
 
 
@@ -61,8 +61,8 @@ def main():
         print("ERROR: unspecified port number")
         exit(1)
 
-    portNumber = int(sys.argv[1])
-    app.run(host='0.0.0.0', port=portNumber, use_reloader=False) #debug=True)
+    port_number = int(sys.argv[1])
+    app.run(host='0.0.0.0', port=port_number, use_reloader=False) #debug=True)
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ class ResourceUsage(object):
     test-generation trial.
     """
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         return ResourceUsage(jsn['numMissions'], jsn['runningTime'])
 
 
@@ -12,15 +12,15 @@ class ResourceUsage(object):
     Simple data structure used to maintain track of what resources have been
     consumed over the course of a bug detection trial.
     """
-    def __init__(self, numMissions = 0, runningTime = 0.0):
-        self.numMissions = numMissions
-        self.runningTime = runningTime
+    def __init__(self, num_missions = 0, running_time = 0.0):
+        self.num_missions = num_missions
+        self.running_time = running_time
 
 
     def toJSON(self):
         return {
-            'numMissions': self.numMissions,
-            'runningTime': self.runningTime
+            'numMissions': self.num_missions,
+            'runningTime': self.running_time
         }
 
 
@@ -30,50 +30,52 @@ class ResourceLimits(object):
     test-generation trial.
     """
     @staticmethod
-    def fromJSON(jsn):
-        return ResourceLimits(numMissions =  jsn['numMissions'], runningTime = jsn['runningTime'])
+    def from_json(jsn):
+        return ResourceLimits(num_missions =  jsn['numMissions'],
+                              running_time = jsn['runningTime'])
 
 
-    def __init__(self, numMissions = None, runningTime = None):
-        self.__numMissions = numMissions
-        self.__runningTime = runningTime
+    def __init__(self, num_missions = None, running_time = None):
+        self.__num_missions = num_missions
+        self.__running_time = running_time
 
 
     def reached(self, usage):
-        if self.reachedMissionLimit(usage.numMissions):
+        if self.reached_mission_limit(usage.num_missions):
             return True
-        if self.reachedTimeLimit(usage.runningTime):
+        if self.reached_time_limit(usage.running_time):
             return True
         return False
 
 
-    def getNumMissions(self):
-        return self.__numMissions
+    @property
+    def num_missions(self):
+        return self.__num_missions
 
 
-    def reachedMissionLimit(self, numMissions):
-        return  self.__numMissions is not None and \
-                    numMissions >= self.__numMissions
+    def reached_mission_limit(self, num_missions):
+        return  self.__num_missions is not None and \
+                    num_missions >= self.__num_missions
 
 
-    def reachedTimeLimit(self, runningTime):
+    def reached_time_limit(self, running_time):
         """
         Determines whether a given running time meets or exceeds the limit.
 
-        :param  runningTime:    the length of time that the trial has been
+        :param  running_time:    the length of time that the trial has been
                                 running, measured in wall-clock seconds.
 
         :returns    True if the time limit has been reached, else False.
         """
-        return  self.__runningTime is not None and \
-                    runningTime >= self.__runningTime
+        return  self.__running_time is not None and \
+                    running_time >= self.__running_time
 
 
-    def toJSON(self):
+    def to_json(self):
         """
         Returns a JSON description of these limits.
         """
         return {
-            'numMissions': self.__numMissions,
-            'runningTime': self.__runningTime
+            'numMissions': self.__num_missions,
+            'runningTime': self.__running_time
         }

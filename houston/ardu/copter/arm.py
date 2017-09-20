@@ -27,7 +27,7 @@ class ArmSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
-        vehicle = system.getVehicle()
+        vehicle = system.vehicle
         msg = vehicle.message_factory.command_long_encode(
             0, 0,    # target_system, target_component
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -55,17 +55,17 @@ class ArmNormally(Branch):
         super(ArmNormally, self).__init__('normal', schema, estimators)
 
 
-    def computeTimeout(self, action, state, environment):
+    def compute_timeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def isApplicable(self, action, state, environment):
-        return state.read('armable') and (state.read('mode') == 'GUIDED' or state.read('mode') == 'LOITER')
+    def is_applicable(self, action, state, environment):
+        return state['armable'] and (state['mode'] in ['GUIDED', 'LOITER'])
 
 
-    def isSatisfiable(self, state, environment):
-        return self.isApplicable(None, state, environment)
+    def is_satisfiable(self, state, environment):
+        return self.is_applicable(None, state, environment)
 
 
     def generate(self, state, environment, rng):
-        return self.getSchema().generate(rng)
+        return self.schema.generate(rng)

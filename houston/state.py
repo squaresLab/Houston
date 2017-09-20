@@ -2,13 +2,14 @@ import copy
 import json
 import action
 
+
 class State(object):
     """
     Describes the state of the system at a given moment in time, in terms of
     its internal and external variables.
     """
     @staticmethod
-    def fromFile(fn):
+    def from_file(fn):
         """
         Constructs a system state from a given file, containing a JSON-based
         description of its contents.
@@ -20,15 +21,16 @@ class State(object):
         with open(fn, "r") as f:
             jsn = json.load(f)
         print jsn.keys()
-        return State.fromJSON(jsn)
+        return State.from_json(jsn)
+
 
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         """
         Constructs a description of a state from its JSON description.
         """
         assert ('variables' in jsn)
-        assert (isinstance(jsn['variables'], dict))
+        assert isinstance(jsn['variables'], dict)
         return State(jsn['variables'])
 
 
@@ -41,13 +43,21 @@ class State(object):
         """
         self.__values = copy.copy(values)
 
-
-    def getValues(self):
+    
+    @property
+    def values(self):
         """
         Returns the values of each of the state variables as a dictionary,
         indexed by name.
         """
         return copy.copy(self.__values)
+
+
+    def __getattr__(self, variable):
+        """
+        :see `read`
+        """
+        return self.read(variable)
 
 
     def read(self, variable):
@@ -62,10 +72,10 @@ class State(object):
         Prints this state to the standard output.
         """
         for variable in self.__values:
-            print('Variable: {} - State: {}'.format(variable, self.read(variable)))
+            print('Variable: {} - State: {}'.format(variable, self[variable]))
 
 
-    def toJSON(self):
+    def to_json(self):
         """
         Returns a JSON description of this state.
         """
@@ -75,7 +85,7 @@ class State(object):
 
 
     def __str__(self):
-        return str(self.toJSON())
+        return str(self.to_json())
 
 
     def __repr__(self):
@@ -95,17 +105,17 @@ class ExpectedStateValue(object):
         self.__noise = noise
 
 
-    def isExpected(self, observed, measurementNoise):
+    def is_expected(self, observed, measurement_noise):
         assert (observed is not None)
-        assert (measurementNoise is None or type(measurementNoise) == type(observed))
+        assert (measurement_noise is None or type(measurement_noise) == type(observed))
 
         # add the measurement noise to the action noise
-        if measurementNoise is None:
+        if measurement_noise is None:
             noise = self.__noise
         elif self.__noise is not None:
-            noise = self.__noise + measurementNoise
+            noise = self.__noise + measurement_noise
         else:
-            noise = measurementNoise
+            noise = measurement_noise
 
         # check the observed value against the expected range
         if noise is None:
@@ -122,7 +132,7 @@ class ExpectedState(object):
         Returns an ExpectedState object that is identical to a given State.
         """
         expected = {}
-        for (name, val) in to.getValues().items():
+        for (name, val) in to.values.items():
             expected[name] = ExpectedStateValue(val)
         return ExpectedState(expected)
 
@@ -135,7 +145,7 @@ class ExpectedState(object):
         self.__values = values
 
 
-    def isExpected(self, variables, st):
+    def is_expected(self, variables, st):
         """
         :param  variables:      a dictionary containing the definitions of \
                                 the variables for the system under test, \
@@ -144,14 +154,14 @@ class ExpectedState(object):
 
         :returns    True if the observed state of the system was expected
         """
-        assert (isinstance(variables, dict) and dict is not None)
         assert (all(isinstance(k, str) for k in variables))
         assert (all(isinstance(v, StateVariable) for v in variables.values()))
-        assert (isinstance(st, State) and st is not None)
+        assert isinstance(variables, dict)
+        assert isinstance(st, State)
 
-        for (name, expectedValue) in self.__values.items():
-            measurementNoise = variables[name].getNoise()
-            if not expectedValue.isExpected(st.read(name), measurementNoise):
+        for (name, expected_value) in self.values.items():
+            measurement_noise = variables[name].noise
+            if not expected_value.is_expected(st[name], measurement_noise):
                 return False
 
         return True
@@ -180,7 +190,7 @@ class StateVariable(object):
     """
     Returns true if there is inherent noise in the measurement of this variable.
     """
-    def isNoisy(self):
+    def is_noisy(self):
         return self.__noise is not None
 
 
@@ -188,14 +198,16 @@ class StateVariable(object):
     Returns the inherent level of noise that is to be expected when measuring
     this variable. If no noise is expected, None is returned.
     """
-    def getNoise(self):
+    @property
+    def noise(self):
         return self.__noise
 
 
     """
     Returns the name of this system variable
     """
-    def getName(self):
+    @property
+    def name(self):
         return self.__name
 
 
@@ -236,15 +248,16 @@ class Environment(object):
         """
         with open(fn, "r") as f:
             jsn = json.load(f)
-        return Environment.fromJSON(jsn)
+        return Environment.from_json(jsn)
+
 
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         """
         Constructs a description of an environment from its JSON description.
         """
         assert ('constants' in jsn)
-        assert (isinstance(jsn['constants'], dict))
+        assert isinstance(jsn['constants'], dict)
         return Environment(jsn['constants'])
 
     """
@@ -261,6 +274,10 @@ class Environment(object):
         self.__values = copy.copy(values)
 
 
+    def __getattr(self, variable):
+        return self.read(variable)
+
+
     def read(self, variable):
         """
         Returns the value of a given environment constant.
@@ -268,7 +285,7 @@ class Environment(object):
         return self.__values[variable]
 
 
-    def toJSON(self):
+    def to_json(self):
         """
         Returns this environment description as a JSON object (i.e., a dict)
         """
@@ -283,7 +300,7 @@ class Estimator(object):
     action.
     """
 
-    def __init__(self, variable, func, noiseFunc = None):
+    def __init__(self, variable, func, noise_func = None):
         """
         Constructs an estimator for a given state variable.
 
@@ -295,23 +312,24 @@ class Estimator(object):
                             calculating the permitted amount of noise in the \
                             expected value produced by this estimator
         """
-        assert (isinstance(variable, str) and not variable is None)
+        assert isinstance(variable, str)
         assert (callable(func))
-        assert (callable(noiseFunc) or noiseFunc is None)
+        assert (callable(noise_func) or noise_func is None)
 
         self.__variable = variable
         self.__func = func
-        self.__noiseFunc = noiseFunc
+        self.__noise_func = noise_func
 
 
-    def getVariableName(self):
+    @property
+    def variable_name(self):
         """
-        Returns the name of the variable that is being estimated.
+        The name of the variable that is being estimated.
         """
         return self.__variable
 
 
-    def computeExpectedValue(self, act, state, environment):
+    def compute_expected_value(self, act, state, environment):
         """
         Computes the expected value for the variable associated with this estimator,
         within a given state and environment.
@@ -323,16 +341,16 @@ class Estimator(object):
 
         :returns  an ExpectedStateValue object.
         """
-        assert (isinstance(act, action.Action) and action is not None)
-        assert (isinstance(state, State) and state is not None)
-        assert (isinstance(environment, Environment) and environment is not None)
+        assert isinstance(act, action.Action)
+        assert isinstance(state, State)
+        assert isinstance(environment, Environment)
 
         # TODO: sample a random amount of noise
         value = self.__func(act, state, environment)
 
         # compute the noise
-        if self.__noiseFunc:
-            noise = self.__noiseFunc(act, state, environment)
+        if self.__noise_func:
+            noise = self.__noise_func(act, state, environment)
         else:
             noise = None
 

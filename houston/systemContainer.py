@@ -130,7 +130,7 @@ class SystemContainer(object):
         jsn = {'system': self.__system.toJSON(),
                'mission': msn.toJSON()}
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
-        startTime = timeit.default_timer()
+        start_time = timeit.default_timer()
 
         for attempts in range(MAX_NUM_ATTEMPTS):
             try:
@@ -146,8 +146,8 @@ class SystemContainer(object):
                 printflush("Unexpected server error: {}".format(self.__container.logs()))
                 raise
 
-        totalTime = timeit.default_timer() - startTime
-        return mission.CrashedMissionOutcome(totalTime)
+        total_time = timeit.default_timer() - start_time
+        return mission.CrashedMissionOutcome(total_time)
 
 
     def destroy(self):

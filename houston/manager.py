@@ -20,7 +20,7 @@ The set of containers that are actively in use.
 __containers = set()
 
 
-def setPortRange(start, end):
+def set_port_range(start, end):
     """
     Updates the set of ports that are available to Houston. This should not
     be called whilst containers are being provisioned, or missions are being
@@ -29,9 +29,9 @@ def setPortRange(start, end):
     global __port_pool
     global __manager_lock
 
-    assert (isinstance(start, int) and start is not None)
+    assert isinstance(start, int)
     assert (start >= 1024 and start < 65535)
-    assert (isinstance(end, int) and end is not None)
+    assert isinstance(end, int)
     assert (end >= 1024 and end < 65535)
     assert (start < end)  
 
@@ -40,7 +40,7 @@ def setPortRange(start, end):
     __manager_lock.release()
 
 
-def destroyContainer(cntr):
+def destroy_container(cntr):
     """
     Safely destroys a container by deallocating all attached resources
     (i.e., Docker containers, ports).
@@ -49,7 +49,7 @@ def destroyContainer(cntr):
     global __containers
     global __manager_lock
 
-    assert (isinstance(cntr, systemContainer.SystemContainer) and not cntr is None)
+    assert isinstance(cntr, systemContainer.SystemContainer)
 
     __manager_lock.acquire()
     port = cntr.port()
@@ -59,7 +59,7 @@ def destroyContainer(cntr):
     __manager_lock.release()
 
 
-def createContainer(systm, image, verbose=False):
+def create_container(systm, image, verbose=False):
     """
     Constructs a fresh, ephemeral container for a given system using a
     specified Docker image.

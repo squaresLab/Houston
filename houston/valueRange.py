@@ -13,10 +13,11 @@ class ValueRange(object):
         raise NotImplementedError
 
 
-    """
-    Returns the type of values within this range.
-    """
+    @property
     def type(self):
+        """
+        The type of values within this range.
+        """
         raise NotImplementedError
 
 
@@ -26,8 +27,7 @@ class DiscreteValueRange(ValueRange):
     """
 
     def __init__(self, values):
-        assert(values is not None)
-        assert(isinstance(values, list) or isinstance(values, type(range)))
+        assert (isinstance(values, list) or isinstance(values, type(range)))
         self.__values = values
         if isinstance(values, type(range)):
             self.__typ = int
@@ -38,11 +38,12 @@ class DiscreteValueRange(ValueRange):
 
         else:
             self.__size = len(values)
-            assert(self.__size > 0)
+            assert (self.__size > 0)
             self.__typ = type(values[0])
-            assert(all(type(v) == self.__typ for v in values))
+            assert all(type(v) == self.__typ for v in values)
 
 
+    @property
     def size(self):
         """
         Returns the number of values within this range.
@@ -55,6 +56,7 @@ class DiscreteValueRange(ValueRange):
         return rng.choice(self.__values)
 
 
+    @property
     def type(self):
         return self.__typ
 
@@ -70,12 +72,9 @@ class ContinuousValueRange(ValueRange):
         :param  inclusive:  a flag indicating whether the range should be\
                             half-open or full-open.
         """
-        assert(min_value is not None)
-        assert(max_value is not None)
-        assert(inclusive is not None)
-        assert(isinstance(min_value, float))
-        assert(isinstance(max_value, float))
-        assert(isinstance(inclusive, bool))
+        assert isinstance(min_value, float)
+        assert isinstance(max_value, float)
+        assert isinstance(inclusive, bool)
 
         self.__min_value = min_value
         self.__max_value = max_value
@@ -83,9 +82,10 @@ class ContinuousValueRange(ValueRange):
 
 
     def sample(self, rng):
-        assert (isinstance(rng, random.Random) and rng is not None)
+        assert isinstance(rng, random.Random)
         return rng.uniform(self.__min_value, self.__max_value)
 
-
+    
+    @property
     def type(self):
         return float

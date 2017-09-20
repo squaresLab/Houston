@@ -38,6 +38,7 @@ class GoToSchema(ActionSchema):
             action['altitude'])
         )
 
+        # block until (lat, lon) is reached
         to_loc = (action['latitude'], action['longitude'])
         while True:
             current_lat  = vehicle.location.global_relative_frame.lat
@@ -47,7 +48,7 @@ class GoToSchema(ActionSchema):
             if dist.meters <= 0.3:
                 break
 
-
+        # block until altitude has reached a threshold
         while True:
             current_alt = vehicle.location.global_relative_frame.alt
             if math.fabs(current_alt - action['altitude']) > 0.3:
@@ -61,31 +62,34 @@ class GotoNormally(Branch):
     """
     def __init__(self, schema):
         estimators = [
-            Estimator('latitude', lambda action, state, env: state.read('latitude') if state.read('mode') == 'LOITER' else action.read('latitude')),
-            Estimator('longitude', lambda action, state, env: state.read('longitude') if state.read('mode') == 'LOITER' else action.read('longitude')),
-            Estimator('altitude', lambda action, state, env: 0.0 if state.read('mode') == 'LOITER' else action.read('altitude'))
+            Estimator('latitude', \
+                      lambda action, state, env: state['latitude'] if state['mode'] == 'LOITER' else action['latitude']),
+            Estimator('longitude', \
+                      lambda action, state, env: state['longitude'] if state['mode'] == 'LOITER' else action.read['longitude']),
+            Estimator('altitude', \
+                      lambda action, state, env: 0.0 if state['mode'] == 'LOITER' else action['altitude'])
         ]
         super(GotoNormally, self).__init__('normal', schema, estimators)
 
 
-    def computeTimeout(self, action, state, environment):
-        fromLocation = (state.read('latitude'), state.read('longitude'))
-        toLocation   = (action.getValue('latitude'), action.getValue('longitude'))
-        totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
-        timeout = (totalDistance * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+    def compute_timeout(self, action, state, environment):
+        from_loc = (state['latitude'], state['longitude'])
+        to_loc = (action['latitude'], action['longitude'])
+        dist = geopy.distance.great_circle(from_loc, to_loc).meters
+        timeout = (dist * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
-    def isApplicable(self, action, state, environment):
-        return state.read('armed') and state.read('altitude') > 0.3
+    def is_applicable(self, action, state, environment):
+        return state['armed'] and state['altitude'] > 0.3
 
 
-    def isSatisfiable(self, state, environment):
-        return self.isApplicable(None, state, environment)
+    def is_satisfiable(self, state, environment):
+        return self.is_applicable(None, state, environment)
 
 
     def generate(self, state, environment, rng):
-        return self.getSchema().generate(rng)
+        return self.schema.generate(rng)
 
 
 class DistanceBasedGoToGenerator(ActionGenerator):
@@ -93,26 +97,26 @@ class DistanceBasedGoToGenerator(ActionGenerator):
     Description.
     """
 
-    def __init__(self, maxDistance, minDistance = 1.0):
-        assert (isinstance(maxDistance, float) and maxDistance is not None)
-        assert (isinstance(minDistance, float) and minDistance is not None)
-        assert (maxDistance > minDistance)
-        assert (minDistance > 0.0)
+    def __init__(self, max_distance, min_distance = 1.0):
+        assert isinstance(max_distance, float)
+        assert isinstance(min_distance, float)
+        assert (max_distance > min_distance)
+        assert (min_distance > 0.0)
 
-        self.__maxDistance = maxDistance
+        self.__max_distance = max_distance
         parameters = [
-            Parameter('distance', ContinuousValueRange(minDistance, maxDistance)),
+            Parameter('distance', ContinuousValueRange(min_distance, max_distance)),
             Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
         ]
 
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
 
-    def constructWithState(self, currentState, env, values):
+    def construct_with_state(self, current_state, env, values):
         dist = values['distance']
         heading = values['heading']
-        lon = currentState.read('longitude')
-        lat = currentState.read('latitude')
+        lon = current_state['longitude']
+        lat = current_state['latitude']
         params = {}
 
         origin = geopy.Point(latitude=lat, longitude=lon)
@@ -121,12 +125,12 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
-        params['altitude'] = currentState.read('altitude')
+        params['altitude'] = current_state['altitude']
 
         return params
 
 
-    def constructWithoutState(self, env, values):
+    def construct_without_state(self, env, values):
         raise NotImplementedError
 
 
@@ -135,22 +139,22 @@ class CircleBasedGotoGenerator(ActionGenerator):
     Description.
     """
 
-    def __init__(self, centerCoordinates, radius):
-        assert (isinstance(centerCoordinates, tuple) and centerCoordinates is not None)
-        assert (isinstance(radius, float) and radius is not None)
-        self.__centerCoordinates = centerCoordinates
+    def __init__(self, centre_coords, radius):
+        assert isinstance(centre_coords, tuple)
+        assert isinstance(radius, float)
+        self.__center_coords = center_coords
         self.__radius = radius
 
         parameters = [
-            Parameter('latitude', DiscreteValueRange([centerCoordinates[0]])),
-            Parameter('longitude', DiscreteValueRange([centerCoordinates[1]])),
+            Parameter('latitude', DiscreteValueRange([center_coords[0]])),
+            Parameter('longitude', DiscreteValueRange([center_coords[1]])),
             Parameter('heading', ContinuousValueRange(0.0, 360.0, True)),
             Parameter('distance', ContinuousValueRange(0.0, radius))
         ]
         super(CircleBasedGotoGenerator, self).__init__('goto', parameters)
 
 
-    def constructWithoutState(self, env, values):
+    def construct_without_state(self, env, values):
         lat = values['latitude']
         lon = values['longitude']
         heading = values['heading']
@@ -169,5 +173,5 @@ class CircleBasedGotoGenerator(ActionGenerator):
         return params
 
 
-    def constructWithState(self, currentState, env, values):
-        return self.constructWithoutState(env, values)
+    def construct_with_state(self, current_state, env, values):
+        return self.construct_without_state(env, values)

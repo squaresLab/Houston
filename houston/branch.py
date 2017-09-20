@@ -5,6 +5,7 @@ import random
 
 from util import printflush
 
+
 class Branch(object):
     def __init__(self, name, schema, estimators):
         """
@@ -16,50 +17,45 @@ class Branch(object):
                                 instance.
         :param  estimators:     a list of state estimators for this branch.
         """
-        assert (isinstance(estimators, list) and estimators is not None)
+        assert isinstance(estimators, list)
         assert (all(isinstance(e, state.Estimator) for e in estimators))
 
-        self.__effects = {e.getVariableName(): e for e in estimators}
-        assert (isinstance(self.__effects, dict) and self.__effects is not None)
+        self.__effects = {e.variable_name: e for e in estimators}
+        assert isinstance(self.__effects, dict)
 
-        assert (isinstance(name, str))
-        assert (name is not None)
+        assert isinstance(name, str)
         assert (name is not "")
         self.__name = name
 
-        assert (isinstance(schema, action.ActionSchema) and schema is not None)
+        assert isinstance(schema, action.ActionSchema)
         self.__schema = schema
 
 
-    def getSchema(self):
+    @property
+    def schema(self):
         """
-        Returns the action schema to which this outcome branch belongs.
+        The action schema to which this outcome branch belongs.
         """
         return self.__schema
 
 
-    def getSchemaName(self):
+    @property
+    def name(self):
         """
-        Returns the name of the schema to which this outcome branch belongs.
-        """
-        return self.getSchema().getName()
-
-
-    def getName(self):
-        """
-        Returns the name of this branch.
+        The name of this branch.
         """
         return self.__name
 
 
-    def getID(self):
+    @property
+    def id(self):
         """
-        Returns the identifier for this branch.
+        The identifier for this branch.
         """
-        return BranchID(self.getSchemaName(), self.__name)
+        return BranchID(self.__schema.name, self.__name)
 
 
-    def generate(self, initialState, env, rng):
+    def generate(self, initial_state, env, rng):
         """
         Generates an action that would cause the system to take this branch.
 
@@ -69,11 +65,10 @@ class Branch(object):
                                 conducted.
         :param  rng:            the random number generator
         """
-        print("OH NO!")
         raise NotImplementedError
 
 
-    def isSatisfiable(self, initialState, env):
+    def is_satisfiable(self, initial_state, env):
         """
         Determines whether there exists a set of parameter values that would
         satisify this precondition given a fixed initial state and
@@ -82,7 +77,7 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def isApplicable(self, act, initialState, env):
+    def is_applicable(self, act, initial_state, env):
         """
         Determines whether the guard for this outcome branch is satisfied by
         the parameters for the action, the state of the system immediately
@@ -101,14 +96,14 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def computeTimeout(self, act, state, environment):
+    def compute_timeout(self, act, state, environment):
         """
         Computes the timeout for the current branch.
         """
         raise NotImplementedError
 
 
-    def computeExpectedState(self, act, initialState, env):
+    def compute_expected_state(self, act, initial_state, env):
         """
         Produces an estimate of the system state following the execution of
         this branch within a given context.
@@ -123,20 +118,21 @@ class Branch(object):
                     system is expected to be in immediately after the \
                     execution of this branch
         """
-        assert (isinstance(act, action.Action) and act is not None)
-        assert (isinstance(initialState, state.State) and state is not None)
-        assert (isinstance(env, state.Environment) and env is not None)
+        assert isinstance(act, action.Action)
+        assert isinstance(initialState, state.State)
+        assert isinstance(env, state.Environment)
 
 
         # store the expected state values in a dictionary, indexed by the name
         # of the associated state variable
         values = {}
-        for (varName, initialValue) in initialState.getValues().items():
-            if varName in self.__effects:
-                expected = self.__effects[varName].computeExpectedValue(act, initialState, env)
-                values[varName] = expected
+        for (var_name, initial_value) in initial_state.values.items():
+            if var_name in self.__effects:
+                expected = \
+                    self.__effects[var_name].computeExpectedValue(act, initial_state, env)
+                values[var_name] = expected
             else:
-                values[varName] = state.ExpectedStateValue(initialValue)
+                values[var_name] = state.ExpectedStateValue(initial_value)
 
         return state.ExpectedState(values)
 
@@ -146,47 +142,44 @@ class IdleBranch(Branch):
         super(IdleBranch, self).__init__("idle", schema, [])
 
 
-    def computeTimeout(self, act, state, environment):
+    def compute_timeout(self, act, state, environment):
         return 1.0
 
 
-    def isApplicable(self, act, state, environment):
+    def is_applicable(self, act, state, environment):
         return True
 
 
-    def isSatisfiable(self, state, environment):
+    def is_satisfiable(self, state, environment):
         return True
 
 
     def generate(self, state, environment, rng):
-        assert (isinstance(rng, random.Random) and rng is not None)
-        return self.getSchema().generate(rng)
+        assert isinstance(rng, random.Random)
+        return self.schema.generate(rng)
 
 
 class BranchID(object):
     @staticmethod
     def fromJSON(jsn):
-        assert (isinstance(jsn, str) or isinstance(jsn, unicode))
-        assert (jsn is not None)
+        assert isinstance(jsn, str)
         assert (jsn != '')
 
-        (actionName, _, branchName) = jsn.partition(':')
+        (action_name, _, branch_name) = jsn.partition(':')
 
-        return BranchID(actionName, branchName)
+        return BranchID(action_name, branch_name)
 
     
-    def __init__(self, actionName, branchName):
-        assert (isinstance(actionName, str) or isinstance(actionName, unicode))
-        assert (actionName is not None)
-        assert (actionName is not '')
+    def __init__(self, action_name, branch_name):
+        assert (isinstance(action_name, str) or isinstance(action_name, unicode))
+        assert (action_name is not '')
         # TODO: rules
-        assert (isinstance(branchName, str) or isinstance(branchName, unicode))
-        assert (branchName is not None)
-        assert (branchName is not '')
+        assert (isinstance(branch_name, str) or isinstance(branch_name, unicode))
+        assert (branch_name is not '')
         # TODO: rules
 
-        self.__actionName = str(actionName)
-        self.__branchName = str(branchName)
+        self.__action_name = str(action_name)
+        self.__branch_name = str(branch_name)
 
 
     def equals(self, other):
@@ -194,20 +187,28 @@ class BranchID(object):
 
 
     def __eq__(self, other):
-        return  self.__actionName == other.getActionName() and \
-                self.__branchName == other.getBranchName()
+        return  self.__actionName == other.schema_name and \
+                self.__branchName == other.branch_name
 
     
-    def getActionName(self):
-        return self.__actionName
+    @property
+    def schema_name(self):
+        """
+        The name of the schema to which this branch identifier belongs.
+        """
+        return self.__action_name
 
 
-    def getBranchName(self):
-        return self.__branchName
+    @property
+    def branch_name(self):
+        """
+        The (unqualified) name of the branch to which this identifier belongs.
+        """
+        return self.__branch_name
 
 
     def __str__(self):
-        return "{}:{}".format(self.__actionName, self.__branchName)
+        return "{}:{}".format(self.__action_name, self.__branch_name)
 
 
     def __repr__(self):
@@ -225,6 +226,7 @@ class BranchPath(object):
         self.__identifiers = identifiers
 
 
+    @property
     def length(self):
         """
         Returns the length of this path (measured by its number of branches).
@@ -232,14 +234,15 @@ class BranchPath(object):
         return len(self.__identifiers)
 
 
-    def getIdentifiers(self):
+    @property
+    def identifiers(self):
         """
-        Returns an ordered list of identifiers for the branches along this path.
+        An ordered list of identifiers for the branches along this path.
         """
         return self.__identifiers[:]
 
 
-    def getBranches(self, systm):
+    def branches(self, systm):
         """
         Returns an ordered list of the branches along this path.
         """
@@ -258,7 +261,7 @@ class BranchPath(object):
         if isinstance(b, BranchID):
             return BranchPath(self.__identifiers + [b])
         elif isinstance(b, Branch):
-            return BranchPath(self.__identifiers + [b.getID()])
+            return BranchPath(self.__identifiers + [b.id])
         else:
             raise Exception('BranchPath::extended expected a BranchID or Branch object')
 
@@ -268,12 +271,12 @@ class BranchPath(object):
         Determines whether this path is prefixed by a given path. Returns True
         if this path is prefixed by the given path, otherwise False.
         """
-        assert (isinstance(prefix, BranchPath) and prefix is not None)
+        assert isinstance(prefix, BranchPath)
 
-        if prefix.length() > self.length():
+        if prefix.length > self.length:
             return False
 
-        prefix = prefix.getIdentifiers()
+        prefix = prefix.identifiers
         for i in range(len(prefix)):
             if prefix[i] != self.__identifiers[i]:
                 return False
@@ -286,10 +289,10 @@ class BranchPath(object):
 
 
     def __eq__(self, other):
-        assert (isinstance(other, BranchPath) and not BranchPath is None)
-        if self.length() != other.length():
+        assert isinstance(other, BranchPath)
+        if self.length != other.length:
             return False
-        for (x, y) in zip(self.__identifiers, other.getIdentifiers()):
+        for (x, y) in zip(self.__identifiers, other.identifiers):
             if not x.equals(y):
                 return False
         return True
