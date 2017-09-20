@@ -101,31 +101,40 @@ class SetModeSchema(ActionSchema):
 
                 time.sleep(0.2)
 
+            # block until vehicle is no longer armed
             while vehicle.armed:
                 time.sleep(0.2)
 
         elif action['mode'] == 'LAND':
             self.send_LAND(vehicle)
-            currentAlt = vehicle.location.global_relative_frame.alt
 
-            while not vehicle.mode == vehicleMode:
+            # block until mode change is acknowledged
+            while not vehicle.mode == vehicle_mode:
                 time.sleep(0.2)
 
-            while currentAlt > 0.1:
+            # block until altitude is <= 0.1
+            while True:
+                current_alt = vehicle.location.global_relative_frame.alt
+                if current_alt <= 0.1:
+                    break
                 time.sleep(0.2)
-                currentAlt = vehicle.location.global_relative_frame.alt
-
+        
+            # block until vehicle is no longer armed
             while vehicle.armed:
                 time.sleep(0.2)
 
         elif action['mode'] == 'LOITER': # TODO as we add more modes this would have to change
             self.send_LOITER(vehicle)
-            while not vehicle.mode == vehicleMode:
+
+            # block until mode change is acknowledged
+            while not vehicle.mode == vehicle_mode:
                 time.sleep(0.1)
 
         elif action['mode'] == 'GUIDED':
             vehicle.mode = vehicleMode
-            while not vehicle.mode == vehicleMode:
+
+            # block until mode change is acknowledged
+            while not vehicle.mode == vehicle_mode:
                 time.sleep(0.1)
 
         else:
