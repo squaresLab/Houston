@@ -152,21 +152,27 @@ class System(object):
                 schema = self.__schemas[action.schema_name]
 
                 # compute expected state
-                initial_state = self.observe()
+                state_before = state_after = self.observe()
 
-                # resolve the branch and compute the expected outcome
-                branch = schema.resolve_branch(action, initial_state, env)
-                expected = branch.compute_expected_state(action, initial_state, env)
+                # determine which branch the system should take
+                branch = schema.resolve_branch(self, action, state_before, env)
 
                 # enforce a timeout
-                timeout = schema.compute_timeout(action, initial_state, env)
+                timeout = schema.timeout(action, state_before, env)
                 signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
                 signal.alarm(int(math.ceil(timeout)))
 
                 time_before = timeit.default_timer()
-
+                passed = False
                 try:
-                    schema.dispatch(self, action, initial_state, env)
+                    schema.dispatch(self, action, state_before, env)
+
+                    # block until the postcondition is satisfied (or timeout is hit)
+                    while not passed:
+                        state_after = self.observe()
+                        if branch.postcondition(self, action, state_before, state_after, env):
+                            passed = True
+
                 except TimeoutError:
                     pass
                 finally:
@@ -175,15 +181,11 @@ class System(object):
                 time_after = timeit.default_timer()
                 time_elapsed = time_after - time_before
 
-                print('Doing: {}'.format(action.schema_name))
-
-                # compare the observed and expected states
-                observed = self.observe()
-                passed = expected.is_expected(self.__variables, observed)
+                # record the outcome of the action execution
                 outcome = ActionOutcome(action,
                                         passed,
-                                        initial_state,
-                                        observed,
+                                        state_before,
+                                        state_after,
                                         time_elapsed,
                                         branch.id)
                 outcomes.append(outcome)
@@ -214,8 +216,13 @@ class System(object):
 
     
     @property
+    def variables(self):
+        return copy.copy(self.__variables)
+
+
+    @property
     def schemas(self):
         """
         Returns a copy of action schemas
         """
-        return copy.deepcopy(self.__schemas)
+        return copy.copy(self.__schemas)
