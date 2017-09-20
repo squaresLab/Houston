@@ -1,6 +1,7 @@
 import copy
 import json
 import action
+import math
 
 
 class State(object):
@@ -115,6 +116,7 @@ class StateVariable(object):
     """
     Returns true if there is inherent noise in the measurement of this variable.
     """
+    @property
     def is_noisy(self):
         return self.__noise is not None
 
@@ -134,6 +136,42 @@ class StateVariable(object):
     @property
     def name(self):
         return self.__name
+
+    
+    def eq(self, x, y):
+        """
+        Determines whether two measurements of this state variable are
+        considered to be equal.
+        """
+        if not self.is_noisy:
+            return x == y
+
+        d = math.fabs(x - y)
+        return d <= self.__noise
+
+
+    def neq(self, x, y):
+        """
+        Determines whether two measurements of this state variable are not
+        considered to be equal.
+        """
+        return not self.eq(x, y)
+
+    
+    def gt(self, x, y):
+        return x > y
+
+    
+    def lt(self, x, y):
+        return x < y
+
+
+    def leq(self, x, y):
+        return not self.gt(x, y)
+
+
+    def geq(self, x, y):
+        return not self.lt(x, y)
 
 
     """
