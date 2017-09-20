@@ -11,6 +11,7 @@ class RandomMissionGenerator(MissionGenerator):
                  threads = 1,
                  action_generators = [],
                  max_num_actions = 10):
+        super(RandomMissionGenerator, self).__init__(system, image, threads, action_generators, max_num_actions)
         self.__initial_state = initial_state
         self.__env = env
 
@@ -26,10 +27,10 @@ class RandomMissionGenerator(MissionGenerator):
 
 
     def generate_action(self, schema):
-       generator = self.generator(schema)
-       if generator is None:
-           return schema.generate(self.rng)
-       return generator.generate_action_without_state(self.__env, self.rng)
+        generator = self.action_generator(schema)
+        if generator is None:
+            return schema.generate(self.rng)
+        return generator.generate_action_without_state(self.__env, self.rng)
 
 
     def generate_mission(self):

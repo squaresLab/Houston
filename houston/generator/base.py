@@ -1,5 +1,6 @@
 import random
 import threading
+import timeit
 
 from houston.runner import MissionRunnerPool
 from houston.system import System
@@ -45,6 +46,11 @@ class MissionGenerator(object):
 
 
     @property
+    def resource_usage(self):
+        return self.__resource_usage
+
+
+    @property
     def system(self):
         """
         The system under test.
@@ -77,7 +83,7 @@ class MissionGenerator(object):
         return self.__rng
 
 
-    def generator(self, schema):
+    def action_generator(self, schema):
         """
         Retrieves any action generator that has been associated with a given
         schema, or None if no action generator has been provided for the
@@ -154,20 +160,21 @@ class MissionGenerator(object):
         self.__history.append(mission)
         self.__outcomes[mission] = outcome
 
-        if outcome.failed():
+        if outcome.failed:
             self.__failures.add(mission)
 
 
     def generate(self, seed, resource_limits):
         assert isinstance(seed, int)
+        self.__runner_pool = None
 
         try:
             self.prepare(seed, resource_limits)
-            self.__runner_pool = RunnerPool(self.system,
-                                            self.image,
-                                            self.threads,
-                                            self.generator(), # property?
-                                            self.record_outcome)
+            self.__runner_pool = MissionRunnerPool(self.system,
+                                                   self.image,
+                                                   self.threads,
+                                                   self.generator(), # property?
+                                                   self.record_outcome)
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
             self.tick()
@@ -176,7 +183,9 @@ class MissionGenerator(object):
             return self.reduce()
 
         finally:
-            self.__runner_pool.shutdown()
+            if self.__runner_pool:
+                self.__runner_pool.shutdown()
+                self.__runner_pool = None
 
 
     def reduce(self):

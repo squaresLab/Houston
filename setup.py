@@ -21,14 +21,14 @@ setup(
     ],
     packages = [
         'houston',
-        'houston.detector',
+        'houston.generator',
         'houston.ardu',
         'houston.ardu.copter',
         'houston.ardu.rover'
     ],
     package_dir = {
         'houston': 'houston',
-        'houston.detector': 'houston/detector',
+        'houston.generator': 'houston/generator',
         'houston.ardu': 'houston/ardu',
         'houston.ardu.copter': 'houston/ardu/copter',
         'houston.ardu.rover': 'houston/ardu/rover'

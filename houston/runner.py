@@ -1,15 +1,17 @@
+import random
 import threading
+import time
 import houston.manager as mgr
 
 
 class MissionRunner(threading.Thread):
     def __init__(self, pool):
         assert isinstance(pool, MissionRunnerPool)
-        super(MissionPoolWorker, self).__init__()
+        super(MissionRunner, self).__init__()
         self.daemon = True # mark as a daemon thread
 
         self.__pool = pool
-        self.__container = mgr.createContainer(pool.system, pool.image)
+        self.__container = mgr.create_container(pool.system, pool.image)
         self.__reset_counter()
         
 
@@ -37,7 +39,7 @@ class MissionRunner(threading.Thread):
 
             self.__prepare_container()
             outcome = self.__container.execute(m)
-            self.__pool.report(outcome)
+            self.__pool.report(m, outcome)
         
 
     def shutdown(self):
@@ -57,6 +59,8 @@ class MissionRunnerPool(object):
         if isinstance(source, list):
             source = source.__iter__()
 
+        self.__system = system
+        self.__image = image
         self.__source = source
         self.__callback = callback
         self._lock = threading.Lock()
@@ -96,6 +100,16 @@ class MissionRunnerPool(object):
             if runner is not None:
                 runner.shutdown()
         self.__runners = []
+
+
+    @property
+    def system(self):
+        return self.__system
+
+
+    @property
+    def image(self):
+        return self.__image
 
 
     @property
