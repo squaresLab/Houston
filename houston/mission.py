@@ -20,7 +20,7 @@ class Mission(object):
         assert isinstance(jsn['actions'], list)
 
         env = state.Environment.from_json(jsn['environment'])
-        initialState = state.State.from_json(jsn['initialState'])
+        initial_state = state.State.from_json(jsn['initialState'])
         actions = [action.Action.from_json(a) for a in jsn['actions']]
 
         return Mission(env, initial_state, actions)
@@ -108,7 +108,7 @@ class Mission(object):
         return {
             'environment': self.environment.to_json(),
             'initialState': self.initial_state.to_json(),
-            'actions': [a.to_json () for a in self.__actions]
+            'actions': [a.to_json() for a in self.__actions]
         }
 
 

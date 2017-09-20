@@ -4,6 +4,8 @@ from houston.state import State, Environment
 from houston.mission import Mission
 from houston.action import Action
 
+from pprint import pprint as pp
+
 import houston.manager as mgr
 
 
@@ -38,12 +40,12 @@ if __name__ == "__main__":
     mission = Mission(environment, initial, actions)
 
     # create a container for the mission execution
-    image = 'houston-icse-2018:base'
-    container = mgr.createContainer(system, image)
+    image = 'squareslab/ardubugs:a0c5ac1'
+    container = mgr.create_container(system, image)
     print("built container")
 
     try:
         outcome = container.execute(mission)
-        print(outcome)
+        pp(outcome.to_json())
     finally:
-        mgr.destroyContainer(container)
+        mgr.destroy_container(container)

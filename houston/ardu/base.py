@@ -40,8 +40,6 @@ class BaseSystem(System):
             provided by dronekit.
         __speedup (float): speedup multiplier used by SITL.
     """
-
-
     def __init__(self, variables, schemas, speedup=3.0):
         """
         
@@ -85,6 +83,14 @@ class BaseSystem(System):
             'speedup': self.__speedup
         }
         return jsn
+
+
+    @property
+    def constant_timeout_offset(self):
+        """
+        The constant offset that is added to all timeouts (the pinch of salt)
+        """
+        return 1.0
 
 
     @property

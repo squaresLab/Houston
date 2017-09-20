@@ -1,5 +1,6 @@
 import time
 
+from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
@@ -131,7 +132,7 @@ class SetModeSchema(ActionSchema):
                 time.sleep(0.1)
 
         elif action['mode'] == 'GUIDED':
-            vehicle.mode = vehicleMode
+            vehicle.mode = vehicle_mode
 
             # block until mode change is acknowledged
             while not vehicle.mode == vehicle_mode:

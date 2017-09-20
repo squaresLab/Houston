@@ -127,19 +127,20 @@ class SystemContainer(object):
         """
         assert(isinstance(msn, mission.Mission))
 
-        jsn = {'system': self.__system.toJSON(),
-               'mission': msn.toJSON()}
+        jsn = {'system': self.__system.to_json(),
+               'mission': msn.to_json()}
         url = 'http://127.0.0.1:{}/executeMission'.format(self.__port)
         start_time = timeit.default_timer()
 
         for attempts in range(MAX_NUM_ATTEMPTS):
             try:
                 r = requests.post(url, json=jsn)
-                outcome = mission.MissionOutcome.fromJSON(r.json())
+                outcome = mission.MissionOutcome.from_json(r.json())
                 #if self.__verbose:
                 #    print(outcome.toJSON())
                 return outcome
             except ValueError:
+                printflush("server error: {}".format(self.__container.logs()))
                 printflush("mission attempt failed: resetting container")
                 self.reset()
             except:

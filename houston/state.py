@@ -53,7 +53,7 @@ class State(object):
         return copy.copy(self.__values)
 
 
-    def __getattr__(self, variable):
+    def __getitem__(self, variable):
         """
         :see `read`
         """
@@ -143,6 +143,15 @@ class ExpectedState(object):
         """
         assert (isinstance(values, dict))
         self.__values = values
+
+
+    @property
+    def values(self):
+        return copy.copy(self.__values)
+
+    
+    def __getitem__(self, var):
+        return self.__values[var]
 
 
     def is_expected(self, variables, st):

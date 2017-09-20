@@ -1,4 +1,4 @@
-import arm
+import time
 
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
@@ -27,6 +27,7 @@ class ArmSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
+        from pymavlink import mavutil
         vehicle = system.vehicle
         msg = vehicle.message_factory.command_long_encode(
             0, 0,    # target_system, target_component

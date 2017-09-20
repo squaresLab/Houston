@@ -46,7 +46,7 @@ class ArduCopter(BaseSystem):
 
     
     def setup(self, mission):
-        super(ArduCopter, self).setUp(mission)
+        super(ArduCopter, self).setup(mission)
 
         vehicle = self.vehicle
         vehicle_mode = dronekit.VehicleMode('GUIDED')

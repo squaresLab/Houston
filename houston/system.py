@@ -41,7 +41,7 @@ class System(object):
 
 
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         """
         Constructs a system from its JSON description.
         """
@@ -192,11 +192,11 @@ class System(object):
                     total_time = timeit.default_timer() - time_before_setup
                     return MissionOutcome(False,
                                           outcomes,
-                                          total_setup_time,
-                                          totalTime)
+                                          setup_time,
+                                          total_time)
 
             total_time = timeit.default_timer() - time_before_setup
-            return MissionOutcome(True, outcomes, total_setup_time, total_time)
+            return MissionOutcome(True, outcomes, setup_time, total_time)
 
         finally:
             self.tear_down(msn)

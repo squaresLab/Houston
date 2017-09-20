@@ -39,14 +39,14 @@ class Action(object):
 
 
     @property
-    def schema(self):
+    def schema_name(self):
         """
         The name of the schema to which this action belongs.
         """
         return self.__kind
 
 
-    def __getattr__(self, param):
+    def __getitem__(self, param):
         """
         Returns the value for a specific parameter in this action.
         """
@@ -61,7 +61,7 @@ class Action(object):
         return self.__values.copy()
 
 
-    def toJSON(self):
+    def to_json(self):
         """
         Returns a JSON description of this action.
         """
@@ -92,6 +92,7 @@ class Parameter(object):
         self.__value_range = value_range
 
 
+    @property
     def values(self):
         """
         The range of possible values for this parameter.
@@ -243,11 +244,11 @@ class ActionSchema(object):
 
 class ActionOutcome(object):
     @staticmethod
-    def fromJSON(jsn):
+    def from_json(jsn):
         """
         TODO: add comment
         """
-        assert (isinstance(jsn, dict) and not jsn is None)
+        assert isinstance(jsn, dict)
         assert ('successful' in jsn)
         assert ('action' in jsn)
         assert ('stateBefore' in jsn)
@@ -255,16 +256,15 @@ class ActionOutcome(object):
         assert ('timeElapsed' in jsn)
         assert ('branchID' in jsn)
         assert (isinstance(jsn['branchID'], str) or isinstance(jsn['branchID'], unicode))
-        assert (jsn['branchID'] is not None)
         assert (jsn['branchID'] != '')
-        assert (isinstance(jsn['successful'], bool) and not jsn['successful'] is None)
+        assert isinstance(jsn['successful'], bool)
 
-        return ActionOutcome(Action.fromJSON(jsn['action']),
+        return ActionOutcome(Action.from_json(jsn['action']),
                              jsn['successful'],
-                             state.State.fromJSON(jsn['stateBefore']),
-                             state.State.fromJSON(jsn['stateAfter']),
+                             state.State.from_json(jsn['stateBefore']),
+                             state.State.from_json(jsn['stateAfter']),
                              jsn['timeElapsed'],
-                             branch.BranchID.fromJSON(jsn['branchID']))
+                             branch.BranchID.from_json(jsn['branchID']))
 
 
     """
@@ -297,21 +297,22 @@ class ActionOutcome(object):
         self.__branch_id = branch_id
 
 
-    def toJSON(self):
+    def to_json(self):
         """
         Returns a JSON description of this action outcome.
         """
         return {
-            'action':       self.__action.toJSON(),
+            'action':       self.__action.to_json(),
             'successful':   self.__successful,
-            'stateBefore':  self.__state_before.toJSON(),
-            'stateAfter':   self.__state_after.toJSON(),
+            'stateBefore':  self.__state_before.to_json(),
+            'stateAfter':   self.__state_after.to_json(),
             'timeElapsed':  self.__time_elapsed,
-            'branchID':     self.__branch_id.toJSON()
+            'branchID':     self.__branch_id.to_json()
         }
 
     
-    def getBranchID(self):
+    @property
+    def branch_id(self):
         """
         Returns an identifier for the branch that was taken by this action.
         """
@@ -362,8 +363,8 @@ class ActionGenerator(object):
                     produces actions.
         :params parameters: a list of the parameters to this generator.
         """
-        assert (isinstance(schema_name, str) and schema_name is not None)
-        assert (isinstance(parameters, list) and parameters is not None)
+        assert isinstance(schema_name, str)
+        assert isinstance(parameters, list)
 
         self.__schema_name = schema_name
         self.__parameters = parameters
@@ -401,14 +402,14 @@ class ActionGenerator(object):
 
 
     def generate_action_with_state(self, current_state, env, rng):
-        assert (isinstance(rng, random.Random) and rng is not None)
+        assert isinstance(rng, random.Random)
         values = {p.name: p.generate(rng) for p in self.__parameters}
         values = self.construct_with_state(current_state, env, values)
         return Action(self.__schema_name, values)
 
 
     def generate_action_without_state(self, env, rng):
-        assert (isinstance(rng, random.Random) and rng is not None)
+        assert isinstance(rng, random.Random)
         values = {p.name: p.generate(rng) for p in self.__parameters}
         values = self.construct_without_state(env, values)
         return Action(self.__schema_name, values)

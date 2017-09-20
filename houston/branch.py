@@ -119,7 +119,7 @@ class Branch(object):
                     execution of this branch
         """
         assert isinstance(act, action.Action)
-        assert isinstance(initialState, state.State)
+        assert isinstance(initial_state, state.State)
         assert isinstance(env, state.Environment)
 
 
@@ -129,7 +129,7 @@ class Branch(object):
         for (var_name, initial_value) in initial_state.values.items():
             if var_name in self.__effects:
                 expected = \
-                    self.__effects[var_name].computeExpectedValue(act, initial_state, env)
+                    self.__effects[var_name].compute_expected_value(act, initial_state, env)
                 values[var_name] = expected
             else:
                 values[var_name] = state.ExpectedStateValue(initial_value)
@@ -161,8 +161,8 @@ class IdleBranch(Branch):
 
 class BranchID(object):
     @staticmethod
-    def fromJSON(jsn):
-        assert isinstance(jsn, str)
+    def from_json(jsn):
+        assert isinstance(jsn, str) or isinstance(jsn, unicode)
         assert (jsn != '')
 
         (action_name, _, branch_name) = jsn.partition(':')
@@ -215,7 +215,7 @@ class BranchID(object):
         return str(self)
 
 
-    def toJSON(self):
+    def to_json(self):
         return str(self)
 
 
