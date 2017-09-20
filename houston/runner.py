@@ -48,7 +48,7 @@ class MissionRunner(threading.Thread):
 
 
 class MissionRunnerPool(object):
-    def __init__(self, size, source, callback):
+    def __init__(self, system, image, size, source, callback):
         assert isinstance(size, int)
         assert callable(callback)
         assert size > 0
@@ -82,9 +82,20 @@ class MissionRunnerPool(object):
                 time.sleep(0.1)
 
         finally:
-            for runner in self.__runners:
-                if runner is not None:
-                    runner.shutdown()
+            self.shutdown()
+
+    
+    def shutdown(self):
+        """
+        Kills all runners that belong to this pool.
+        """
+        if self.__runners == []:
+            return
+
+        for runner in self.__runners:
+            if runner is not None:
+                runner.shutdown()
+        self.__runners = []
 
 
     @property
