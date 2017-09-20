@@ -31,25 +31,28 @@ class GoToSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
-        vehicle = system.getVehicle()
+        vehicle = system.vehicle
         vehicle.simple_goto(LocationGlobalRelative(
-            action.read('latitude'),
-            action.read('longitude'),
-            action.read('altitude'))
+            action['latitude'],
+            action['longitude'],
+            action['altitude'])
         )
-        currentLat  = vehicle.location.global_relative_frame.lat
-        currentLon = vehicle.location.global_relative_frame.lon
-        toLocation = (action.getValue('latitude'), action.getValue('longitude'))
-        fromLocation = (currentLat, currentLon)
 
-        while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3:
-            time.sleep(0.2)
-            currentLat  = vehicle.location.global_relative_frame.lat
-            currentLon = vehicle.location.global_relative_frame.lon
+        to_loc = (action['latitude'], action['longitude'])
+        while True:
+            current_lat  = vehicle.location.global_relative_frame.lat
+            current_lon = vehicle.location.global_relative_frame.lon
+            current_loc = (current_lat, current_lon)
+            dist = geopy.distance.great_circle(current_loc, to_loc)
+            if dist.meters <= 0.3:
+                break
 
-        while math.fabs(currentAlt - action.read('altitude')) > 0.3:
+
+        while True:
+            current_alt = vehicle.location.global_relative_frame.alt
+            if math.fabs(current_alt - action['altitude']) > 0.3:
+                break
             time.sleep(0.2)
-            currentAlt = vehicle.location.global_relative_frame.alt
 
 
 class GotoNormally(Branch):
