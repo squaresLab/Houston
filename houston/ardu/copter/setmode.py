@@ -67,11 +67,11 @@ class SetModeLand(Branch):
 
 
     def precondition(self, system, action, state, environment):
-        return action['mode'] == 'LAND'
+        return action['mode'] == 'LAND' and state['altitude'] > 0.3
 
 
     def is_satisfiable(self, system, state, environment):
-        return True
+        return state['altitude'] > 0.3
 
 
     def generate(self, state, environment, rng):
