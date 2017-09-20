@@ -6,11 +6,6 @@ from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
 from houston.valueRange import ContinuousValueRange
 
-try:
-    import dronekit
-except ImportError:
-    pass
-
 
 class TakeoffSchema(ActionSchema):
     """docstring for TakeoffActionSchema.
@@ -39,35 +34,28 @@ class TakeoffSchema(ActionSchema):
             0, 1, 0, 0, 0, 0, 0, action['altitude'])
         vehicle.send_mavlink(msg)
 
-        expected_alt = action['altitude']
-        current_alt = vehicle.location.global_relative_frame.alt
-        while math.fabs(current_alt - expected_alt) > 0.3:
-            time.sleep(0.1)
-            currentAlt = vehicle.location.global_relative_frame.alt
-
 
 class TakeoffNormally(Branch):
-    """
-    Description.
-    """
-    def __init__(self, schema):
-        estimators = [
-            Estimator('altitude', lambda action, state, env: action['altitude'])
-        ]
-        super(TakeoffNormally, self).__init__('normal', schema, estimators)
-
-
-    def compute_timeout(self, action, state, environment):
+    def timeout(self, action, state, environment):
         timeout = (action['altitude'] * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
-    def is_applicable(self, action, state, environment):
-        return state['armed'] and state['altitude'] < 0.3 and state['mode'] == 'GUIDED' #TODO further check; CT: for what?
+    def postcondition(self, action, state_before, state_after, environment):
+        return  state_before['longitude'] == state_after['longitude'] and \
+                state_before['longitude'] == state_after['longitude'] and \
+                state_after['altitude'] == action['altitude']
+
+
+    def precondition(self, action, state, environment):
+        return  state['armed'] and \
+                state['altitude'] < 0.3 and \
+                state['mode'] == 'GUIDED' #TODO further check; CT: for what?
 
 
     def is_satisfiable(self, state, environment):
-        return self.is_applicable(None, state, environment)
+        return self.precondition(None, state, environment)
 
-    def generate(self, initialState, env, rng):
+
+    def generate(self, state, env, rng):
         return self.schema.generate(rng)
