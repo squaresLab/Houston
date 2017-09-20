@@ -41,7 +41,7 @@ class MissionRunner(threading.Thread):
         
 
     def shutdown(self):
-        print("shutting down worker: {}".format(self))
+        # print("shutting down worker: {}".format(self))
         if self.__container is not None:
             mgr.destroy_container(self.__container)
             self.__container = None
@@ -50,17 +50,38 @@ class MissionRunner(threading.Thread):
 class MissionRunnerPool(object):
     def __init__(self, size, source):
         assert isinstance(size, int)
-        assert callable(source)
         assert size > 0
+
+        # if a list is provided, use an iterator for that list
+        if isinstance(source, list):
+            source = source.__iter__()
 
         self.__size = size
         self.__source = source
+        self.__runners = []
+        self._lock = threading.Lock()
 
 
     @property
     def size(self):
+        """
+        The number of runners used by the pool.
+        """
         return self.__size
 
 
     def fetch(self):
-        return x
+        """
+        Returns the next mission from the (lazily-generated) queue, or None if
+        there are no missions left to run.
+        """
+        # acquire fetch lock
+        self._lock.acquire()
+        try:
+            return self.__source.next()
+
+        except StopIteration:
+            return None
+
+        finally:
+            self._lock.release()
