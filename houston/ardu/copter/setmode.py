@@ -150,28 +150,28 @@ class SetModeLand(Branch):
         estimators = [
             FixedEstimator('mode', 'LAND'),
             FixedEstimator('armed', False),
-            Estimator('latitude', lambda action, state, env: state.read('latitude')),
-            Estimator('longitude', lambda action, state, env: state.read('longitude')),
+            Estimator('latitude', lambda action, state, env: state['latitude']),
+            Estimator('longitude', lambda action, state, env: state['longitude']),
             Estimator('altitude', lambda action, state, env: 0.0)
         ]
         super(SetModeLand, self).__init__('land', schema, estimators)
 
 
-    def computeTimeout(self, action, state, environment):
-        timeout = (state.read('altitude') * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+    def compute_timeout(self, action, state, environment):
+        timeout = (state['altitude'] * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
-    def isApplicable(self, action, state, environment):
-        return action.read('mode') == 'LAND'
+    def is_applicable(self, action, state, environment):
+        return action['mode'] == 'LAND'
 
 
-    def isSatisfiable(self, state, environment):
+    def is_satisfiable(self, state, environment):
         return True
 
 
     def generate(self, state, environment, rng):
-        return Action(self.getSchemaName(), {'mode': 'LAND'})
+        return Action(self.schema_name, {'mode': 'LAND'})
 
 
 class SetModeGuided(Branch):
@@ -185,20 +185,20 @@ class SetModeGuided(Branch):
         super(SetModeGuided, self).__init__('guided', schema, estimators)
 
 
-    def computeTimeout(self, action, state, environment):
+    def compute_timeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def isApplicable(self, action, state, environment):
-        return action.read('mode') == 'GUIDED'
+    def is_applicable(self, action, state, environment):
+        return action['mode'] == 'GUIDED'
 
 
-    def isSatisfiable(self, state, environment):
+    def is_satisfiable(self, state, environment):
         return True
 
 
     def generate(self, state, environment, rng):
-        return Action(self.getSchemaName(), {'mode': 'GUIDED'})
+        return Action(self.schema_name, {'mode': 'GUIDED'})
 
 
 
@@ -213,20 +213,20 @@ class SetModeLoiter(Branch):
         super(SetModeLoiter, self).__init__('loiter', schema, estimators)
 
 
-    def computeTimeout(self, action, state, environment):
+    def compute_timeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def isApplicable(self, action, state, environment):
-        return action.read('mode') == 'LOITER'
+    def is_applicable(self, action, state, environment):
+        return action['mode'] == 'LOITER'
 
 
-    def isSatisfiable(self, state, environment):
+    def is_satisfiable(self, state, environment):
         return True
 
 
     def generate(self, state, environment, rng):
-        return Action(self.getSchemaName(), {'mode': 'LOITER'})
+        return Action(self.schema_name, {'mode': 'LOITER'})
 
 
 class SetModeRTL(Branch):
@@ -236,38 +236,45 @@ class SetModeRTL(Branch):
     def __init__(self, schema):
         estimators = [
             FixedEstimator('mode', 'RTL'),
-            Estimator('armed', lambda action, state, env: state.read('armed') if state.read('altitude') < 0.3 else False),
-            Estimator('latitude', lambda action, state, env: state.read('homeLatitude')),
-            Estimator('longitude', lambda action, state, env: state.read('homeLongitude')),
-            Estimator('altitude', lambda action, state, env: 0.0)
+            Estimator('armed', \
+                      lambda action, state, env: state['armed'] if state['altitude'] < 0.3 else False),
+            Estimator('latitude', \
+                      lambda action, state, env: state['homeLatitude']),
+            Estimator('longitude', \
+                      lambda action, state, env: state['homeLongitude']),
+            Estimator('altitude', \
+                      lambda action, state, env: 0.0)
         ]
         super(SetModeRTL, self).__init__('rtl', schema, estimators)
 
 
-    def computeTimeout(self, action, state, environment):
-        fromLocation = (state.read('latitude'), state.read('longitude'))
-        toLocation   = (state.read('homeLatitude'), state.read('homeLongitude'))
-        # Distance from current coor to home coor
-        totalDistance = geopy.distance.great_circle(fromLocation, toLocation).meters
+    def compute_timeout(self, action, state, environment):
+        # compute distance
+        from_loc = (state['latitude'], state['longitude'])
+        to_loc = (state['homeLatitude'], state['homeLongitude'])
+        dist = geopy.distance.great_circle(from_loc, to_loc).meters
+
+        # compute time taken to travel from A to B, and time taken to land
+        time_goto_phase = dist * TIME_PER_METER_TRAVELED
+        time_land_phase = state['altitude'] * TIME_PER_METER_TRAVELED
+
+        # TODO: what was this? No explanation of logic?
         # Land times and adjustment time for altitude
-        totalLandTime = (state.read('altitude') * TIME_PER_METER_TRAVELED)
-        totalGoUpDownTime = (math.fabs(10 - state.read('altitude')) * TIME_PER_METER_TRAVELED)
-        # Land and adjustment time for altitude added
-        goUpDownAndLandTime = totalGoUpDownTime + totalLandTime
-        # Go to home lat and lon time travel.
-        gotoTotalTime = (totalDistance * TIME_PER_METER_TRAVELED)
-        # Total timeout
-        timeout = totalGoUpDownTime + gotoTotalTime + CONSTANT_TIMEOUT_OFFSET
+        #total_go_up_down_time = \
+        #    math.fabs(10 - state['altitude']) * TIME_PER_METER_TRAVELED
+
+        # compute total timeout
+        timeout = time_goto_phase + time_land_phase
         return timeout
 
 
-    def isApplicable(self, action, state, environment):
-        return action.read('mode') == 'RTL'
+    def is_applicable(self, action, state, environment):
+        return action['mode'] == 'RTL'
 
 
-    def isSatisfiable(self, state, environment):
+    def is_satisfiable(self, state, environment):
         return True
 
 
     def generate(self, state, environment, rng):
-        return Action(self.getSchemaName(), {'mode': 'RTL'})
+        return Action(self.schema_name, {'mode': 'RTL'})
