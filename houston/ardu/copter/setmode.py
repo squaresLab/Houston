@@ -117,7 +117,7 @@ class SetModeLoiter(Branch):
 
 
     def precondition(self, system, action, state, environment):
-        return action['mode'] != 'LOITER'
+        return action['mode'] == 'LOITER'
 
 
     def is_satisfiable(self, system, state, environment):
