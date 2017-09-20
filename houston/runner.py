@@ -48,18 +48,43 @@ class MissionRunner(threading.Thread):
 
 
 class MissionRunnerPool(object):
-    def __init__(self, size, source):
+    def __init__(self, size, source, callback):
         assert isinstance(size, int)
+        assert callable(callback)
         assert size > 0
 
         # if a list is provided, use an iterator for that list
         if isinstance(source, list):
             source = source.__iter__()
 
-        self.__size = size
         self.__source = source
-        self.__runners = []
+        self.__callback = callback
         self._lock = threading.Lock()
+
+        # provision desired number of runners
+        self.__runners = [MissionRunner(self) for _ in range(size)]
+
+
+    def run(self):
+        """
+
+        """
+        try:
+            for runner in self.__runners:
+                runner.start()
+
+            # soft block until all runners have finished
+            # (unlike join, we allow exceptions to be thrown to the parent
+            #  thread)
+            while True:
+                if not any(runner.is_alive() for runner in self.__runners):
+                    break
+                time.sleep(0.1)
+
+        finally:
+            for runner in self.__runners:
+                if runner is not None:
+                    runner.shutdown()
 
 
     @property
@@ -67,13 +92,26 @@ class MissionRunnerPool(object):
         """
         The number of runners used by the pool.
         """
-        return self.__size
+        return self.__runners.length()
+
+    
+    def report(self, mission, outcome):
+        """
+        Used to report the outcome of a mission.
+
+        WARNING: It is the responsibility of the callback to guarantee
+            thread safety (if necessary).
+        """
+        self.__callback(mission, outcome)
 
 
     def fetch(self):
         """
         Returns the next mission from the (lazily-generated) queue, or None if
         there are no missions left to run.
+        
+        This method is considered to be thread safe (no concurrent reads from
+        the source of the pool are allowed).
         """
         # acquire fetch lock
         self._lock.acquire()
