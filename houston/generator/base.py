@@ -82,6 +82,16 @@ class MissionGenerator(object):
         return self.__outcomes[mission]
 
 
+    def executed_path(self, m):
+        """
+        Returns the path that was taken when a given mission was executed.
+        """
+        if m.is_empty():
+            return BranchPath([])
+        outcome = self.__outcomes[m]
+        return outcome.executed_path()
+
+
     def tick(self):
         """
         Used to measure the running time of the current generation trial.
@@ -167,6 +177,31 @@ class MissionGenerator(object):
         by this generator.
         """
         raise NotImplementedError
+
+
+    def execute_mission(self, mission, container):
+        """
+        Executes a given mission using a provided container.
+        """
+        print("executing mission..."),
+        outcome = container.execute(mission)
+        self.record_outcome(mission, outcome)
+        print("\t[DONE]")
+        return outcome
+
+
+    def record_outcome(self, mission, outcome):
+        """
+        Records the outcome of a given mission. The mission is logged to the
+        history, and its outcome is stored in the outcome dictionary. If the
+        mission failed, the mission is also added to the set of failed
+        missions.
+        """
+        self.__history.append(mission)
+        self.__outcomes[mission] = outcome
+
+        if outcome.failed():
+            self.__failures.add(mission)
 
 
     def next(self):
