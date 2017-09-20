@@ -68,7 +68,7 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def is_satisfiable(self, initial_state, env):
+    def is_satisfiable(self, system, initial_state, env):
         """
         Determines whether there exists a set of parameter values that would
         satisify this precondition given a fixed initial state and
@@ -77,7 +77,7 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def is_applicable(self, act, initial_state, env):
+    def precondition(self, system, action, state, env):
         """
         Determines whether the guard for this outcome branch is satisfied by
         the parameters for the action, the state of the system immediately
@@ -96,45 +96,15 @@ class Branch(object):
         raise NotImplementedError
 
 
-    def compute_timeout(self, act, state, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
+        raise NotImplementedError
+
+
+    def timeout(self, system, act, state, environment):
         """
         Computes the timeout for the current branch.
         """
         raise NotImplementedError
-
-
-    def compute_expected_state(self, act, initial_state, env):
-        """
-        Produces an estimate of the system state following the execution of
-        this branch within a given context.
-
-        :param  act:            a description of the action being performed
-        :param  initialState:   the state of the system immediately prior to \
-                                the execution of this action
-        :param  env:            the environment in which the action is being \
-                                performed
-
-        :returns    An ExpectedState object, describing the state that the \
-                    system is expected to be in immediately after the \
-                    execution of this branch
-        """
-        assert isinstance(act, action.Action)
-        assert isinstance(initial_state, state.State)
-        assert isinstance(env, state.Environment)
-
-
-        # store the expected state values in a dictionary, indexed by the name
-        # of the associated state variable
-        values = {}
-        for (var_name, initial_value) in initial_state.values.items():
-            if var_name in self.__effects:
-                expected = \
-                    self.__effects[var_name].compute_expected_value(act, initial_state, env)
-                values[var_name] = expected
-            else:
-                values[var_name] = state.ExpectedStateValue(initial_value)
-
-        return state.ExpectedState(values)
 
 
 class IdleBranch(Branch):
@@ -142,11 +112,16 @@ class IdleBranch(Branch):
         super(IdleBranch, self).__init__("idle", schema, [])
 
 
-    def compute_timeout(self, act, state, environment):
+    def timeout(self, act, state, environment):
         return 1.0
 
 
-    def is_applicable(self, act, state, environment):
+    def precondition(self, act, state, environment):
+        return True
+
+
+    # TODO: At the moment, this does nothing!
+    def postcondition(self, act, state, environment):
         return True
 
 
@@ -242,6 +217,7 @@ class BranchPath(object):
         return self.__identifiers[:]
 
 
+    @property
     def branches(self, systm):
         """
         Returns an ordered list of the branches along this path.

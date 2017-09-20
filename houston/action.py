@@ -144,12 +144,12 @@ class ActionSchema(object):
                 actions belonging to this schema.
 
         """
-        assert (isinstance(name, str) and not name is None)
+        assert isinstance(name, str)
         assert (len(name) > 0)
-        assert (isinstance(parameters, list) and not parameters is None)
-        assert (all(isinstance(p, Parameter) for p in parameters))
-        assert (isinstance(branches, list) and not branches is None)
-        assert (all(isinstance(b, branch.Branch) for b in branches))
+        assert isinstance(parameters, list)
+        assert all(isinstance(p, Parameter) for p in parameters)
+        assert isinstance(branches, list)
+        assert all(isinstance(b, branch.Branch) for b in branches)
         assert (len(branches) > 0)
 
         # unique branch names
@@ -200,7 +200,7 @@ class ActionSchema(object):
         raise UnimplementedError
 
 
-    def compute_timeout(self, action, state, environment):
+    def timeout(self, system, action, state, environment):
         """
         Responsible for calculating the maximum time that this action shoud take.
 
@@ -210,8 +210,8 @@ class ActionSchema(object):
 
         :returns maximum time in seconds (as a float)
         """
-        branch = self.resolve_branch(action, state, environment)
-        return branch.compute_timeout(action, state, environment)
+        branch = self.resolve_branch(system, action, state, environment)
+        return branch.timeout(system, action, state, environment)
 
 
     @property
@@ -222,13 +222,13 @@ class ActionSchema(object):
         return self.__parameters[:]
 
 
-    def resolve_branch(self, action, initial_state, environment):
+    def resolve_branch(self, system, action, initial_state, environment):
         """
         Returns the branch that is appropiate for the current action, state, and
         environment based on the current action schema.
         """
         for b in self.__branches:
-            if b.is_applicable(action, initial_state, environment):
+            if b.is_applicable(system, action, initial_state, environment):
                 return b
         raise Exception("failed to resolve branch")
 
