@@ -147,12 +147,12 @@ class CircleBasedGotoGenerator(ActionGenerator):
     def __init__(self, centre_coords, radius):
         assert isinstance(centre_coords, tuple)
         assert isinstance(radius, float)
-        self.__center_coords = center_coords
+        self.__centre_coords = centre_coords
         self.__radius = radius
 
         parameters = [
-            Parameter('latitude', DiscreteValueRange([center_coords[0]])),
-            Parameter('longitude', DiscreteValueRange([center_coords[1]])),
+            Parameter('latitude', DiscreteValueRange([centre_coords[0]])),
+            Parameter('longitude', DiscreteValueRange([centre_coords[1]])),
             Parameter('heading', ContinuousValueRange(0.0, 360.0, True)),
             Parameter('distance', ContinuousValueRange(0.0, radius))
         ]
