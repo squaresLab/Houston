@@ -26,9 +26,6 @@ except ImportError as e:
     print("Import warning: {}".format(e))
 
 
-CONSTANT_TIMEOUT_OFFSET = 1.0
-
-
 class BaseSystem(System):
     """
     Description of the ArduCopter system
@@ -83,6 +80,12 @@ class BaseSystem(System):
             'speedup': self.__speedup
         }
         return jsn
+
+    
+    # TODO: internally, this should be a function of speedup
+    @property
+    def time_per_metre_travelled(self):
+        return 1.0
 
 
     @property

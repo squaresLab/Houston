@@ -1,6 +1,5 @@
 import time
 
-from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import DiscreteValueRange
@@ -54,7 +53,8 @@ class SetModeLand(Branch):
 
 
     def timeout(self, system, action, state, environment):
-        timeout = (state['altitude'] * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        timeout = state['altitude'] * system.time_per_metre_travelled
+        timeout += system.constant_timeout_offset
         return timeout
 
 
@@ -84,7 +84,7 @@ class SetModeGuided(Branch):
 
 
     def timeout(self, system, action, state, environment):
-        return CONSTANT_TIMEOUT_OFFSET
+        return system.constant_timeout_offset
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
@@ -109,7 +109,7 @@ class SetModeLoiter(Branch):
 
 
     def timeout(self, system, action, state, environment):
-        return CONSTANT_TIMEOUT_OFFSET
+        return system.constant_timeout_offset
 
     
     def postcondition(self, system, action, state_before, state_after, environment):
@@ -140,16 +140,16 @@ class SetModeRTL(Branch):
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
 
         # compute time taken to travel from A to B, and time taken to land
-        time_goto_phase = dist * TIME_PER_METER_TRAVELED
-        time_land_phase = state['altitude'] * TIME_PER_METER_TRAVELED
+        time_goto_phase = dist * system.time_per_metre_travelled
+        time_land_phase = state['altitude'] * system.time_per_metre_travelled
 
         # TODO: what was this? No explanation of logic?
         # Land times and adjustment time for altitude
         #total_go_up_down_time = \
-        #    math.fabs(10 - state['altitude']) * TIME_PER_METER_TRAVELED
+        #    math.fabs(10 - state['altitude']) * system.time_per_metre_travelled
 
         # compute total timeout
-        timeout = time_goto_phase + time_land_phase
+        timeout = time_goto_phase + time_land_phase + system.constant_timeout_offset
         return timeout
 
 

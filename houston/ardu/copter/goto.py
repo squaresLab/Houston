@@ -3,7 +3,6 @@ import math
 import geopy
 import geopy.distance
 
-from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
@@ -43,7 +42,8 @@ class GotoNormally(Branch):
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (action['latitude'], action['longitude'])
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = (dist * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        timeout = dist * TIME_PER_METER_TRAVELED
+        timeout += system.constant_timeout_offset
         return timeout
 
     
@@ -72,8 +72,8 @@ class GotoLoiter(Branch):
         super(GotoLoiter, self).__init__('loiter', system)
 
 
-    def timeout(self, action, state, environment):
-        return CONSTANT_TIMEOUT_OFFSET
+    def timeout(self, system, action, state, environment):
+        return system.constant_timeout_offset
 
 
     def precondition(self, system, action, state, environment):

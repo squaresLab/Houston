@@ -41,7 +41,8 @@ class TakeoffNormally(Branch):
 
 
     def timeout(self, system, action, state, environment):
-        timeout = (action['altitude'] * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
+        timeout = action['altitude'] * system.time_per_metre_travelled
+        timeout += system.constant_timeout_offset
         return timeout
 
 

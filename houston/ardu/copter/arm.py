@@ -1,6 +1,5 @@
 import time
 
-from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import DiscreteValueRange
@@ -51,7 +50,7 @@ class ArmNormally(Branch):
 
 
     def timeout(self, system, action, state, environment):
-        return CONSTANT_TIMEOUT_OFFSET
+        return system.constant_timeout_offset
 
 
     def is_satisfiable(self, system, state, environment):
