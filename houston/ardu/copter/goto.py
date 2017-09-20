@@ -3,6 +3,7 @@ import math
 import geopy
 import geopy.distance
 
+from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
@@ -24,6 +25,7 @@ class GoToSchema(ActionSchema):
 
         branches = [
             GotoNormally(self),
+            GotoLoiter(self),
             IdleBranch(self)
         ]
 
@@ -31,61 +33,63 @@ class GoToSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
-        vehicle = system.vehicle
-        vehicle.simple_goto(LocationGlobalRelative(
-            action['latitude'],
-            action['longitude'],
-            action['altitude'])
-        )
-
-        # block until (lat, lon) is reached
-        to_loc = (action['latitude'], action['longitude'])
-        while True:
-            current_lat  = vehicle.location.global_relative_frame.lat
-            current_lon = vehicle.location.global_relative_frame.lon
-            current_loc = (current_lat, current_lon)
-            dist = geopy.distance.great_circle(current_loc, to_loc)
-            if dist.meters <= 0.3:
-                break
-
-        # block until altitude has reached a threshold
-        while True:
-            current_alt = vehicle.location.global_relative_frame.alt
-            if math.fabs(current_alt - action['altitude']) > 0.3:
-                break
-            time.sleep(0.2)
+        loc = LocationGlobalRelative(action['latitude'],
+                                     action['longitude'],
+                                     action['altitude'])
+        system.vehicle.simple_goto(loc)
 
 
 class GotoNormally(Branch):
     """
     Description.
     """
-    def __init__(self, schema):
-        estimators = [
-            Estimator('latitude', \
-                      lambda action, state, env: state['latitude'] if state['mode'] == 'LOITER' else action['latitude']),
-            Estimator('longitude', \
-                      lambda action, state, env: state['longitude'] if state['mode'] == 'LOITER' else action.read['longitude']),
-            Estimator('altitude', \
-                      lambda action, state, env: 0.0 if state['mode'] == 'LOITER' else action['altitude'])
-        ]
-        super(GotoNormally, self).__init__('normal', schema, estimators)
-
-
-    def compute_timeout(self, action, state, environment):
+    def timeout(self, action, state, environment):
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (action['latitude'], action['longitude'])
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
         timeout = (dist * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
+    
+    def precondition(self, action, state, environment):
+        return  state['armed'] and \
+                state['altitude'] > 0.3 and \
+                state['mode'] != 'LOITER'
 
-    def is_applicable(self, action, state, environment):
-        return state['armed'] and state['altitude'] > 0.3
+
+    def postcondition(self, action, state_before, state_after, environment):
+        return  state_after['longitude'].eq(action['longitude']) and \
+                state_after['latitude'].eq(action['latitude']) and \
+                state_after['altitude'].eq(action['altitude'])
 
 
     def is_satisfiable(self, state, environment):
-        return self.is_applicable(None, state, environment)
+        return self.precondition(None, state, environment)
+
+
+    def generate(self, state, environment, rng):
+        return self.schema.generate(rng)
+
+
+class GotoLoiter(Branch):
+    def timeout(self, action, state, environment):
+        return CONSTANT_TIMEOUT_OFFSET
+
+
+    def precondition(self, action, state, environment):
+        return state['armed'] and state['altitude'] > 0.3 and state['mode'] == 'LOITER'
+
+
+    def postcondition(self, action, state_before, state_after, environment):
+        return  state_after['mode'] == 'LOITER' and \
+                state_after['longitude'] == state_before['longitude'] and \
+                state_after['latitude'] == state_before['latitude'] and \
+                state_after['altitude'] == state_before['altitude']
+
+
+    def is_satisfiable(self, state, environment):
+        return self.precondition(None, state, environment)
+
 
 
     def generate(self, state, environment, rng):
