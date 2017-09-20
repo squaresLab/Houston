@@ -38,8 +38,8 @@ class SetModeSchema(ActionSchema):
 
         super(SetModeSchema, self).__init__('setmode', parameters, branches)
 
-    # these send commands are all almost identical?    
-    def sendRTL(self, vehicle):
+    # theseusend commands are all almost identical?    
+    def send_RTL(self, vehicle):
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
@@ -52,7 +52,7 @@ class SetModeSchema(ActionSchema):
         vehicle.send_mavlink(msg)
 
 
-    def sendLAND(self, vehicle):
+    def send_LAND(self, vehicle):
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_NAV_LAND,
@@ -65,7 +65,7 @@ class SetModeSchema(ActionSchema):
         vehicle.send_mavlink(msg)
 
 
-    def sendLOITER(self, vehicle):
+    def send_LOITER(self, vehicle):
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM,
@@ -80,32 +80,32 @@ class SetModeSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
-        vehicle = system.getVehicle()
-        vehicleMode = dronekit.VehicleMode(action.read('mode'))
+        vehicle = system.vehicle
+        vehicle_mode = dronekit.VehicleMode(action['mode'])
 
-        if action.read('mode') == 'RTL':
-            self.sendRTL(vehicle)
-            currentAlt = vehicle.location.global_relative_frame.alt
-            currentLat  = vehicle.location.global_relative_frame.lat
-            currentLon = vehicle.location.global_relative_frame.lon
-            toLocation = (state.read('homeLatitude'), state.read('homeLongitude'))
-            fromLocation = (currentLat, currentLon)
-
-            while not vehicle.mode == vehicleMode:
+        if action['mode'] == 'RTL':
+            self.send_RTL(vehicle)
+            while not vehicle.mode == vehicle_mode:
                 time.sleep(0.2)
 
-            while geopy.distance.great_circle(fromLocation, toLocation).meters > 0.3 and \
-                currentAlt > 0.1:
+            to_loc = (state['homeLatitude'], state['homeLongitude'])
+            while True:
+                current_alt = vehicle.location.global_relative_frame.alt
+                current_lat = vehicle.location.global_relative_frame.lat
+                current_lon = vehicle.location.global_relative_frame.lon
+                current_loc = (current_lat, current_lon)
+
+                dist = geopy.distance.great_circle(from_location, to_location)
+                if dist.meters <= 0.3 and current_alt <= 0.1:
+                    break
+
                 time.sleep(0.2)
-                currentLat = vehicle.location.global_relative_frame.lat
-                currentLon = vehicle.location.global_relative_frame.lon
-                currentAlt = vehicle.location.global_relative_frame.alt
 
             while vehicle.armed:
                 time.sleep(0.2)
 
-        elif action.read('mode') == 'LAND':
-            self.sendLAND(vehicle)
+        elif action['mode'] == 'LAND':
+            self.send_LAND(vehicle)
             currentAlt = vehicle.location.global_relative_frame.alt
 
             while not vehicle.mode == vehicleMode:
@@ -118,12 +118,12 @@ class SetModeSchema(ActionSchema):
             while vehicle.armed:
                 time.sleep(0.2)
 
-        elif action.read('mode') == 'LOITER': # TODO as we add more modes this would have to change
-            self.sendLOITER(vehicle)
+        elif action['mode'] == 'LOITER': # TODO as we add more modes this would have to change
+            self.send_LOITER(vehicle)
             while not vehicle.mode == vehicleMode:
                 time.sleep(0.1)
 
-        elif action.read('mode') == 'GUIDED':
+        elif action['mode'] == 'GUIDED':
             vehicle.mode = vehicleMode
             while not vehicle.mode == vehicleMode:
                 time.sleep(0.1)
