@@ -2,6 +2,7 @@ import random
 import threading
 
 from houston.system import System
+from houston.mission import Mission
 from houston.generator.resources import ResourceUsage, ResourceLimits
 
 
@@ -75,11 +76,42 @@ class MissionGenerator(object):
         return self.__rng
 
 
+    def generator(self, schema):
+        """
+        Retrieves any action generator that has been associated with a given
+        schema, or None if no action generator has been provided for the
+        given schema.
+        """
+        name = schema.name
+        if name in self.__action_generators:
+            return self.__action_generators[name]
+        return None
+
+
+    def exhausted(self):
+        """
+        Checks whether the resources available to this generator have been
+        exhausted.
+        """
+        return self.__resource_limits.reached(self.__resource_usage)
+
+
     def outcome(self, mission):
         """
         Returns the outcome for a previously-executed mission.
         """
         return self.__outcomes[mission]
+
+
+    def end_state(self, mission):
+        """
+        Returns the end state after executing a given mission.
+        """
+        assert isinstance(m, Mission)
+        if m.is_empty():
+            return m.initial_state
+        outcome = self.__outcomes[m]
+        return outcome.end_state
 
 
     def executed_path(self, m):
@@ -98,6 +130,31 @@ class MissionGenerator(object):
         """
         self.__resource_usage.running_time = \
             timeit.default_timer() - self.__start_time
+
+
+    def execute_mission(self, mission, container):
+        """
+        Executes a given mission using a provided container.
+        """
+        print("executing mission..."),
+        outcome = container.execute(mission)
+        self.record_outcome(mission, outcome)
+        print("\t[DONE]")
+        return outcome
+
+
+    def record_outcome(self, mission, outcome):
+        """
+        Records the outcome of a given mission. The mission is logged to the
+        history, and its outcome is stored in the outcome dictionary. If the
+        mission failed, the mission is also added to the set of failed
+        missions.
+        """
+        self.__history.append(mission)
+        self.__outcomes[mission] = outcome
+
+        if outcome.failed():
+            self.__failures.add(mission)
 
 
     def generate(self, seed, resource_limits):
@@ -137,8 +194,6 @@ class MissionGenerator(object):
                 worker.shutdown()
             self.__workers = []
 
-
-
         
         # return a reduced mission suite
         return self.reduce()
@@ -163,14 +218,6 @@ class MissionGenerator(object):
         self.__rng = random.Random(seed)
 
     
-    def exhausted(self):
-        """
-        Checks whether the resources available to this generator have been
-        exhausted.
-        """
-        return self.__resource_limits.reached(self.__resource_usage)
-
-
     def generate_mission(self):
         """
         Generates a single mission according to the generation strategy defined
@@ -179,32 +226,10 @@ class MissionGenerator(object):
         raise NotImplementedError
 
 
-    def execute_mission(self, mission, container):
-        """
-        Executes a given mission using a provided container.
-        """
-        print("executing mission..."),
-        outcome = container.execute(mission)
-        self.record_outcome(mission, outcome)
-        print("\t[DONE]")
-        return outcome
-
-
-    def record_outcome(self, mission, outcome):
-        """
-        Records the outcome of a given mission. The mission is logged to the
-        history, and its outcome is stored in the outcome dictionary. If the
-        mission failed, the mission is also added to the set of failed
-        missions.
-        """
-        self.__history.append(mission)
-        self.__outcomes[mission] = outcome
-
-        if outcome.failed():
-            self.__failures.add(mission)
-
-
     def next(self):
+        """
+        Generates another mission (thread safe).
+        """
         self._fetch_lock.acquire()
         try:
             self.tick()
