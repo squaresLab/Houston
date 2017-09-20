@@ -134,6 +134,8 @@ class SetModeRTL(Branch):
 
 
     def timeout(self, system, action, state, environment):
+        import geopy
+
         # compute distance
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (state['homeLatitude'], state['homeLongitude'])
