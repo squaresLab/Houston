@@ -1,5 +1,6 @@
 import time
 
+from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.state import Estimator, FixedEstimator
@@ -30,42 +31,30 @@ class ArmSchema(ActionSchema):
         from pymavlink import mavutil
         vehicle = system.vehicle
         msg = vehicle.message_factory.command_long_encode(
-            0, 0,    # target_system, target_component
+            0, 0,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0, 0, 0)
+            0, 1, 0, 0, 0, 0, 0, 0)
         vehicle.send_mavlink(msg)
-
-        # TODO: why aren't we using "DRONEKIT_SYSTEM.armed = True"?
-        while not vehicle.armed:
-            time.sleep(0.1)
 
 
 class ArmNormally(Branch):
     """
     Description.
     """
-    def __init__(self, schema):
-        estimators = [
-            FixedEstimator('armed', True)
-        ]
-        super(ArmNormally, self).__init__('normal', schema, estimators)
+    def precondition(self, action, state, environment):
+        return state['armable'] and state['mode'] in ['GUIDED', 'LOITER']
 
 
-    def compute_timeout(self, action, state, environment):
+    def postcondition(self, state):
+        return state['armed']
+
+
+    def timeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def is_applicable(self, action, state, environment):
-        return state['armable'] and (state['mode'] in ['GUIDED', 'LOITER'])
-
-
     def is_satisfiable(self, state, environment):
-        return self.is_applicable(None, state, environment)
+        return self.precondition(None, state, environment)
 
 
     def generate(self, state, environment, rng):
