@@ -1,6 +1,7 @@
 import random
 import threading
 
+from houston.runner import MissionRunnerPool
 from houston.system import System
 from houston.mission import Mission
 from houston.generator.resources import ResourceUsage, ResourceLimits
@@ -161,42 +162,21 @@ class MissionGenerator(object):
         assert isinstance(seed, int)
 
         try:
-            print("Preparing..."),
             self.prepare(seed, resource_limits)
-            print("[OK]")
-
-            # initialise worker threads
-            self.__workers = []
-            print("constructing workers...")
-            for _ in range(self.__threads):
-                self.__workers.append(MissionPoolWorker(self))
-            print("constructed workers")
-            
-            # begin tracking resource usage
+            self.__runner_pool = RunnerPool(self.system,
+                                            self.image,
+                                            self.threads,
+                                            self.generator(), # property?
+                                            self.record_outcome)
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
-
-            print("starting workers...")
-            for w in self.__workers:
-                w.start()
-            print("started all workers")
-            while True:
-                if not any(w.is_alive() for w in self.__workers):
-                    break
-                time.sleep(0.2)
-
             self.tick()
-            return self.summarise()
-        finally:
-            print("shutting down...")
-            for worker in self.__workers:
-                print("killing worker: {}".format(worker))
-                worker.shutdown()
-            self.__workers = []
+            self.__runner_pool.run()
 
-        
-        # return a reduced mission suite
-        return self.reduce()
+            return self.reduce()
+
+        finally:
+            self.__runner_pool.shutdown()
 
 
     def reduce(self):
@@ -226,21 +206,19 @@ class MissionGenerator(object):
         raise NotImplementedError
 
 
-    def next(self):
+    def generator(self):
         """
-        Generates another mission (thread safe).
+        Implements a thread-safe mission generator.
         """
-        self._fetch_lock.acquire()
-        try:
-            self.tick()
+        while True:
+            self._fetch_lock.acquire()
+            try:
+                self.tick()
+                if self.exhausted():
+                    return
 
-            # check if there are no jobs left
-            if self.exhausted():
-                return None
+                self.resource_usage.num_missions += 1
+                yield self.generate_mission()
 
-            # RANDOM:
-            self.resource_usage.num_missions += 1
-            return self.generate_mission()
-
-        finally:
-            self._fetch_lock.release()
+            finally:
+                self._fetch_lock.release()
