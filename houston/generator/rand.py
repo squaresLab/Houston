@@ -3,7 +3,14 @@ from houston.mission import Mission
 
 
 class RandomMissionGenerator(MissionGenerator):
-    def __init__(system, image, initial_state, env, threads = 1, action_generators = [],  max_num_actions = 10):
+    def __init__(self,
+                 system,
+                 image,
+                 initial_state,
+                 env,
+                 threads = 1,
+                 action_generators = [],
+                 max_num_actions = 10):
         self.__initial_state = initial_state
         self.__env = env
 
