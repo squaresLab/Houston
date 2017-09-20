@@ -3,12 +3,13 @@ import houston.manager as mgr
 
 
 class MissionRunner(threading.Thread):
-    def __init__(self, detector):
+    def __init__(self, pool):
+        assert isinstance(pool, MissionRunnerPool)
         super(MissionPoolWorker, self).__init__()
         self.daemon = True # mark as a daemon thread
-        self.__detector = detector
-        self.__container = mgr.createContainer(self.__detector.system,
-                                               self.__detector.image)
+
+        self.__pool = pool
+        self.__container = mgr.createContainer(pool.system, pool.image)
         self.__reset_counter()
         
 
@@ -47,13 +48,19 @@ class MissionRunner(threading.Thread):
 
 
 class MissionRunnerPool(object):
-    def __init__(self, size):
+    def __init__(self, size, source):
         assert isinstance(size, int)
+        assert callable(source)
         assert size > 0
 
         self.__size = size
+        self.__source = source
 
 
     @property
     def size(self):
         return self.__size
+
+
+    def fetch(self):
+        return x
