@@ -158,7 +158,7 @@ class System(object):
                 branch = schema.resolve_branch(self, action, state_before, env)
 
                 # enforce a timeout
-                timeout = schema.timeout(action, state_before, env)
+                timeout = schema.timeout(self, action, state_before, env)
                 signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
                 signal.alarm(int(math.ceil(timeout)))
 

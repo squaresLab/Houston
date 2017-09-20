@@ -7,7 +7,7 @@ from util import printflush
 
 
 class Branch(object):
-    def __init__(self, name, schema, estimators):
+    def __init__(self, name, schema):
         """
         Constructs a new outcome branch.
 
@@ -15,14 +15,7 @@ class Branch(object):
         :param  schema:         the action schema to which this outcome \
                                 branch belongs, given as an ActionSchema \
                                 instance.
-        :param  estimators:     a list of state estimators for this branch.
         """
-        assert isinstance(estimators, list)
-        assert (all(isinstance(e, state.Estimator) for e in estimators))
-
-        self.__effects = {e.variable_name: e for e in estimators}
-        assert isinstance(self.__effects, dict)
-
         assert isinstance(name, str)
         assert (name is not "")
         self.__name = name
@@ -109,23 +102,23 @@ class Branch(object):
 
 class IdleBranch(Branch):
     def __init__(self, schema):
-        super(IdleBranch, self).__init__("idle", schema, [])
+        super(IdleBranch, self).__init__("idle", schema)
 
 
-    def timeout(self, act, state, environment):
+    def timeout(self, system, action, state, environment):
         return 1.0
 
 
-    def precondition(self, act, state, environment):
+    def precondition(self, system, action, state, environment):
         return True
 
 
     # TODO: At the moment, this does nothing!
-    def postcondition(self, act, state, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
         return True
 
 
-    def is_satisfiable(self, state, environment):
+    def is_satisfiable(self, system, state, environment):
         return True
 
 

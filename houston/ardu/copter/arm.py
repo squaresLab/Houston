@@ -3,7 +3,6 @@ import time
 from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
-from houston.state import Estimator, FixedEstimator
 from houston.valueRange import DiscreteValueRange
 
 
@@ -13,7 +12,7 @@ class ArmSchema(ActionSchema):
     
     Behaviours:
    
-        Normal: if the robot is armable and it is in either its 'GUIDED' or
+        Normal: if the robot is armable and is in either its 'GUIDED' or
             'LOITER' modes, the robot will become armed.
         Idle: if the conditions above cannot be met, the robot will ignore the
             command.
@@ -38,23 +37,25 @@ class ArmSchema(ActionSchema):
 
 
 class ArmNormally(Branch):
-    """
-    Description.
-    """
-    def precondition(self, action, state, environment):
-        return state['armable'] and state['mode'] in ['GUIDED', 'LOITER']
+    def __init__(self, system):
+        super(ArmNormally, self).__init__('normal', system)
 
 
-    def postcondition(self, state):
+    def precondition(self, system, action, state, environment):
+        return  state['armable'] and \
+                state['mode'] in ['GUIDED', 'LOITER']
+
+
+    def postcondition(self, system, action, state_before, state_action, environment):
         return state['armed']
 
 
-    def timeout(self, action, state, environment):
+    def timeout(self, system, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def is_satisfiable(self, state, environment):
-        return self.precondition(None, state, environment)
+    def is_satisfiable(self, system, state, environment):
+        return self.precondition(system, None, state, environment)
 
 
     def generate(self, state, environment, rng):

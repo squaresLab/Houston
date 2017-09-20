@@ -5,6 +5,7 @@ import branch
 import state
 import random
 
+from util import printflush
 from valueRange import ValueRange
 
 
@@ -228,7 +229,8 @@ class ActionSchema(object):
         environment based on the current action schema.
         """
         for b in self.__branches:
-            if b.is_applicable(system, action, initial_state, environment):
+            printflush("branch: {}".format(b))
+            if b.precondition(system, action, initial_state, environment):
                 return b
         raise Exception("failed to resolve branch")
 

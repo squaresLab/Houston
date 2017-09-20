@@ -6,13 +6,7 @@ import geopy.distance
 from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
-from houston.state import Estimator, FixedEstimator
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
-
-try:
-    from dronekit import LocationGlobalRelative
-except ImportError:
-    pass
 
 
 class GoToSchema(ActionSchema):
@@ -33,16 +27,18 @@ class GoToSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
-        loc = LocationGlobalRelative(action['latitude'],
-                                     action['longitude'],
-                                     action['altitude'])
+        import dronekit
+        loc = dronekit.LocationGlobalRelative(action['latitude'],
+                                              action['longitude'],
+                                              action['altitude'])
         system.vehicle.simple_goto(loc)
 
 
 class GotoNormally(Branch):
-    """
-    Description.
-    """
+    def __init__(self, system):
+        super(GotoNormally, self).__init__('normal', system)
+
+
     def timeout(self, action, state, environment):
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (action['latitude'], action['longitude'])
@@ -51,20 +47,20 @@ class GotoNormally(Branch):
         return timeout
 
     
-    def precondition(self, action, state, environment):
+    def precondition(self, system, action, state, environment):
         return  state['armed'] and \
-                state['altitude'] > 0.3 and \
-                state['mode'] != 'LOITER'
+                state['mode'] != 'LOITER' and \
+                system.variables['altitude'].gt(state['altitude'], 0.3)
 
 
-    def postcondition(self, action, state_before, state_after, environment):
-        return  state_after['longitude'].eq(action['longitude']) and \
-                state_after['latitude'].eq(action['latitude']) and \
-                state_after['altitude'].eq(action['altitude'])
+    def postcondition(self, system, action, state_before, state_after, environment):
+        return  system.variables('longitude').eq(state_after['longitude'], action['longitude']) and \
+                system.variables('latitude').eq(state_after['latitude'], action['latitude']) and \
+                system.variables('altitude').eq(state_after['altitude'], action['altitude'])
 
 
-    def is_satisfiable(self, state, environment):
-        return self.precondition(None, state, environment)
+    def is_satisfiable(self, system, state, environment):
+        return self.precondition(system, None, state, environment)
 
 
     def generate(self, state, environment, rng):
@@ -72,24 +68,29 @@ class GotoNormally(Branch):
 
 
 class GotoLoiter(Branch):
+    def __init__(self, system):
+        super(GotoLoiter, self).__init__('loiter', system)
+
+
     def timeout(self, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def precondition(self, action, state, environment):
-        return state['armed'] and state['altitude'] > 0.3 and state['mode'] == 'LOITER'
+    def precondition(self, system, action, state, environment):
+        return  state['armed'] and \
+                state['mode'] == 'LOITER' and \
+                system.variables('altitude').eq(state['altitude'], 0.3)
 
 
-    def postcondition(self, action, state_before, state_after, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
         return  state_after['mode'] == 'LOITER' and \
-                state_after['longitude'] == state_before['longitude'] and \
-                state_after['latitude'] == state_before['latitude'] and \
-                state_after['altitude'] == state_before['altitude']
+                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
+                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
+                system.variables('altitude').eq(state_after['altitude'], state_before['altitude'])
 
 
-    def is_satisfiable(self, state, environment):
-        return self.precondition(None, state, environment)
-
+    def is_satisfiable(self, system, state, environment):
+        return self.precondition(system, None, state, environment)
 
 
     def generate(self, state, environment, rng):

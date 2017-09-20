@@ -26,7 +26,9 @@ if __name__ == "__main__":
             'longitude': 149.165218,
             'altitude' : 5.0
         }),
-        Action('land', {})
+        Action('setmode', {
+            'mode': 'LAND'
+        })
     ]
     environment = Environment({})
     initial = State({

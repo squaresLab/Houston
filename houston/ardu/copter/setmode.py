@@ -3,7 +3,6 @@ import time
 from houston.ardu.base import CONSTANT_TIMEOUT_OFFSET
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
-from houston.state import Estimator, FixedEstimator
 from houston.valueRange import DiscreteValueRange
 
 
@@ -35,36 +34,43 @@ class SetModeSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
-        vehicle = system.vehicle
-        msg = ({
-            'RTL': mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
-            'LAND': mavutil.mavlink.MAV_CMD_NAV_LAND,
-            'LOITER': mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
-        })[action['mode']]
-        msg = \
-            vehicle.message_factory.command_long_encode(0, 0, msg, 0, 0, 0, 0, 0, 0, 0, 0)
-        vehicle.send_mavlink(msg)
+        import dronekit
+        system.vehicle.mode = dronekit.VehicleMode(action['mode'])
+
+        # from pymavlink import mavutil
+        # msg = ({
+        #     'RTL': mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, # set_mode_rtl
+        #     'LAND': mavutil.mavlink.MAV_CMD_NAV_LAND,
+        #     'LOITER': mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM # set_mode_loiter
+        # })[action['mode']]
+        # msg = \
+        #     vehicle.message_factory.command_long_encode(0, 0, msg, 0, 0, 0, 0, 0, 0, 0, 0)
+        # vehicle.send_mavlink(msg)
         
 
 class SetModeLand(Branch):
-    def timeout(self, action, state, environment):
+    def __init__(self, system):
+        super(SetModeLand, self).__init__('land', system)
+
+
+    def timeout(self, system, action, state, environment):
         timeout = (state['altitude'] * TIME_PER_METER_TRAVELED) + CONSTANT_TIMEOUT_OFFSET
         return timeout
 
 
-    def postcondition(self, action, state_before, state_after, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
         return  state_after['mode'] == 'LAND' and \
                 state_after['armed'] == False and \
-                state_after['latitude'] == state_before['latitude'] and \
-                state_after['longitude'] == state_before['longitude'] and \
-                state_after['altitude'] == 0.0
+                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
+                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
+                system.variables('altitude').eq(state_after['altitude'], 0.0)
 
 
-    def precondition(self, action, state, environment):
+    def precondition(self, system, action, state, environment):
         return action['mode'] == 'LAND'
 
 
-    def is_satisfiable(self, state, environment):
+    def is_satisfiable(self, system, state, environment):
         return True
 
 
@@ -73,40 +79,48 @@ class SetModeLand(Branch):
 
 
 class SetModeGuided(Branch):
-    def timeout(self, action, state, environment):
+    def __init__(self, system):
+        super(SetModeGuided, self).__init__('guided', system)
+
+
+    def timeout(self, system, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
 
-    def postcondition(self, action, state_before, state_after, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
         return state_after['mode'] == 'GUIDED'
 
 
-    def precondition(self, action, state, environment):
+    def precondition(self, system, action, state, environment):
         return action['mode'] == 'GUIDED'
 
 
-    def is_satisfiable(self, state, environment):
+    def is_satisfiable(self, system, state, environment):
         return True
 
 
-    def generate(self, state, environment, rng):
+    def generate(self, system, state, environment, rng):
         return Action(self.schema_name, {'mode': 'GUIDED'})
 
 
 class SetModeLoiter(Branch):
-    def timeout(self, action, state, environment):
+    def __init__(self, system):
+        super(SetModeLoiter, self).__init__('loiter', system)
+
+
+    def timeout(self, system, action, state, environment):
         return CONSTANT_TIMEOUT_OFFSET
 
     
-    def postcondition(self, action, state_before, state_after, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
         return state_after['mode'] == 'LOITER'
 
 
-    def precondition(self, action, state, environment):
+    def precondition(self, system, action, state, environment):
         return action['mode'] != 'LOITER'
 
 
-    def is_satisfiable(self, state, environment):
+    def is_satisfiable(self, system, state, environment):
         return True
 
 
@@ -115,10 +129,11 @@ class SetModeLoiter(Branch):
 
 
 class SetModeRTL(Branch):
-    """
-    Description.
-    """
-    def timeout(self, action, state, environment):
+    def __init__(self, system):
+        super(SetModeRTL, self).__init__('rtl', system)
+
+
+    def timeout(self, system, action, state, environment):
         # compute distance
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (state['homeLatitude'], state['homeLongitude'])
@@ -138,7 +153,7 @@ class SetModeRTL(Branch):
         return timeout
 
 
-    def postcondition(self, action, state_before, state_after, environment):
+    def postcondition(self, system, action, state_before, state_after, environment):
         if state_after['mode'] != 'RTL':
             return False # hmmm?
 
@@ -149,19 +164,16 @@ class SetModeRTL(Branch):
             if state_before['armed'] != False:
                 return False
 
-        # vars['altitude'].equal(0.0, state['altitude'])
-        # vars['latitude'].equal(state['homeLatitude'], state['latitude'])
-        # vars['longitude'].equal(state['homeLongitude'], state['longitude'])
+        return  system.variables['altitude'].eq(state_after['altitude'], 0.0) and \
+                system.variables['latitude'].eq(state_after['latitude'], state_before['homeLatitude']) and \
+                system.variables['longitude'].eq(state_after['longitude'], state_before['longitude'])
 
 
-        return True
-
-
-    def precondition(self, action, state, environment):
+    def precondition(self, system, action, state, environment):
         return action['mode'] == 'RTL'
 
 
-    def is_satisfiable(self, state, environment):
+    def is_satisfiable(self, system, state, environment):
         return True
 
 

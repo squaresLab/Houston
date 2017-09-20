@@ -73,7 +73,7 @@ class BaseSystem(System):
 
         super(BaseSystem, self).__init__(variables, schemas)
 
-    
+
     def to_json(self):
         """
         Returns a JSON-based description of this system.
