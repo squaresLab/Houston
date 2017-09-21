@@ -252,48 +252,37 @@ class ActionOutcome(object):
         assert isinstance(jsn, dict)
         assert ('successful' in jsn)
         assert ('action' in jsn)
-        assert ('stateBefore' in jsn)
-        assert ('stateAfter' in jsn)
-        assert ('timeElapsed' in jsn)
-        assert ('branchID' in jsn)
-        assert (isinstance(jsn['branchID'], str) or isinstance(jsn['branchID'], unicode))
-        assert (jsn['branchID'] != '')
+        assert ('start_state' in jsn)
+        assert ('state_after' in jsn)
+        assert ('time_elapsed' in jsn)
+        assert ('branch_id' in jsn)
+        assert (isinstance(jsn['branch_id'], str) or isinstance(jsn['branch_id'], unicode))
+        assert (jsn['branch_id'] != '')
         assert isinstance(jsn['successful'], bool)
 
         return ActionOutcome(Action.from_json(jsn['action']),
                              jsn['successful'],
-                             state.State.from_json(jsn['stateBefore']),
-                             state.State.from_json(jsn['stateAfter']),
-                             jsn['timeElapsed'],
-                             branch.BranchID.from_json(jsn['branchID']))
+                             state.State.from_json(jsn['start_state']),
+                             state.State.from_json(jsn['end_state']),
+                             jsn['time_elapsed'],
+                             branch.BranchID.from_json(jsn['branch_id']))
 
 
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
-    def __init__(self, action, successful, state_before, state_after, time_elapsed, branch_id):
-        """
-        Constructs a ActionOutcome.
-
-        :param  action      the action that was performed
-        :param  succesful   a flag indicating if the action was completed \
-                            successfully
-        :param  stateBefore the state of the system immediately prior to execution
-        :param  stateAfter  the state of the system immediately after execution
-        :param  branchID    the identifier of the branch that was taken \
-                            during the execution of this action
-        """
+    def __init__(self, action, successful, start_state, end_state, time_elapsed, branch_id):
         assert isinstance(action, Action)
         assert isinstance(successful, bool)
-        assert isinstance(state_before, state.State)
-        assert isinstance(state_after, state.State)
+        assert isinstance(start_state, state.State)
+        assert isinstance(end_state, state.State)
         assert isinstance(time_elapsed, float)
         assert isinstance(branch_id, branch.BranchID)
 
         self.__action      = action
         self.__successful  = successful
-        self.__state_before = state_before
-        self.__state_after  = state_after
+        self.__start_state = start_state
+        self.__end_state = end_state
         self.__time_elapsed = time_elapsed
         self.__branch_id = branch_id
 
@@ -305,10 +294,10 @@ class ActionOutcome(object):
         return {
             'action':       self.__action.to_json(),
             'successful':   self.__successful,
-            'stateBefore':  self.__state_before.to_json(),
-            'stateAfter':   self.__state_after.to_json(),
-            'timeElapsed':  self.__time_elapsed,
-            'branchID':     self.__branch_id.to_json()
+            'start_state':  self.start_state.to_json(),
+            'end_state':    self.end_state.to_json(),
+            'time_elapsed': self.__time_elapsed,
+            'branch_id':    self.__branch_id.to_json()
         }
 
     
@@ -337,21 +326,21 @@ class ActionOutcome(object):
 
 
     @property
-    def state_after(self):
+    def start_state(self):
         """
         A description of the state of the system immediately after the
         execution of this action.
         """
-        return self.__state_after
+        return self.__start_state
 
 
     @property
-    def state_before(self):
+    def end_state(self):
         """
         A description of the state of the system immediately before the
         execution of this action.
         """
-        return self.__start_before
+        return self.__end_state
 
 
 class ActionGenerator(object):
