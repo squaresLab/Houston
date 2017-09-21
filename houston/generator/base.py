@@ -150,7 +150,7 @@ class MissionGenerator(object):
         if m.is_empty():
             return BranchPath([])
         outcome = self.__outcomes[m]
-        return outcome.executed_path()
+        return outcome.executed_path
 
 
     def tick(self):
