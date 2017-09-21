@@ -217,3 +217,21 @@ class CrashedMissionOutcome(MissionOutcome):
         jsn = super(CrashedMissionOutcome, self).to_json()
         jsn['crashed'] = True
         return jsn
+
+
+class MissionSuite(object):
+    def __init__(self, contents):
+        assert isinstance(contents, list)
+        assert all(isinstance(m, Mission) for m in contents)
+        assert contents != []
+        self.__contents = contents
+
+ 
+    @property
+    def size(self):
+        return self.__contents.length()
+
+
+    @property
+    def contents(self):
+        return self.__contents
