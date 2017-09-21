@@ -14,25 +14,16 @@ class TreeBasedMissionGenerator(MissionGenerator):
                  action_generators = [],
                  max_num_actions = 10):
         super(TreeBasedMissionGenerator, self).__init__(system, image, threads, action_generators, max_num_actions)
-        self.__initial_state = initial_state
-        self.__env = env
+        self.__seed_mission = Mission(env, initial_state, [])
 
-
-    @property
-    def initial_state(self):
-        """
-        The initial state used by all missions produced by this generator.
-        """
-        return self.__initial_state
     
-
     @property
-    def env(self):
+    def seed_mission(self):
         """
-        The environment used by all missions produced by this generator.
+        The mission that is used as a seed when generating new missions.
         """
-        return self.__env
-
+        return self.__seed_mission
+    
 
     def record_outcome(self, mission, outcome):
         super(TreeBasedMissionGenerator, self).record_outcome(mission, outcome)
@@ -55,18 +46,22 @@ class TreeBasedMissionGenerator(MissionGenerator):
 
 
     def prune(self, path):
-        assert (isinstance(path, BranchPath))
+        """
+        Removes a given branch path from the search space, preventing further
+        exploration along that path.
+        """
+        assert isinstance(path, BranchPath)
         printflush("Adding path to tabu list: {}".format(path))
         self.__queue = set(m for m in self.__queue if not self.__intended_paths[m].startswith(path))
 
 
-    def prepare(self, systm, image, seed, resource_limits):
-        super(TreeBasedMissionGenerator, self).prepare(systm, image, seed, resource_limits)
+    def prepare(self, seed, resource_limits):
+        super(TreeBasedMissionGenerator, self).prepare(seed, resource_limits)
 
         self.__intended_paths = {}
         self.__queue = set()
         self.__running = set() # could we just use a count?
-        self.expand(self.__seed)
+        self.expand(self.__seed_mission)
 
 
     def exhausted(self):
