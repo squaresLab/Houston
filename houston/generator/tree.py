@@ -1,4 +1,6 @@
-from houston.system import System
+import time
+
+from houston.generator.base import MissionGenerator
 from houston.branch import BranchID, BranchPath
 from houston.mission import Mission, MissionOutcome
 from houston.action import ActionOutcome, Action, ActionGenerator
@@ -41,21 +43,24 @@ class TreeBasedMissionGenerator(MissionGenerator):
         (reachable) child node in the behaviour graph.
         """
         super(TreeBasedMissionGenerator, self).record_outcome(mission, outcome)
+        print("Passed: {}".format(outcome.passed))
 
         self._contents_lock.acquire()
+        print("Hey! 'record_outcome' has the contents lock.")
         try:
-            intended_path = self.__intended_paths[mission]
-            executed_path = self.executed_path(mission)
-            del self.__intended_paths[mission]
-
+            # intended_path = self.__intended_paths[mission]
+            # del self.__intended_paths[mission]
             if outcome.passed:
+                print("expanding mission...")
                 self.expand(mission)
+                print("expanded mission")
             else:
                 # TODO: should we prune both?
-                self.prune(intended_path)
+                # self.prune(intended_path)
+                executed_path = self.executed_path(mission)
                 self.prune(executed_path)
         finally:
-            self.__running.remove(mission)
+            self.__num_running -= 1
             self._contents_lock.release()
 
 
@@ -74,7 +79,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
 
         self.__intended_paths = {}
         self.__queue = set()
-        self.__running = set() # could we just use a count?
+        self.__num_running = 0
         self.expand(self.seed_mission)
 
 
@@ -86,7 +91,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         """
         if super(TreeBasedMissionGenerator, self).exhausted():
             return True
-        return self.__queue == set() and self.__running == set()
+        return self.__queue == set() and self.__num_running == 0
 
 
     def generator(self):
@@ -105,10 +110,11 @@ class TreeBasedMissionGenerator(MissionGenerator):
 
                     # check the queue
                     if self.__queue != set():
-                        mission = self._rng.sample(self.__queue, 1)[0]
+                        mission = self.rng.sample(self.__queue, 1)[0]
                         self.__queue.remove(mission)
-                        self.__running.add(mission)
+                        self.__num_running += 1
                         self.resource_usage.num_missions += 1
+                        print('Generated mission: {}'.format(self.resource_usage.num_missions))
                         yield mission
 
                     # wait until there is a job in the queue (or resources have
@@ -125,9 +131,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         """
         Called after a mission has finished executing
         """
-        systm = self.system
-        branches = systm.branches
-        state = self.get_end_state(mission)
+        state = self.end_state(mission)
         env = mission.environment
         path = self.executed_path(mission)
 
@@ -136,7 +140,8 @@ class TreeBasedMissionGenerator(MissionGenerator):
             return
 
         # otherwise, explore each branch
-        branches = [b for b in branches if b.is_satisfiable(state, env)]
+        branches = self.system.branches
+        branches = [b for b in branches if b.is_satisfiable(self.system, state, env)]
         for b in branches:
             p = path.extended(b)
             a = self.generate_action(b, env, state)
@@ -149,7 +154,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         """
         TODO: add branch-specific action generators
         """
-        generator = self.get_generator(branch.schema)
+        generator = self.action_generator(branch.schema)
         if generator is not None:
-            return generator.generate_action_with_state(state, env, self._rng)
-        return branch.generate(state, env, self._rng) 
+            return generator.generate_action_with_state(self.system, state, env, self.rng)
+        return branch.generate(self.system, state, env, self.rng) 
