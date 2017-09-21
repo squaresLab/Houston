@@ -10,6 +10,36 @@ from houston.generator.resources import ResourceUsage, ResourceLimits
 from houston.generator.report import MissionGeneratorReport
 
 
+class MissionGeneratorStream(object):
+    def __init__(self, generator):
+        self.__lock = threading.Lock()
+        self.__generator = generator
+
+
+    def __iter__(self):
+        """
+        Returns an iterator for lazily fetching missions from the generator
+        attached to this stream.
+        """
+        return self
+
+    
+    def next(self):
+        """
+        Requests the next mission from the mission generator.
+        """
+        self.__lock.acquire()
+        try:
+            self.__generator.tick()
+            if self.__generator.exhausted():
+                raise StopIteration
+            mission = self.__generator.next_mission()
+            self.__generator.resource_usage.num_missions += 1
+            return mission
+        finally:
+            self.__lock.release()
+
+
 class MissionGenerator(object):
 
     def __init__(self, system, image, threads = 1, action_generators = [],  max_num_actions = 10):
@@ -24,10 +54,6 @@ class MissionGenerator(object):
         self.__image = image
         self.__threads = threads
         self.__max_num_actions = max_num_actions
-
-        self._fetch_lock = threading.Lock()
-        self._contents_lock = threading.Lock()
-
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
@@ -253,14 +279,11 @@ class MissionGenerator(object):
         """
         Implements a thread-safe mission generator.
         """
+        return 
         while True:
             self._fetch_lock.acquire()
             try:
-                self.tick()
-                if self.exhausted():
-                    return
-
-                self.resource_usage.num_missions += 1
+                self._fetch_lock.release()
                 yield self.generate_mission()
 
             finally:
