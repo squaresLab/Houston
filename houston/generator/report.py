@@ -1,5 +1,6 @@
 import copy
 
+from houston.system import System
 from houston.generator.resource import ResourceUsage, ResourceLimits
 
 
@@ -17,13 +18,17 @@ class MissionGeneratorReport(object):
         failed = [f['mission'] for f in jsn['failed']]
         result = [Mission.from_json(m) for m in jsn['result']]
 
+        system = System.from_json(jsn['settings']['system'])
+        image = jsn['settings']['image']
         resource_usage = ResourceUsage.from_json(jsn['resources']['used'])
         resource_limits = ResourceLimits.from_json(jsn['resources']['limits'])
 
-        return MissionGeneratorReport(history, outcomes, failed, resource_usage, resource_limits, result)
+        return MissionGeneratorReport(system, image, history, outcomes, failed, resource_usage, resource_limits, result)
 
 
-    def __init__(self, history, outcomes, failed, resource_usage, resource_limits, result):
+    def __init__(self, system, image, history, outcomes, failed, resource_usage, resource_limits, result):
+        self.__system = system
+        self.__image = image
         self.__history = history
         self.__outcomes = outcomes
         self.__failed = failed
@@ -34,6 +39,16 @@ class MissionGeneratorReport(object):
  
     def outcome(self, mission):
         return self.__outcomes[mission]
+
+    
+    @property
+    def system(self):
+        return self.__system
+
+
+    @property
+    def image(self):
+        return self.__image
 
 
     @property
@@ -68,12 +83,17 @@ class MissionGeneratorReport(object):
         failed = [(m, self.outcome(m)) for m in self.__failed]
         failed = [{'mission': m, 'outcome': o} for (m, o) in failed]
 
-        return {'report': {
+        report = {
             'history': history,
             'failed': failed,
             'result': [m.to_json() for m in self.__result],
+            'settings': {
+                'system': self.system.to_json(),
+                'image': self.image
+            },
             'resources': {
                 'used': self.resource_usage.to_json(),
                 'limits': self.resource_limits.to_json()
             }
-        }}
+        }
+        return {'report': report}
