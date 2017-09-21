@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+#
+# You'll notice a rather large number of threads are being used by the test
+# generation process. Running the system under test and the simulator is
+# exceptionally cheap -- most of the time seems to be spent idling. After
+# tinkering around, we found that throughput was maximised when the
+# threads-to-cores ratio was set to around 8:1.
+#
 from houston.ardu.copter import ArduCopter
 from houston.state import State, Environment
 from houston.mission import Mission
@@ -32,8 +39,8 @@ action_generators = [
 ]
 
 seed = 0
-threads = 4
-limits = ResourceLimits(num_missions = 400)
+threads = 8 * 8
+limits = ResourceLimits(num_missions = 2000)
 generator = RandomMissionGenerator(system,
                                    image,
                                    initial_state,
