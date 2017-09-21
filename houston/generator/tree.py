@@ -45,16 +45,13 @@ class TreeBasedMissionGenerator(MissionGenerator):
         (reachable) child node in the behaviour graph.
         """
         super(TreeBasedMissionGenerator, self).record_outcome(mission, outcome)
-        print("Passed: {}".format(outcome.passed))
 
         self.__queue_lock.acquire()
         try:
             # intended_path = self.__intended_paths[mission]
             # del self.__intended_paths[mission]
             if outcome.passed:
-                print("expanding mission...")
                 self.expand(mission)
-                print("expanded mission")
             else:
                 # TODO: should we prune both?
                 # self.prune(intended_path)
