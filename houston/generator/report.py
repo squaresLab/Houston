@@ -1,6 +1,7 @@
 import copy
 
 from houston.system import System
+from houston.mission import Mission, MissionOutcome, MissionSuite
 from houston.generator.resources import ResourceUsage, ResourceLimits
 
 
@@ -13,20 +14,21 @@ class MissionGeneratorReport(object):
         assert isinstance(jsn, dict)
 
         jsn = jsn['report']
-        history = [h['mission'] for h in jsn['history']]
-        outcomes = {h['mission']: h['outcome'] for h in jsn['history']}
-        failed = [f['mission'] for f in jsn['failed']]
-        result = [Mission.from_json(m) for m in jsn['result']]
+        history = [Mission.from_json(h['mission']) for h in jsn['history']]
+        outcomes = \
+            {Mission.from_json(h['mission']): MissionOutcome.from_json(h['outcome']) for h in jsn['history']}
+        failed = [Mission.from_json(f['mission']) for f in jsn['failed']]
+        suite = MissionSuite.from_json(jsn['suite'])
 
         system = System.from_json(jsn['settings']['system'])
         image = jsn['settings']['image']
         resource_usage = ResourceUsage.from_json(jsn['resources']['used'])
         resource_limits = ResourceLimits.from_json(jsn['resources']['limits'])
 
-        return MissionGeneratorReport(system, image, history, outcomes, failed, resource_usage, resource_limits, result)
+        return MissionGeneratorReport(system, image, history, outcomes, failed, resource_usage, resource_limits, suite)
 
 
-    def __init__(self, system, image, history, outcomes, failed, resource_usage, resource_limits, result):
+    def __init__(self, system, image, history, outcomes, failed, resource_usage, resource_limits, suite):
         self.__system = system
         self.__image = image
         self.__history = history
@@ -34,7 +36,7 @@ class MissionGeneratorReport(object):
         self.__failed = failed
         self.__resource_usage = resource_usage
         self.__resource_limits = resource_limits
-        self.__result = result
+        self.__suite = suite
 
  
     def outcome(self, mission):
@@ -72,21 +74,21 @@ class MissionGeneratorReport(object):
 
 
     @property
-    def result(self):
-        return self.__result[:]
+    def suite(self):
+        return self.__suite
 
 
     def to_json(self):
-        history = [(m, self.outcome(m)) for m in self.__history]
+        history = [(m.to_json(), self.outcome(m).to_json()) for m in self.__history]
         history = [{'mission': m, 'outcome': o} for (m, o) in history]
 
-        failed = [(m, self.outcome(m)) for m in self.__failed]
+        failed = [(m.to_json(), self.outcome(m).to_json()) for m in self.__failed]
         failed = [{'mission': m, 'outcome': o} for (m, o) in failed]
 
         report = {
             'history': history,
             'failed': failed,
-            'result': [m.to_json() for m in self.__result],
+            'suite': self.suite.to_json(),
             'settings': {
                 'system': self.system.to_json(),
                 'image': self.image

@@ -4,7 +4,7 @@ import timeit
 
 from houston.runner import MissionRunnerPool
 from houston.system import System
-from houston.mission import Mission
+from houston.mission import Mission, MissionSuite
 from houston.generator.resources import ResourceUsage, ResourceLimits
 from houston.generator.report import MissionGeneratorReport
 
@@ -202,7 +202,7 @@ class MissionGenerator(object):
             self.__runner_pool.run()
 
             # produce a mission suite that best fits the desired characteristics
-            result = self.reduce()
+            suite = self.reduce()
 
             # summarise the generation process
             report = MissionGeneratorReport(self.system,
@@ -212,7 +212,7 @@ class MissionGenerator(object):
                                             self.failures,
                                             self.resource_usage,
                                             self.resource_limits,
-                                            result)
+                                            suite)
             return report
 
         finally:
