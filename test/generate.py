@@ -16,6 +16,7 @@ from houston.ardu.copter.goto import CircleBasedGotoGenerator
 
 from pprint import pprint as pp
 
+import json
 import houston.manager as mgr
 
 
@@ -48,5 +49,6 @@ generator = RandomMissionGenerator(system,
                                    threads=threads,
                                    action_generators=action_generators)
 report = generator.generate(seed, limits)
-
-pp(report.to_json())
+report = report.to_json()
+with open('report.json', 'w') as f:
+    json.dump(report, f, indent=2)
