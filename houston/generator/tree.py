@@ -26,20 +26,34 @@ class TreeBasedMissionGenerator(MissionGenerator):
     
 
     def record_outcome(self, mission, outcome):
+        """
+        Once the outcome of a mission has been determined, this function is
+        reponsible for guiding the generation of new missions based on the
+        outcome of that mission.
+        
+        If the mission failed, it indicates that either:
+
+            (a) there is either a bug in the system under test,
+            (b) there is non-determinism in the outcome of missions, or
+            (c) the system is poorly specified.
+
+        If the mission was successful, a new mission is generated for each
+        (reachable) child node in the behaviour graph.
+        """
         super(TreeBasedMissionGenerator, self).record_outcome(mission, outcome)
 
         self._contents_lock.acquire()
         try:
             intended_path = self.__intended_paths[mission]
-            executed_path = self.get_executed_path(mission)
+            executed_path = self.executed_path(mission)
             del self.__intended_paths[mission]
 
-            if not outcome.failed:
+            if outcome.passed:
                 self.expand(mission)
             else:
+                # TODO: should we prune both?
+                self.prune(intended_path)
                 self.prune(executed_path)
-                if intended_path != executed_path:
-                    self.__flaky.add(mission)
         finally:
             self.__running.remove(mission)
             self._contents_lock.release()
@@ -61,7 +75,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         self.__intended_paths = {}
         self.__queue = set()
         self.__running = set() # could we just use a count?
-        self.expand(self.__seed_mission)
+        self.expand(self.seed_mission)
 
 
     def exhausted(self):
