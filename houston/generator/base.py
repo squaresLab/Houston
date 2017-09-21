@@ -218,10 +218,11 @@ class MissionGenerator(object):
 
         try:
             self.prepare(seed, resource_limits)
+            stream = MissionGeneratorStream(self)
             self.__runner_pool = MissionRunnerPool(self.system,
                                                    self.image,
                                                    self.threads,
-                                                   self.generator(), # property?
+                                                   stream,
                                                    self.record_outcome)
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
@@ -273,18 +274,3 @@ class MissionGenerator(object):
         by this generator.
         """
         raise NotImplementedError
-
-
-    def generator(self):
-        """
-        Implements a thread-safe mission generator.
-        """
-        return 
-        while True:
-            self._fetch_lock.acquire()
-            try:
-                self._fetch_lock.release()
-                yield self.generate_mission()
-
-            finally:
-                self._fetch_lock.release()
