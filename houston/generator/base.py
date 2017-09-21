@@ -135,10 +135,10 @@ class MissionGenerator(object):
         """
         Returns the end state after executing a given mission.
         """
-        assert isinstance(m, Mission)
-        if m.is_empty():
-            return m.initial_state
-        outcome = self.__outcomes[m]
+        assert isinstance(mission, Mission)
+        if mission.is_empty():
+            return mission.initial_state
+        outcome = self.__outcomes[mission]
         return outcome.end_state
 
 
