@@ -49,16 +49,19 @@ class ArduCopter(BaseSystem):
         super(ArduCopter, self).setup(mission)
 
         vehicle = self.vehicle
-        vehicle_mode = dronekit.VehicleMode('GUIDED')
-        vehicle.mode = vehicle_mode
+        guided_mode = dronekit.VehicleMode('GUIDED')
+
+        vehicle.mode = guided_mode
         vehicle.parameters['DISARM_DELAY'] = 0
         vehicle.parameters['RTL_ALT'] = 0
 
-        while vehicle.parameters['DISARM_DELAY'] != 0 and not vehicle.is_armable: #TODO Implement timeout
+        # wait until copter is in desired configuration
+        while True:
+            if vehicle.parameters['DISARM_DELAY'] == 0 and \
+               vehicle.parameters['RTL_ALT'] == 0 and \
+               vehicle.mode == guided_mode:
+                break
             time.sleep(0.1)
-            vehicle.mode = vehicle_mode
-            vehicle.parameters['DISARM_DELAY'] = 0
-            vehicle.parameters['RTL_ALT'] = 0
 
 
 # Register the ArduCopter system type
