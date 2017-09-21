@@ -33,7 +33,8 @@ class MissionGeneratorStream(object):
             self.__generator.tick()
             if self.__generator.exhausted():
                 raise StopIteration
-            mission = self.__generator.next_mission()
+            mission = self.__generator.generate_mission()
+            self.__generator.tick()
             self.__generator.resource_usage.num_missions += 1
             return mission
         finally:

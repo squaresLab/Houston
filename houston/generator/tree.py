@@ -1,4 +1,5 @@
 import time
+import threading
 
 from houston.generator.base import MissionGenerator
 from houston.branch import BranchID, BranchPath
@@ -17,6 +18,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
                  max_num_actions = 10):
         super(TreeBasedMissionGenerator, self).__init__(system, image, threads, action_generators, max_num_actions)
         self.__seed_mission = Mission(env, initial_state, [])
+        self.__queue_lock = threading.Lock()
 
     
     @property
@@ -45,8 +47,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         super(TreeBasedMissionGenerator, self).record_outcome(mission, outcome)
         print("Passed: {}".format(outcome.passed))
 
-        self._contents_lock.acquire()
-        print("Hey! 'record_outcome' has the contents lock.")
+        self.__queue_lock.acquire()
         try:
             # intended_path = self.__intended_paths[mission]
             # del self.__intended_paths[mission]
@@ -61,7 +62,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
                 self.prune(executed_path)
         finally:
             self.__num_running -= 1
-            self._contents_lock.release()
+            self.__queue_lock.release()
 
 
     def prune(self, path):
@@ -77,10 +78,15 @@ class TreeBasedMissionGenerator(MissionGenerator):
     def prepare(self, seed, resource_limits):
         super(TreeBasedMissionGenerator, self).prepare(seed, resource_limits)
 
-        self.__intended_paths = {}
+        # self.__intended_paths = {}
         self.__queue = set()
         self.__num_running = 0
         self.expand(self.seed_mission)
+
+
+    def cleanup(self):
+        self.__queue = set()
+        self.__num_running = 0
 
 
     def exhausted(self):
@@ -94,37 +100,24 @@ class TreeBasedMissionGenerator(MissionGenerator):
         return self.__queue == set() and self.__num_running == 0
 
 
-    def generator(self):
-        """
-        Implements a thread-safe mission generator.
-        """
-        self._fetch_lock.acquire()
-        try:
-            while True:
-                # TODO do we always need to grab the lock here? overly pessimistic.
-                self._contents_lock.acquire() 
-                try:
-                    self.tick()
-                    if self.exhausted():
-                        return
+    def generate_mission(self):
+        while not self.exhausted():
+            self.__queue_lock.acquire()
+            try:
+                if self.__queue != set():
+                    mission = self.rng.sample(self.__queue, 1)[0]
+                    self.__queue.remove(mission)
+                    self.__num_running += 1
+                    return mission
+            finally:
+                self.__queue_lock.release()
 
-                    # check the queue
-                    if self.__queue != set():
-                        mission = self.rng.sample(self.__queue, 1)[0]
-                        self.__queue.remove(mission)
-                        self.__num_running += 1
-                        self.resource_usage.num_missions += 1
-                        print('Generated mission: {}'.format(self.resource_usage.num_missions))
-                        yield mission
+            # wait before checking the queue again
+            time.sleep(0.05)
+            self.tick()
 
-                    # wait until there is a job in the queue (or resources have
-                    # been exhausted)
-                    time.sleep(0.05)
-                finally:
-                    self._contents_lock.release()
-
-        finally:
-            self._fetch_lock.release()
+        # if the search has been exhausted, stop generating more missions
+        raise StopIteration
 
 
     def expand(self, mission):
@@ -147,7 +140,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
             a = self.generate_action(b, env, state)
             m = mission.extended(a)
             self.__queue.add(m)
-            self.__intended_paths[m] = p
+            # self.__intended_paths[m] = p
 
 
     def generate_action(self, branch, env, state):
