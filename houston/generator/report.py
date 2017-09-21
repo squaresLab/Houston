@@ -1,7 +1,7 @@
 import copy
 
 from houston.system import System
-from houston.generator.resource import ResourceUsage, ResourceLimits
+from houston.generator.resources import ResourceUsage, ResourceLimits
 
 
 class MissionGeneratorReport(object):
