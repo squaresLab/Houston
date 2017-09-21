@@ -21,7 +21,7 @@ HOUSTON_SCRIPT_PATHS = [ # TODO: use `which` command
 MAX_NUM_ATTEMPTS = 3
 
 
-class SystemContainer(object):
+class Container(object):
     """
 
 
@@ -50,19 +50,19 @@ class SystemContainer(object):
         :param  verbose:    a flag indicating whether the outputs of the container \
                             should be printed to the stdout upon its destruction
 
-        :returns    A new SystemContainer for the given system
+        :returns    A new Container for the given system
         """
         assert isinstance(system, System)
 
-        SystemContainer._manager_lock.acquire()
+        Container._manager_lock.acquire()
         try:
-            port = random.sample(SystemContainer._port_pool, 1)[0]
-            SystemContainer._port_pool.remove(port)
-            container = SystemContainer(system, image, port, verbose=verbose)
-            SystemContainer._running.add(container)
+            port = random.sample(Container._port_pool, 1)[0]
+            Container._port_pool.remove(port)
+            container = Container(system, image, port, verbose=verbose)
+            Container._running.add(container)
             return container
         finally:
-            SystemContainer._manager_lock.release()
+            Container._manager_lock.release()
 
 
     @staticmethod
@@ -78,16 +78,16 @@ class SystemContainer(object):
         assert (end >= 1024 and end < 65535)
         assert (start < end)  
 
-        SystemContainer._manager_lock.acquire()
+        Container._manager_lock.acquire()
         try:
-            SystemContainer._port_pool = set(i for i in range(start, end))
+            Container._port_pool = set(i for i in range(start, end))
         finally:
-            SystemContainer._manager_lock.release()
+            Container._manager_lock.release()
 
 
     def __init__(self, system, image, port, verbose=False):
         """
-        Constructs a new SystemContainer
+        Constructs a new container
 
         :param  system:     the system under test
         :param  image:      the name of the Docker image to use for this container
@@ -206,9 +206,9 @@ class SystemContainer(object):
 
         # release the port and remove this container from the set of running
         # containers
-        SystemContainer._manager_lock.acquire()
+        Container._manager_lock.acquire()
         try:
-            SystemContainer.__port_pool.add(self.__port)
-            SystemContainer.__running.remove(self)
+            Container._port_pool.add(self.__port)
+            Container._running.remove(self)
         finally:
-            SystemContainer._manager_lock.release()
+            Container._manager_lock.release()

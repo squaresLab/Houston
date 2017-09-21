@@ -1,7 +1,7 @@
 import random
 import threading
 import time
-from systemContainer import SystemContainer
+from container import Container
 
 
 class MissionRunner(threading.Thread):
@@ -11,7 +11,7 @@ class MissionRunner(threading.Thread):
         self.daemon = True # mark as a daemon thread
 
         self.__pool = pool
-        self.__container = SystemContainer.provision(pool.system, pool.image)
+        self.__container = Container.provision(pool.system, pool.image)
         self.__reset_counter()
         
 
