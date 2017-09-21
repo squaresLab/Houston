@@ -371,7 +371,7 @@ class ActionGenerator(object):
         self.__parameters = parameters
 
 
-    def construct_with_state(self, current_state, env, values):
+    def construct_with_state(self, system, current_state, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -382,7 +382,7 @@ class ActionGenerator(object):
         raise NotImplementedError
 
 
-    def construct_without_state(self, env, values):
+    def construct_without_state(self, system, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -402,15 +402,15 @@ class ActionGenerator(object):
         return self.__schema_name
 
 
-    def generate_action_with_state(self, current_state, env, rng):
+    def generate_action_with_state(self, system, current_state, env, rng):
         assert isinstance(rng, random.Random)
         values = {p.name: p.generate(rng) for p in self.__parameters}
-        values = self.construct_with_state(current_state, env, values)
+        values = self.construct_with_state(system, current_state, env, values)
         return Action(self.__schema_name, values)
 
 
-    def generate_action_without_state(self, env, rng):
+    def generate_action_without_state(self, system, env, rng):
         assert isinstance(rng, random.Random)
         values = {p.name: p.generate(rng) for p in self.__parameters}
-        values = self.construct_without_state(env, values)
+        values = self.construct_without_state(system, env, values)
         return Action(self.__schema_name, values)

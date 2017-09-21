@@ -117,7 +117,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
 
-    def construct_with_state(self, current_state, env, values):
+    def construct_with_state(self, system, current_state, env, values):
         dist = values['distance']
         heading = values['heading']
         lon = current_state['longitude']
@@ -135,7 +135,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         return params
 
 
-    def construct_without_state(self, env, values):
+    def construct_without_state(self, system, env, values):
         raise NotImplementedError
 
 
@@ -159,7 +159,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
         super(CircleBasedGotoGenerator, self).__init__('goto', parameters)
 
 
-    def construct_without_state(self, env, values):
+    def construct_without_state(self, system, env, values):
         lat = values['latitude']
         lon = values['longitude']
         heading = values['heading']
@@ -178,5 +178,5 @@ class CircleBasedGotoGenerator(ActionGenerator):
         return params
 
 
-    def construct_with_state(self, current_state, env, values):
-        return self.construct_without_state(env, values)
+    def construct_with_state(self, system, current_state, env, values):
+        return self.construct_without_state(system, env, values)
