@@ -48,7 +48,7 @@ class Branch(object):
         return BranchID(self.__schema.name, self.__name)
 
 
-    def generate(self, initial_state, env, rng):
+    def generate(self, system, initial_state, env, rng):
         """
         Generates an action that would cause the system to take this branch.
 
@@ -122,7 +122,7 @@ class IdleBranch(Branch):
         return True
 
 
-    def generate(self, state, environment, rng):
+    def generate(self, system, state, environment, rng):
         assert isinstance(rng, random.Random)
         return self.schema.generate(rng)
 
