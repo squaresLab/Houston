@@ -18,11 +18,17 @@ class RandomMissionGenerator(MissionGenerator):
     
     @property
     def initial_state(self):
+        """
+        The initial state used by all missions produced by this generator.
+        """
         return self.__initial_state
     
 
     @property
     def env(self):
+        """
+        The environment used by all missions produced by this generator.
+        """
         return self.__env
 
 
