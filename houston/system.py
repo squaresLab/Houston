@@ -79,6 +79,13 @@ class System(object):
         raise Exception(cls)
 
 
+    def provision(self, port):
+        """
+        Provisions a container for this system.
+        """
+        raise NotImplementedError
+
+
     def to_json(self):
         """
         Returns a JSON-based description of this system.
