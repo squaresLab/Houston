@@ -1,6 +1,7 @@
 import copy
 import json
 import state
+import time
 import timeit
 import signal
 import math
@@ -10,7 +11,7 @@ from mission import Mission, MissionOutcome
 from action import ActionSchema, ActionOutcome, Action
 from branch import BranchID, Branch, BranchPath
 
-from util import TimeoutError
+from util import TimeoutError, printflush
 
 
 class System(object):
@@ -139,7 +140,9 @@ class System(object):
         """
         assert self.installed
         time_before_setup = timeit.default_timer()
+        print('Setting up...'),
         self.setup(msn)
+        print('Setup complete.')
         setup_time = timeit.default_timer() - time_before_setup
 
         env = msn.environment
@@ -149,6 +152,7 @@ class System(object):
 
             # execute each action in sequence
             for action in msn.actions:
+                printflush('Performing action: {}\n'.format(action.to_json()))
                 schema = self.__schemas[action.schema_name]
 
                 # compute expected state
@@ -156,6 +160,7 @@ class System(object):
 
                 # determine which branch the system should take
                 branch = schema.resolve_branch(self, action, state_before, env)
+                printflush('Taking branch: {}\n'.format(branch))
 
                 # enforce a timeout
                 timeout = schema.timeout(self, action, state_before, env)
@@ -170,8 +175,11 @@ class System(object):
                     # block until the postcondition is satisfied (or timeout is hit)
                     while not passed:
                         state_after = self.observe()
+                        # TODO implement idle! (add timeout in idle dispatch)
                         if branch.postcondition(self, action, state_before, state_after, env):
                             passed = True
+                        time.sleep(0.1)
+                        print(state_after)
 
                 except TimeoutError:
                     pass
@@ -215,6 +223,10 @@ class System(object):
         return state.State(vals)
 
     
+    def variable(self, v):
+        return self.__variables[v]
+
+
     @property
     def variables(self):
         return copy.copy(self.__variables)
