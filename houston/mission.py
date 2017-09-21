@@ -220,6 +220,14 @@ class CrashedMissionOutcome(MissionOutcome):
 
 
 class MissionSuite(object):
+    @staticmethod
+    def from_json(jsn):
+        assert isinstance(jsn, dict)
+        contents = jsn['contents']
+        contents = [Mission.from_json(m) for m in contents]
+        return MissionSuite(contents)
+
+
     def __init__(self, contents):
         assert isinstance(contents, list)
         assert all(isinstance(m, Mission) for m in contents)
