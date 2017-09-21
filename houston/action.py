@@ -253,7 +253,7 @@ class ActionOutcome(object):
         assert ('successful' in jsn)
         assert ('action' in jsn)
         assert ('start_state' in jsn)
-        assert ('state_after' in jsn)
+        assert ('end_state' in jsn)
         assert ('time_elapsed' in jsn)
         assert ('branch_id' in jsn)
         assert (isinstance(jsn['branch_id'], str) or isinstance(jsn['branch_id'], unicode))
