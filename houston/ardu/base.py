@@ -61,8 +61,8 @@ class BaseSystem(System):
             InternalVariable('homeLatitude', lambda: -35.362938), # TODO: fixed
             InternalVariable('homeLongitude', lambda: 149.165085), # TODO: fixed
             InternalVariable('altitude', lambda: self.__vehicle.location.global_relative_frame.alt, 1.0),
-            InternalVariable('latitude', lambda: self.__vehicle.location.global_relative_frame.lat, 0.00002),
-            InternalVariable('longitude', lambda: self.__vehicle.location.global_relative_frame.lon, 0.00002),
+            InternalVariable('latitude', lambda: self.__vehicle.location.global_relative_frame.lat, 0.0005),
+            InternalVariable('longitude', lambda: self.__vehicle.location.global_relative_frame.lon, 0.0005),
             InternalVariable('armable', lambda: self.__vehicle.is_armable),
             InternalVariable('armed', lambda: self.__vehicle.armed),
             InternalVariable('mode', lambda : self.__vehicle.mode.name),
@@ -130,6 +130,16 @@ class BaseSystem(System):
         printflush(connect_string)
         self.__vehicle = dronekit.connect(connect_string, wait_ready=True)
         self.__vehicle.wait_ready('autopilot_version')
+
+        # wait for longitude and latitude to match their expected values
+        initial_lon = mission.initial_state['longitude']
+        initial_lat = mission.initial_state['latitude']
+        while True:
+            observed = self.observe()
+            if self.variable('longitude').eq(initial_lon, observed['longitude']) and \
+               self.variable('latitude').eq(initial_lat, observed['latitude']):
+                break
+            time.sleep(0.05)
 
 
     def tear_down(self, mission):
