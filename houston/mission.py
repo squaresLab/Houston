@@ -229,9 +229,29 @@ class MissionSuite(object):
  
     @property
     def size(self):
+        """
+        The number of missions within this suite.
+        """
         return self.__contents.length()
 
 
     @property
     def contents(self):
-        return self.__contents
+        """
+        The contents of this mission suite.
+        """
+        return self.__contents[:]
+
+
+    def __iter__(self):
+        for m in self.__contents:
+            yield m
+
+
+    def to_json(self):
+        """
+        Produces a JSON-ready description of this mission suite.
+        """
+        contents = [m.to_json() for m in self.__contents]
+        jsn = {'contents': contents}
+        return jsn
