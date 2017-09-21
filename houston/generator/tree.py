@@ -70,6 +70,11 @@ class TreeBasedMissionGenerator(MissionGenerator):
 
 
     def exhausted(self):
+        """
+        The search is exhausted when either its resource limit has been hit, or
+        there are no jobs running and no jobs queued (implying that the search
+        space has been exhausted).
+        """
         if super(TreeBasedMissionGenerator, self).exhausted():
             return True
         return self.__queue == set() and self.__running == set()
