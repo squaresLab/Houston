@@ -75,7 +75,7 @@ class SetModeLand(Branch):
 
 
     def generate(self, system, state, environment, rng):
-        return Action(self.schema_name, {'mode': 'LAND'})
+        return Action(self.schema.name, {'mode': 'LAND'})
 
 
 class SetModeGuided(Branch):
@@ -100,7 +100,7 @@ class SetModeGuided(Branch):
 
 
     def generate(self, system, state, environment, rng):
-        return Action(self.schema_name, {'mode': 'GUIDED'})
+        return Action(self.schema.name, {'mode': 'GUIDED'})
 
 
 class SetModeLoiter(Branch):
@@ -125,7 +125,7 @@ class SetModeLoiter(Branch):
 
 
     def generate(self, system, state, environment, rng):
-        return Action(self.schema_name, {'mode': 'LOITER'})
+        return Action(self.schema.name, {'mode': 'LOITER'})
 
 
 class SetModeRTL(Branch):
@@ -182,4 +182,4 @@ class SetModeRTL(Branch):
 
 
     def generate(self, system, state, environment, rng):
-        return Action(self.schema_name, {'mode': 'RTL'})
+        return Action(self.schema.name, {'mode': 'RTL'})

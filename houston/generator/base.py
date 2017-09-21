@@ -36,6 +36,7 @@ class MissionGeneratorStream(object):
             mission = self.__generator.generate_mission()
             self.__generator.tick()
             self.__generator.resource_usage.num_missions += 1
+            print('Generated mission: {}'.format(self.__generator.resource_usage.num_missions))
             return mission
         finally:
             self.__lock.release()

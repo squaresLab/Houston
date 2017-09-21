@@ -1,9 +1,3 @@
-try:
-    import docker
-
-except ImportError:
-    pass
-
 import os
 import houston
 import site
@@ -11,6 +5,8 @@ import sys
 import requests
 import mission
 import timeit
+import threading
+import random
 
 from system import System
 from util import printflush
@@ -28,16 +24,67 @@ MAX_NUM_ATTEMPTS = 3
 class SystemContainer(object):
     """
 
+
     Attributes:
-        __system (System): the system under test
-        __verbose (bool): used to specify whether detailed logs should be
-            dumped to the stdout before destruction of the container.
-        __image (string): the name of the Docker image used by this container.
-        __port (int): the number of the port that the Houston server should be
-            forwarded to (on the host machine).
-        __container (docker.Container): the Docker container underlying this
-            system container.
+
+        _lock:          Used to guard the port and container pools.
+        _port_pool:     The set of ports that are open and available to be
+            used by provisioned containers.
+        _running:       The set of containers that have been provisioned
+            and that are currently in use.
     """
+    _manager_lock = threading.Lock()
+    _port_pool = set(i for i in range(10000, 10500))
+    _running = set()
+
+
+    @staticmethod
+    def provision(system, image, verbose=False):
+        """
+        Constructs a fresh, ephemeral container for a given system using a
+        specified Docker image.
+
+        :param  systm:  the System object
+        :param  image:  the name of the Docker image that should be used to spawn\
+                        the container
+        :param  verbose:    a flag indicating whether the outputs of the container \
+                            should be printed to the stdout upon its destruction
+
+        :returns    A new SystemContainer for the given system
+        """
+        assert isinstance(system, System)
+
+        SystemContainer._manager_lock.acquire()
+        try:
+            port = random.sample(SystemContainer._port_pool, 1)[0]
+            SystemContainer._port_pool.remove(port)
+            container = SystemContainer(system, image, port, verbose=verbose)
+            SystemContainer._running.add(container)
+            return container
+        finally:
+            SystemContainer._manager_lock.release()
+
+
+    @staticmethod
+    def set_port_range(start, end):
+        """
+        Updates the set of ports that are available to Houston. This should not
+        be called whilst containers are being provisioned, or missions are being
+        executed.
+        """
+        assert isinstance(start, int)
+        assert (start >= 1024 and start < 65535)
+        assert isinstance(end, int)
+        assert (end >= 1024 and end < 65535)
+        assert (start < end)  
+
+        SystemContainer._manager_lock.acquire()
+        try:
+            SystemContainer._port_pool = set(i for i in range(start, end))
+        finally:
+            SystemContainer._manager_lock.release()
+
+
     def __init__(self, system, image, port, verbose=False):
         """
         Constructs a new SystemContainer
@@ -65,6 +112,7 @@ class SystemContainer(object):
 
 
     def __prepare(self):
+        import docker
         if self.__container is not None and self.__verbose:
             printflush(self.__container.logs(stdout=True, stderr=True))
 
@@ -107,18 +155,12 @@ class SystemContainer(object):
         return True
 
 
+    @property
     def port(self):
         """
-        Returns the port in use by this container.
+        The port used by the Houston server on this container.
         """
         return self.__port
-
-
-    def container(self):
-        """
-        Returns a handle for the associated Docker container
-        """
-        return self.__container
 
 
     def execute(self, msn):
@@ -161,3 +203,12 @@ class SystemContainer(object):
         if self.__container is not None:
             self.__container.remove(force=True)
             self.__container = None
+
+        # release the port and remove this container from the set of running
+        # containers
+        SystemContainer._manager_lock.acquire()
+        try:
+            SystemContainer.__port_pool.add(self.__port)
+            SystemContainer.__running.remove(self)
+        finally:
+            SystemContainer._manager_lock.release()

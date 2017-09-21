@@ -1,7 +1,7 @@
 import random
 import threading
 import time
-import houston.manager as mgr
+from systemContainer import SystemContainer
 
 
 class MissionRunner(threading.Thread):
@@ -11,7 +11,7 @@ class MissionRunner(threading.Thread):
         self.daemon = True # mark as a daemon thread
 
         self.__pool = pool
-        self.__container = mgr.create_container(pool.system, pool.image)
+        self.__container = SystemContainer.provision(pool.system, pool.image)
         self.__reset_counter()
         
 
@@ -45,7 +45,7 @@ class MissionRunner(threading.Thread):
     def shutdown(self):
         # print("shutting down worker: {}".format(self))
         if self.__container is not None:
-            mgr.destroy_container(self.__container)
+            self.__container.destroy()
             self.__container = None
 
 

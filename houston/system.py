@@ -5,7 +5,6 @@ import time
 import timeit
 import signal
 import math
-import manager as mgr
 
 from mission import Mission, MissionOutcome
 from action import ActionSchema, ActionOutcome, Action
@@ -79,9 +78,17 @@ class System(object):
         raise Exception(cls)
 
 
-    def provision(self, port):
+    def provision(self):
         """
         Provisions a container for this system.
+        """
+        raise NotImplementedError
+
+
+    @property
+    def repairbox_artefact(self):
+        """
+        Returns the RepairBox artefact used by this system.
         """
         raise NotImplementedError
 

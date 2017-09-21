@@ -64,5 +64,15 @@ class ArduCopter(BaseSystem):
             time.sleep(0.1)
 
 
+    @property
+    def repairbox_artefact(self):
+        """
+        Returns the RepairBox artefact used by this system.
+        """
+        from repairbox.manager import RepairBoxManager as rbx
+        iden = 'ardu:copter:a0c5ac1'
+        return rbx.bugs[iden]
+
+
 # Register the ArduCopter system type
 System.register('arducopter', ArduCopter)

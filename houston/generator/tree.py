@@ -75,7 +75,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
     def prepare(self, seed, resource_limits):
         super(TreeBasedMissionGenerator, self).prepare(seed, resource_limits)
 
-        # self.__intended_paths = {}
+        self.__intended_paths = {}
         self.__queue = set()
         self.__num_running = 0
         self.expand(self.seed_mission)
@@ -84,6 +84,11 @@ class TreeBasedMissionGenerator(MissionGenerator):
     def cleanup(self):
         self.__queue = set()
         self.__num_running = 0
+
+    
+    def reduce(self):
+        # toposort and retain leaves
+        return super(TreeBasedMissionGenerator, self).reduce()
 
 
     def exhausted(self):

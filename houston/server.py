@@ -7,7 +7,6 @@ execute this mission, and returns a summary of its outcome in a JSON format.
 import sys
 import flask
 import json
-import manager as mgr
 import ardu
 
 from system import System
