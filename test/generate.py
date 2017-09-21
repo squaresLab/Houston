@@ -32,11 +32,13 @@ action_generators = [
 ]
 
 seed = 0
-limits = ResourceLimits(num_missions = 4)
+threads = 4
+limits = ResourceLimits(num_missions = 400)
 generator = RandomMissionGenerator(system,
                                    image,
                                    initial_state,
                                    environment,
+                                   threads=threads,
                                    action_generators=action_generators)
 missions = generator.generate(seed, limits)
 
