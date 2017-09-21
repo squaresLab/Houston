@@ -152,6 +152,8 @@ class SetModeRTL(Branch):
 
         # compute total timeout
         timeout = time_goto_phase + time_land_phase + system.constant_timeout_offset
+
+        print('calculated timeout: {} seconds'.format(timeout))
         return timeout
 
 

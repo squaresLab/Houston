@@ -17,7 +17,7 @@ class MissionRunner(threading.Thread):
 
     def __reset_counter(self):
         self.__counter = 0
-        self.__reset = random.randint(3, 5) # TODO: use RNG
+        self.__reset = 1000 #random.randint(3, 5) # TODO: use RNG
 
 
     # TODO: debug and optimise

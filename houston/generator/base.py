@@ -6,6 +6,7 @@ from houston.runner import MissionRunnerPool
 from houston.system import System
 from houston.mission import Mission
 from houston.generator.resources import ResourceUsage, ResourceLimits
+from houston.generator.report import MissionGeneratorReport
 
 
 class MissionGenerator(object):
@@ -46,6 +47,11 @@ class MissionGenerator(object):
 
 
     @property
+    def resource_limits(self):
+        return self.__resource_limits
+
+
+    @property
     def resource_usage(self):
         return self.__resource_usage
 
@@ -65,6 +71,21 @@ class MissionGenerator(object):
         produced by this generator.
         """
         return self.__max_num_actions
+
+    
+    @property
+    def history(self):
+        return self.__history
+
+
+    @property
+    def outcomes(self):
+        return self.__outcomes
+
+    
+    @property
+    def failures(self):
+        return self.__failures
 
 
     @property
@@ -180,7 +201,19 @@ class MissionGenerator(object):
             self.tick()
             self.__runner_pool.run()
 
-            return self.reduce()
+            # produce a mission suite that best fits the desired characteristics
+            result = self.reduce()
+
+            # summarise the generation process
+            report = MissionGeneratorReport(self.system,
+                                            self.image,
+                                            self.history,
+                                            self.outcomes,
+                                            self.failures,
+                                            self.resource_usage,
+                                            self.resource_limits,
+                                            result)
+            return report
 
         finally:
             if self.__runner_pool:

@@ -229,7 +229,6 @@ class ActionSchema(object):
         environment based on the current action schema.
         """
         for b in self.__branches:
-            printflush("branch: {}".format(b))
             if b.precondition(system, action, initial_state, environment):
                 return b
         raise Exception("failed to resolve branch")
