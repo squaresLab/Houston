@@ -4,6 +4,7 @@ import timeit
 
 from houston.runner import MissionRunnerPool
 from houston.system import System
+from houston.branch import BranchPath
 from houston.mission import Mission, MissionSuite
 from houston.generator.resources import ResourceUsage, ResourceLimits
 from houston.generator.report import MissionGeneratorReport
