@@ -10,6 +10,7 @@ from houston.ardu.copter import ArduCopter
 from houston.state import State, Environment
 from houston.mission import Mission
 from houston.action import Action
+from houston.generator.tree import TreeBasedMissionGenerator
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 from houston.ardu.copter.goto import CircleBasedGotoGenerator
@@ -40,8 +41,14 @@ action_generators = [
 ]
 
 seed = 0
-threads = 32
-limits = ResourceLimits(num_missions = 500)
+threads = 64
+limits = ResourceLimits(num_missions = 1000)
+#generator = TreeBasedMissionGenerator(system,
+#                                      image,
+#                                      initial_state,
+#                                      environment,
+#                                      threads=threads,
+#                                      action_generators=action_generators)
 generator = RandomMissionGenerator(system,
                                    image,
                                    initial_state,
