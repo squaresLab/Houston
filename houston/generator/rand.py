@@ -36,7 +36,7 @@ class RandomMissionGenerator(MissionGenerator):
         generator = self.action_generator(schema)
         if generator is None:
             return schema.generate(self.rng)
-        return generator.generate_action_without_state(self.__env, self.rng)
+        return generator.generate_action_without_state(self.system, self.__env, self.rng)
 
 
     def generate_mission(self):
@@ -45,5 +45,4 @@ class RandomMissionGenerator(MissionGenerator):
         for _ in range(self.rng.randint(1, self.max_num_actions)):
             schema = self.rng.choice(schemas)
             actions.append(self.generate_action(schema))
-
         return Mission(self.__env, self.__initial_state, actions)
