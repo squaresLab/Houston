@@ -63,5 +63,5 @@ class TakeoffNormally(Branch):
         return self.precondition(system, None, state, environment)
 
 
-    def generate(self, state, env, rng):
+    def generate(self, system, state, env, rng):
         return self.schema.generate(rng)

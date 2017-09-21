@@ -93,7 +93,7 @@ class GotoLoiter(Branch):
         return self.precondition(system, None, state, environment)
 
 
-    def generate(self, state, environment, rng):
+    def generate(self, system, state, environment, rng):
         return self.schema.generate(rng)
 
 

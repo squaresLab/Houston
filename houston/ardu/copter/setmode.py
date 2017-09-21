@@ -74,7 +74,7 @@ class SetModeLand(Branch):
         return state['altitude'] > 0.3
 
 
-    def generate(self, state, environment, rng):
+    def generate(self, system, state, environment, rng):
         return Action(self.schema_name, {'mode': 'LAND'})
 
 
@@ -124,7 +124,7 @@ class SetModeLoiter(Branch):
         return True
 
 
-    def generate(self, state, environment, rng):
+    def generate(self, system, state, environment, rng):
         return Action(self.schema_name, {'mode': 'LOITER'})
 
 
@@ -181,5 +181,5 @@ class SetModeRTL(Branch):
         return True
 
 
-    def generate(self, state, environment, rng):
+    def generate(self, system, state, environment, rng):
         return Action(self.schema_name, {'mode': 'RTL'})
