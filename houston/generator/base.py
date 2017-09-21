@@ -225,7 +225,7 @@ class MissionGenerator(object):
         """
         """
         # TODO remove all failures from the history list
-        return self.__history
+        return MissionSuite(self.__history)
 
 
     def prepare(self, seed, resource_limits):

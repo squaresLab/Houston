@@ -40,7 +40,7 @@ action_generators = [
 ]
 
 seed = 0
-threads = 16
+threads = 32
 limits = ResourceLimits(num_missions = 500)
 generator = RandomMissionGenerator(system,
                                    image,
