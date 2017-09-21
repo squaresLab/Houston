@@ -48,8 +48,8 @@ class TreeBasedMissionGenerator(MissionGenerator):
 
         self.__queue_lock.acquire()
         try:
-            # intended_path = self.__intended_paths[mission]
-            # del self.__intended_paths[mission]
+            intended_path = self.__intended_paths[mission]
+            del self.__intended_paths[mission]
             if outcome.passed:
                 self.expand(mission)
             else:
@@ -137,7 +137,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
             a = self.generate_action(b, env, state)
             m = mission.extended(a)
             self.__queue.add(m)
-            # self.__intended_paths[m] = p
+            self.__intended_paths[m] = p
 
 
     def generate_action(self, branch, env, state):
