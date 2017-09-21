@@ -1,4 +1,7 @@
 class MissionGeneratorReport(object):
+    """
+    Used to provide a summary of a mission generation trial.
+    """
 
     def __init__(self, history, failed, resource_usage, resource_limits, result):
         self.__history = history
@@ -25,4 +28,18 @@ class MissionGeneratorReport(object):
 
     @property
     def result(self):
-        return self.__test
+        return self.__result
+
+
+    def to_json(self):
+        return {'report': {
+            'history': self.history,
+            'failed': self.failed,
+            'result': {
+                self.result
+            },
+            'resources': {
+                'used': self.resource_usage.to_json(),
+                'limits': self.resource_limits.to_json()
+            }
+        }}
