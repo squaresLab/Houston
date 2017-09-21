@@ -170,7 +170,8 @@ class MissionOutcome(object):
         return str(self)
 
     
-    def get_executed_path(self):
+    @property
+    def executed_path(self):
         """
         Returns the branch path that was taken by this mission execution.
         """
