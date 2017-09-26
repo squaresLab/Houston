@@ -65,6 +65,7 @@ class State(object):
         """
         Returns the value for a given state variable
         """
+        print(self.__values)
         return self.__values[variable]
 
 

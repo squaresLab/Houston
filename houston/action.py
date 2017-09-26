@@ -87,7 +87,7 @@ class Parameter(object):
         """
         # TODO: type checking
         assert (isinstance(name, str) or isinstance(name, unicode))
-        assert (isinstance(value_range, ValueRange))
+        assert isinstance(value_range, ValueRange)
         self.__name = name
         self.__value_range = value_range
 
@@ -253,6 +253,7 @@ class ActionOutcome(object):
         TODO: add comment
         """
         from houston.branch import BranchID
+        from houston.state import State
 
         assert isinstance(jsn, dict)
         assert ('successful' in jsn)
@@ -267,8 +268,8 @@ class ActionOutcome(object):
 
         return ActionOutcome(Action.from_json(jsn['action']),
                              jsn['successful'],
-                             state.State.from_json(jsn['start_state']),
-                             state.State.from_json(jsn['end_state']),
+                             State.from_json(jsn['start_state']),
+                             State.from_json(jsn['end_state']),
                              jsn['time_elapsed'],
                              BranchID.from_json(jsn['branch_id']))
 
@@ -277,12 +278,13 @@ class ActionOutcome(object):
     Used to describe the outcome of an action execution in terms of system state.
     """
     def __init__(self, action, successful, start_state, end_state, time_elapsed, branch_id):
+        from houston.state import State
         from houston.branch import BranchID
 
         assert isinstance(action, Action)
         assert isinstance(successful, bool)
-        assert isinstance(start_state, state.State)
-        assert isinstance(end_state, state.State)
+        assert isinstance(start_state, State)
+        assert isinstance(end_state, State)
         assert isinstance(time_elapsed, float)
         assert isinstance(branch_id, BranchID)
 

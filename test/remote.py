@@ -2,8 +2,8 @@
 from houston.ardu.copter import ArduCopter
 from houston.state import State, Environment
 from houston.mission import Mission
+from houston.container import Container
 from houston.action import Action
-
 from pprint import pprint as pp
 
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         })
     ]
     environment = Environment({})
-    initial_state = State({
+    initial = State({
         "homeLatitude" : -35.3632607,
         "homeLongitude" : 149.1652351,
         "latitude" : -35.3632607,
@@ -39,12 +39,9 @@ if __name__ == "__main__":
         "armed"    : False,
         "armable"  : True,
         "mode"     : "AUTO"
-    })
+    })   
     mission = Mission(environment, initial, actions)
-    container = system.provision()
 
-    try:
-        outcome = container.execute(mission)
-        pp(outcome.to_json())
-    finally:
-        container.destroy()
+    port = '8080'
+    outcome = Container.send_mission_to_server(port, system, mission)
+    pp(outcome.to_json())

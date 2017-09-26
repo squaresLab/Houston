@@ -233,9 +233,10 @@ class System(object):
 
         TODO: ensure that the system is actually running!
         """
+        from houston.state import State
         assert self.installed
         vals = {n: v.read() for (n, v) in self.__variables.items()}
-        return state.State(vals)
+        return State(vals)
 
     
     def variable(self, v):

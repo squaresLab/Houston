@@ -1,7 +1,9 @@
 import random
 import threading
 import time
+import signal
 from houston.container import Container
+from houston.util import TimeoutError, printflush
 
 
 class MissionRunner(threading.Thread):
@@ -38,8 +40,15 @@ class MissionRunner(threading.Thread):
                 return
 
             self.__prepare_container()
-            outcome = self.__container.execute(m)
-            self.__pool.report(m, outcome)
+            print("Executing mission: {}".format(m))
+            signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
+            signal.alarm(30)
+            try:
+                outcome = self.__container.execute(m)
+                print("Finished executing mission")
+                self.__pool.report(m, outcome)
+            except:
+                raise
         
 
     def shutdown(self):

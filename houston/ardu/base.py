@@ -46,11 +46,11 @@ class BaseSystem(System):
             variables (list of Variable): TODO
             schemas (list of ActionSchema): TODO
         """
-        assert (isinstance(variables, list))
-        assert (all(isinstance(v, Variable) for v in variables))
-        assert (isinstance(schemas, list))
-        assert (all(isinstance(s, ActionSchema) for s in schemas))
-        assert (isinstance(speedup, float))
+        assert isinstance(variables, list)
+        assert all(isinstance(v, Variable) for v in variables)
+        assert isinstance(schemas, list)
+        assert all(isinstance(s, ActionSchema) for s in schemas)
+        assert isinstance(speedup, float)
         assert (speedup != 0.0)
 
         self.__sitl = None

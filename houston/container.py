@@ -23,7 +23,7 @@ from houston.util import printflush
 #   guaranteed to be the same.
 #
 #
-print(PATH_TO_HOUSTON_EGG)
+HOUSTON_SOURCE_DIR = '/home/chris/git/houston'
 MAX_NUM_ATTEMPTS = 3
 
 
@@ -111,18 +111,21 @@ class Container(object):
 
 
     def __prepare(self):
-        command = '/usr/local/bin/houstonserver {}'.format(self.__port)
         ports = {self.__port: self.__port}
-        volumes = {
-            PATH_TO_HOUSTON_EGG: {'bind': PATH_TO_HOUSTON_EGG, 'mode': 'ro'}
-        }
-        for path in HOUSTON_SCRIPT_PATHS:
-            volumes[path] = {'bind': path, 'mode': 'ro'}
+        volumes = {}
 
         # provision a container via RepairBox
-        self.__rbx = self.__artefact.provision(volumes=volumes,
-                                               network_mode='bridge',
+        self.__rbx = self.__artefact.provision(network_mode='bridge',
                                                ports=ports)
+
+        # install Houston
+        self.__rbx.copy_to(HOUSTON_SOURCE_DIR, '/tmp/houston')
+        out = self.__rbx.execute_command('cd /tmp/houston && sudo python setup.py install', stderr=True)
+        print(out.output)
+        assert (out.code == 0)
+
+        # launch the server
+        command = '/usr/local/bin/houstonserver {}'.format(self.__port)
         self.__daemon = self.__rbx.execute_command(command, stdout=True, stderr=True, block=False)
 
         # blocks until server is running
@@ -161,6 +164,17 @@ class Container(object):
         if not self.__daemon:
             return ''
         return '\n'.join(self.__daemon.output)
+
+    
+    @staticmethod
+    def send_mission_to_server(port, system, mission, ip='127.0.0.1'):
+        from houston.mission import MissionOutcome
+        jsn = {'system': system.to_json(),
+               'mission': mission.to_json()}
+        url = 'http://127.0.0.1:{}/executeMission'.format(port)
+        r = requests.post(url, json=jsn)
+        outcome = MissionOutcome.from_json(r.json())
+        return outcome
 
 
     def execute(self, msn):
