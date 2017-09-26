@@ -21,7 +21,6 @@ class State(object):
         """
         with open(fn, "r") as f:
             jsn = json.load(f)
-        print(jsn.keys())
         return State.from_json(jsn)
 
 
@@ -65,7 +64,6 @@ class State(object):
         """
         Returns the value for a given state variable
         """
-        print(self.__values)
         return self.__values[variable]
 
 
