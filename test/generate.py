@@ -39,8 +39,8 @@ action_generators = [
 ]
 
 seed = 0
-threads = 1
-limits = ResourceLimits(num_missions = 10)
+threads = 32
+limits = ResourceLimits(num_missions = 100)
 generator = TreeBasedMissionGenerator(system,
                                       initial_state,
                                       environment,

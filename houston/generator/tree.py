@@ -5,6 +5,7 @@ from houston.generator.base import MissionGenerator
 from houston.branch import BranchID, BranchPath
 from houston.mission import Mission, MissionOutcome
 from houston.action import ActionOutcome, Action, ActionGenerator
+from houston.util import printflush
 
 
 class TreeBasedMissionGenerator(MissionGenerator):

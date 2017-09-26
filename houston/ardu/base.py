@@ -131,13 +131,15 @@ class BaseSystem(System):
         self.__vehicle = dronekit.connect(connect_string, wait_ready=True)
         self.__vehicle.wait_ready('autopilot_version')
 
-        # wait for longitude and latitude to match their expected values
+        # wait for longitude and latitude to match their expected values, and
+        # for the system to match the expected `armable` state.
         initial_lon = mission.initial_state['longitude']
         initial_lat = mission.initial_state['latitude']
         while True:
             observed = self.observe()
             if self.variable('longitude').eq(initial_lon, observed['longitude']) and \
-               self.variable('latitude').eq(initial_lat, observed['latitude']):
+               self.variable('latitude').eq(initial_lat, observed['latitude']) and \
+               observed['armable'] == mission.initial_state['armable']:
                 break
             time.sleep(0.05)
 
