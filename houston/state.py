@@ -1,7 +1,7 @@
 import copy
 import json
-import action
 import math
+import houston.action
 
 
 class State(object):

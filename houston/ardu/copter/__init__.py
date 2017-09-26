@@ -1,1 +1,1 @@
-from copter import ArduCopter
+from houston.ardu.copter.copter import ArduCopter

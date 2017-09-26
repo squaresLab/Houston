@@ -1,9 +1,8 @@
-import state
-import action
-import mission
+import houston.state
+import houston.mission
 import random
 
-from util import printflush
+from houston.util import printflush
 
 
 class Branch(object):
@@ -16,11 +15,12 @@ class Branch(object):
                                 branch belongs, given as an ActionSchema \
                                 instance.
         """
+        from houston.action import ActionSchema
         assert isinstance(name, str)
         assert (name is not "")
         self.__name = name
 
-        assert isinstance(schema, action.ActionSchema)
+        assert isinstance(schema, ActionSchema)
         self.__schema = schema
 
 

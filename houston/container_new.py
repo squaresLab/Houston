@@ -1,15 +1,15 @@
 import os
+import houston
 import site
 import sys
 import requests
+import mission
 import timeit
 import threading
 import random
-import houston
-import houston.mission
 
-from houston.system import System
-from houston.util import printflush
+from system import System
+from util import printflush
 
 
 # Find the location of Houston on disk
@@ -39,13 +39,7 @@ class Container(object):
 
 
     @staticmethod
-    def provision(system, artefact, verbose=False):
-        """
-        Constructs a fresh, ephemeral container for a given system using a
-        specified RepairBox artefact.
-
-        :returns    A new Container for the given system
-        """
+    def _provision(system, artefact, verbose=False):
         import repairbox
         assert isinstance(system, System)
         assert isinstance(artefact, repairbox.Artefact)
@@ -55,9 +49,9 @@ class Container(object):
         try:
             port = random.sample(Container._port_pool, 1)[0]
             Container._port_pool.remove(port)
-            rbx = Container(system, artefact, port, verbose=verbose)
-            Container._running.add(rbx)
-            return rbx
+            container = Container(system, port, verbose=verbose)
+            Container._running.add(container)
+            return container
         finally:
             Container._manager_lock.release()
 
@@ -82,21 +76,26 @@ class Container(object):
             Container._manager_lock.release()
 
 
-    def __init__(self, system, artefact, port, verbose=False):
+    def __init__(self, system, port, verbose=False):
         """
         Constructs a new container
+
+        :param  system:     the system under test
+        :param  image:      the name of the Docker image to use for this container
+        :param  port:       the number of the port that the Houston server should\
+                            run on
+        :param  verbose:    a flag indicating whether the output from this \
+                            container should be dumped before its destruction.
         """
-        assert isinstance(system, System)
-        assert isinstance(artefact, repairbox.Artefact)
-        assert isinstance(port, int)
-        assert isinstance(verbose, bool)
+        assert (isinstance(system, System))
+        assert (isinstance(port, int))
+        assert (isinstance(verbose, bool))
         assert (port >= 1024 and port < 65535)
 
         self.__verbose = verbose
         self.__system = system
         self.__port = port
-        self.__artefact = artefact
-        self.__rbx = None
+        self.__container = None
         self.__prepare()
 
 
@@ -110,20 +109,20 @@ class Container(object):
             volumes[path] = {'bind': path, 'mode': 'ro'}
 
         # provision a container via RepairBox
-        self.__rbx = artefact.provision(volumes=volumes,
-                                        network_mode='bridge',
-                                        ports=ports)
-        self.__rbx.execute_command(command)
+        self.__container = artefact.provision(volumes=volumes,
+                                              network_mode='bridge',
+                                              ports=ports)
+        self.__container.execute_command(command)
 
         # blocks until server is running
-        for line in self.__rbx.logs(stream=True):
+        for line in self.__container.logs(stream=True):
             line = line.strip()
             if line.startswith('* Running on http://'):
                 break
 
 
     def reset(self):
-        self.destroy()
+        self.destroy() # TODO wrong! this will release the port (and the container) LEAK!
         self.__prepare()
 
 
@@ -162,34 +161,33 @@ class Container(object):
                 #    print(outcome.toJSON())
                 return outcome
             except ValueError:
-                printflush("server error: {}".format(self.__rbx.logs()))
+                printflush("server error: {}".format(self.__container.logs()))
                 printflush("mission attempt failed: resetting container")
                 self.reset()
             except:
-                printflush("Unexpected server error: {}".format(self.__rbx.logs()))
+                printflush("Unexpected server error: {}".format(self.__container.logs()))
                 raise
 
         total_time = timeit.default_timer() - start_time
         return mission.CrashedMissionOutcome(total_time)
 
 
-    def destroy(self, reset=False):
+    def destroy(self):
         """
         Destroys the attached Docker container.
         """
         if self.__verbose:
-            printflush(self.__rbx.logs(stdout=True, stderr=True))
+            printflush(self.__container.logs(stdout=True, stderr=True))
 
-        if self.__rbx is not None:
-            self.__rbx.destroy()
-            self.__rbx = None
+        if self.__container is not None:
+            self.__container.remove(force=True)
+            self.__container = None
 
         # release the port and remove this container from the set of running
         # containers
         Container._manager_lock.acquire()
         try:
-            if not reset:
-                Container._port_pool.add(self.__port)
+            Container._port_pool.add(self.__port)
             Container._running.remove(self)
         finally:
             Container._manager_lock.release()

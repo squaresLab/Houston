@@ -1,12 +1,11 @@
 """
 TODO: module description
 """
-import branch
-import state
+import houston.state
 import random
 
-from util import printflush
-from valueRange import ValueRange
+from houston.util import printflush
+from houston.valueRange import ValueRange
 
 
 class Action(object):
@@ -145,12 +144,14 @@ class ActionSchema(object):
                 actions belonging to this schema.
 
         """
+        from houston.branch import Branch
+
         assert isinstance(name, str)
         assert (len(name) > 0)
         assert isinstance(parameters, list)
         assert all(isinstance(p, Parameter) for p in parameters)
         assert isinstance(branches, list)
-        assert all(isinstance(b, branch.Branch) for b in branches)
+        assert all(isinstance(b, Branch) for b in branches)
         assert (len(branches) > 0)
 
         # unique branch names
@@ -181,7 +182,9 @@ class ActionSchema(object):
         """
         Returns a branch belonging to this action schema using its identifier.
         """
-        assert (isinstance(iden, branch.BranchID) and iden is not None)
+        from houston.branch import BranchID
+
+        assert (isinstance(iden, BranchID) and iden is not None)
         assert (iden.get_action_name() == self.__name)
         return self.__branches[iden.get_branch_name()]
 
@@ -249,6 +252,8 @@ class ActionOutcome(object):
         """
         TODO: add comment
         """
+        from houston.branch import BranchID
+
         assert isinstance(jsn, dict)
         assert ('successful' in jsn)
         assert ('action' in jsn)
@@ -265,19 +270,21 @@ class ActionOutcome(object):
                              state.State.from_json(jsn['start_state']),
                              state.State.from_json(jsn['end_state']),
                              jsn['time_elapsed'],
-                             branch.BranchID.from_json(jsn['branch_id']))
+                             BranchID.from_json(jsn['branch_id']))
 
 
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
     def __init__(self, action, successful, start_state, end_state, time_elapsed, branch_id):
+        from houston.branch import BranchID
+
         assert isinstance(action, Action)
         assert isinstance(successful, bool)
         assert isinstance(start_state, state.State)
         assert isinstance(end_state, state.State)
         assert isinstance(time_elapsed, float)
-        assert isinstance(branch_id, branch.BranchID)
+        assert isinstance(branch_id, BranchID)
 
         self.__action      = action
         self.__successful  = successful

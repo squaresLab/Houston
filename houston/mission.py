@@ -1,6 +1,4 @@
-import state
-import branch
-import action
+import houston.branch
 
 class Mission(object):
     """
@@ -13,15 +11,18 @@ class Mission(object):
         """
         Constructs a mission object from a given JSON description.
         """
+        from houston.state import State, Environment
+        from houston.action import Action
+
         assert isinstance(jsn, dict)
         assert('environment' in jsn)
         assert('initialState' in jsn)
         assert('actions' in jsn)
         assert isinstance(jsn['actions'], list)
 
-        env = state.Environment.from_json(jsn['environment'])
-        initial_state = state.State.from_json(jsn['initialState'])
-        actions = [action.Action.from_json(a) for a in jsn['actions']]
+        env = Environment.from_json(jsn['environment'])
+        initial_state = State.from_json(jsn['initialState'])
+        actions = [Action.from_json(a) for a in jsn['actions']]
 
         return Mission(env, initial_state, actions)
 
@@ -35,8 +36,10 @@ class Mission(object):
         :param  external:       a description of the initial external state
         :param  actions:        a list of actions
         """
-        assert isinstance(environment, state.Environment)
-        assert isinstance(initial_state, state.State)
+        from houston.state import State, Environment
+
+        assert isinstance(environment, Environment)
+        assert isinstance(initial_state, State)
 
         self.__environment = environment
         self.__initial_state = initial_state
@@ -91,13 +94,15 @@ class Mission(object):
         return duration
 
 
-    def extended(self, act):
+    def extended(self, action):
         """
         Returns a variant of this mission with a given action added onto the
         end.
         """
-        assert isinstance(act, action.Action)
-        actions = self.__actions + [act]
+        from houston.action import Action
+
+        assert isinstance(action, Action)
+        actions = self.__actions + [action]
         return Mission(self.environment, self.initial_state, actions)
 
 
@@ -122,6 +127,8 @@ class MissionOutcome(object):
         """
         Constructs a MissionOutcome from a JSON description.
         """
+        from houston.action import ActionOutcome
+
         assert isinstance(jsn, dict)
         assert('passed' in jsn)
         assert('actions' in jsn)
@@ -131,7 +138,7 @@ class MissionOutcome(object):
         assert(isinstance(jsn['actions'], list))
         assert(isinstance(jsn['setupTime'], float))
         assert(isinstance(jsn['totalTime'], float))
-        actions = [action.ActionOutcome.from_json(a) for a in jsn['actions']]
+        actions = [ActionOutcome.from_json(a) for a in jsn['actions']]
         return MissionOutcome(jsn['passed'], actions, jsn['setupTime'], jsn['totalTime'])
 
 
@@ -175,7 +182,8 @@ class MissionOutcome(object):
         """
         Returns the branch path that was taken by this mission execution.
         """
-        return branch.BranchPath([a.branch_id for a in self.__outcomes])
+        from houston.branch import BranchPath
+        return BranchPath([a.branch_id for a in self.__outcomes])
 
 
     @property
