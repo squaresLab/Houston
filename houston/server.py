@@ -7,10 +7,11 @@ execute this mission, and returns a summary of its outcome in a JSON format.
 import sys
 import flask
 import json
-import ardu
 
-from system import System
-from mission import Mission
+from houston.system import System
+from houston.mission import Mission
+
+import houston.ardu
 
 
 app = flask.Flask(__name__)

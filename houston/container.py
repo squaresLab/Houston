@@ -15,11 +15,15 @@ from houston.util import printflush
 
 # Find the location of Houston on disk
 # PATH_TO_SITE_PKGS = site.getsitepackages()[0]
-PATH_TO_HOUSTON_EGG = os.path.dirname(os.path.dirname(houston.__file__))
+#
+# TODO: solve the issue of running `houstonserver` on the container. The best
+#   way to tackle this issue is to use a volume to share the source code with
+#   the container, and to install it from there. In general, mounting eggs
+#   won't work, as the host and container versions of Python are not
+#   guaranteed to be the same.
+#
+#
 print(PATH_TO_HOUSTON_EGG)
-HOUSTON_SCRIPT_PATHS = [ # TODO: use `which` command
-    '/usr/local/bin/houstonserver'
-]
 MAX_NUM_ATTEMPTS = 3
 
 

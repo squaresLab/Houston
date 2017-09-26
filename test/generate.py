@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # You'll notice a rather large number of threads are being used by the test
 # generation process. Running the system under test and the simulator is
@@ -18,10 +18,8 @@ from houston.ardu.copter.goto import CircleBasedGotoGenerator
 from pprint import pprint as pp
 
 import json
-import houston.manager as mgr
 
 
-image = 'squareslab/ardubugs:a0c5ac1'
 system = ArduCopter()
 environment = Environment({})
 initial_state = State({
@@ -43,18 +41,16 @@ action_generators = [
 seed = 0
 threads = 64
 limits = ResourceLimits(num_missions = 1000)
-#generator = TreeBasedMissionGenerator(system,
-#                                      image,
-#                                      initial_state,
-#                                      environment,
-#                                      threads=threads,
-#                                      action_generators=action_generators)
-generator = RandomMissionGenerator(system,
-                                   image,
-                                   initial_state,
-                                   environment,
-                                   threads=threads,
-                                   action_generators=action_generators)
+generator = TreeBasedMissionGenerator(system,
+                                      initial_state,
+                                      environment,
+                                      threads=threads,
+                                      action_generators=action_generators)
+#generator = RandomMissionGenerator(system,
+#                                   initial_state,
+#                                   environment,
+#                                   threads=threads,
+#                                   action_generators=action_generators)
 report = generator.generate(seed, limits)
 report = report.to_json()
 with open('report.json', 'w') as f:

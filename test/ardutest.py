@@ -1,12 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from houston.ardu.copter import ArduCopter
 from houston.state import State, Environment
 from houston.mission import Mission
 from houston.action import Action
 
 from pprint import pprint as pp
-
-import houston.manager as mgr
 
 
 if __name__ == "__main__":
