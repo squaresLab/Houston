@@ -1,15 +1,7 @@
 import time
-
-# TODO: import schemas
-
 from houston.util import printflush
 from houston.ardu.base import BaseSystem
 from houston.system import System
-
-try:
-    import dronekit
-except ImportError:
-    pass
 
 
 class ArduRover(BaseSystem):
@@ -26,7 +18,7 @@ class ArduRover(BaseSystem):
 
 
     def __init__(self, speedup=3.0):
-        assert (isinstance(speedup, float))
+        assert isinstance(speedup, float)
         assert (speedup != 0.0)
 
         # variables specific to the ArduRover
@@ -38,8 +30,19 @@ class ArduRover(BaseSystem):
     
     def setup(self, mission):
         super(ArduRover, self).setup(mission)
-        
-        # TODO
+
+
+    # TODO: implement
+    @property
+    def repairbox_artefact(self):
+        """
+        Returns the RepairBox artefact used by this system.
+        """
+        from repairbox.manager import RepairBoxManager as rbx
+        iden = 'ardubugs:copter:a0c5ac1'
+        return rbx.bugs[iden]
+
+
 
 
 System.register('ardurover', ArduRover)

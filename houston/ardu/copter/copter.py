@@ -18,7 +18,7 @@ class ArduCopter(BaseSystem):
 
 
     def __init__(self, speedup=3.0):
-        from houston.ardu.copter.arm import ArmSchema
+        from houston.ardu.common import ArmSchema
         from houston.ardu.copter.goto import GoToSchema
         from houston.ardu.copter.setmode import SetModeSchema
         from houston.ardu.copter.takeoff import TakeoffSchema
@@ -58,6 +58,7 @@ class ArduCopter(BaseSystem):
             time.sleep(0.1)
 
 
+    # TODO: implement
     @property
     def repairbox_artefact(self):
         """
