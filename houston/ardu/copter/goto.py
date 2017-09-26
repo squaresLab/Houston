@@ -50,13 +50,13 @@ class GotoNormally(Branch):
     def precondition(self, system, action, state, environment):
         return  state['armed'] and \
                 state['mode'] != 'LOITER' and \
-                system.variables['altitude'].gt(state['altitude'], 0.3)
+                system.variable('altitude').gt(state['altitude'], 0.3)
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
-        return  system.variables('longitude').eq(state_after['longitude'], action['longitude']) and \
-                system.variables('latitude').eq(state_after['latitude'], action['latitude']) and \
-                system.variables('altitude').eq(state_after['altitude'], action['altitude'])
+        return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
+                system.variable('latitude').eq(state_after['latitude'], action['latitude']) and \
+                system.variable('altitude').eq(state_after['altitude'], action['altitude'])
 
 
     def is_satisfiable(self, system, state, environment):

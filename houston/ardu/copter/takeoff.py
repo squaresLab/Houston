@@ -47,15 +47,15 @@ class TakeoffNormally(Branch):
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
-        return  state_before['longitude'] == state_after['longitude'] and \
-                state_before['longitude'] == state_after['longitude'] and \
-                state_after['altitude'] == action['altitude']
+        return  system.variable('longitude').eq(state_before['longitude'], state_after['longitude']) and \
+                system.variable('latitude').eq(state_before['latitude'], state_after['latitude']) and \
+                system.variable('altitude').eq(state_after['altitude'], action['altitude'])
 
 
     def precondition(self, system, action, state, environment):
         return  state['armed'] and \
                 state['mode'] == 'GUIDED' and \
-                system.variables('altitude').lt(state_after['altitude'], 0.3)
+                system.variable('altitude').lt(state['altitude'], 0.3)
                 # TODO further check; CT: for what?
 
 

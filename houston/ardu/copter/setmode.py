@@ -61,9 +61,9 @@ class SetModeLand(Branch):
     def postcondition(self, system, action, state_before, state_after, environment):
         return  state_after['mode'] == 'LAND' and \
                 state_after['armed'] == False and \
-                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
-                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
-                system.variables('altitude').eq(state_after['altitude'], 0.0)
+                system.variable('longitude').eq(state_after['longitude'], state_before['longitude']) and \
+                system.variable('latitude').eq(state_after['latitude'], state_before['latitude']) and \
+                system.variable('altitude').eq(state_after['altitude'], 0.0)
 
 
     def precondition(self, system, action, state, environment):
@@ -168,9 +168,9 @@ class SetModeRTL(Branch):
             if state_before['armed'] != False:
                 return False
 
-        return  system.variables['altitude'].eq(state_after['altitude'], 0.0) and \
-                system.variables['latitude'].eq(state_after['latitude'], state_before['homeLatitude']) and \
-                system.variables['longitude'].eq(state_after['longitude'], state_before['longitude'])
+        return  system.variable('altitude').eq(state_after['altitude'], 0.0) and \
+                system.variable('latitude').eq(state_after['latitude'], state_before['homeLatitude']) and \
+                system.variable('longitude').eq(state_after['longitude'], state_before['longitude'])
 
 
     def precondition(self, system, action, state, environment):

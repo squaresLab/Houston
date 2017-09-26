@@ -45,8 +45,8 @@ class ArmNormally(Branch):
                 state['mode'] in ['GUIDED', 'LOITER']
 
 
-    def postcondition(self, system, action, state_before, state_action, environment):
-        return state['armed']
+    def postcondition(self, system, action, state_before, state_after, environment):
+        return state_after['armed']
 
 
     def timeout(self, system, action, state, environment):

@@ -17,19 +17,19 @@ if __name__ == "__main__":
         }),
         Action("arm",{}),
         Action("takeoff", {
-            'altitude': 5.0
+            'altitude': 10.0
         }),
         Action("goto", {
             'latitude' : -35.361354,
             'longitude': 149.165218,
-            'altitude' : 5.0
+            'altitude' : 15.0
         }),
         Action('setmode', {
             'mode': 'LAND'
         })
     ]
     environment = Environment({})
-    initial_state = State({
+    initial = State({
         "homeLatitude" : -35.3632607,
         "homeLongitude" : 149.1652351,
         "latitude" : -35.3632607,
