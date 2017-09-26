@@ -21,7 +21,7 @@ class State(object):
         """
         with open(fn, "r") as f:
             jsn = json.load(f)
-        print jsn.keys()
+        print(jsn.keys())
         return State.from_json(jsn)
 
 
