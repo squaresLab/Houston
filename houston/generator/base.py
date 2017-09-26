@@ -44,16 +44,14 @@ class MissionGeneratorStream(object):
 
 class MissionGenerator(object):
 
-    def __init__(self, system, image, threads = 1, action_generators = [],  max_num_actions = 10):
+    def __init__(self, system, threads = 1, action_generators = [],  max_num_actions = 10):
         assert isinstance(system, System)
-        assert isinstance(image, str)
         assert isinstance(threads, int)
         assert isinstance(max_num_actions, int)
         assert threads > 0
         assert max_num_actions > 0
 
         self.__system = system
-        self.__image = image
         self.__threads = threads
         self.__max_num_actions = max_num_actions
 
@@ -65,14 +63,6 @@ class MissionGenerator(object):
             name = g.schema_name
             assert name not in self.__action_generators
             self.__action_generators[name] = g
-
-
-    @property
-    def image(self):
-        """
-        The name of the Docker image used by the system under test.
-        """
-        return self.__image
 
 
     @property
@@ -222,7 +212,6 @@ class MissionGenerator(object):
             self.prepare(seed, resource_limits)
             stream = MissionGeneratorStream(self)
             self.__runner_pool = MissionRunnerPool(self.system,
-                                                   self.image,
                                                    self.threads,
                                                    stream,
                                                    self.record_outcome)
@@ -236,7 +225,6 @@ class MissionGenerator(object):
 
             # summarise the generation process
             report = MissionGeneratorReport(self.system,
-                                            self.image,
                                             self.history,
                                             self.outcomes,
                                             self.failures,

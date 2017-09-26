@@ -10,13 +10,12 @@ from houston.action import ActionOutcome, Action, ActionGenerator
 class TreeBasedMissionGenerator(MissionGenerator):
     def __init__(self,
                  system,
-                 image,
                  initial_state,
                  env,
                  threads = 1,
                  action_generators = [],
                  max_num_actions = 10):
-        super(TreeBasedMissionGenerator, self).__init__(system, image, threads, action_generators, max_num_actions)
+        super(TreeBasedMissionGenerator, self).__init__(system, threads, action_generators, max_num_actions)
         self.__seed_mission = Mission(env, initial_state, [])
         self.__queue_lock = threading.Lock()
 

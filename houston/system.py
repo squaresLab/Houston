@@ -81,9 +81,9 @@ class System(object):
         """
         Provisions a container for this system.
         """
-        from system import SystemContainer
+        from houston.container import Container
         artefact = self.repairbox_artefact
-        return SystemContainer.provision(self, artefact)
+        return Container.provision(self, artefact)
 
 
     @property

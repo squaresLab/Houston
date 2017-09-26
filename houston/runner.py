@@ -11,7 +11,7 @@ class MissionRunner(threading.Thread):
         self.daemon = True # mark as a daemon thread
 
         self.__pool = pool
-        self.__container = Container.provision(pool.system, pool.image)
+        self.__container = pool.system.provision()
         self.__reset_counter()
         
 
@@ -50,7 +50,7 @@ class MissionRunner(threading.Thread):
 
 
 class MissionRunnerPool(object):
-    def __init__(self, system, image, size, source, callback):
+    def __init__(self, system, size, source, callback):
         assert isinstance(size, int)
         assert callable(callback)
         assert size > 0
@@ -60,7 +60,6 @@ class MissionRunnerPool(object):
             source = source.__iter__()
 
         self.__system = system
-        self.__image = image
         self.__source = source
         self.__callback = callback
         self._lock = threading.Lock()
@@ -105,11 +104,6 @@ class MissionRunnerPool(object):
     @property
     def system(self):
         return self.__system
-
-
-    @property
-    def image(self):
-        return self.__image
 
 
     @property

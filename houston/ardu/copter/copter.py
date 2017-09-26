@@ -64,7 +64,7 @@ class ArduCopter(BaseSystem):
         Returns the RepairBox artefact used by this system.
         """
         from repairbox.manager import RepairBoxManager as rbx
-        iden = 'ardu:copter:a0c5ac1'
+        iden = 'ardubugs:copter:a0c5ac1'
         return rbx.bugs[iden]
 
 
