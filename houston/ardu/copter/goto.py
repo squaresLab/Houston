@@ -38,11 +38,11 @@ class GotoNormally(Branch):
         super(GotoNormally, self).__init__('normal', system)
 
 
-    def timeout(self, action, state, environment):
+    def timeout(self, system, action, state, environment):
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (action['latitude'], action['longitude'])
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = dist * TIME_PER_METER_TRAVELED
+        timeout = dist * system.time_per_metre_travelled
         timeout += system.constant_timeout_offset
         return timeout
 
