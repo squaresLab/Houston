@@ -53,7 +53,6 @@ class CircleBasedGotoGenerator(ActionGenerator):
         assert isinstance(centre_coords, tuple)
         assert isinstance(radius, float)
         self.__centre_coords = centre_coords
-        self.__radius = radius
 
         parameters = [
             Parameter('heading', ContinuousValueRange(0.0, 360.0, True)),
@@ -63,8 +62,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
 
 
     def construct_without_state(self, system, env, values):
-        lat = values['latitude']
-        lon = values['longitude']
+        (lat, lon) = self.__centre_coords
         heading = values['heading']
         dist = values['distance']
         params = {}

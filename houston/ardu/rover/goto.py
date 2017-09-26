@@ -3,18 +3,16 @@ import math
 import geopy
 import geopy.distance
 
-from houston.action import ActionSchema, Parameter, Action, ActionGenerator
+from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
-from houston.ardu.common.goto import DistanceBasedGoToGenerator, CircleBasedGotoGenerator
 
 
 class GoToSchema(ActionSchema):
     def __init__(self):
         parameters = [
             Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
-            Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
-            Parameter('altitude', ContinuousValueRange(0.3, 100.0))
+            Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True))
         ]
 
         branches = [
@@ -30,7 +28,7 @@ class GoToSchema(ActionSchema):
         import dronekit
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
-                                              action['altitude'])
+                                              state['altitude'])
         system.vehicle.simple_goto(loc)
 
 
@@ -49,15 +47,12 @@ class GotoNormally(Branch):
 
     
     def precondition(self, system, action, state, environment):
-        return  state['armed'] and \
-                state['mode'] != 'LOITER' and \
-                system.variable('altitude').gt(state['altitude'], 0.3)
+        return  state['armed'] and state['mode'] != 'LOITER'
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
         return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
-                system.variable('latitude').eq(state_after['latitude'], action['latitude']) and \
-                system.variable('altitude').eq(state_after['altitude'], action['altitude'])
+                system.variable('latitude').eq(state_after['latitude'], action['latitude'])
 
 
     def is_satisfiable(self, system, state, environment):
@@ -78,16 +73,13 @@ class GotoLoiter(Branch):
 
 
     def precondition(self, system, action, state, environment):
-        return  state['armed'] and \
-                state['mode'] == 'LOITER'
-                # and \system.variables('altitude').eq(state['altitude'], 0.3)
+        return  state['armed'] and state['mode'] == 'LOITER'
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
         return  state_after['mode'] == 'LOITER' and \
                 system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
-                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
-                system.variables('altitude').eq(state_after['altitude'], state_before['altitude'])
+                system.variables('latitude').eq(state_after['latitude'], state_before['latitude'])
 
 
     def is_satisfiable(self, system, state, environment):
