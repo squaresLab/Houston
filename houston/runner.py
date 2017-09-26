@@ -40,16 +40,10 @@ class MissionRunner(threading.Thread):
                 return
 
             self.__prepare_container()
-            print("Executing mission: {}".format(m))
-            signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
-            signal.alarm(30)
-            try:
-                outcome = self.__container.execute(m)
-                print("Finished executing mission")
-                self.__pool.report(m, outcome)
-            except:
-                raise
-        
+            outcome = self.__container.execute(m)
+            print("Finished executing mission")
+            self.__pool.report(m, outcome)
+    
 
     def shutdown(self):
         # print("shutting down worker: {}".format(self))
