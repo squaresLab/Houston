@@ -82,7 +82,9 @@ class System(object):
         """
         Provisions a container for this system.
         """
-        raise NotImplementedError
+        from system import SystemContainer
+        artefact = self.repairbox_artefact
+        return SystemContainer.provision(self, artefact)
 
 
     @property
