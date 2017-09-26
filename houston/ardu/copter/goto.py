@@ -6,7 +6,9 @@ import geopy.distance
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
-from houston.ardu.common.goto import DistanceBasedGoToGenerator, CircleBasedGotoGenerator
+from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
+                                     CircleBasedGotoGenerator, \
+                                     GotoLoiter
 
 
 class GoToSchema(ActionSchema):
@@ -65,34 +67,4 @@ class GotoNormally(Branch):
 
 
     def generate(self, state, environment, rng):
-        return self.schema.generate(rng)
-
-
-class GotoLoiter(Branch):
-    def __init__(self, system):
-        super(GotoLoiter, self).__init__('loiter', system)
-
-
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
-
-
-    def precondition(self, system, action, state, environment):
-        return  state['armed'] and \
-                state['mode'] == 'LOITER'
-                # and \system.variables('altitude').eq(state['altitude'], 0.3)
-
-
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  state_after['mode'] == 'LOITER' and \
-                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
-                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
-                system.variables('altitude').eq(state_after['altitude'], state_before['altitude'])
-
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
-
-
-    def generate(self, system, state, environment, rng):
         return self.schema.generate(rng)

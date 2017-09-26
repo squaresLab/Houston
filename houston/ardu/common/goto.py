@@ -1,5 +1,38 @@
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
+from houston.branch import Branch, IdleBranch
+
+
+class GotoLoiter(Branch):
+    """
+    If the robot is armed and in its `LOITER` mode, GoTo actions should have no
+    effect upon the robot. (Why isn't this covered by Idle?)
+    """
+    def __init__(self, system):
+        super(GotoLoiter, self).__init__('loiter', system)
+
+
+    def timeout(self, system, action, state, environment):
+        return system.constant_timeout_offset
+
+
+    def precondition(self, system, action, state, environment):
+        return  state['armed'] and state['mode'] == 'LOITER'
+
+
+    def postcondition(self, system, action, state_before, state_after, environment):
+        return  state_after['mode'] == 'LOITER' and \
+                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
+                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
+                system.variables('altitude').eq(state_after['altitude'], state_before['altitude'])
+
+
+    def is_satisfiable(self, system, state, environment):
+        return self.precondition(system, None, state, environment)
+
+
+    def generate(self, system, state, environment, rng):
+        return self.schema.generate(rng)
 
 
 class DistanceBasedGoToGenerator(ActionGenerator):
