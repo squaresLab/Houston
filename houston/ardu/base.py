@@ -109,6 +109,17 @@ class BaseSystem(System):
         return self.__vehicle
 
 
+    # TODO: implement
+    @property
+    def repairbox_artefact(self):
+        """
+        Returns the RepairBox artefact used by this system.
+        """
+        from repairbox.manager import RepairBoxManager as rbx
+        iden = 'ardubugs:copter:a0c5ac1'
+        return rbx.bugs[iden]
+
+
     def setup(self, mission):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
         args = [

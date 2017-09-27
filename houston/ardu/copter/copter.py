@@ -39,6 +39,7 @@ class ArduCopter(BaseSystem):
 
     
     def setup(self, mission):
+        # TODO: is all of this common?
         import dronekit
         super(ArduCopter, self).setup(mission)
 
@@ -56,17 +57,6 @@ class ArduCopter(BaseSystem):
                vehicle.mode == guided_mode:
                 break
             time.sleep(0.1)
-
-
-    # TODO: implement
-    @property
-    def repairbox_artefact(self):
-        """
-        Returns the RepairBox artefact used by this system.
-        """
-        from repairbox.manager import RepairBoxManager as rbx
-        iden = 'ardubugs:copter:a0c5ac1'
-        return rbx.bugs[iden]
 
 
 # Register the ArduCopter system type
