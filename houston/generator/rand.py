@@ -39,7 +39,7 @@ class RandomMissionGenerator(MissionGenerator):
 
 
     def generate_mission(self):
-        schemas = self.system.schemas.values()
+        schemas = list(self.system.schemas.values())
         actions = []
         for _ in range(self.rng.randint(1, self.max_num_actions)):
             schema = self.rng.choice(schemas)

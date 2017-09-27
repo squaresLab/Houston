@@ -1,5 +1,4 @@
 import time
-
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import DiscreteValueRange
@@ -170,7 +169,7 @@ class SetModeRTL(Branch):
 
         return  system.variable('altitude').eq(state_after['altitude'], 0.0) and \
                 system.variable('latitude').eq(state_after['latitude'], state_before['homeLatitude']) and \
-                system.variable('longitude').eq(state_after['longitude'], state_before['longitude'])
+                system.variable('longitude').eq(state_after['longitude'], state_before['homeLongitude'])
 
 
     def precondition(self, system, action, state, environment):

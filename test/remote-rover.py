@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # construct a mission
     actions = [
-        Action("arm",{}),
+        Action("arm", {}),
         Action("goto", {
             'latitude' : -35.361354,
             'longitude': 149.165218,

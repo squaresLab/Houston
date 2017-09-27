@@ -21,6 +21,8 @@ class ArduRover(BaseSystem):
         from houston.ardu.common import ArmSchema
         from houston.ardu.rover.goto import GoToSchema
 
+        # TODO: RTL_ALT: http://ardupilot.org/copter/docs/rtl-mode.html
+
         assert isinstance(speedup, float)
         assert (speedup != 0.0)
 
@@ -28,8 +30,7 @@ class ArduRover(BaseSystem):
         variables = []
         schemas = [
             GoToSchema(),
-            ArmSchema(),
-            # SetModeSchema()
+            ArmSchema()
         ]
 
         super(ArduRover, self).__init__(variables, schemas, speedup=speedup)
