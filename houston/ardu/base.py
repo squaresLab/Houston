@@ -157,6 +157,13 @@ class BaseSystem(System):
                 break
             time.sleep(0.05)
 
+        # wait until the vehicle is in GUIDED mode
+        # TODO: add timeout
+        guided_mode = dronekit.VehicleMode('GUIDED')
+        self.vehicle.mode = guided_mode
+        while self.vehicle.mode != guided_mode:
+            time.sleep(0.05)
+
 
     def tear_down(self, mission):
         self.__vehicle.close()
