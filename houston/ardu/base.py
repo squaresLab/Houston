@@ -157,21 +157,6 @@ class BaseSystem(System):
                 break
             time.sleep(0.05)
 
-        # TODO: is this common?
-        guided_mode = dronekit.VehicleMode('GUIDED')
-
-        self.__vehicle.mode = guided_mode
-        self.__vehicle.parameters['DISARM_DELAY'] = 0
-        self.__vehicle.parameters['RTL_ALT'] = 0
-
-        # wait until copter is in desired configuration
-        while True:
-            if self.__vehicle.parameters['DISARM_DELAY'] == 0 and \
-               self.__vehicle.parameters['RTL_ALT'] == 0 and \
-               self.__vehicle.mode == guided_mode:
-                break
-            time.sleep(0.1)
-
 
     def tear_down(self, mission):
         self.__vehicle.close()

@@ -34,5 +34,11 @@ class ArduRover(BaseSystem):
 
         super(ArduRover, self).__init__(variables, schemas, speedup=speedup)
 
-    
+
+    def setup(self, mission):
+        super(ArduRover, self).setup(mission,   binary_name='ardurover',
+                                                model_name='rover',
+                                                param_file='rover')
+
+   
 System.register('ardurover', ArduRover)

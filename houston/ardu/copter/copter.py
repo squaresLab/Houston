@@ -43,6 +43,22 @@ class ArduCopter(BaseSystem):
                                                 model_name='quad',
                                                 param_file='copter')
 
+        # TODO: is part of this common?
+        guided_mode = dronekit.VehicleMode('GUIDED')
+
+        self.vehicle.mode = guided_mode
+        self.vehicle.parameters['DISARM_DELAY'] = 0
+        self.vehicle.parameters['RTL_ALT'] = 0
+
+        # wait until copter is in desired configuration
+        while True:
+            if self.vehicle.parameters['DISARM_DELAY'] == 0 and \
+               self.vehicle.parameters['RTL_ALT'] == 0 and \
+               self.vehicle.mode == guided_mode:
+                break
+            time.sleep(0.1)
+
+
     
 # Register the ArduCopter system type
 System.register('arducopter', ArduCopter)
