@@ -6,6 +6,7 @@ import geopy.distance
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
+import houston.ardu.common.goto
 from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
                                      CircleBasedGotoGenerator, \
                                      GotoLoiter
@@ -36,35 +37,22 @@ class GoToSchema(ActionSchema):
         system.vehicle.simple_goto(loc)
 
 
-class GotoNormally(Branch):
-    def __init__(self, system):
-        super(GotoNormally, self).__init__('normal', system)
-
-
-    def timeout(self, system, action, state, environment):
-        from_loc = (state['latitude'], state['longitude'])
-        to_loc = (action['latitude'], action['longitude'])
-        dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = dist * system.time_per_metre_travelled
-        timeout += system.constant_timeout_offset
-        return timeout
-
-    
+class GotoNormally(houston.ardu.common.goto.GotoNormally):
     def precondition(self, system, action, state, environment):
-        return  state['armed'] and \
-                state['mode'] != 'LOITER' and \
-                system.variable('altitude').gt(state['altitude'], 0.3)
+        """
+        For GoTo actions within the ArduCopter to exhibit a "normal" behaviour,
+        the robot must be at an altitude greater than 0.3 metres.
+        """
+        if not super(GotoNormally, self).precondition(system, action, state, environment):
+            return False
+        return system.variable('altitude').gt(state['altitude'], 0.3)
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
-        return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
-                system.variable('latitude').eq(state_after['latitude'], action['latitude']) and \
-                system.variable('altitude').eq(state_after['altitude'], action['altitude'])
-
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
-
-
-    def generate(self, state, environment, rng):
-        return self.schema.generate(rng)
+        """
+        Upon completion of the action, the robot should be at the longitude,
+        latitude, and altitude specified by the action.
+        """
+        if not super(GotoNormally, self).postcondition(system, action, state_before, state_after, environment):
+            return False
+        return system.variable('altitude').eq(state_after['altitude'], action['altitude'])

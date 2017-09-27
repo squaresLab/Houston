@@ -1,6 +1,53 @@
+import geopy
+import geopy.distance
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 from houston.branch import Branch, IdleBranch
+
+
+class GotoNormally(Branch):
+    """
+    If the robot is armed and not in its `LOITER` mode, GoTo actions should
+    cause the robot to move to the desired location. For certain Ardu systems,
+    the precondition on this normal behaviour is stronger; for more
+    information, refer to the system-specific subclasses of GotoNormally.
+    """
+    def __init__(self, system):
+        super(GotoNormally, self).__init__('normal', system)
+
+
+    def timeout(self, system, action, state, environment):
+        from_loc = (state['latitude'], state['longitude'])
+        to_loc = (action['latitude'], action['longitude'])
+        dist = geopy.distance.great_circle(from_loc, to_loc).meters
+        timeout = dist * system.time_per_metre_travelled
+        timeout += system.constant_timeout_offset
+        return timeout
+
+    
+    def precondition(self, system, action, state, environment):
+        """
+        This behaviour will occur for Goto actions when the system is armed and
+        not in its `LOITER` mode.
+        """
+        return  state['armed'] and state['mode'] != 'LOITER'
+
+
+    def postcondition(self, system, action, state_before, state_after, environment):
+        """
+        Upon completion of the action, the robot should be at the longitude and
+        latitude specified by the action parameters.
+        """
+        return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
+                system.variable('latitude').eq(state_after['latitude'], action['latitude'])
+
+
+    def is_satisfiable(self, system, state, environment):
+        return self.precondition(system, None, state, environment)
+
+
+    def generate(self, state, environment, rng):
+        return self.schema.generate(rng)
 
 
 class GotoLoiter(Branch):
