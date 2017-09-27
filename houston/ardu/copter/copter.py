@@ -37,6 +37,12 @@ class ArduCopter(BaseSystem):
 
         super(ArduCopter, self).__init__(variables, schemas, speedup=speedup)
 
+
+    def setup(self, mission):
+        super(ArduCopter, self).setup(mission,  binary_name='arducopter',
+                                                model_name='quad',
+                                                param_file='copter')
+
     
 # Register the ArduCopter system type
 System.register('arducopter', ArduCopter)

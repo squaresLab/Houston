@@ -23,7 +23,6 @@ try:
     ARDUPILOT_INSTALLED = True
 except ImportError as e:
     ARDUPILOT_INSTALLED = False
-    print("Import warning: {}".format(e))
 
 
 class BaseSystem(System):
@@ -120,17 +119,21 @@ class BaseSystem(System):
         return rbx.bugs[iden]
 
 
-    def setup(self, mission):
+    def setup(self, mission, binary_name, model_name, param_file):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
         args = [
-            "--model=quad", # TODO: hardcoded
+            "--model={}".format(model_name), # TODO: hardcoded
             "--home=-35.362938,149.165085,584,270", # TODO: HARDCODED
             "--speedup={}".format(self.__speedup)
         ]
 
-        binary = os.path.join(ardu_location, 'build/sitl/bin/arducopter') # TODO: HARDCODED
-        self.__sitl = dronekit_sitl.SITL(binary,
-                                         defaults_filepath='/experiment/source/Tools/autotest/default_params/copter.parm') # TODO: HARDCODED
+        # TODO: HARDCODED
+        param_file = '{}.parm'.format(param_file)
+        param_file = os.path.join(ardu_location,
+                                  'Tools/autotest/default_params',
+                                  param_file)
+        binary = os.path.join(ardu_location, 'build/sitl/bin', binary_name)
+        self.__sitl = dronekit_sitl.SITL(binary, defaults_filepath=param_file) 
         self.__sitl.launch(args,
                            verbose=True,
                            await_ready=True,
