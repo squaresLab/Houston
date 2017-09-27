@@ -38,26 +38,5 @@ class ArduCopter(BaseSystem):
         super(ArduCopter, self).__init__(variables, schemas, speedup=speedup)
 
     
-    def setup(self, mission):
-        # TODO: is all of this common?
-        import dronekit
-        super(ArduCopter, self).setup(mission)
-
-        vehicle = self.vehicle
-        guided_mode = dronekit.VehicleMode('GUIDED')
-
-        vehicle.mode = guided_mode
-        vehicle.parameters['DISARM_DELAY'] = 0
-        vehicle.parameters['RTL_ALT'] = 0
-
-        # wait until copter is in desired configuration
-        while True:
-            if vehicle.parameters['DISARM_DELAY'] == 0 and \
-               vehicle.parameters['RTL_ALT'] == 0 and \
-               vehicle.mode == guided_mode:
-                break
-            time.sleep(0.1)
-
-
 # Register the ArduCopter system type
 System.register('arducopter', ArduCopter)
