@@ -1,15 +1,11 @@
-import time
-import math
-import geopy
-import geopy.distance
-
-from houston.action import ActionSchema, Parameter, Action, ActionGenerator
-from houston.branch import Branch, IdleBranch
-from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 import houston.ardu.common.goto
+from houston.action import ActionSchema, Parameter
+from houston.branch import IdleBranch
+from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
                                      CircleBasedGotoGenerator, \
                                      GotoLoiter
+
 
 
 class GoToSchema(ActionSchema):
@@ -30,6 +26,7 @@ class GoToSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
+        # uses dronekit to issue a simple goto request to the robot
         import dronekit
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
