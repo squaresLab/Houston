@@ -1,11 +1,10 @@
-import time
-import math
-import geopy
-import geopy.distance
-
-from houston.action import ActionSchema, Parameter, Action
-from houston.branch import Branch, IdleBranch
+from houston.action import ActionSchema, Parameter
+from houston.branch import IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
+from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
+                                     CircleBasedGotoGenerator, \
+                                     GotoNormally, \
+                                     GotoLoiter
 
 
 class GoToSchema(ActionSchema):
@@ -25,66 +24,9 @@ class GoToSchema(ActionSchema):
 
 
     def dispatch(self, system, action, state, environment):
+        # uses dronekit to issue a simple goto request to the robot
         import dronekit
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
                                               state['altitude'])
         system.vehicle.simple_goto(loc)
-
-
-class GotoNormally(Branch):
-    def __init__(self, system):
-        super(GotoNormally, self).__init__('normal', system)
-
-
-    def timeout(self, system, action, state, environment):
-        from_loc = (state['latitude'], state['longitude'])
-        to_loc = (action['latitude'], action['longitude'])
-        dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = dist * system.time_per_metre_travelled
-        timeout += system.constant_timeout_offset
-        return timeout
-
-    
-    def precondition(self, system, action, state, environment):
-        return  state['armed'] and state['mode'] != 'LOITER'
-
-
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
-                system.variable('latitude').eq(state_after['latitude'], action['latitude'])
-
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
-
-
-    def generate(self, state, environment, rng):
-        return self.schema.generate(rng)
-
-
-class GotoLoiter(Branch):
-    def __init__(self, system):
-        super(GotoLoiter, self).__init__('loiter', system)
-
-
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
-
-
-    def precondition(self, system, action, state, environment):
-        return  state['armed'] and state['mode'] == 'LOITER'
-
-
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  state_after['mode'] == 'LOITER' and \
-                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
-                system.variables('latitude').eq(state_after['latitude'], state_before['latitude'])
-
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
-
-
-    def generate(self, system, state, environment, rng):
-        return self.schema.generate(rng)

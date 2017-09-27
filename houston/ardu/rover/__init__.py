@@ -18,12 +18,19 @@ class ArduRover(BaseSystem):
 
 
     def __init__(self, speedup=3.0):
+        from houston.ardu.common import ArmSchema
+        from houston.ardu.rover.goto import GoToSchema
+
         assert isinstance(speedup, float)
         assert (speedup != 0.0)
 
         # rover-specific system variables
         variables = []
-        schemas = []
+        schemas = [
+            GoToSchema(),
+            ArmSchema(),
+            # SetModeSchema()
+        ]
 
         super(ArduRover, self).__init__(variables, schemas, speedup=speedup)
 

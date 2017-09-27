@@ -7,7 +7,6 @@ from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
                                      GotoLoiter
 
 
-
 class GoToSchema(ActionSchema):
     def __init__(self):
         parameters = [

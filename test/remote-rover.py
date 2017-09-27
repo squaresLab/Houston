@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from houston.ardu.copter import ArduCopter
+from houston.ardu.rover import ArduRover
 from houston.state import State, Environment
 from houston.mission import Mission
 from houston.container import Container
@@ -12,20 +12,11 @@ if __name__ == "__main__":
 
     # construct a mission
     actions = [
-        Action("setmode", {
-            'mode': 'GUIDED'
-        }),
         Action("arm",{}),
-        Action("takeoff", {
-            'altitude': 5.0
-        }),
         Action("goto", {
             'latitude' : -35.361354,
             'longitude': 149.165218,
             'altitude' : 5.0
-        }),
-        Action('setmode', {
-            'mode': 'LAND'
         })
     ]
     environment = Environment({})
