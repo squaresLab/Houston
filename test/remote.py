@@ -8,25 +8,17 @@ from pprint import pprint as pp
 
 
 if __name__ == "__main__":
-    system = ArduCopter()
+    system = ArduCopter('ardubugs:copter:742cdf6')
 
     # construct a mission
     actions = [
         Action("setmode", {
             'mode': 'GUIDED'
         }),
-        Action("arm",{}),
-        Action("takeoff", {
-            'altitude': 5.0
-        }),
-        Action("goto", {
-            'latitude' : -35.361354,
-            'longitude': 149.165218,
-            'altitude' : 5.0
-        }),
-        Action('setmode', {
-            'mode': 'LAND'
-        })
+        Action("arm",{'arm': True}),
+        Action("arm",{'arm': True}),
+        Action("arm",{'arm': False}),
+        Action("arm",{'arm': True})
     ]
     environment = Environment({})
     initial = State({

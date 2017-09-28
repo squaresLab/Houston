@@ -14,6 +14,7 @@
 #
 # ./sanity.py test-scenario-one.json
 #
+import json
 import sys
 from houston.system import System
 from houston.mission import Mission
@@ -21,7 +22,7 @@ from pprint import pprint as pp
 
 
 if __name__ == "__main__":
-    assert len(sys.argv, 1)
+    assert len(sys.argv) == 2
     test_file = sys.argv[1]
 
     # load the mission and system descriptions from file
