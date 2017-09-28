@@ -70,7 +70,7 @@ class DisarmNormally(Branch):
 
 
     def precondition(self, system, action, state, environment):
-        return  not action['arm'] and self.is_satisifiable(system, state, environment)
+        return  not action['arm'] and self.is_satisfiable(system, state, environment)
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
