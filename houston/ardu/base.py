@@ -36,7 +36,7 @@ class BaseSystem(System):
             provided by dronekit.
         __speedup (float): speedup multiplier used by SITL.
     """
-    def __init__(self, variables, schemas, speedup=3.0):
+    def __init__(self, artefact, variables, schemas, speedup=3.0):
         """
         
 
@@ -45,6 +45,9 @@ class BaseSystem(System):
             variables (list of Variable): TODO
             schemas (list of ActionSchema): TODO
         """
+        from repairbox.manager import RepairBoxManager as rbx
+
+        assert isinstance(artefact, str)
         assert isinstance(variables, list)
         assert all(isinstance(v, Variable) for v in variables)
         assert isinstance(schemas, list)
@@ -52,6 +55,7 @@ class BaseSystem(System):
         assert isinstance(speedup, float)
         assert (speedup != 0.0)
 
+        self.__artefact = rbx.bugs[artefact]
         self.__sitl = None
         self.__vehicle = None
         self.__speedup = speedup
@@ -108,15 +112,9 @@ class BaseSystem(System):
         return self.__vehicle
 
 
-    # TODO: implement
     @property
     def repairbox_artefact(self):
-        """
-        Returns the RepairBox artefact used by this system.
-        """
-        from repairbox.manager import RepairBoxManager as rbx
-        iden = 'ardubugs:copter:a0c5ac1'
-        return rbx.bugs[iden]
+        return self.__artefact
 
 
     def setup(self, mission, binary_name, model_name, param_file):
