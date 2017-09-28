@@ -1,1 +1,1 @@
-from houston.ardu.common.arm import ArmSchema
+from houston.ardu.common.arm import ArmDisarmSchema

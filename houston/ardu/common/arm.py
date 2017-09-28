@@ -5,7 +5,7 @@ from houston.branch import Branch, IdleBranch
 from houston.valueRange import DiscreteValueRange
 
 
-class ArmSchema(ActionSchema):
+class ArmDisarmSchema(ActionSchema):
     """
     TODO: docstring
     
@@ -17,32 +17,35 @@ class ArmSchema(ActionSchema):
             command.
     """
     def __init__(self):
-        parameters = []
+        parameters = [
+            Parameter('arm', DiscreteValueRange([True, False]))
+        ]
         branches = [
             ArmNormally(self),
+            DisarmNormally(self),
             IdleBranch(self)
         ]
-        super(ArmSchema, self).__init__('arm', parameters, branches)
+        super(ArmDisarmSchema, self).__init__('arm', parameters, branches)
 
 
     def dispatch(self, system, action, state, environment):
         from pymavlink import mavutil
         vehicle = system.vehicle
+        arm_flag = 1 if action['arm'] else 0
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0, 1, 0, 0, 0, 0, 0, 0)
+            0, arm_flag, 0, 0, 0, 0, 0, 0)
         vehicle.send_mavlink(msg)
 
 
 class ArmNormally(Branch):
     def __init__(self, system):
-        super(ArmNormally, self).__init__('normal', system)
+        super(ArmNormally, self).__init__('arm-normal', system)
 
 
     def precondition(self, system, action, state, environment):
-        return  state['armable'] and \
-                state['mode'] in ['GUIDED', 'LOITER']
+        return  action['arm'] and self.is_satisfiable(system, state, environment)
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
@@ -54,8 +57,34 @@ class ArmNormally(Branch):
 
 
     def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
+        return state['armable'] and state['mode'] in ['GUIDED', 'LOITER']
 
 
     def generate(self, system, state, environment, rng):
-        return self.schema.generate(rng)
+        return {'arm': True}
+
+
+class DisarmNormally(Branch):
+    def __init__(self, system):
+        super(DisarmNormally, self).__init__('disarm-normal', system)
+
+
+    def precondition(self, system, action, state, environment):
+        return  not action['arm'] and self.is_satisifiable(system, state, environment)
+
+
+    def postcondition(self, system, action, state_before, state_after, environment):
+        return not state_after['armed']
+
+
+    def timeout(self, system, action, state, environment):
+        return system.constant_timeout_offset
+
+
+    # TODO
+    def is_satisfiable(self, system, state, environment):
+        return state['armed']# and state['mode'] in ['GUIDED', 'LOITER']
+
+
+    def generate(self, system, state, environment, rng):
+        return {'arm': False}
