@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+#
+# This script can be used to execute a given mission on a specified system,
+# both of which are described by a JSON file whose path is provided as the
+# sole argument to this script. The system and mission are jointly specified
+# by a single JSON object, as shown below:
+#
+# {'system': SYSTEM, 'mission': MISSION}
+#
+# where SYSTEM and MISSION should be standard JSON descriptions of the system
+# and mission, respectively.
+#
+# Example usage:
+#
+# ./sanity.py test-scenario-one.json
+#
 import sys
 from houston.system import System
 from houston.mission import Mission
