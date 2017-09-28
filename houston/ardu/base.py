@@ -66,9 +66,9 @@ class BaseSystem(System):
             InternalVariable('armable', lambda: self.__vehicle.is_armable),
             InternalVariable('armed', lambda: self.__vehicle.armed),
             InternalVariable('mode', lambda : self.__vehicle.mode.name),
-            InternalVariable('vx', lambda: self.__vehicle.velocity[0]),
-            InternalVariable('vy', lambda: self.__vehicle.velocity[1]),
-            InternalVariable('vz', lambda: self.__vehicle.velocity[2])
+            InternalVariable('vx', lambda: self.__vehicle.velocity[0], 0.05),
+            InternalVariable('vy', lambda: self.__vehicle.velocity[1], 0.05),
+            InternalVariable('vz', lambda: self.__vehicle.velocity[2], 0.05)
         ]
 
         super(BaseSystem, self).__init__(variables, schemas)
