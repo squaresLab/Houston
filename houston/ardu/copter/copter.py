@@ -13,7 +13,7 @@ class ArduCopter(BaseSystem):
         assert isinstance(jsn, dict)
         assert ('settings' in jsn)
         settings = jsn['settings']
-        speedup = settings['speedup']
+        speedup = settings.get('speedup', 3.0)
         return ArduCopter(speedup=speedup)
 
 
