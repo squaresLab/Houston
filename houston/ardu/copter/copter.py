@@ -12,13 +12,15 @@ class ArduCopter(BaseSystem):
     def from_json(jsn):
         assert isinstance(jsn, dict)
         assert ('settings' in jsn)
+        assert ('artefact' in jsn)
         settings = jsn['settings']
+        artefact_name = jsn['artefact']
         speedup = settings.get('speedup', 3.0)
-        return ArduCopter(speedup=speedup)
+        return ArduCopter(artefact_name, speedup=speedup)
 
 
-    def __init__(self, speedup=3.0):
-        from houston.ardu.common import ArmSchema
+    def __init__(self, artefact_name, speedup=3.0):
+        from houston.ardu.common import ArmDisarmSchema
         from houston.ardu.copter.goto import GoToSchema
         from houston.ardu.copter.setmode import SetModeSchema
         from houston.ardu.copter.takeoff import TakeoffSchema
@@ -31,11 +33,11 @@ class ArduCopter(BaseSystem):
         schemas = [
             GoToSchema(),
             TakeoffSchema(),
-            ArmSchema(),
+            ArmDisarmSchema(),
             SetModeSchema()
         ]
 
-        super(ArduCopter, self).__init__(variables, schemas, speedup=speedup)
+        super(ArduCopter, self).__init__(artefact_name, variables, schemas, speedup=speedup)
 
 
     def setup(self, mission):

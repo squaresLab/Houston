@@ -36,7 +36,7 @@ class BaseSystem(System):
             provided by dronekit.
         __speedup (float): speedup multiplier used by SITL.
     """
-    def __init__(self, artefact, variables, schemas, speedup=3.0):
+    def __init__(self, artefact_name, variables, schemas, speedup=3.0):
         """
         
 
@@ -45,9 +45,6 @@ class BaseSystem(System):
             variables (list of Variable): TODO
             schemas (list of ActionSchema): TODO
         """
-        from repairbox.manager import RepairBoxManager as rbx
-
-        assert isinstance(artefact, str)
         assert isinstance(variables, list)
         assert all(isinstance(v, Variable) for v in variables)
         assert isinstance(schemas, list)
@@ -55,7 +52,7 @@ class BaseSystem(System):
         assert isinstance(speedup, float)
         assert (speedup != 0.0)
 
-        self.__artefact = rbx.bugs[artefact]
+        self.__artefact_name = artefact_name
         self.__sitl = None
         self.__vehicle = None
         self.__speedup = speedup
@@ -79,6 +76,7 @@ class BaseSystem(System):
         Returns a JSON-based description of this system.
         """
         jsn = super(BaseSystem, self).to_json()
+        jsn['artefact'] = self.__artefact_name
         jsn['settings'] = {
             'speedup': self.__speedup
         }
@@ -114,7 +112,8 @@ class BaseSystem(System):
 
     @property
     def repairbox_artefact(self):
-        return self.__artefact
+        from repairbox.manager import RepairBoxManager as rbx
+        return rbx.bugs[self.__artefact_name]
 
 
     def setup(self, mission, binary_name, model_name, param_file):

@@ -14,26 +14,23 @@ class ArduRover(BaseSystem):
         assert ('settings' in jsn)
         settings = jsn['settings']
         speedup = settings.get('speedup', 3.0)
-        return ArduRover(speedup=speedup)
+        artefact = jsn['artefact']
+        return ArduRover(artefact, speedup=speedup)
 
 
-    def __init__(self, speedup=3.0):
-        from houston.ardu.common import ArmSchema
+    def __init__(self, artefact, speedup=3.0):
+        from houston.ardu.common import ArmDisarmSchema
         from houston.ardu.rover.goto import GoToSchema
 
         # TODO: RTL_ALT: http://ardupilot.org/copter/docs/rtl-mode.html
-
-        assert isinstance(speedup, float)
-        assert (speedup != 0.0)
-
         # rover-specific system variables
         variables = []
         schemas = [
             GoToSchema(),
-            ArmSchema()
+            ArmDisarmSchema()
         ]
 
-        super(ArduRover, self).__init__(variables, schemas, speedup=speedup)
+        super(ArduRover, self).__init__(artefact, variables, schemas, speedup=speedup)
 
 
     def setup(self, mission):
