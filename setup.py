@@ -15,9 +15,7 @@ setup(
         # 'docker',
         # 'pathos', (this is a dependency of the experiment)
         'pexpect',
-        'geopy',
-        'pyyaml',
-        'tabulate'
+        'geopy'
     ],
     packages = [
         'houston',
