@@ -171,7 +171,8 @@ class System(object):
                 schema = self.__schemas[action.schema_name]
 
                 # compute expected state
-                state_before = state_after = self.observe()
+                start_time = time.time()
+                state_before = state_after = self.observe(start_time)
 
                 # determine which branch the system should take
                 branch = schema.resolve_branch(self, action, state_before, env)
@@ -189,7 +190,7 @@ class System(object):
 
                     # block until the postcondition is satisfied (or timeout is hit)
                     while not passed:
-                        state_after = self.observe()
+                        state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
                         if branch.postcondition(self, action, state_before, state_after, env):
                             passed = True
@@ -227,7 +228,7 @@ class System(object):
             self.tear_down(msn)
 
 
-    def observe(self):
+    def observe(self, time_offset=0.0):
         """
         Returns a description of the current state of the system.
 
@@ -236,7 +237,7 @@ class System(object):
         from houston.state import State
         assert self.installed
         vals = {n: v.read() for (n, v) in self.__variables.items()}
-        return State(vals)
+        return State(vals, time_offset)
 
     
     def variable(self, v):

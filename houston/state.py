@@ -34,14 +34,18 @@ class State(object):
         return State(jsn['variables'])
 
 
-    def __init__(self, values):
+    def __init__(self, values, time_offset):
         """
         Constructs a description of the system state.
 
         :param  values: a dictionary describing the values of the state
                         variables, indexed by their names.
         """
+
+        assert isinstance(time_offset, float)
+
         self.__values = copy.copy(values)
+        self.__time_offset = time_offset
 
     
     @property
@@ -51,6 +55,10 @@ class State(object):
         indexed by name.
         """
         return copy.copy(self.__values)
+
+    @property
+    def time_offset(self):
+        return self.__time_offset
 
 
     def __getitem__(self, variable):
