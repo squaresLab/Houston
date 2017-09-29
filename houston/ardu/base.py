@@ -71,7 +71,8 @@ class BaseSystem(System):
             InternalVariable('vz', lambda: self.__vehicle.velocity[2], 0.05),
             InternalVariable('pitch', lambda: self.__vehicle.attitude.pitch, 0.05),
             InternalVariable('yaw', lambda: self.__vehicle.attitude.yaw, 0.05),
-            InternalVariable('roll', lambda: self.__vehicle.attitude.roll, 0.05)
+            InternalVariable('roll', lambda: self.__vehicle.attitude.roll, 0.05),
+            InternalVariable('heading', lambda: self.__vehicle.heading, 2.0)
         ]
 
         super(BaseSystem, self).__init__(variables, schemas)
