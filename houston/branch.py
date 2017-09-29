@@ -101,21 +101,22 @@ class Branch(object):
 
 
 class IdleBranch(Branch):
-    def __init__(self, schema):
+    def __init__(self, schema, idle_time=5.0):
+        assert isinstance(idle_time, float)
+        self.__idle_time = idle_time
         super(IdleBranch, self).__init__("idle", schema)
 
 
     def timeout(self, system, action, state, environment):
-        return 1.0
+        return self.__idle_time + 2.0
 
 
     def precondition(self, system, action, state, environment):
         return True
 
 
-    # TODO: At the moment, this does nothing!
     def postcondition(self, system, action, state_before, state_after, environment):
-        return True
+        return (state_after['creation_time'] - state_before['creation_time']) > self.__idle_time
 
 
     def is_satisfiable(self, system, state, environment):

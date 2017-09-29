@@ -56,6 +56,7 @@ class BaseSystem(System):
         self.__sitl = None
         self.__vehicle = None
         self.__speedup = speedup
+        creation_time = time.time()
 
         variables += [
             InternalVariable('homeLatitude', lambda: -35.362938), # TODO: fixed
@@ -75,7 +76,8 @@ class BaseSystem(System):
             InternalVariable('heading', lambda: self.__vehicle.heading, 2),
             InternalVariable('airspeed', lambda: self.__vehicle.airspeed, 0.05),
             InternalVariable('groundspeed', lambda: self.__vehicle.groundspeed, 0.05),
-            InternalVariable('ekf_ok', lambda: self.__vehicle.ekf_ok)
+            InternalVariable('ekf_ok', lambda: self.__vehicle.ekf_ok),
+            InternalVariable('creation_time', lambda: creation_time)
         ]
 
         super(BaseSystem, self).__init__(variables, schemas)
