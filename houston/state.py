@@ -31,7 +31,7 @@ class State(object):
         """
         assert ('variables' in jsn)
         assert isinstance(jsn['variables'], dict)
-        return State(jsn['variables'])
+        return State(jsn['variables'], jsn['time_offset'])
 
 
     def __init__(self, values, time_offset):
