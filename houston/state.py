@@ -31,6 +31,8 @@ class State(object):
         """
         assert ('variables' in jsn)
         assert isinstance(jsn['variables'], dict)
+        assert ('time_offset' in jsn)
+        assert isinstance(jsn['time_offset'], float)
         return State(jsn['variables'], jsn['time_offset'])
 
 
@@ -88,7 +90,8 @@ class State(object):
         Returns a JSON description of this state.
         """
         return {
-            'variables': copy.copy(self.__values)
+            'variables': copy.copy(self.__values),
+            'time_offset': self.__time_offset
         }
 
 
