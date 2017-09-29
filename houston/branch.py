@@ -128,16 +128,17 @@ class IdleBranch(Branch):
         assert isinstance(rng, random.Random)
         return self.schema.generate(rng)
 
+
     def are_states_equal(self, system, state_before, state_after):
         from houston.state import State
         assert isinstance(state_before, State)
         assert isinstance(state_after, State)
 
         for v in system.variables.keys():
-            if not system.variable(v).eq(state_before.read(v), state_after.read(v)):
-                print("Not equal variables {}, {}".format(state_before.read(v), state_after.read(v)))
+            if not system.variable(v).eq(state_before[v], state_after[v]):
                 return False
         return True
+
 
 class BranchID(object):
     @staticmethod

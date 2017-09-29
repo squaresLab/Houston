@@ -23,7 +23,7 @@ from houston.util import printflush
 #   guaranteed to be the same.
 #
 #
-HOUSTON_SOURCE_DIR = '/home/chris/git/houston'
+HOUSTON_SOURCE_DIR = '/Users/afsoona/Documents/workspace/Houston/'
 MAX_NUM_ATTEMPTS = 3
 
 
