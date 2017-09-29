@@ -101,21 +101,23 @@ class Branch(object):
 
 
 class IdleBranch(Branch):
-    def __init__(self, schema):
+    def __init__(self, schema, idle_time=5.0):
+        assert isinstance(idle_time, float)
+        self.__idle_time = idle_time
         super(IdleBranch, self).__init__("idle", schema)
 
 
     def timeout(self, system, action, state, environment):
-        return 1.0
+        return self.__idle_time + 2.0
 
 
     def precondition(self, system, action, state, environment):
         return True
 
 
-    # TODO: At the moment, this does nothing!
     def postcondition(self, system, action, state_before, state_after, environment):
-        return True
+        return (state_after.time_offset - state_before.time_offset) > self.__idle_time \
+               and self.are_states_equal(system, state_before, state_after)
 
 
     def is_satisfiable(self, system, state, environment):
@@ -126,6 +128,16 @@ class IdleBranch(Branch):
         assert isinstance(rng, random.Random)
         return self.schema.generate(rng)
 
+    def are_states_equal(self, system, state_before, state_after):
+        from houston.state import State
+        assert isinstance(state_before, State)
+        assert isinstance(state_after, State)
+
+        for v in system.variables.keys():
+            if not system.variable(v).eq(state_before.read(v), state_after.read(v)):
+                print("Not equal variables {}, {}".format(state_before.read(v), state_after.read(v)))
+                return False
+        return True
 
 class BranchID(object):
     @staticmethod

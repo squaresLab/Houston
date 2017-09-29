@@ -31,17 +31,23 @@ class State(object):
         """
         assert ('variables' in jsn)
         assert isinstance(jsn['variables'], dict)
-        return State(jsn['variables'])
+        assert ('time_offset' in jsn)
+        assert isinstance(jsn['time_offset'], float)
+        return State(jsn['variables'], jsn['time_offset'])
 
 
-    def __init__(self, values):
+    def __init__(self, values, time_offset):
         """
         Constructs a description of the system state.
 
         :param  values: a dictionary describing the values of the state
                         variables, indexed by their names.
         """
+
+        assert isinstance(time_offset, float)
+
         self.__values = copy.copy(values)
+        self.__time_offset = time_offset
 
     
     @property
@@ -51,6 +57,10 @@ class State(object):
         indexed by name.
         """
         return copy.copy(self.__values)
+
+    @property
+    def time_offset(self):
+        return self.__time_offset
 
 
     def __getitem__(self, variable):
@@ -80,7 +90,8 @@ class State(object):
         Returns a JSON description of this state.
         """
         return {
-            'variables': copy.copy(self.__values)
+            'variables': copy.copy(self.__values),
+            'time_offset': self.__time_offset
         }
 
 
