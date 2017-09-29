@@ -117,7 +117,7 @@ class IdleBranch(Branch):
 
     def postcondition(self, system, action, state_before, state_after, environment):
         return (state_after.time_offset - state_before.time_offset) > self.__idle_time \
-               and self.are_states_equal(state_before, state_after)
+               and self.are_states_equal(system, state_before, state_after)
 
 
     def is_satisfiable(self, system, state, environment):
@@ -128,13 +128,14 @@ class IdleBranch(Branch):
         assert isinstance(rng, random.Random)
         return self.schema.generate(rng)
 
-    def are_states_equal(self, state_before, state_after):
+    def are_states_equal(self, system, state_before, state_after):
         from houston.state import State
         assert isinstance(state_before, State)
         assert isinstance(state_after, State)
 
-        for v in state_before.values.keys():
-            if state_before.read(v) != state_after.read(v):  # TODO: some margin
+        for v in system.variables.keys():
+            if not system.variable(v).eq(state_before.read(v), state_after.read(v)):
+                print("Not equal variables {}, {}".format(state_before.read(v), state_after.read(v)))
                 return False
         return True
 

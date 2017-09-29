@@ -172,7 +172,7 @@ class System(object):
 
                 # compute expected state
                 start_time = time.time()
-                state_before = state_after = self.observe(start_time)
+                state_before = state_after = self.observe(0.0)
 
                 # determine which branch the system should take
                 branch = schema.resolve_branch(self, action, state_before, env)
