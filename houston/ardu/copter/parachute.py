@@ -45,20 +45,18 @@ class ParachuteNormally(Branch):
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
-        return  system.variable('longitude').eq(state_before['longitude'], state_after['longitude']) and \
-                system.variable('latitude').eq(state_before['latitude'], state_after['latitude']) and \
-                system.variable('altitude').eq(state_after['altitude'], action['altitude'])
+        return  not state_after['armed'] and \
+                system.variable('altitude').lt(state_after['altitude'], 0.3)
 
 
     def precondition(self, system, action, state, environment):
-        return  state['armed'] and \
-                state['mode'] == 'GUIDED' and \
-                system.variable('altitude').lt(state['altitude'], 0.3)
-                # TODO further check; CT: for what?
+        return  action['parachute_action'] == 2 and self.is_satisfiable(system, state, environment)
 
 
     def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
+        return state['armed'] and \
+                state['mode'] == 'GUIDED' and \
+                system.variable('altitude').gt(state['altitude'], 0.3)
 
 
     def generate(self, system, state, env, rng):
