@@ -24,6 +24,7 @@ class ArduCopter(BaseSystem):
         from houston.ardu.copter.goto import GoToSchema
         from houston.ardu.copter.setmode import SetModeSchema
         from houston.ardu.copter.takeoff import TakeoffSchema
+        from houston.ardu.copter.parachute import ParachuteSchema
 
         assert isinstance(speedup, float)
         assert (speedup != 0.0)
@@ -34,7 +35,8 @@ class ArduCopter(BaseSystem):
             GoToSchema(),
             TakeoffSchema(),
             ArmDisarmSchema(),
-            SetModeSchema()
+            SetModeSchema(),
+            ParachuteSchema()
         ]
 
         super(ArduCopter, self).__init__(artefact_name, variables, schemas, speedup=speedup)
