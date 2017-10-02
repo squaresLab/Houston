@@ -19,7 +19,7 @@ class ArduCopter(BaseSystem):
         return ArduCopter(artefact_name, speedup=speedup)
 
 
-    def __init__(self, artefact_name, speedup=3.0):
+    def __init__(self, artefact_name, speedup=3.0, min_parachute_alt=10.0):
         from houston.ardu.common import ArmDisarmSchema
         from houston.ardu.copter.goto import GoToSchema
         from houston.ardu.copter.setmode import SetModeSchema
@@ -28,6 +28,8 @@ class ArduCopter(BaseSystem):
 
         assert isinstance(speedup, float)
         assert (speedup != 0.0)
+
+        self.__min_parachute_alt = min_parachute_alt
 
         # variables specific to the ArduCopter system
         variables = []
@@ -40,6 +42,11 @@ class ArduCopter(BaseSystem):
         ]
 
         super(ArduCopter, self).__init__(artefact_name, variables, schemas, speedup=speedup)
+
+
+    @property
+    def min_parachute_alt(self):
+        return self.__min_parachute_alt
 
 
     def setup(self, mission):

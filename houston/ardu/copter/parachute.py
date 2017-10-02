@@ -4,6 +4,7 @@ import math
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import DiscreteValueRange
+from houston.ardu.copter import ArduCopter
 
 
 class ParachuteSchema(ActionSchema):
@@ -41,12 +42,15 @@ class ParachuteNormally(Branch):
 
 
     def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
+        timeout = state['altitude'] * system.time_per_metre_travelled
+        timeout += system.constant_timeout_offset
+        return timeout
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
         return  not state_after['armed'] and \
-                system.variable('altitude').lt(state_after['altitude'], 0.3)
+                system.variable('altitude').lt(state_after['altitude'], 0.3) and \
+                system.variable('vz').eq(state_after['vz'], 0.0)
 
 
     def precondition(self, system, action, state, environment):
@@ -54,9 +58,10 @@ class ParachuteNormally(Branch):
 
 
     def is_satisfiable(self, system, state, environment):
-        return state['armed'] and \
+        return isinstance(system, ArduCopter) and \
+                state['armed'] and \
                 state['mode'] == 'GUIDED' and \
-                system.variable('altitude').gt(state['altitude'], 0.3)
+                system.variable('altitude').gt(state['altitude'], system.min_parachute_alt)
 
 
     def generate(self, system, state, env, rng):

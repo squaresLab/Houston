@@ -49,7 +49,8 @@ class TakeoffNormally(Branch):
     def postcondition(self, system, action, state_before, state_after, environment):
         return  system.variable('longitude').eq(state_before['longitude'], state_after['longitude']) and \
                 system.variable('latitude').eq(state_before['latitude'], state_after['latitude']) and \
-                system.variable('altitude').eq(state_after['altitude'], action['altitude'])
+                system.variable('altitude').eq(state_after['altitude'], action['altitude']) and \
+                system.variable('vz').eq(state_after['vz'], 0.0)
 
 
     def precondition(self, system, action, state, environment):
