@@ -4,7 +4,6 @@ import math
 from houston.action import ActionSchema, Parameter, Action
 from houston.branch import Branch, IdleBranch
 from houston.valueRange import DiscreteValueRange
-from houston.ardu.copter import ArduCopter
 
 
 class ParachuteSchema(ActionSchema):
@@ -58,8 +57,7 @@ class ParachuteNormally(Branch):
 
 
     def is_satisfiable(self, system, state, environment):
-        return isinstance(system, ArduCopter) and \
-                state['armed'] and \
+        return  state['armed'] and \
                 state['mode'] == 'GUIDED' and \
                 system.variable('altitude').gt(state['altitude'], system.min_parachute_alt)
 
