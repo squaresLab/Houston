@@ -75,7 +75,9 @@ class BaseSystem(System):
             InternalVariable('heading', lambda: self.__vehicle.heading, 2),
             InternalVariable('airspeed', lambda: self.__vehicle.airspeed, 0.05),
             InternalVariable('groundspeed', lambda: self.__vehicle.groundspeed, 0.05),
-            InternalVariable('ekf_ok', lambda: self.__vehicle.ekf_ok)
+            InternalVariable('ekf_ok', lambda: self.__vehicle.ekf_ok),
+            InternalVariable('throttle_channel', lambda: self.__vehicle.channels['3']),
+            InternalVariable('roll_channel', lambda: self.__vehicle.channels['1']),
         ]
 
         super(BaseSystem, self).__init__(variables, schemas)
