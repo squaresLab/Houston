@@ -115,9 +115,11 @@ class BaseSystem(System):
         return self.__vehicle
 
     @property
-    def repairbox_artefact(self):
-        from repairbox.manager import RepairBoxManager as rbx
-        return rbx.bugs[self.__artefact_name]
+    def snapshot(self) -> 'bugzoo.Bug':
+        """
+        Returns a snapshot of the system under test, provided by BugZoo.
+        """
+        raise NotImplementedError
 
     def setup(self, mission, binary_name, model_name, param_file):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
