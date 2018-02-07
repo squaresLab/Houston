@@ -17,7 +17,6 @@ class ArduRover(BaseSystem):
         artefact = jsn['artefact']
         return ArduRover(artefact, speedup=speedup)
 
-
     def __init__(self, artefact, speedup=3.0):
         from houston.ardu.common import ArmDisarmSchema
         from houston.ardu.rover.goto import GoToSchema
@@ -30,13 +29,15 @@ class ArduRover(BaseSystem):
             ArmDisarmSchema()
         ]
 
-        super(ArduRover, self).__init__(artefact, variables, schemas, speedup=speedup)
-
+        super(ArduRover, self).__init__(artefact,
+                                        variables,
+                                        schemas,
+                                        speedup=speedup)
 
     def setup(self, mission):
         super(ArduRover, self).setup(mission,   binary_name='ardurover',
                                                 model_name='rover',
                                                 param_file='rover')
 
-   
+
 System.register('ardurover', ArduRover)
