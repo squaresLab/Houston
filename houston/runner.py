@@ -15,7 +15,6 @@ class MissionRunner(threading.Thread):
         self.__pool = pool
         self.__container = pool.system.provision()
         self.__reset_counter()
-        
 
     def __reset_counter(self):
         self.__counter = 0
@@ -28,7 +27,6 @@ class MissionRunner(threading.Thread):
             self.__reset_counter()
             self.__container.reset()
         self.__counter += 1
-
 
     def run(self):
         """
@@ -43,7 +41,6 @@ class MissionRunner(threading.Thread):
             outcome = self.__container.execute(m)
             print("Finished executing mission")
             self.__pool.report(m, outcome)
-    
 
     def shutdown(self):
         # print("shutting down worker: {}".format(self))
@@ -70,7 +67,6 @@ class MissionRunnerPool(object):
         # provision desired number of runners
         self.__runners = [MissionRunner(self) for _ in range(size)]
 
-
     def run(self):
         """
 
@@ -90,7 +86,6 @@ class MissionRunnerPool(object):
         finally:
             self.shutdown()
 
-    
     def shutdown(self):
         """
         Kills all runners that belong to this pool.
@@ -103,20 +98,21 @@ class MissionRunnerPool(object):
                 runner.shutdown()
         self.__runners = []
 
-
     @property
     def system(self):
+        """
+        The system under test.
+        """
         return self.__system
-
 
     @property
     def size(self):
         """
-        The number of runners used by the pool.
+        The number of independent threads being used by the pool to run
+        tests.
         """
         return self.__runners.length()
 
-    
     def report(self, mission, outcome):
         """
         Used to report the outcome of a mission.
@@ -126,12 +122,11 @@ class MissionRunnerPool(object):
         """
         self.__callback(mission, outcome)
 
-
     def fetch(self):
         """
         Returns the next mission from the (lazily-generated) queue, or None if
         there are no missions left to run.
-        
+
         This method is considered to be thread safe (no concurrent reads from
         the source of the pool are allowed).
         """
