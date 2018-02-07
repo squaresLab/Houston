@@ -3,6 +3,7 @@ include
 lib
 local
 pip-selfcheck.json
+pyvenv.cfg
 
 *.pyc
 *.swo
