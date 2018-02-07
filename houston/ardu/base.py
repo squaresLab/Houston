@@ -38,8 +38,6 @@ class BaseSystem(System):
     """
     def __init__(self, artefact_name, variables, schemas, speedup=3.0):
         """
-        
-
         Args:
             speedup (float): speedup multiplied to use in SITL
             variables (list of Variable): TODO
@@ -82,7 +80,6 @@ class BaseSystem(System):
 
         super(BaseSystem, self).__init__(variables, schemas)
 
-
     def to_json(self):
         """
         Returns a JSON-based description of this system.
@@ -94,12 +91,10 @@ class BaseSystem(System):
         }
         return jsn
 
-    
     # TODO: internally, this should be a function of speedup
     @property
     def time_per_metre_travelled(self):
         return 1.0
-
 
     @property
     def constant_timeout_offset(self):
@@ -108,12 +103,10 @@ class BaseSystem(System):
         """
         return 1.0
 
-
     @property
     def installed(self):
         return ARDUPILOT_INSTALLED
 
-    
     @property
     def vehicle(self):
         """
@@ -121,12 +114,10 @@ class BaseSystem(System):
         """
         return self.__vehicle
 
-
     @property
     def repairbox_artefact(self):
         from repairbox.manager import RepairBoxManager as rbx
         return rbx.bugs[self.__artefact_name]
-
 
     def setup(self, mission, binary_name, model_name, param_file):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
@@ -172,7 +163,6 @@ class BaseSystem(System):
         self.vehicle.mode = guided_mode
         while self.vehicle.mode != guided_mode:
             time.sleep(0.05)
-
 
     def tear_down(self, mission):
         self.__vehicle.close()
