@@ -6,8 +6,8 @@ setup(
     description='TBA',
     long_description='TBA',
     # need to modify to have multiple authors!
-    author='Chris Timperley, Jam M. Hernandez Q.',
-    author_email='christimperley@gmail.com, jamarck96@gmail.com',
+    author='Chris Timperley, Jam M. Hernandez Q., Afsoon Afzal',
+    author_email='christimperley@gmail.com, jamarck96@gmail.com, afsoona@cs.cmu.edu',
     url='https://github.com/squaresLab/Houston',
     license='mit',
     install_requires = [
