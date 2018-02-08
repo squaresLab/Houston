@@ -16,7 +16,8 @@ setup(
         # 'docker',
         # 'pathos', (this is a dependency of the experiment)
         'pexpect',
-        'geopy'
+        'geopy',
+        'bugzoo'
     ],
     packages = [
         'houston',
