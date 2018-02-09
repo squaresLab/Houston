@@ -23,7 +23,6 @@ class State(object):
             jsn = json.load(f)
         return State.from_json(jsn)
 
-
     @staticmethod
     def from_json(jsn):
         """
@@ -34,7 +33,6 @@ class State(object):
         assert ('time_offset' in jsn)
         assert isinstance(jsn['time_offset'], float)
         return State(jsn['variables'], jsn['time_offset'])
-
 
     def __init__(self, values, time_offset):
         """
@@ -49,7 +47,6 @@ class State(object):
         self.__values = copy.copy(values)
         self.__time_offset = time_offset
 
-    
     @property
     def values(self):
         """
@@ -62,13 +59,11 @@ class State(object):
     def time_offset(self):
         return self.__time_offset
 
-
     def __getitem__(self, variable):
         """
         :see `read`
         """
         return self.read(variable)
-
 
     def read(self, variable):
         """
@@ -76,14 +71,12 @@ class State(object):
         """
         return self.__values[variable]
 
-
     def dump(self):
         """
         Prints this state to the standard output.
         """
         for variable in self.__values:
             print('Variable: {} - State: {}'.format(variable, self[variable]))
-
 
     def to_json(self):
         """
@@ -94,10 +87,8 @@ class State(object):
             'time_offset': self.__time_offset
         }
 
-
     def __str__(self):
         return str(self.to_json())
-
 
     def __repr__(self):
         return str(self)

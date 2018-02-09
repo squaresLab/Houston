@@ -1,5 +1,6 @@
 import houston.branch
 
+
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
@@ -45,7 +46,6 @@ class Mission(object):
         self.__initial_state = initial_state
         self.__actions = actions
 
-    
     @property
     def environment(self):
         """
@@ -54,23 +54,19 @@ class Mission(object):
         """
         return self.__environment
 
-
     def is_empty(self):
         """
         Returns True if this mission contains no actions.
         """
         return self.__actions == []
 
-
     @property
     def initial_state(self):
         return self.__initial_state
 
-
     @property
     def actions(self):
         return self.__actions[:]
-
 
     @property
     def size(self):
@@ -78,7 +74,6 @@ class Mission(object):
         Returns the number of actions in this mission.
         """
         return len(self.__actions)
-
 
     def get_expected_duration(self, system):
         """
@@ -93,7 +88,6 @@ class Mission(object):
             duration += timeout
         return duration
 
-
     def extended(self, action):
         """
         Returns a variant of this mission with a given action added onto the
@@ -104,7 +98,6 @@ class Mission(object):
         assert isinstance(action, Action)
         actions = self.__actions + [action]
         return Mission(self.environment, self.initial_state, actions)
-
 
     def to_json(self):
         """
@@ -141,7 +134,6 @@ class MissionOutcome(object):
         actions = [ActionOutcome.from_json(a) for a in jsn['actions']]
         return MissionOutcome(jsn['passed'], actions, jsn['setupTime'], jsn['totalTime'])
 
-
     def __init__(self, passed, outcomes, setup_time, total_time):
         """
         Constructs a MissionOutcome object.
@@ -156,7 +148,6 @@ class MissionOutcome(object):
         self.__setup_time = setup_time
         self.__total_time = total_time
 
-
     def to_json(self):
         """
         Returns a JSON description of the mission outcome.
@@ -168,15 +159,12 @@ class MissionOutcome(object):
             'totalTime': self.__total_time
         }
 
-
     def __str__(self):
         return str(self.to_json())
-
 
     def __repr__(self):
         return str(self)
 
-    
     @property
     def executed_path(self):
         """
@@ -184,7 +172,6 @@ class MissionOutcome(object):
         """
         from houston.branch import BranchPath
         return BranchPath([a.branch_id for a in self.__outcomes])
-
 
     @property
     def end_state(self):
@@ -194,7 +181,6 @@ class MissionOutcome(object):
         """
         return self.__outcomes[-1].end_state
 
-
     @property
     def start_state(self):
         """
@@ -203,12 +189,10 @@ class MissionOutcome(object):
         """
         return self.__outcomes[0].start_state
 
-
     @property
     def passed(self):
         return self.__passed
 
-    
     @property
     def failed(self):
         """
@@ -220,7 +204,6 @@ class MissionOutcome(object):
 class CrashedMissionOutcome(MissionOutcome):
     def __init__(self, total_time):
         super(CrashedMissionOutcome, self).__init__(False, [], 0.0, total_time)
-
 
     def to_json(self):
         jsn = super(CrashedMissionOutcome, self).to_json()
@@ -236,20 +219,17 @@ class MissionSuite(object):
         contents = [Mission.from_json(m) for m in contents]
         return MissionSuite(contents)
 
-
     def __init__(self, contents):
         assert isinstance(contents, list)
         assert all(isinstance(m, Mission) for m in contents)
         self.__contents = contents
 
- 
     @property
     def size(self):
         """
         The number of missions within this suite.
         """
         return self.__contents.length()
-
 
     @property
     def contents(self):
@@ -258,11 +238,9 @@ class MissionSuite(object):
         """
         return self.__contents[:]
 
-
     def __iter__(self):
         for m in self.__contents:
             yield m
-
 
     def to_json(self):
         """
