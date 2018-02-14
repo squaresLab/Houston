@@ -29,6 +29,8 @@ container.exec_run(cmd, detach=True)
 print("CCC")
 
 # connect to the SITL from the host via dronekit
-#port = 14550
-#url = "{}:{}".format(container.ip_address, port)
-#dronekit.connect(url, wait_ready=True)
+port = 14550
+container_info = docker.APIClient(base_url='unix://var/run/docker.sock').inspect_container(container.id)
+print(container_info['NetworkSettings']['IPAddress'])
+url = "{}:{}".format(container_info['NetworkSettings']['IPAddress'], port)
+dronekit.connect(url, wait_ready=True)
