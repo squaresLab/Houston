@@ -29,8 +29,16 @@ container.exec_run(cmd, detach=True)
 print("CCC")
 
 # connect to the SITL from the host via dronekit
-port = 14550
+port = 5760
 container_info = docker.APIClient(base_url='unix://var/run/docker.sock').inspect_container(container.id)
-print(container_info['NetworkSettings']['IPAddress'])
-url = "{}:{}".format(container_info['NetworkSettings']['IPAddress'], port)
-dronekit.connect(url, wait_ready=True)
+ip_address = container_info['NetworkSettings']['IPAddress']
+print(ip_address)
+url = "tcp:{}:{}".format(ip_address, port)
+print(url)
+try:
+    v = dronekit.connect(url, wait_ready=True) # it fails the first time!!
+except dronekit.APIException:
+    v = dronekit.connect(url, wait_ready=True)
+
+container.stop()
+container.remove()
