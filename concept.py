@@ -1,3 +1,4 @@
+from time import sleep
 import docker
 import dronekit
 
@@ -35,10 +36,16 @@ ip_address = container_info['NetworkSettings']['IPAddress']
 print(ip_address)
 url = "tcp:{}:{}".format(ip_address, port)
 print(url)
-try:
-    v = dronekit.connect(url, wait_ready=True) # it fails the first time!!
-except dronekit.APIException:
-    v = dronekit.connect(url, wait_ready=True)
+v = None
+while not v:
+    try:
+        v = dronekit.connect(url, wait_ready=True) # it fails the first time!!
+    except dronekit.APIException:
+        sleep(10)
+
+print("Armed:{}".format(v.armed))
+#loc = dronekit.LocationGlobalRelative(10, 10, 0)
+#v.simple_goto(loc)
 
 container.stop()
 container.remove()
