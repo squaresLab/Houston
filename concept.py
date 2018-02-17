@@ -1,4 +1,5 @@
 from time import sleep
+from dronekit.mavlink import MAVConnection
 import threading
 import sys
 import docker
@@ -23,7 +24,11 @@ api_client = docker.APIClient(base_url='unix://var/run/docker.sock')
 
 # provision a container from an ArduPilot image
 image_name = "squareslab/ardubugs:base"
-container = client.containers.create(image_name, "/bin/bash", stdin_open=True, detach=True, working_dir="/experiment/source")
+container = client.containers.create(image_name,
+                                     "/bin/bash",
+                                     stdin_open=True,
+                                     detach=True,
+                                     working_dir="/experiment/source")
 container.start()
 print("Container status: {}".format(container.status))
 
@@ -41,26 +46,35 @@ print("Built")
 sitl_thread = threading.Thread(target=launch_sitl, args=(container,))
 sitl_thread.start()
 
-sleep(5)
-
 # connect to the SITL from the host via dronekit
+protocol = 'tcp'
 port = 5760
 container_info = api_client.inspect_container(container.id)
 ip_address = container_info['NetworkSettings']['IPAddress']
-url = "tcp:{}:{}".format(ip_address, port)
+url = "{}:{}:{}".format(protocol, ip_address, port)
 print("Attempting to connect to: {}".format(url))
 
 try:
-    vehicle = dronekit.connect(url, wait_ready=True)
+    vehicle = dronekit.connect(url, wait_ready=False, _initialize=False)
+    print('established connection')
+    sleep(5)
+    print('waiting for system to be ready...')
+    vehicle.wait_ready(True)
+    print('ready!')
+    sitl_thread.join()
 except dronekit.APIException as e:
     print("FAILED {}".format(str(e)))
+finally:
+    container.stop()
     raise e
 
+# print("\n\nTRYING AGAIN...")
+# vehicle = dronekit.connect(url, wait_ready=True)
+#
 print("Armed:{}, Mode:{}".format(vehicle.armed, vehicle.mode.name))
 vehicle.mode = dronekit.VehicleMode('GUIDED')
 vehicle.armed = True
 print("Armed:{}, Mode:{}".format(vehicle.armed, vehicle.mode.name))
 loc = dronekit.LocationGlobalRelative(10, 10, 0)
 vehicle.simple_goto(loc)
-
 container.stop()
