@@ -17,7 +17,8 @@ setup(
         # 'pathos', (this is a dependency of the experiment)
         'pexpect',
         'geopy',
-        'bugzoo'
+        'bugzoo',
+        'dronekit'
     ],
     packages = [
         'houston',
