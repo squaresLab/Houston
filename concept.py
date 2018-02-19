@@ -1,5 +1,5 @@
 from time import sleep
-from dronekit.mavlink import MAVConnection
+from pymavlink import mavutil
 import threading
 import sys
 import docker
@@ -54,27 +54,23 @@ ip_address = container_info['NetworkSettings']['IPAddress']
 url = "{}:{}:{}".format(protocol, ip_address, port)
 print("Attempting to connect to: {}".format(url))
 
-try:
-    vehicle = dronekit.connect(url, wait_ready=False, _initialize=False)
-    print('established connection')
-    sleep(5)
-    print('waiting for system to be ready...')
-    vehicle.wait_ready(True)
-    print('ready!')
-    sitl_thread.join()
-except dronekit.APIException as e:
-    print("FAILED {}".format(str(e)))
-finally:
-    container.stop()
-    raise e
+sleep(10)
+dummy_connection = mavutil.mavlink_connection(url)
+print('established dummy connection')
+sleep(10)
+dummy_connection.close()
+print('closed dummy connection')
+sleep(5)
+vehicle = dronekit.connect(url, wait_ready=True)
+print('established dronekit connection')
+sleep(40)
 
-# print("\n\nTRYING AGAIN...")
-# vehicle = dronekit.connect(url, wait_ready=True)
-#
 print("Armed:{}, Mode:{}".format(vehicle.armed, vehicle.mode.name))
 vehicle.mode = dronekit.VehicleMode('GUIDED')
 vehicle.armed = True
+sleep(5)
 print("Armed:{}, Mode:{}".format(vehicle.armed, vehicle.mode.name))
-loc = dronekit.LocationGlobalRelative(10, 10, 0)
-vehicle.simple_goto(loc)
+
+#loc = dronekit.LocationGlobalRelative(10, 10, 0)
+#vehicle.simple_goto(loc)
 container.stop()
