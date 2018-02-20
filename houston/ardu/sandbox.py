@@ -1,8 +1,8 @@
 import dronekit
 import time
 import os
+import houston.sandbox
 from houston.mission import Mission
-from houston.sandbox import Sandbox
 from typing import Optional
 
 
@@ -14,7 +14,7 @@ class NoConnectionError(BaseException):
         super().__init__("No connection to vehicle inside sandbox.")
 
 
-class ArduSandbox(Sandbox):
+class Sandbox(houston.sandbox.Sandbox):
     def __init__(self, system: 'ardu.BaseSystem') -> None:
         super().__init__(system)
         self.__connection = None
