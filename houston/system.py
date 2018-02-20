@@ -14,8 +14,9 @@ from houston.util import TimeoutError, printflush
 
 class System(object):
     """
-    Description of System.
-
+    Instances of the System class are used to provide a description of a
+    system-under-test, and to provide an interface for safely interacting
+    with the system-under-test in an idempotent manner.
 
     Attributes:
         __variables (dict of Variable): TODO
@@ -28,7 +29,6 @@ class System(object):
     """
     _system_types = {}
 
-
     @staticmethod
     def register(name, cls):
         """
@@ -38,7 +38,6 @@ class System(object):
             raise Error("system class already registered with name: {}".format(name))
         System._system_types[name] = cls
 
-
     @staticmethod
     def from_json(jsn):
         """
@@ -47,7 +46,6 @@ class System(object):
         assert isinstance(jsn, dict)
         cls = System._system_types[jsn['type']]
         return cls.from_json(jsn)
-
 
     def __init__(self, variables, schemas):
         """
@@ -62,7 +60,6 @@ class System(object):
         self.__variables = {v.name: v for v in variables}
         self.__schemas = {s.name: s for s in schemas}
 
-    
     @property
     def type_name(self):
         """
@@ -76,7 +73,6 @@ class System(object):
         err = "attempted to determine name of unregistered system class: {}".format(cls)
         raise Exception(cls)
 
-
     def provision(self):
         """
         Provisions a container for this system.
@@ -85,14 +81,12 @@ class System(object):
         artefact = self.repairbox_artefact
         return Container.provision(self, artefact)
 
-
     @property
     def repairbox_artefact(self):
         """
         Returns the RepairBox artefact used by this system.
         """
         raise NotImplementedError
-
 
     def to_json(self):
         """
@@ -102,7 +96,6 @@ class System(object):
             'type': self.type_name
         }
 
-
     @property
     def installed(self):
         """
@@ -110,14 +103,12 @@ class System(object):
         """
         raise NotImplementedError
 
-
     @property
     def branches(self):
         """
         A list of the branches for this system.
         """
         return [b for s in self.__schemas.values() for b in s.branches]
-
 
     def branch(self, iden):
         """
@@ -127,7 +118,6 @@ class System(object):
         schema = self.__schemas[iden.action_name]
         return schema.branch(iden)
 
-
     def setup(self, mission):
         """
         Responsible for appropriately configuring and launching the system,
@@ -135,14 +125,12 @@ class System(object):
         """
         raise NotImplementedError
 
-
     def tear_down(self, mission):
         """
         Responsible for safely closing the system, following the execution of
         a given mission.
         """
         raise NotImplementedError
-
 
     def execute(self, msn):
         """
@@ -227,7 +215,6 @@ class System(object):
         finally:
             self.tear_down(msn)
 
-
     def observe(self, time_offset=0.0):
         """
         Returns a description of the current state of the system.
@@ -239,15 +226,12 @@ class System(object):
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return State(vals, time_offset)
 
-    
     def variable(self, v):
         return self.__variables[v]
-
 
     @property
     def variables(self):
         return copy.copy(self.__variables)
-
 
     @property
     def schemas(self):
