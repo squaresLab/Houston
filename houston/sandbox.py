@@ -1,7 +1,11 @@
 import bugzoo
+import signal
+import time
 import threading
+from timeit import default_timer as timer
 from typing import Optional
 from houston.system import System
+from houston.util import TimeoutError, printflush
 
 
 class Sandbox(object):
@@ -36,7 +40,7 @@ class Sandbox(object):
         """
         return self.__bugzoo is not None and self.__bugzoo.alive
 
-    def _start(self) -> None:
+    def _start(self, mission: Mission) -> None:
         """
         Starts a new SITL instance inside this sandbox.
         """
@@ -57,7 +61,82 @@ class Sandbox(object):
         try:
             self._start()
 
-            # TODO: run mission
+            time_before_setup = timer()
+            print('Setting up...'),
+            self._start(msn)
+            print('Setup complete.')
+            setup_time = timer() - time_before_setup
+
+            env = msn.environment
+            outcomes = []
+
+            # execute each action in sequence
+            for action in msn.actions:
+                printflush('Performing action: {}\n'.format(action.to_json()))
+                schema = self.system.schemas[action.schema_name]
+
+                # compute expected state
+                start_time = time.time()
+                # TODO: observe container
+                state_before = state_after = self.observe(0.0)
+
+                # determine which branch the system should take
+                branch = schema.resolve_branch(self.system,
+                                               action,
+                                               state_before,
+                                               env)
+                printflush('Taking branch: {}\n'.format(branch))
+
+                # enforce a timeout
+                timeout = schema.timeout(self.system,
+                                         action,
+                                         state_before,
+                                         env)
+                signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
+                signal.alarm(int(math.ceil(timeout)))
+
+                time_before = timer()
+                passed = False
+                try:
+                    # TODO: dispatch to this container!
+                    schema.dispatch(system, action, state_before, env)
+
+                    # block until the postcondition is satisfied (or timeout is hit)
+                    while not passed:
+                        # TODO: observe container
+                        state_after = self.observe(time.time() - start_time)
+                        # TODO implement idle! (add timeout in idle dispatch)
+                        if branch.postcondition(self, action, state_before, state_after, env):
+                            passed = True
+                        time.sleep(0.1)
+                        print(state_after)
+
+                except TimeoutError:
+                    pass
+                finally:
+                    signal.alarm(0) # TODO does this reset the alarm?
+
+                time_after = timer()
+                time_elapsed = time_after - time_before
+
+                # record the outcome of the action execution
+                outcome = ActionOutcome(action,
+                                        passed,
+                                        state_before,
+                                        state_after,
+                                        time_elapsed,
+                                        branch.id)
+                outcomes.append(outcome)
+
+                if not passed:
+                    total_time = timer() - time_before_setup
+                    return MissionOutcome(False,
+                                          outcomes,
+                                          setup_time,
+                                          total_time)
+
+            total_time = timer() - time_before_setup
+            return MissionOutcome(True, outcomes, setup_time, total_time)
 
         finally:
             self._stop()
