@@ -7,10 +7,13 @@ from houston.util import TimeoutError, printflush
 
 
 class MissionRunner(threading.Thread):
+    """
+    Mission runners are used to continually fetch pending tests from an
+    associated pool, and to execute those tests.
+    """
     def __init__(self, pool):
-        assert isinstance(pool, MissionRunnerPool)
         super(MissionRunner, self).__init__()
-        self.daemon = True # mark as a daemon thread
+        self.daemon = True
 
         self.__pool = pool
         self.__container = pool.system.provision()
@@ -50,6 +53,11 @@ class MissionRunner(threading.Thread):
 
 
 class MissionRunnerPool(object):
+    """
+    Mission runner pools are used to distribute the execution of a stream
+    of missions across a given number of workers, each running on a separate
+    thread.
+    """
     def __init__(self, system, size, source, callback):
         assert isinstance(size, int)
         assert callable(callback)
