@@ -1,9 +1,5 @@
-"""
-TODO: module description
-"""
 import houston.state
 import random
-
 from houston.util import printflush
 from houston.valueRange import ValueRange
 
@@ -12,7 +8,6 @@ class Action(object):
     """
     Description of the concept of "Actions".
     """
-
     @staticmethod
     def from_json(jsn):
         """
@@ -22,7 +17,6 @@ class Action(object):
         assert ('kind' in jsn)
         assert ('parameters' in jsn)
         return Action(jsn['kind'], jsn['parameters'])
-
 
     def __init__(self, kind, values):
         """
@@ -37,7 +31,6 @@ class Action(object):
         self.__kind = kind
         self.__values = values.copy()
 
-
     @property
     def schema_name(self):
         """
@@ -45,13 +38,11 @@ class Action(object):
         """
         return self.__kind
 
-
     def __getitem__(self, param):
         """
         Returns the value for a specific parameter in this action.
         """
         return self.__values[param]
-
 
     @property
     def values(self):
@@ -59,7 +50,6 @@ class Action(object):
         Returns a copy of the parameter values used by this action.
         """
         return self.__values.copy()
-
 
     def to_json(self):
         """
@@ -75,7 +65,6 @@ class Parameter(object):
     """
     Docstring.
     """
-
     def __init__(self, name, value_range):
         """
         Constructs a Parameter object.
@@ -91,14 +80,12 @@ class Parameter(object):
         self.__name = name
         self.__value_range = value_range
 
-
     @property
     def values(self):
         """
         The range of possible values for this parameter.
         """
         return self.__value_range
-
 
     def generate(self, rng):
         """
@@ -107,7 +94,6 @@ class Parameter(object):
         assert (isinstance(rng, random.Random) and rng is not None)
         return self.__value_range.sample(rng)
 
-
     @property
     def type(self):
         """
@@ -115,7 +101,6 @@ class Parameter(object):
         """
         return self.__value_range.type
 
-    
     @property
     def name(self):
         """
@@ -132,27 +117,24 @@ class ActionSchema(object):
     preconditions, postconditions, and invariants.
     """
 
-    def __init__(self, name, parameters, branches):
+    def __init__(self,
+                 name: str,
+                 parameters: List[Parameter],
+                 branches: 'List[Branch]'
+                 ):
         """
         Constructs an ActionSchema object.
 
         Args:
-            name (str): name of the action schema
-            parameters (list of Parameter): a list of the parameters for this
-                action schema
-            branches (list of Branch): a list of the possible outcomes for
-                actions belonging to this schema.
-
+            name: name of the action schema.
+            parameters: a list of the parameters for this action schema.
+            branches: a list of the possible outcomes for actions belonging to
+                this schema.
         """
         from houston.branch import Branch
 
-        assert isinstance(name, str)
-        assert (len(name) > 0)
-        assert isinstance(parameters, list)
-        assert all(isinstance(p, Parameter) for p in parameters)
-        assert isinstance(branches, list)
-        assert all(isinstance(b, Branch) for b in branches)
-        assert (len(branches) > 0)
+        assert len(name) > 0
+        assert len(branches) > 0
 
         # unique branch names
         assert (len(set(b.name for b in branches)) == len(branches))
@@ -161,15 +143,13 @@ class ActionSchema(object):
         self.__parameters =  parameters
         self.__branches = branches
 
-
     @property
-    def name(self):
+    def name(self) -> str:
         """
         The name of this schema.
         """
         return self.__name
 
-    
     @property
     def branches(self):
         """
@@ -177,7 +157,6 @@ class ActionSchema(object):
         """
         return self.__branches[:]
 
-    
     def get_branch(self, iden):
         """
         Returns a branch belonging to this action schema using its identifier.
@@ -188,21 +167,24 @@ class ActionSchema(object):
         assert (iden.get_action_name() == self.__name)
         return self.__branches[iden.get_branch_name()]
 
-
-    def dispatch(self, system, action, state, environment):
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 action: Action,
+                 state: State,
+                 environment: Environment
+                 ) -> None:
         """
         Responsible for invoking an action belonging to this schema.
 
         Args:
-            system (System): the system under test
-            action (Action): the action that is to be dispatched
-            state (State): the state of the system immediately prior to the
+            sandbox: the sandbox for the system under test.
+            action: the action that is to be dispatched.
+            state: the state of the system immediately prior to the
                 call to this method
             environment (Environment): a description of the environment in
                 which the action is being performed
         """
         raise UnimplementedError
-
 
     def timeout(self, system, action, state, environment):
         """
@@ -217,14 +199,12 @@ class ActionSchema(object):
         branch = self.resolve_branch(system, action, state, environment)
         return branch.timeout(system, action, state, environment)
 
-
     @property
     def parameters(self):
         """
         A list of the parameters used to describe actions belonging to this schema.
         """
         return self.__parameters[:]
-
 
     def resolve_branch(self, system, action, initial_state, environment):
         """
@@ -236,8 +216,7 @@ class ActionSchema(object):
                 return b
         raise Exception("failed to resolve branch")
 
-
-    def generate(self, rng):
+    def generate(self, rng) -> Action:
         """
         Generates an action belonging to this schema at random.
         """
@@ -273,7 +252,6 @@ class ActionOutcome(object):
                              jsn['time_elapsed'],
                              BranchID.from_json(jsn['branch_id']))
 
-
     """
     Used to describe the outcome of an action execution in terms of system state.
     """
@@ -295,7 +273,6 @@ class ActionOutcome(object):
         self.__time_elapsed = time_elapsed
         self.__branch_id = branch_id
 
-
     def to_json(self):
         """
         Returns a JSON description of this action outcome.
@@ -309,14 +286,12 @@ class ActionOutcome(object):
             'branch_id':    self.__branch_id.to_json()
         }
 
-    
     @property
     def branch_id(self):
         """
         Returns an identifier for the branch that was taken by this action.
         """
         return self.__branch_id
-
 
     @property
     def passed(self):
@@ -325,14 +300,12 @@ class ActionOutcome(object):
         """
         return self.__successful
 
-    
     @property
     def failed(self):
         """
         Returns true if this action was unsuccessful.
         """
         return not self.__successful
-
 
     @property
     def start_state(self):
@@ -341,7 +314,6 @@ class ActionOutcome(object):
         execution of this action.
         """
         return self.__start_state
-
 
     @property
     def end_state(self):
@@ -353,7 +325,6 @@ class ActionOutcome(object):
 
 
 class ActionGenerator(object):
-
     def __init__(self, schema_name, parameters = []):
         """
         Constructs a new action generator.
@@ -368,7 +339,6 @@ class ActionGenerator(object):
         self.__schema_name = schema_name
         self.__parameters = parameters
 
-
     def construct_with_state(self, system, current_state, env, values):
         """
         Responsible for constructing a dictionary of Action arguments based
@@ -378,7 +348,6 @@ class ActionGenerator(object):
         :returns    a dictionary of arguments for the generated action
         """
         raise NotImplementedError
-
 
     def construct_without_state(self, system, env, values):
         """
@@ -390,7 +359,6 @@ class ActionGenerator(object):
         """
         raise NotImplementedError
 
-
     @property
     def schema_name(self):
         """
@@ -399,13 +367,11 @@ class ActionGenerator(object):
         """
         return self.__schema_name
 
-
     def generate_action_with_state(self, system, current_state, env, rng):
         assert isinstance(rng, random.Random)
         values = {p.name: p.generate(rng) for p in self.__parameters}
         values = self.construct_with_state(system, current_state, env, values)
         return Action(self.__schema_name, values)
-
 
     def generate_action_without_state(self, system, env, rng):
         assert isinstance(rng, random.Random)
