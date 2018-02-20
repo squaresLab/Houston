@@ -75,7 +75,6 @@ class Sandbox(object):
 
                 # compute expected state
                 start_time = time.time()
-                # TODO: observe container
                 state_before = state_after = self.observe(0.0)
 
                 # determine which branch the system should take
@@ -101,7 +100,6 @@ class Sandbox(object):
 
                     # block until the postcondition is satisfied (or timeout is hit)
                     while not passed:
-                        # TODO: observe container
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
                         if branch.postcondition(self, action, state_before, state_after, env):
@@ -112,10 +110,9 @@ class Sandbox(object):
                 except TimeoutError:
                     pass
                 finally:
-                    signal.alarm(0) # TODO does this reset the alarm?
+                    signal.alarm(0)
 
-                time_after = timer()
-                time_elapsed = time_after - time_before
+                time_elapsed = timer() - time_before
 
                 # record the outcome of the action execution
                 outcome = ActionOutcome(action,
@@ -149,7 +146,7 @@ class Sandbox(object):
             self.__bugzoo = None
     delete = destroy
 
-    def observe(self, running_time: None) -> None:
+    def observe(self, running_time) -> None:
         """
         Returns an observation of the current state of the system running
         inside this sandbox.
