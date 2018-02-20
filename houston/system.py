@@ -1,5 +1,5 @@
+import bugzoo
 import copy
-import json
 import time
 import timeit
 import signal
@@ -10,6 +10,7 @@ from houston.mission import Mission, MissionOutcome
 from houston.action import ActionSchema, ActionOutcome, Action
 from houston.branch import BranchID, Branch, BranchPath
 from houston.util import TimeoutError, printflush
+from houston.state import StateVariable
 
 
 class System(object):
@@ -18,26 +19,22 @@ class System(object):
     system-under-test, and to provide an interface for safely interacting
     with the system-under-test in an idempotent manner.
     """
-    def __init__(self, variables, schemas):
-        """
-        Constructs a new System.
-
-        :param  variables:  a dictionary of system variables, indexed by name
-        :param  schemas:    a dictionary of action schemas, indexed by name
-        """
-        assert isinstance(variables, list)
-        assert isinstance(schemas, list)
-
+    def __init__(self,
+                 snapshot: bugzoo.Bug,
+                 variables: List[StateVariable],
+                 schemas: List[ActionSchema]
+                 ) -> None:
+        self.__snapshot = snapshot
         self.__variables = {v.name: v for v in variables}
         self.__schemas = {s.name: s for s in schemas}
 
     @property
     def snapshot(self):
         """
-        Returns the snapshot, provided by BugZoo, used to provide access to a
-        concrete implementation of this system.
+        The snapshot, provided by BugZoo, used to provide access to a concrete
+        implementation of this system (known as a "sandbox").
         """
-        raise NotImplementedError
+        return self.__snapshot
 
     @property
     def branches(self):
@@ -48,25 +45,11 @@ class System(object):
 
     def branch(self, iden):
         """
-        Returns an outcome branch for this sytem provided its identifier.
+        Returns an outcome branch for this system provided its identifier.
         """
         assert isinstance(iden, BranchID)
         schema = self.__schemas[iden.action_name]
         return schema.branch(iden)
-
-    def setup(self, mission):
-        """
-        Responsible for appropriately configuring and launching the system,
-        for a given mission.
-        """
-        raise NotImplementedError
-
-    def tear_down(self, mission):
-        """
-        Responsible for safely closing the system, following the execution of
-        a given mission.
-        """
-        raise NotImplementedError
 
     def execute(self, msn, container = None):
         """
