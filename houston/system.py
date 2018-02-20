@@ -5,6 +5,7 @@ import timeit
 import signal
 import math
 
+from houston.sandbox import Sandbox
 from houston.mission import Mission, MissionOutcome
 from houston.action import ActionSchema, ActionOutcome, Action
 from houston.branch import BranchID, Branch, BranchPath
@@ -25,6 +26,12 @@ class System(object):
         self.__snapshot = snapshot
         self.__variables = {v.name: v for v in variables}
         self.__schemas = {s.name: s for s in schemas}
+
+    def provision(self) -> Sandbox:
+        """
+        Constructs an interactive, ephemeral sandbox for this system.
+        """
+        return Sandbox(self)
 
     @property
     def snapshot(self):

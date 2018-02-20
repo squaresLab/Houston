@@ -1,6 +1,7 @@
 from houston.system import System
 from houston.util import printflush
 from houston.action import ActionSchema
+from houston.ardu.sandbox import ArduSandbox
 from houston.state import   StateVariable, \
                             InternalVariable, \
                             ExternalVariable
@@ -43,6 +44,9 @@ class BaseSystem(System):
         ]
 
         super(BaseSystem, self).__init__(snapshot, variables, schemas)
+
+    def provision(self) -> ArduSandbox:
+        return ArduSandbox(self)
 
     @property
     def speedup(self) -> Float:

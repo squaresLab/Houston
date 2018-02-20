@@ -4,7 +4,7 @@ import time
 import threading
 from timeit import default_timer as timer
 from typing import Optional
-from houston.system import System
+from houston.state import State
 from houston.util import TimeoutError, printflush
 
 
@@ -13,13 +13,13 @@ class Sandbox(object):
     Sandboxes are used to provide an isolated, idempotent environment for
     executing test cases on a given system.
     """
-    def __init__(self, system: System) -> None:
+    def __init__(self, system: 'System') -> None:
         self.__lock = threading.Lock()
         self.__system = system
         self.__bugzoo = system.snapshot.provision()
 
     @property
-    def system(self) -> System:
+    def system(self) -> 'System':
         """
         The system under test by this sandbox.
         """
@@ -59,11 +59,9 @@ class Sandbox(object):
         assert self.alive
         self.__lock.acquire()
         try:
-            self._start()
-
             time_before_setup = timer()
             print('Setting up...'),
-            self._start(msn)
+            self._start(mission)
             print('Setup complete.')
             setup_time = timer() - time_before_setup
 
@@ -150,3 +148,12 @@ class Sandbox(object):
             self.__bugzoo.destroy()
             self.__bugzoo = None
     delete = destroy
+
+    def observe(self, running_time: None) -> None:
+        """
+        Returns an observation of the current state of the system running
+        inside this sandbox.
+        """
+        assert self.alive
+        vals = {n: v.read(self) for (n, v) in system.variables.items()}
+        return State(vals, time_offset)
