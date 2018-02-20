@@ -4,6 +4,9 @@ import sys
 import math
 import geopy
 import geopy.distance
+import statistics # TODO where is this used?
+import dronekit
+import dronekit_sitl
 
 from houston.system import System
 from houston.util import printflush
@@ -12,29 +15,10 @@ from houston.state import   StateVariable, \
                             InternalVariable, \
                             ExternalVariable
 
-# Attempt to import the modules necessary to interact with ArduPilot. If the
-# necessary modules can't be imported, we report ArduPilot as uninstalled and
-# prevent any interaction attempts.
-try:
-    import statistics # TODO where is this used?
-    import dronekit
-    import dronekit_sitl
-
-    ARDUPILOT_INSTALLED = True
-except ImportError as e:
-    ARDUPILOT_INSTALLED = False
-
 
 class BaseSystem(System):
     """
     Description of the ArduCopter system
-
-    Attributes:
-        __sitl (dronekit_sitl.SITL): a wrapper for the SITL simulator used to
-            conduct the missions.
-        __vehicle (dronekit.Vehicle): a connection to the vehicle under test,
-            provided by dronekit.
-        __speedup (float): speedup multiplier used by SITL.
     """
     def __init__(self, artefact_name, variables, schemas, speedup=3.0):
         """
@@ -48,7 +32,7 @@ class BaseSystem(System):
         assert isinstance(schemas, list)
         assert all(isinstance(s, ActionSchema) for s in schemas)
         assert isinstance(speedup, float)
-        assert (speedup != 0.0)
+        assert speedup != 0.0
 
         self.__artefact_name = artefact_name
         self.__sitl = None
@@ -80,17 +64,6 @@ class BaseSystem(System):
 
         super(BaseSystem, self).__init__(variables, schemas)
 
-    def to_json(self):
-        """
-        Returns a JSON-based description of this system.
-        """
-        jsn = super(BaseSystem, self).to_json()
-        jsn['artefact'] = self.__artefact_name
-        jsn['settings'] = {
-            'speedup': self.__speedup
-        }
-        return jsn
-
     # TODO: internally, this should be a function of speedup
     @property
     def time_per_metre_travelled(self):
@@ -104,22 +77,11 @@ class BaseSystem(System):
         return 1.0
 
     @property
-    def installed(self):
-        return ARDUPILOT_INSTALLED
-
-    @property
     def vehicle(self):
         """
         Uses dronekit to provide a connection to the system under test
         """
         return self.__vehicle
-
-    @property
-    def snapshot(self) -> 'bugzoo.Bug':
-        """
-        Returns a snapshot of the system under test, provided by BugZoo.
-        """
-        raise NotImplementedError
 
     def setup(self, mission, binary_name, model_name, param_file):
         ardu_location = '/experiment/source/' # TODO: HARDCODED
@@ -135,7 +97,7 @@ class BaseSystem(System):
                                   'Tools/autotest/default_params',
                                   param_file)
         binary = os.path.join(ardu_location, 'build/sitl/bin', binary_name)
-        self.__sitl = dronekit_sitl.SITL(binary, defaults_filepath=param_file) 
+        self.__sitl = dronekit_sitl.SITL(binary, defaults_filepath=param_file)
         self.__sitl.launch(args,
                            verbose=True,
                            await_ready=True,
