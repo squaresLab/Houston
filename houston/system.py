@@ -31,14 +31,6 @@ class System(object):
         self.__variables = {v.name: v for v in variables}
         self.__schemas = {s.name: s for s in schemas}
 
-    def provision(self):
-        """
-        Provisions a container for this system.
-        """
-        from houston.container import Container
-        artefact = self.repairbox_artefact
-        return Container.provision(self, artefact)
-
     @property
     def snapshot(self):
         """
