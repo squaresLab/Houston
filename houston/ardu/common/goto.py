@@ -1,5 +1,6 @@
 import geopy
 import geopy.distance
+from houston.state import State, Environment
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 from houston.branch import Branch, IdleBranch
@@ -15,7 +16,6 @@ class GotoNormally(Branch):
     def __init__(self, system):
         super(GotoNormally, self).__init__('normal', system)
 
-
     def timeout(self, system, action, state, environment):
         from_loc = (state['latitude'], state['longitude'])
         to_loc = (action['latitude'], action['longitude'])
@@ -24,14 +24,12 @@ class GotoNormally(Branch):
         timeout += system.constant_timeout_offset
         return timeout
 
-    
     def precondition(self, system, action, state, environment):
         """
         This behaviour will occur for Goto actions when the system is armed and
         not in its `LOITER` mode.
         """
         return  state['armed'] and state['mode'] != 'LOITER'
-
 
     def postcondition(self, system, action, state_before, state_after, environment):
         """
@@ -41,10 +39,8 @@ class GotoNormally(Branch):
         return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
                 system.variable('latitude').eq(state_after['latitude'], action['latitude'])
 
-
     def is_satisfiable(self, system, state, environment):
         return self.precondition(system, None, state, environment)
-
 
     def generate(self, state, environment, rng):
         return self.schema.generate(rng)
@@ -58,14 +54,11 @@ class GotoLoiter(Branch):
     def __init__(self, system):
         super(GotoLoiter, self).__init__('loiter', system)
 
-
     def timeout(self, system, action, state, environment):
         return system.constant_timeout_offset
 
-
     def precondition(self, system, action, state, environment):
         return  state['armed'] and state['mode'] == 'LOITER'
-
 
     def postcondition(self, system, action, state_before, state_after, environment):
         return  state_after['mode'] == 'LOITER' and \
@@ -73,10 +66,8 @@ class GotoLoiter(Branch):
                 system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
                 system.variables('altitude').eq(state_after['altitude'], state_before['altitude'])
 
-
     def is_satisfiable(self, system, state, environment):
         return self.precondition(system, None, state, environment)
-
 
     def generate(self, system, state, environment, rng):
         return self.schema.generate(rng)
@@ -102,7 +93,6 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
-
     def construct_with_state(self, system, current_state, env, values):
         dist = values['distance']
         heading = values['heading']
@@ -119,7 +109,6 @@ class DistanceBasedGoToGenerator(ActionGenerator):
         params['altitude'] = current_state['altitude']
 
         return params
-
 
     def construct_without_state(self, system, env, values):
         raise NotImplementedError
@@ -140,7 +129,6 @@ class CircleBasedGotoGenerator(ActionGenerator):
         ]
         super(CircleBasedGotoGenerator, self).__init__('goto', parameters)
 
-
     def construct_without_state(self, system, env, values):
         (lat, lon) = self.__centre_coords
         heading = values['heading']
@@ -157,7 +145,6 @@ class CircleBasedGotoGenerator(ActionGenerator):
                                   # state to get altitude.
 
         return params
-
 
     def construct_with_state(self, system, current_state, env, values):
         return self.construct_without_state(system, env, values)
