@@ -41,18 +41,17 @@ class Sandbox(houston.sandbox.Sandbox):
         Launches the SITL inside the sandbox and blocks until its execution
         has finished.
         """
-        # TOOD: support other systems
+        # TOOD: use param_files
         home = "-35.362938,149.165085,584,270"
         cmd = 'build/sitl/bin/{} --model "{}" --speedup "{}" --home "{}"'
         cmd = cmd.format(binary_name, model_name, self.system.speedup, home)
 
-        # TODO: use BugZoo commands
         if not verbose:
-            self.bugzoo.exec_run(cmd, detach=True)
+            self.bugzoo.command(cmd, stdout=False, stderr=False, block=False)
             return
 
-        (_, output_stream) = self.bugzoo.exec_run(cmd, stream=True)
-        for line in output_stream:
+        execution_response = self.bugzoo.exec_run(cmd, stdout=True, stderr=True, block=False)
+        for line in execution_response.output:
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             print(line, flush=True)
 
@@ -69,7 +68,6 @@ class Sandbox(houston.sandbox.Sandbox):
         and a connection is established.
         """
         # launch SITL
-        # TODO: use supplied (binary_name, model_name, param_file) arguments
         self.__sitl_thread = threading.Thread(target=self.launch_sitl,
                                               args=(self, binary_name, model_name,
                                               param_file, verbose))
