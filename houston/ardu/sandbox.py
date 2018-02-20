@@ -86,7 +86,7 @@ class Sandbox(houston.sandbox.Sandbox):
         time.sleep(10)
         dummy_connection.close()
         time.sleep(5)
-        vehicle = dronekit.connect(url, wait_ready=True)
+        self.__connection = dronekit.connect(url, wait_ready=True)
 
         # wait until vehicle is ready to test
         self.__connection.wait_ready('autopilot_version')
@@ -118,4 +118,5 @@ class Sandbox(houston.sandbox.Sandbox):
         # close the connection
         if self.connection:
             self.connection.close()
-        # TODO: close the SITL
+        # close the SITL
+        self.bugzoo.exec_run('killall5 -9 build/sitl/bin')
