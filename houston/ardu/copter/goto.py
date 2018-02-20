@@ -1,4 +1,6 @@
+import dronekit
 import houston.ardu.common.goto
+from houston.state import Environment, State
 from houston.action import ActionSchema, Parameter
 from houston.branch import IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
@@ -23,14 +25,16 @@ class GoToSchema(ActionSchema):
 
         super(GoToSchema, self).__init__('goto', parameters, branches)
 
-
-    def dispatch(self, system, action, state, environment):
-        # uses dronekit to issue a simple goto request to the robot
-        import dronekit
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 action: Action,
+                 state: State,
+                 environment: Environment
+                 ) -> None:
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
                                               action['altitude'])
-        system.vehicle.simple_goto(loc)
+        sandbox.connection.simple_goto(loc)
 
 
 class GotoNormally(houston.ardu.common.goto.GotoNormally):
@@ -42,7 +46,6 @@ class GotoNormally(houston.ardu.common.goto.GotoNormally):
         if not super(GotoNormally, self).precondition(system, action, state, environment):
             return False
         return system.variable('altitude').gt(state['altitude'], 0.3)
-
 
     def postcondition(self, system, action, state_before, state_after, environment):
         """
