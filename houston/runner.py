@@ -1,8 +1,6 @@
-import random
 import threading
 import time
 import signal
-from houston.container import Container
 from houston.util import TimeoutError, printflush
 
 
@@ -14,22 +12,8 @@ class MissionRunner(threading.Thread):
     def __init__(self, pool):
         super(MissionRunner, self).__init__()
         self.daemon = True
-
         self.__pool = pool
         self.__container = pool.system.provision()
-        self.__reset_counter()
-
-    def __reset_counter(self):
-        self.__counter = 0
-        self.__reset = 1000 #random.randint(3, 5) # TODO: use RNG
-
-
-    # TODO: debug and optimise
-    def __prepare_container(self):
-        if self.__counter == self.__reset:
-            self.__reset_counter()
-            self.__container.reset()
-        self.__counter += 1
 
     def run(self):
         """
@@ -40,13 +24,10 @@ class MissionRunner(threading.Thread):
             if m is None:
                 return
 
-            self.__prepare_container()
             outcome = self.__container.execute(m)
-            print("Finished executing mission")
             self.__pool.report(m, outcome)
 
     def shutdown(self):
-        # print("shutting down worker: {}".format(self))
         if self.__container is not None:
             self.__container.destroy()
             self.__container = None
