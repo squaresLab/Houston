@@ -1,6 +1,7 @@
 import dronekit
 import time
 import os
+import threading
 import houston.sandbox
 from houston.mission import Mission
 from typing import Optional
@@ -50,7 +51,7 @@ class Sandbox(houston.sandbox.Sandbox):
             self.bugzoo.command(cmd, stdout=False, stderr=False, block=False)
             return
 
-        execution_response = self.bugzoo.exec_run(cmd, stdout=True, stderr=True, block=False)
+        execution_response = self.bugzoo.command(cmd, stdout=True, stderr=True, block=False)
         for line in execution_response.output:
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             print(line, flush=True)
@@ -68,8 +69,8 @@ class Sandbox(houston.sandbox.Sandbox):
         and a connection is established.
         """
         # launch SITL
-        self.__sitl_thread = threading.Thread(target=self.launch_sitl,
-                                              args=(self, binary_name, model_name,
+        self.__sitl_thread = threading.Thread(target=self._launch_sitl,
+                                              args=(binary_name, model_name,
                                               param_file, verbose))
         self.__sitl_thread.daemon = True
         self.__sitl_thread.start()
