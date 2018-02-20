@@ -31,19 +31,6 @@ class System(object):
         self.__variables = {v.name: v for v in variables}
         self.__schemas = {s.name: s for s in schemas}
 
-    @property
-    def type_name(self):
-        """
-        Returns the name used by the type of this system.
-        """
-        cls = type(self)
-        for (n, kls) in System._system_types.items():
-            if kls == cls:
-                return n
-
-        err = "attempted to determine name of unregistered system class: {}".format(cls)
-        raise Exception(cls)
-
     def provision(self):
         """
         Provisions a container for this system.
