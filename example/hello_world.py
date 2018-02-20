@@ -3,7 +3,7 @@ import houston
 import bugzoo
 
 bz = bugzoo.BugZoo()
-snapshot = bz.bugs['ardubugs:ardurover:a185fa95']
+snapshot = bz.bugs['ardudemo:ardupilot:overflow']
 snapshot.build()
 
 sut = houston.ardu.ArduRover(snapshot)

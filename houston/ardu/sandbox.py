@@ -45,7 +45,7 @@ class Sandbox(houston.sandbox.Sandbox):
         """
         # TOOD: use param_files
         home = "-35.362938,149.165085,584,270"
-        cmd = 'build/sitl/bin/{} --model "{}" --speedup "{}" --home "{}"'
+        cmd = '/experiment/source/build/sitl/bin/{} --model "{}" --speedup "{}" --home "{}"'
         cmd = cmd.format(binary_name, model_name, self.system.speedup, home)
 
         if not verbose:
