@@ -59,6 +59,9 @@ class ArduSandbox(Sandbox):
 
     def _start(self,
                mission: Mission,
+               binary_name: str,
+               model_name: str,
+               param_file: str,
                verbose: bool = True
                ) -> None:
         """
@@ -67,6 +70,7 @@ class ArduSandbox(Sandbox):
         and a connection is established.
         """
         # launch SITL
+        # TODO: use supplied (binary_name, model_name, param_file) arguments
         self.__sitl_thread = threading.Thread(target=ArduBox.launch_sitl,
                                               args=(self, verbose))
         self.__sitl_thread.daemon = True
