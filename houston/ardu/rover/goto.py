@@ -1,3 +1,5 @@
+import dronekit
+from houston.state import Environment, State
 from houston.action import ActionSchema, Parameter
 from houston.branch import IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
@@ -22,10 +24,12 @@ class GoToSchema(ActionSchema):
 
         super(GoToSchema, self).__init__('goto', parameters, branches)
 
-
-    def dispatch(self, system, action, state, environment):
-        # uses dronekit to issue a simple goto request to the robot
-        import dronekit
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 action: Action,
+                 state: State,
+                 environment: Environment
+                 ) -> None:
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
                                               state['altitude'])
