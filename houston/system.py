@@ -4,12 +4,10 @@ import time
 import timeit
 import signal
 import math
-import houston.state
 
 from houston.mission import Mission, MissionOutcome
 from houston.action import ActionSchema, ActionOutcome, Action
 from houston.branch import BranchID, Branch, BranchPath
-from houston.util import TimeoutError, printflush
 from houston.state import StateVariable
 
 
@@ -50,16 +48,6 @@ class System(object):
         assert isinstance(iden, BranchID)
         schema = self.__schemas[iden.action_name]
         return schema.branch(iden)
-
-    def observe(self, time_offset=0.0):
-        """
-        Returns a description of the current state of the system.
-
-        TODO: ensure that the system is actually running!
-        """
-        from houston.state import State
-        vals = {n: v.read() for (n, v) in self.__variables.items()}
-        return State(vals, time_offset)
 
     def variable(self, v):
         return self.__variables[v]
