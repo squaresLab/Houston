@@ -31,7 +31,7 @@ class System(object):
         """
         Constructs an interactive, ephemeral sandbox for this system.
         """
-        return Sandbox(self)
+        raise NotImplementedError
 
     @property
     def snapshot(self):
