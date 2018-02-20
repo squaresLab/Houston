@@ -20,8 +20,8 @@ class System(object):
     """
     def __init__(self,
                  snapshot: bugzoo.Bug,
-                 variables: List[StateVariable],
-                 schemas: List[ActionSchema]
+                 variables: 'List[StateVariable]',
+                 schemas: 'List[ActionSchema]'
                  ) -> None:
         self.__snapshot = snapshot
         self.__variables = {v.name: v for v in variables}

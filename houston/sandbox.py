@@ -5,6 +5,7 @@ import threading
 from timeit import default_timer as timer
 from typing import Optional
 from houston.state import State
+from houston.mission import Mission, MissionOutcome
 from houston.util import TimeoutError, printflush
 
 

@@ -1,4 +1,4 @@
-import houston.state
+from houston.state import State, Environment
 import random
 from houston.util import printflush
 from houston.valueRange import ValueRange
@@ -119,7 +119,7 @@ class ActionSchema(object):
 
     def __init__(self,
                  name: str,
-                 parameters: List[Parameter],
+                 parameters: 'List[Parameter]',
                  branches: 'List[Branch]'
                  ):
         """

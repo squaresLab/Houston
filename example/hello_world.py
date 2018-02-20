@@ -32,7 +32,8 @@ initial = houston.state.State({
 mission = houston.mission.Mission(environment, initial, actions)
 
 # create a container for the mission execution
-container = houston.container.Container.provision(system, snapshot)
+sandbox = sut.provision()
+sandbox.start(mission)
 
 # execute the mission
 

@@ -1,7 +1,8 @@
+import bugzoo
 from houston.system import System
 from houston.util import printflush
 from houston.action import ActionSchema
-from houston.ardu.sandbox import ArduSandbox
+from houston.ardu.sandbox import Sandbox
 from houston.state import   StateVariable, \
                             InternalVariable, \
                             ExternalVariable
@@ -13,9 +14,9 @@ class BaseSystem(System):
     """
     def __init__(self,
                  snapshot: bugzoo.Bug,
-                 variables: List[StateVariable],
-                 schemas: List[ActionSchema],
-                 speedup: Float = 3.0
+                 variables: 'List[StateVariable]',
+                 schemas: 'List[ActionSchema]',
+                 speedup: float = 3.0
                  ) -> None:
         assert speedup != 0.0
         self.__speedup = speedup
@@ -45,20 +46,20 @@ class BaseSystem(System):
 
         super(BaseSystem, self).__init__(snapshot, variables, schemas)
 
-    def provision(self) -> ArduSandbox:
-        return ArduSandbox(self)
+    def provision(self) -> Sandbox:
+        return Sandbox(self)
 
     @property
-    def speedup(self) -> Float:
+    def speedup(self) -> float:
         return self.__speedup
 
     # TODO: internally, this should be a function of speedup
     @property
-    def time_per_metre_travelled(self) -> Float:
+    def time_per_metre_travelled(self) -> float:
         return 1.0
 
     @property
-    def constant_timeout_offset(self) -> Float:
+    def constant_timeout_offset(self) -> float:
         """
         The constant offset that is added to all timeouts (the pinch of salt)
         """
