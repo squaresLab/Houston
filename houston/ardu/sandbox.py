@@ -1,4 +1,6 @@
 import dronekit
+import time
+import os
 from houston.mission import Mission
 from houston.sandbox import Sandbox
 from typing import Optional
@@ -71,6 +73,28 @@ class ArduSandbox(Sandbox):
         self.__sitl_thread.start()
 
         # TODO: establish connection
+
+        # wait until vehicle is ready to test
+        self.__connection.wait_ready('autopilot_version')
+
+        # wait for longitude and latitude to match their expected values, and
+        # for the system to match the expected `armable` state.
+        initial_lon = mission.initial_state['longitude']
+        initial_lat = mission.initial_state['latitude']
+        while True:
+            observed = self.observe()
+            if self.system.variable('longitude').eq(initial_lon, observed['longitude']) and \
+               self.system.variable('latitude').eq(initial_lat, observed['latitude']) and \
+               observed['armable'] == mission.initial_state['armable']:
+                break
+            time.sleep(0.05)
+
+        # wait until the vehicle is in GUIDED mode
+        # TODO: add timeout
+        guided_mode = dronekit.VehicleMode('GUIDED')
+        self.__connection.mode = guided_mode
+        while self.vehicle.mode != guided_mode:
+            time.sleep(0.05)
 
     def _stop(self) -> None:
         """
