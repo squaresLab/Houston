@@ -17,36 +17,7 @@ class System(object):
     Instances of the System class are used to provide a description of a
     system-under-test, and to provide an interface for safely interacting
     with the system-under-test in an idempotent manner.
-
-    Attributes:
-        __variables (dict of Variable): TODO
-        __schemas (dict of ActionSchema): TODO
     """
-
-
-    """
-    A registry of system types known to Houston, indexed by name.
-    """
-    _system_types = {}
-
-    @staticmethod
-    def register(name, cls):
-        """
-        Registers a system type under a given name.
-        """
-        if name in System._system_types:
-            raise Error("system class already registered with name: {}".format(name))
-        System._system_types[name] = cls
-
-    @staticmethod
-    def from_json(jsn):
-        """
-        Constructs a system from its JSON description.
-        """
-        assert isinstance(jsn, dict)
-        cls = System._system_types[jsn['type']]
-        return cls.from_json(jsn)
-
     def __init__(self, variables, schemas):
         """
         Constructs a new System.
@@ -82,19 +53,12 @@ class System(object):
         return Container.provision(self, artefact)
 
     @property
-    def repairbox_artefact(self):
+    def snapshot(self):
         """
-        Returns the RepairBox artefact used by this system.
+        Returns the snapshot, provided by BugZoo, used to provide access to a
+        concrete implementation of this system.
         """
         raise NotImplementedError
-
-    def to_json(self):
-        """
-        Returns a JSON-based description of this system.
-        """
-        return {
-            'type': self.type_name
-        }
 
     @property
     def installed(self):
