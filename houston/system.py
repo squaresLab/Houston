@@ -61,13 +61,6 @@ class System(object):
         raise NotImplementedError
 
     @property
-    def installed(self):
-        """
-        Returns true if this system is installed on this machine.
-        """
-        raise NotImplementedError
-
-    @property
     def branches(self):
         """
         A list of the branches for this system.
@@ -96,16 +89,20 @@ class System(object):
         """
         raise NotImplementedError
 
-    def execute(self, msn):
+    def execute(self, msn, container = None):
         """
-        Executes a given mission.
+        Executes a given mission using an optionally provided container. If no
+        container is provided, a fresh one will be provisioned.
 
         :param  msn:    the mission that should be executed.
 
         :return A summary of the outcome of the mission, in the form of a
                 MissionOutcome
         """
-        assert self.installed
+        # if no container is specified, provision one.
+        if container is None:
+            container = self.provision()
+
         time_before_setup = timeit.default_timer()
         print('Setting up...'),
         self.setup(msn)
@@ -186,7 +183,6 @@ class System(object):
         TODO: ensure that the system is actually running!
         """
         from houston.state import State
-        assert self.installed
         vals = {n: v.read() for (n, v) in self.__variables.items()}
         return State(vals, time_offset)
 
