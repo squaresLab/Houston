@@ -53,7 +53,7 @@ container_info = api_client.inspect_container(container.id)
 ip_address = container_info['NetworkSettings']['IPAddress']
 url = "{}:{}:{}".format(protocol, ip_address, port)
 print("Attempting to connect to: {}".format(url))
-
+raise Exception
 sleep(10)
 dummy_connection = mavutil.mavlink_connection(url)
 print('established dummy connection')

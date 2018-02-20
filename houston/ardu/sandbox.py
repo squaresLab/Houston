@@ -36,16 +36,15 @@ class Sandbox(houston.sandbox.Sandbox):
             raise NoConnectionError()
         return self.__connection
 
-    def _launch_sitl(self, verbose: bool = True) -> None:
+    def _launch_sitl(self, binary_name: str = "ardurover", model_name: str = "rover", param_file: str = "", verbose: bool = True) -> None:
         """
         Launches the SITL inside the sandbox and blocks until its execution
         has finished.
         """
         # TOOD: support other systems
-        model = "rover"
         home = "-35.362938,149.165085,584,270"
-        cmd = 'build/sitl/bin/ardurover --model "{}" --speedup "{}" --home "{}"'
-        cmd = cmd.format(model, self.system.speedup, home)
+        cmd = 'build/sitl/bin/{} --model "{}" --speedup "{}" --home "{}"'
+        cmd = cmd.format(binary_name, model_name, self.system.speedup, home)
 
         # TODO: use BugZoo commands
         if not verbose:
@@ -71,12 +70,23 @@ class Sandbox(houston.sandbox.Sandbox):
         """
         # launch SITL
         # TODO: use supplied (binary_name, model_name, param_file) arguments
-        self.__sitl_thread = threading.Thread(target=ArduBox.launch_sitl,
-                                              args=(self, verbose))
+        self.__sitl_thread = threading.Thread(target=self.launch_sitl,
+                                              args=(self, binary_name, model_name,
+                                              param_file, verbose))
         self.__sitl_thread.daemon = True
         self.__sitl_thread.start()
 
-        # TODO: establish connection
+        # establish connection
+        # TODO fix connection issue
+        protocol = 'tcp'
+        port = 5760
+        url = "{}:{}:{}".format(protocol, str(self.bugzoo.ip_address), port)
+        time.sleep(10)
+        dummy_connection = mavutil.mavlink_connection(url)
+        time.sleep(10)
+        dummy_connection.close()
+        time.sleep(5)
+        vehicle = dronekit.connect(url, wait_ready=True)
 
         # wait until vehicle is ready to test
         self.__connection.wait_ready('autopilot_version')
@@ -105,6 +115,7 @@ class Sandbox(houston.sandbox.Sandbox):
         Closes any connection to a simulated vehicle inside the sandbox, before
         terminating the associated simulator.
         """
-        # TODO: close the connection
-
+        # close the connection
+        if self.connection:
+            self.connection.close()
         # TODO: close the SITL
