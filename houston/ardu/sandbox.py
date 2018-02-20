@@ -1,6 +1,7 @@
 import dronekit
 import time
 import os
+import sys
 import threading
 import houston.sandbox
 from houston.mission import Mission
@@ -77,6 +78,7 @@ class Sandbox(houston.sandbox.Sandbox):
 
         # establish connection
         # TODO fix connection issue
+        from pymavlink import mavutil
         protocol = 'tcp'
         port = 5760
         url = "{}:{}:{}".format(protocol, str(self.bugzoo.ip_address), port)
