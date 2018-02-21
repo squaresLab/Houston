@@ -82,7 +82,6 @@ class Sandbox(houston.sandbox.Sandbox):
         protocol = 'tcp'
         port = 5760
         url = "{}:{}:{}".format(protocol, str(self.bugzoo.ip_address), port)
-        time.sleep(10)
         dummy_connection = mavutil.mavlink_connection(url)
         time.sleep(10)
         dummy_connection.close()
