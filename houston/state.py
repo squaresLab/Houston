@@ -178,8 +178,8 @@ class StateVariable(object):
     """
     Inspects the current state of this system variable
     """
-    def read(self):
-        return self.__getter()
+    def read(self, sandbox):
+        return self.__getter(sandbox)
 
 
 class InternalVariable(StateVariable):

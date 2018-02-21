@@ -97,7 +97,7 @@ class Sandbox(houston.sandbox.Sandbox):
         initial_lon = mission.initial_state['longitude']
         initial_lat = mission.initial_state['latitude']
         while True:
-            observed = self.observe()
+            observed = self.observe(0.0)
             if self.system.variable('longitude').eq(initial_lon, observed['longitude']) and \
                self.system.variable('latitude').eq(initial_lat, observed['latitude']) and \
                observed['armable'] == mission.initial_state['armable']:
@@ -108,7 +108,7 @@ class Sandbox(houston.sandbox.Sandbox):
         # TODO: add timeout
         guided_mode = dronekit.VehicleMode('GUIDED')
         self.__connection.mode = guided_mode
-        while self.vehicle.mode != guided_mode:
+        while self.__connection.mode != guided_mode:
             time.sleep(0.05)
 
     def _stop(self) -> None:

@@ -153,5 +153,5 @@ class Sandbox(object):
         inside this sandbox.
         """
         assert self.alive
-        vals = {n: v.read(self) for (n, v) in system.variables.items()}
-        return State(vals, time_offset)
+        vals = {n: v.read(self) for (n, v) in self.system.variables.items()}
+        return State(vals, running_time)
