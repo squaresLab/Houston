@@ -8,6 +8,7 @@ from typing import Optional
 from houston.state import State
 from houston.mission import Mission, MissionOutcome
 from houston.util import TimeoutError, printflush
+from houston.action import ActionOutcome
 
 
 class Sandbox(object):
