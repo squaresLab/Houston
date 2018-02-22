@@ -1,3 +1,4 @@
+import math
 import bugzoo
 import signal
 import time
