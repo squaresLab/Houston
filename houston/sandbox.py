@@ -66,11 +66,11 @@ class Sandbox(object):
             print('Setup complete.')
             setup_time = timer() - time_before_setup
 
-            env = msn.environment
+            env = mission.environment
             outcomes = []
 
             # execute each action in sequence
-            for action in msn.actions:
+            for action in mission.actions:
                 printflush('Performing action: {}\n'.format(action.to_json()))
                 schema = self.system.schemas[action.schema_name]
 
