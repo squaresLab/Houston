@@ -119,4 +119,4 @@ class Sandbox(houston.sandbox.Sandbox):
         if self.connection:
             self.connection.close()
         # close the SITL
-        self.bugzoo.exec_run('killall5 -9 build/sitl/bin')
+        self.bugzoo.command('killall5 -9 build/sitl/bin', stdout=False, stderr=False, block=False)
