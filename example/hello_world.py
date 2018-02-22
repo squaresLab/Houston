@@ -33,7 +33,7 @@ mission = houston.mission.Mission(environment, initial, actions)
 
 # create a container for the mission execution
 sandbox = sut.provision()
-sandbox.start(mission)
+sandbox.run(mission)
 
 # execute the mission
 
