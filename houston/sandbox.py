@@ -98,7 +98,7 @@ class Sandbox(object):
                 passed = False
                 try:
                     # TODO: dispatch to this container!
-                    schema.dispatch(system, action, state_before, env)
+                    schema.dispatch(self, action, state_before, env)
 
                     # block until the postcondition is satisfied (or timeout is hit)
                     while not passed:

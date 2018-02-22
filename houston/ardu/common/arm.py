@@ -3,6 +3,7 @@ from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.branch import Branch, IdleBranch
 from houston.state import State, Environment
 from houston.valueRange import DiscreteValueRange
+from houston.ardu.sandbox import Sandbox
 
 
 class ArmDisarmSchema(ActionSchema):
@@ -25,7 +26,7 @@ class ArmDisarmSchema(ActionSchema):
         super(ArmDisarmSchema, self).__init__('arm', parameters, branches)
 
     def dispatch(self,
-                 sandbox: 'Sandbox',
+                 sandbox: Sandbox,
                  action: Action,
                  state: State,
                  environment: Environment
