@@ -10,7 +10,7 @@ sut = houston.ardu.ArduRover(snapshot)
 
 # mission description
 actions = [
-    houston.action.Action("arm", {}),
+    houston.action.Action("arm", {'arm': True}),
     houston.action.Action("goto", {
         'latitude' : -35.361354,
         'longitude': 149.165218,
