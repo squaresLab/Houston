@@ -10,7 +10,7 @@ def launch_sitl(container):
     model = "rover"
     speedup = "1.0"
     home = "-35.362938,149.165085,584,270"
-    cmd = 'build/sitl/bin/ardurover --model "{}" --speedup "{}" --home "{}"'.format(model, speedup, home)
+    cmd = 'build/sitl/bin/ardu{0} --model "{0}" --speedup "{1}" --home "{2}" --defaults /experiment/source/Tools/autotest/default_params/{0}.parm'.format(model, speedup, home)
     print("Executing: {}".format(cmd))
     (_, output_stream) = container.exec_run(cmd, stream=True)
     for line in output_stream:
