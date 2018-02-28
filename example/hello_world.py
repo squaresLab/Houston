@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import houston
 import bugzoo
+from houston.generator.rand import RandomMissionGenerator
+from houston.generator.resources import ResourceLimits
 
 bz = bugzoo.BugZoo()
 snapshot = bz.bugs['ardudemo:ardupilot:overflow']
@@ -33,8 +35,9 @@ mission = houston.mission.Mission(environment, initial, actions)
 
 # create a container for the mission execution
 sandbox = sut.provision()
-m = sandbox.run(mission)
-print(m)
+res = sandbox.run(mission)
+print(res)
 
-# execute the mission
-
+mission_generator = RandomMissionGenerator(sut, initial, environment)
+resource_limits = ResourceLimits(2, 1000)
+mission_generator.generate(100, resource_limits)

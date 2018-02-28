@@ -13,7 +13,7 @@ class MissionRunner(threading.Thread):
         super(MissionRunner, self).__init__()
         self.daemon = True
         self.__pool = pool
-        self.__container = pool.system.provision()
+        self.__sandbox = pool.system.provision()
 
     def run(self):
         """
@@ -24,13 +24,13 @@ class MissionRunner(threading.Thread):
             if m is None:
                 return
 
-            outcome = self.__container.execute(m)
+            outcome = self.__sandbox.run(m)
             self.__pool.report(m, outcome)
 
     def shutdown(self):
-        if self.__container is not None:
-            self.__container.destroy()
-            self.__container = None
+        if self.__sandbox is not None:
+            self.__sandbox.destroy()
+            self.__sandbox = None
 
 
 class MissionRunnerPool(object):
