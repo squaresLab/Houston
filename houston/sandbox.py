@@ -105,7 +105,7 @@ class Sandbox(object):
                     while not passed:
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
-                        if branch.postcondition(self, action, state_before, state_after, env):
+                        if branch.postcondition(self.system, action, state_before, state_after, env):
                             passed = True
                         time.sleep(0.1)
                         print(state_after)
