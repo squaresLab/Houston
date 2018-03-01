@@ -33,4 +33,4 @@ class GoToSchema(ActionSchema):
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
                                               state['altitude'])
-        system.vehicle.simple_goto(loc)
+        sandbox.connection.simple_goto(loc)

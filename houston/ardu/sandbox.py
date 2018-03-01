@@ -43,10 +43,11 @@ class Sandbox(houston.sandbox.Sandbox):
         Launches the SITL inside the sandbox and blocks until its execution
         has finished.
         """
-        # TOOD: use param_files
+
         home = "-35.362938,149.165085,584,270"
-        cmd = '/experiment/source/build/sitl/bin/{} --model "{}" --speedup "{}" --home "{}"'
-        cmd = cmd.format(binary_name, model_name, self.system.speedup, home)
+        cmd = '/experiment/source/build/sitl/bin/{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
+        cmd = cmd.format(binary_name, model_name, self.system.speedup, home, param_file)
+        print("COMMAND: {}".format(cmd))
 
         if not verbose:
             self.bugzoo.command(cmd, stdout=False, stderr=False, block=False)
