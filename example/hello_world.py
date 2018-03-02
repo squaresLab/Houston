@@ -34,9 +34,9 @@ initial = houston.state.State({
 mission = houston.mission.Mission(environment, initial, actions)
 
 # create a container for the mission execution
-sandbox = sut.provision()
-res = sandbox.run(mission)
-print(res)
+#sandbox = sut.provision()
+#res = sandbox.run(mission)
+#print(res)
 
 mission_generator = RandomMissionGenerator(sut, initial, environment)
 resource_limits = ResourceLimits(2, 1000)
