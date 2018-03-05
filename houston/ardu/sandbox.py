@@ -120,4 +120,4 @@ class Sandbox(houston.sandbox.Sandbox):
         if self.connection:
             self.connection.close()
         # close the SITL
-        self.bugzoo.command('killall5 -9 build/sitl/bin', stdout=False, stderr=False, block=False)
+        self.bugzoo.command("ps aux | grep -i sitl | awk {'print $2'} | xargs kill -9", stdout=False, stderr=False, block=False)
