@@ -75,7 +75,7 @@ class Sandbox(object):
         extractor = language.coverage_extractor
         extractor._prepare(self.bugzoo)
         outcome = self.run(mission)
-        coverage = extractor._extract()
+        coverage = extractor._extract(self.bugzoo)
         return (outcome, coverage)
 
     def run(self, mission: Mission) -> MissionOutcome:
