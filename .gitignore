@@ -11,3 +11,4 @@ pyvenv.cfg
 build
 dist
 *.egg-info
+.pytest_cache

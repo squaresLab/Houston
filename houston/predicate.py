@@ -4,24 +4,26 @@ class Predicate(object):
     postconditions, and invariants.
     """
 
-    def __init__(self, name, predicate):
+    def __init__(self,
+                 name: str,
+                 predicate):
         """
         Constructs a Predicate object that holds a name and a predicate
         """
         self.__name = name
         self.__predicate = predicate
 
-
     @property
-    def name(self):
+    def name(self) -> str:
+        """
+        The name given to this predicate.
+        """
         return self.__name
 
-
-    def __call__(self, action, current_state, env):
-        return self.check(action, current_state, env)
-
-
-    def check(self, action, current_state, env):
+    def check(self,
+              action: 'Action',
+              current_state: 'State',
+              env: 'Environment'):
         """
         Determines whether this predicate is satisfied by a given action, \
         state, and environment.
@@ -33,6 +35,8 @@ class Predicate(object):
         :returns    True if satisified, false if not.
         """
         return self.__predicate(action, current_state, env)
+
+    __call__ = check
 
 
 class Invariant(Predicate):
