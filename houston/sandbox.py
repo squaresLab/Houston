@@ -114,8 +114,6 @@ class Sandbox(object):
                                          action,
                                          state_before,
                                          env)
-                signal.signal(signal.SIGALRM, lambda signum, frame: TimeoutError.produce())
-                signal.alarm(int(math.ceil(timeout)))
 
                 time_before = timer()
                 passed = False
@@ -129,13 +127,13 @@ class Sandbox(object):
                         # TODO implement idle! (add timeout in idle dispatch)
                         if branch.postcondition(self.system, action, state_before, state_after, env):
                             passed = True
+                        if timer() - time_before >= int(math.ceil(timeout)):
+                            raise TimeoutError
                         time.sleep(0.1)
                         print(state_after)
 
                 except TimeoutError:
                     pass
-                finally:
-                    signal.alarm(0)
 
                 time_elapsed = timer() - time_before
 
