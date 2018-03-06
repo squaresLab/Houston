@@ -13,6 +13,7 @@ setup(
     python_requires='>=3.5',
     install_requires = [
         'flask',
+        'pytest',
         # 'docker',
         # 'pathos', (this is a dependency of the experiment)
         'pexpect',
