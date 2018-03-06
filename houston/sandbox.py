@@ -4,7 +4,7 @@ import signal
 import time
 import threading
 from timeit import default_timer as timer
-from typing import Optional
+from typing import Optional, Tuple, Dict
 from houston.state import State
 from houston.mission import Mission, MissionOutcome
 from houston.util import TimeoutError, printflush
@@ -58,7 +58,8 @@ class Sandbox(object):
 
     def run_with_coverage(self,
                           mission: Mission
-                          ) -> Tuple[MissionOutcome, Dict[str, LineCoverage]]:
+                          ) -> Tuple[MissionOutcome,
+                                     Dict[str, FileLineCoverage]]:
         """
         Executes a given mission and returns detailed coverage information.
 
