@@ -4,11 +4,12 @@ import signal
 import time
 import threading
 from timeit import default_timer as timer
-from typing import Optional
+from typing import Optional, Tuple, Dict
 from houston.state import State
 from houston.mission import Mission, MissionOutcome
 from houston.util import TimeoutError, printflush
 from houston.action import ActionOutcome
+from bugzoo.coverage.base import FileLineCoverage
 
 
 class Sandbox(object):
@@ -54,6 +55,28 @@ class Sandbox(object):
         Stops the SITL running inside this sandbox.
         """
         raise NotImplementedError
+
+    def run_with_coverage(self,
+                          mission: Mission
+                          ) -> Tuple[MissionOutcome,
+                                     Dict[str, FileLineCoverage]]:
+        """
+        Executes a given mission and returns detailed coverage information.
+
+        Returns:
+            A tuple of the form `(outcome, coverage)`, where `outcome` provides
+            a concise description of the outcome of the mission execution, and
+            `coverage` specifies the lines that were covered during the
+            execution for each source code file belonging to the system under
+            test.
+        """
+        # TODO: somewhat hardcoded
+        language = self.bugzoo.bug.languages[0]
+        extractor = language.coverage_extractor
+        extractor._prepare(self.bugzoo)
+        outcome = self.run(mission)
+        coverage = extractor._extract(self.bugzoo)
+        return (outcome, coverage)
 
     def run(self, mission: Mission) -> MissionOutcome:
         """
