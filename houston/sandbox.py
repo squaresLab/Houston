@@ -1,16 +1,17 @@
-from typing import Set
+from typing import Set, Optional, Tuple, Dict
+from timeit import default_timer as timer
 import math
-import bugzoo
-import signal
 import time
 import threading
-from timeit import default_timer as timer
-from typing import Optional, Tuple, Dict
+import signal
+
+import bugzoo
+from bugzoo.core.fileline import FileLineSet
+
 from houston.state import State
 from houston.mission import Mission, MissionOutcome
 from houston.util import TimeoutError, printflush
 from houston.action import ActionOutcome
-from bugzoo.core.fileline import FileLineSet
 
 class Sandbox(object):
     """
@@ -79,11 +80,20 @@ class Sandbox(object):
             test.
         """
         # TODO: somewhat hardcoded
+        print("Instrumenting code...")
         self.bugzoo.coverage.instrument(self.container, files_to_instrument)
+        print("Instrumented code")
+        print("Running mission...")
         outcome = self.run(mission)
-        print("Finished running")
+        print("Finished running mission")
+
+        print("Extracting coverage...")
+        t_start = timer()
         coverage = self.bugzoo.coverage.extract(self.container, files_to_instrument)
-        print("Extracted coverage")
+        t_end = timer() - t_start
+        mins = (t_end - t_start) / 60
+        print("Extracted coverage (took {} minutes)".format(mins))
+
         return (outcome, coverage)
 
     def run(self, mission: Mission) -> MissionOutcome:
