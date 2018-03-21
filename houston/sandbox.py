@@ -81,7 +81,9 @@ class Sandbox(object):
         # TODO: somewhat hardcoded
         self.bugzoo.coverage.instrument(self.container, files_to_instrument)
         outcome = self.run(mission)
+        print("Finished running")
         coverage = self.bugzoo.coverage.extract(self.container, files_to_instrument)
+        print("Extracted coverage")
         return (outcome, coverage)
 
     def run(self, mission: Mission) -> MissionOutcome:
