@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import houston
 import bugzoo
+import pprint
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 
@@ -39,7 +40,7 @@ sandbox = sut.provision()
 #print(res)
 (res, coverage) = sandbox.run_with_coverage(mission, { "APMrover2/APMrover2.cpp" })
 print("Done")
-print(coverage.to_dict())
+pprint.pprint(coverage.to_dict())
 
 # mission_generator = RandomMissionGenerator(sut, initial, environment)
 # resource_limits = ResourceLimits(2, 1000)
