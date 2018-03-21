@@ -35,10 +35,10 @@ mission = houston.mission.Mission(environment, initial, actions)
 
 # create a container for the mission execution
 sandbox = sut.provision()
-res = sandbox.run(mission)
-print(res)
-#(res, coverage) = sandbox.run_with_coverage(mission)
-#print(coverage)
+#res = sandbox.run(mission)
+#print(res)
+(res, coverage) = sandbox.run_with_coverage(mission, set(["APMrover2/APMrover2.cpp"]))
+print(coverage.to_dict())
 
 # mission_generator = RandomMissionGenerator(sut, initial, environment)
 # resource_limits = ResourceLimits(2, 1000)
