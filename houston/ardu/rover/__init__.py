@@ -1,5 +1,4 @@
 import time
-import bugzoo
 from houston.ardu.rover.sandbox import Sandbox
 from houston.util import printflush
 from houston.ardu.base import BaseSystem
@@ -7,7 +6,7 @@ from houston.ardu.base import BaseSystem
 
 class ArduRover(BaseSystem):
     def __init__(self,
-                 snapshot: bugzoo.Bug,
+                 bug_name: str,
                  speedup=3.0):
         from houston.ardu.common import ArmDisarmSchema
         from houston.ardu.rover.goto import GoToSchema
@@ -20,7 +19,7 @@ class ArduRover(BaseSystem):
             ArmDisarmSchema()
         ]
 
-        super(ArduRover, self).__init__(snapshot,
+        super(ArduRover, self).__init__(bug_name,
                                         variables,
                                         schemas,
                                         speedup=speedup)

@@ -1,10 +1,9 @@
-import bugzoo
 from houston.ardu.base import BaseSystem
 
 
 class ArduCopter(BaseSystem):
     def __init__(self,
-                 snapshot: bugzoo.Bug,
+                 bug_name: str,
                  speedup: float = 3.0,
                  min_parachute_alt: float = 10.0):
         from houston.ardu.common import ArmDisarmSchema
@@ -25,7 +24,7 @@ class ArduCopter(BaseSystem):
             SetModeSchema(),
             ParachuteSchema()
         ]
-        super(ArduCopter, self).__init__(snapshot,
+        super(ArduCopter, self).__init__(bug_name,
                                          variables,
                                          schemas,
                                          speedup=speedup)
