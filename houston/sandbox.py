@@ -184,7 +184,7 @@ class Sandbox(object):
         Deallocates all resources used by this container.
         """
         if self.__container is not None:
-            #self.__container.destroy() TODO: What to do with this?
+            del self.bugzoo.containers[self.__container.id]
             self.__container = None
     delete = destroy
 
