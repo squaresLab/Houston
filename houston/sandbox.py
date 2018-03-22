@@ -50,7 +50,7 @@ class Sandbox(object):
         """
         A flag indicating whether or not this sandbox is alive.
         """
-        return self.__container is not None #and self.__container.alive TODO how to do this?
+        return self.__container is not None #and self.__container.alive TODO Fix this when feature returned to BugZoo
 
     def _start(self, mission: Mission) -> None:
         """
@@ -80,19 +80,9 @@ class Sandbox(object):
             test.
         """
         # TODO: somewhat hardcoded
-        print("Instrumenting code...")
         self.bugzoo.coverage.instrument(self.container, files_to_instrument)
-        print("Instrumented code")
-        print("Running mission...")
         outcome = self.run(mission)
-        print("Finished running mission")
-
-        print("Extracting coverage...")
-        t_start = timer()
         coverage = self.bugzoo.coverage.extract(self.container, files_to_instrument)
-        t_end = timer() - t_start
-        mins = (t_end - t_start) / 60
-        print("Extracted coverage (took {} minutes)".format(mins))
 
         return (outcome, coverage)
 
