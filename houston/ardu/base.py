@@ -1,4 +1,3 @@
-import bugzoo
 from houston.system import System
 from houston.util import printflush
 from houston.action import ActionSchema
@@ -13,7 +12,7 @@ class BaseSystem(System):
     Description of the ArduCopter system
     """
     def __init__(self,
-                 snapshot: bugzoo.Bug,
+                 bug_name: str,
                  variables: 'List[StateVariable]',
                  schemas: 'List[ActionSchema]',
                  speedup: float = 3.0
@@ -44,7 +43,7 @@ class BaseSystem(System):
             InternalVariable('roll_channel', lambda c: c.connection.channels['1']),
         ]
 
-        super(BaseSystem, self).__init__(snapshot, variables, schemas)
+        super(BaseSystem, self).__init__(bug_name, variables, schemas)
 
     def provision(self) -> Sandbox:
         return Sandbox(self)

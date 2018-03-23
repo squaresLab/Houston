@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 import houston
 import bugzoo
+import pprint
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 
-bz = bugzoo.BugZoo()
-snapshot = bz.bugs['ardudemo:ardupilot:overflow']
-snapshot.build()
+#bz = bugzoo.BugZoo()
+#snapshot = bz.bugs['ardudemo:ardupilot:overflow']
+#snapshot.build()
 
-sut = houston.ardu.ArduRover(snapshot)
+sut = houston.ardu.ArduRover('afrl:overflow')
 
 # mission description
 actions = [
@@ -35,8 +36,11 @@ mission = houston.mission.Mission(environment, initial, actions)
 
 # create a container for the mission execution
 sandbox = sut.provision()
-(res, coverage) = sandbox.run_with_coverage(mission)
-print(coverage)
+#res = sandbox.run(mission)
+#print(res)
+(res, coverage) = sandbox.run_with_coverage(mission, { "APMrover2/APMrover2.cpp" })
+print("Done")
+pprint.pprint(coverage.to_dict())
 
 # mission_generator = RandomMissionGenerator(sut, initial, environment)
 # resource_limits = ResourceLimits(2, 1000)
@@ -47,3 +51,4 @@ print(coverage)
 #    print("Mission {}: {}".format(i, m.to_json()))
 #    res = sandbox.run(m)
 #    print(res)
+sandbox.destroy()

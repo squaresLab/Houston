@@ -19,11 +19,13 @@ class System(object):
     with the system-under-test in an idempotent manner.
     """
     def __init__(self,
-                 snapshot: bugzoo.Bug,
+                 bug_name: str,
                  variables: 'List[StateVariable]',
                  schemas: 'List[ActionSchema]'
                  ) -> None:
-        self.__snapshot = snapshot
+        self.__bugzoo = bugzoo.BugZoo()
+        self.__snapshot = self.__bugzoo.bugs[bug_name]
+        self.__bugzoo.bugs.build(self.__snapshot)
         self.__variables = {v.name: v for v in variables}
         self.__schemas = {s.name: s for s in schemas}
 
@@ -32,6 +34,13 @@ class System(object):
         Constructs an interactive, ephemeral sandbox for this system.
         """
         raise NotImplementedError
+
+    @property
+    def bugzoo(self):
+        """
+        The BugZoo daemon.
+        """
+        return self.__bugzoo
 
     @property
     def snapshot(self):

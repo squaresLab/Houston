@@ -50,10 +50,10 @@ class Sandbox(houston.sandbox.Sandbox):
         print("COMMAND: {}".format(cmd))
 
         if not verbose:
-            self.bugzoo.command(cmd, stdout=False, stderr=False, block=False)
+            self.bugzoo.containers.command(self.container, cmd, stdout=False, stderr=False, block=False)
             return
 
-        execution_response = self.bugzoo.command(cmd, stdout=True, stderr=True, block=False)
+        execution_response = self.bugzoo.containers.command(self.container, cmd, stdout=True, stderr=True, block=False)
         for line in execution_response.output:
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             print(line, flush=True)
@@ -82,7 +82,7 @@ class Sandbox(houston.sandbox.Sandbox):
         from pymavlink import mavutil
         protocol = 'tcp'
         port = 5760
-        url = "{}:{}:{}".format(protocol, str(self.bugzoo.ip_address), port)
+        url = "{}:{}:{}".format(protocol, str(self.bugzoo.containers.ip_address(self.container)), port)
         dummy_connection = mavutil.mavlink_connection(url)
         time.sleep(10)
         dummy_connection.close()
@@ -120,4 +120,4 @@ class Sandbox(houston.sandbox.Sandbox):
         if self.connection:
             self.connection.close()
         # close the SITL
-        self.bugzoo.command("ps aux | grep -i sitl | awk {'print $2'} | xargs kill -9", stdout=False, stderr=False, block=True)
+        self.bugzoo.containers.command(self.container, "ps aux | grep -i sitl | awk {'print $2'} | xargs kill -15", stdout=False, stderr=False, block=True)

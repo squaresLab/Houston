@@ -1,16 +1,17 @@
+from typing import Set, Optional, Tuple, Dict
+from timeit import default_timer as timer
 import math
-import bugzoo
-import signal
 import time
 import threading
-from timeit import default_timer as timer
-from typing import Optional, Tuple, Dict
+import signal
+
+import bugzoo
+from bugzoo.core.fileline import FileLineSet
+
 from houston.state import State
 from houston.mission import Mission, MissionOutcome
 from houston.util import TimeoutError, printflush
 from houston.action import ActionOutcome
-from bugzoo.coverage.base import FileLineCoverage
-
 
 class Sandbox(object):
     """
@@ -20,7 +21,7 @@ class Sandbox(object):
     def __init__(self, system: 'System') -> None:
         self.__lock = threading.Lock()
         self.__system = system
-        self.__bugzoo = system.snapshot.provision()
+        self.__container = system.bugzoo.containers.provision(system.snapshot)
 
     @property
     def system(self) -> 'System':
@@ -31,18 +32,25 @@ class Sandbox(object):
     sut = system
 
     @property
-    def bugzoo(self) -> Optional[bugzoo.Container]:
+    def container(self) -> Optional[bugzoo.Container]:
         """
         The BugZoo container underlying this sandbox.
         """
-        return self.__bugzoo
+        return self.__container
+
+    @property
+    def bugzoo(self) -> bugzoo.BugZoo:
+        """
+        The BugZoo daemon.
+        """
+        return self.system.bugzoo
 
     @property
     def alive(self) -> bool:
         """
         A flag indicating whether or not this sandbox is alive.
         """
-        return self.__bugzoo is not None and self.__bugzoo.alive
+        return self.__container is not None #and self.__container.alive TODO Fix this when feature returned to BugZoo
 
     def _start(self, mission: Mission) -> None:
         """
@@ -57,9 +65,10 @@ class Sandbox(object):
         raise NotImplementedError
 
     def run_with_coverage(self,
-                          mission: Mission
+                          mission: Mission,
+                          files_to_instrument: Set[str],
                           ) -> Tuple[MissionOutcome,
-                                     Dict[str, FileLineCoverage]]:
+                                     FileLineSet]:
         """
         Executes a given mission and returns detailed coverage information.
 
@@ -71,11 +80,10 @@ class Sandbox(object):
             test.
         """
         # TODO: somewhat hardcoded
-        language = self.bugzoo.bug.languages[0]
-        extractor = language.coverage_extractor
-        extractor._prepare(self.bugzoo)
+        self.bugzoo.coverage.instrument(self.container, files_to_instrument)
         outcome = self.run(mission)
-        coverage = extractor._extract(self.bugzoo)
+        coverage = self.bugzoo.coverage.extract(self.container, files_to_instrument)
+
         return (outcome, coverage)
 
     def run(self, mission: Mission) -> MissionOutcome:
@@ -165,9 +173,9 @@ class Sandbox(object):
         """
         Deallocates all resources used by this container.
         """
-        if self.__bugzoo is not None:
-            self.__bugzoo.destroy()
-            self.__bugzoo = None
+        if self.__container is not None:
+            del self.bugzoo.containers[self.__container.id]
+            self.__container = None
     delete = destroy
 
     def observe(self, running_time) -> None:
