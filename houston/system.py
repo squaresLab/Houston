@@ -38,7 +38,7 @@ class System(object):
     @property
     def bugzoo(self):
         """
-        The BugZoo object.
+        The BugZoo daemon.
         """
         return self.__bugzoo
 

@@ -41,7 +41,7 @@ class Sandbox(object):
     @property
     def bugzoo(self) -> bugzoo.BugZoo:
         """
-        The BugZoo object.
+        The BugZoo daemon.
         """
         return self.system.bugzoo
 
