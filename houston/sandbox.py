@@ -22,6 +22,7 @@ class Sandbox(object):
         self.__lock = threading.Lock()
         self.__system = system
         self.__container = system.bugzoo.containers.provision(system.snapshot)
+        self.__instrumented = False
 
     @property
     def system(self) -> 'System':
@@ -66,7 +67,6 @@ class Sandbox(object):
 
     def run_with_coverage(self,
                           mission: Mission,
-                          files_to_instrument: Set[str],
                           ) -> Tuple[MissionOutcome,
                                      FileLineSet]:
         """
@@ -80,9 +80,12 @@ class Sandbox(object):
             test.
         """
         # TODO: somewhat hardcoded
-        self.bugzoo.coverage.instrument(self.container, files_to_instrument)
+        if not self.__instrumented:
+            self.__instrumented = True
+            self.bugzoo.coverage.instrument(self.container)
+        self.bugzoo.containers.command(self.container, "find . -name *.gcda | xargs rm", stdout=False, stderr=False, block=True)
         outcome = self.run(mission)
-        coverage = self.bugzoo.coverage.extract(self.container, files_to_instrument)
+        coverage = self.bugzoo.coverage.extract(self.container)
 
         return (outcome, coverage)
 

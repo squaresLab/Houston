@@ -141,7 +141,7 @@ class CircleBasedGotoGenerator(ActionGenerator):
 
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
-        params['altitude'] = 10.0 # small limitation since we don't have current
+        #params['altitude'] = 10.0 # small limitation since we don't have current
                                   # state to get altitude.
 
         return params

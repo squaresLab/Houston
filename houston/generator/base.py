@@ -24,7 +24,7 @@ class MissionGeneratorStream(object):
         return self
 
     
-    def next(self):
+    def __next__(self):
         """
         Requests the next mission from the mission generator.
         """
@@ -105,6 +105,11 @@ class MissionGenerator(object):
     @property
     def failures(self):
         return self.__failures
+
+
+    @property
+    def coverage(self):
+        return self.__coverage
 
 
     @property
@@ -190,7 +195,7 @@ class MissionGenerator(object):
         return outcome
 
 
-    def record_outcome(self, mission, outcome):
+    def record_outcome(self, mission, outcome, coverage=None):
         """
         Records the outcome of a given mission. The mission is logged to the
         history, and its outcome is stored in the outcome dictionary. If the
@@ -199,12 +204,36 @@ class MissionGenerator(object):
         """
         self.__history.append(mission)
         self.__outcomes[mission] = outcome
+        if coverage:
+            self.__coverage[mission] = coverage
 
         if outcome.failed:
             self.__failures.add(mission)
 
 
     def generate(self, seed, resource_limits):
+        """
+        Generate missions and return them
+        """
+        assert isinstance(seed, int)
+
+        missions = []
+        self.prepare(seed, resource_limits)
+        stream = MissionGeneratorStream(self)
+        try:
+            self.__resource_usage = ResourceUsage()
+            self.__start_time = timeit.default_timer()
+            self.tick()
+            # TODO use threads
+            while True:
+                mission = stream.__next__()
+                missions.append(mission)
+        except StopIteration:
+            print("Done with generating missions")
+        return missions
+
+
+    def generate_and_run(self, seed, resource_limits, with_coverage=False):
         assert isinstance(seed, int)
         self.__runner_pool = None
 
@@ -214,7 +243,9 @@ class MissionGenerator(object):
             self.__runner_pool = MissionRunnerPool(self.system,
                                                    self.threads,
                                                    stream,
-                                                   self.record_outcome)
+                                                   self.record_outcome,
+                                                   with_coverage
+                                                  )
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
             self.tick()
@@ -230,6 +261,7 @@ class MissionGenerator(object):
                                             self.failures,
                                             self.resource_usage,
                                             self.resource_limits,
+                                            self.coverage,
                                             suite)
             return report
 
@@ -255,6 +287,7 @@ class MissionGenerator(object):
         self.__history = []
         self.__outcomes = {}
         self.__failures = set()
+        self.__coverage = {}
         self.__rng = random.Random(seed)
 
     
@@ -264,3 +297,25 @@ class MissionGenerator(object):
         by this generator.
         """
         raise NotImplementedError
+
+
+    def report_fault_localization(self):
+        from bugzoo.core.coverage import TestSuiteCoverage
+        from bugzoo.core.spectra import Spectra
+        from bugzoo.localization import Localization
+        from bugzoo.localization.suspiciousness import tarantula
+
+        test_suite_coverage_dict = {}
+        counter = 0
+        for m in self.coverage:
+            test = {
+                'test': 't{}'.format(counter),
+                'outcome': self.outcome(m).to_test_outcome_json(0),
+                'coverage': self.coverage[m].to_dict()
+            }
+            test_suite_coverage_dict['t{}'.format(counter)] = test
+            counter += 1
+        spectra = Spectra.from_coverage(TestSuiteCoverage.from_dict(test_suite_coverage_dict))
+        l = Localization.from_spectra(spectra, tarantula)
+
+        return l

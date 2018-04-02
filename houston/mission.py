@@ -160,6 +160,19 @@ class MissionOutcome(object):
             'totalTime': self.__total_time
         }
 
+    def to_test_outcome_json(self, code):
+        """
+        Returns a JSON description of mission outcome in format of TestOutcome in BugZoo.
+        """
+        return {
+                "passed": self.__passed,
+                "response": {
+                            "code": code,
+                            "duration": self.__total_time,
+                            "output": str([outcome.to_json() for outcome in  self.__outcomes])
+                }
+        }
+
     def __str__(self):
         return str(self.to_json())
 

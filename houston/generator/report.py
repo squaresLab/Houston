@@ -18,6 +18,7 @@ class MissionGeneratorReport(object):
         outcomes = \
             {Mission.from_json(h['mission']): MissionOutcome.from_json(h['outcome']) for h in jsn['history']}
         failed = [Mission.from_json(f['mission']) for f in jsn['failed']]
+        # TODO read coverage
         suite = MissionSuite.from_json(jsn['suite'])
 
         system = System.from_json(jsn['settings']['system'])
@@ -27,7 +28,7 @@ class MissionGeneratorReport(object):
         return MissionGeneratorReport(system, history, outcomes, failed, resource_usage, resource_limits, suite)
 
 
-    def __init__(self, system, history, outcomes, failed, resource_usage, resource_limits, suite):
+    def __init__(self, system, history, outcomes, failed, resource_usage, resource_limits, coverage, suite):
         self.__system = system
         self.__history = history
         self.__outcomes = outcomes
@@ -35,6 +36,7 @@ class MissionGeneratorReport(object):
         self.__resource_usage = resource_usage
         self.__resource_limits = resource_limits
         self.__suite = suite
+        self.__coverage = coverage
 
  
     def outcome(self, mission):
@@ -78,9 +80,14 @@ class MissionGeneratorReport(object):
         failed = [(m.to_json(), self.outcome(m).to_json()) for m in self.__failed]
         failed = [{'mission': m, 'outcome': o} for (m, o) in failed]
 
+        # TODO not a good way to report coverage
+        coverage = [(m.to_json(), self.__coverage[m].to_dict()) for m in self.__coverage]
+        coverage = [{'mission': m, 'coverage': c} for (m, c) in coverage]
+
         report = {
             'history': history,
             'failed': failed,
+            'coverage': coverage,
             'suite': self.suite.to_json(),
             'settings': {
                 'system': self.system.to_json()

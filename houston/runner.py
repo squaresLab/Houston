@@ -9,11 +9,12 @@ class MissionRunner(threading.Thread):
     Mission runners are used to continually fetch pending tests from an
     associated pool, and to execute those tests.
     """
-    def __init__(self, pool):
+    def __init__(self, pool, with_coverage=False):
         super(MissionRunner, self).__init__()
         self.daemon = True
         self.__pool = pool
         self.__sandbox = pool.system.provision()
+        self.__with_coverage = with_coverage
 
     def run(self):
         """
@@ -24,13 +25,18 @@ class MissionRunner(threading.Thread):
             if m is None:
                 return
 
-            outcome = self.__sandbox.run(m)
-            self.__pool.report(m, outcome)
+            if self.__with_coverage:
+                (outcome, coverage) = self.__sandbox.run_with_coverage(m)
+            else:
+                outcome = self.__sandbox.run(m)
+                coverage = None
+            self.__pool.report(m, outcome, coverage)
 
     def shutdown(self):
         if self.__sandbox is not None:
             self.__sandbox.destroy()
             self.__sandbox = None
+
 
 
 class MissionRunnerPool(object):
@@ -39,7 +45,7 @@ class MissionRunnerPool(object):
     of missions across a given number of workers, each running on a separate
     thread.
     """
-    def __init__(self, system, size, source, callback):
+    def __init__(self, system, size, source, callback, with_coverage=False):
         assert isinstance(size, int)
         assert callable(callback)
         assert size > 0
@@ -54,7 +60,7 @@ class MissionRunnerPool(object):
         self._lock = threading.Lock()
 
         # provision desired number of runners
-        self.__runners = [MissionRunner(self) for _ in range(size)]
+        self.__runners = [MissionRunner(self, with_coverage) for _ in range(size)]
 
     def run(self):
         """
@@ -102,14 +108,14 @@ class MissionRunnerPool(object):
         """
         return self.__runners.length()
 
-    def report(self, mission, outcome):
+    def report(self, mission, outcome, coverage=None):
         """
         Used to report the outcome of a mission.
 
         WARNING: It is the responsibility of the callback to guarantee
             thread safety (if necessary).
         """
-        self.__callback(mission, outcome)
+        self.__callback(mission, outcome, coverage)
 
     def fetch(self):
         """
@@ -122,7 +128,7 @@ class MissionRunnerPool(object):
         # acquire fetch lock
         self._lock.acquire()
         try:
-            return self.__source.next()
+            return self.__source.__next__()
 
         except StopIteration:
             return None
