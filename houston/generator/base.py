@@ -244,8 +244,7 @@ class MissionGenerator(object):
                                                    self.threads,
                                                    stream,
                                                    self.record_outcome,
-                                                   with_coverage
-                                                  )
+                                                   with_coverage)
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
             self.tick()
