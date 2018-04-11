@@ -63,15 +63,56 @@ class MutationBasedMissionGenerator(MissionGenerator):
         #TODO Get the fitness of this mission
         outcome = self.outcomes[mission]
         coverage = self.coverage[mission]
-        return 1.0
+        initial_coverage = self.coverage[self.__initial_mission]
+
+        fitness = 1.0
+
+        if not outcome.passed:
+            fitness *= 5.0
+
+        similar_coverage = coverage.intersection(initial_coverage)
+        fitness += len(similar_coverage)
+
+        return fitness
+
+
+    def _add_action_operator(self, mission):
+        actions = mission.actions
+        if len(actions) >= self.max_num_actions:
+            return None
+        schema = self.rng.choice(list(self.system.schemas.values()))
+        actions.insert(self.rng.randint(0, len(actions)-1), self._generate_action(schema))
+        return Mission(self.__env, self.__initial_state, actions)
+
+
+    def _delete_action_operator(self, mission):
+        actions = mission.actions
+        if len(actions) <= 1:
+            return None
+        actions.pop(self.rng.randint(0, len(actions)-1)
+        return Mission(self.__env, self.__initial_state, actions)
+
+
+    def _edit_action_operator(self, mission):
+        #TODO implement editing an existing action
+        return None
 
 
     def _mutate_mission(self, mission):
-        #TODO mutate a given mission
-        return mission
+        mutation_operators = [self._add_action_operator, self._delete_action_operator,
+                              self._edit_action_operator]
+        generated_mission = None
+        while not generated_mission:
+            operator = self.rng.choice(mutation_operators)
+            generated_mission = operator(mission)
+        return generated_mission
 
 
     def generate_mission(self):
+        if not self.__most_fit_missions:
+            self.__in_progress_missions[self.__initial_mission] = {'parent': None}
+            return self.__initial_mission
+
         parent = self.rng.choice(self.__most_fit_missions)
         mission = self._mutate_mission(parent)
         self.__in_progress_missions[mission] = {'parent': parent}
@@ -97,8 +138,17 @@ class MutationBasedMissionGenerator(MissionGenerator):
 
         fitness = self._get_fitness(mission)
         parent = self.__in_progress_missions[mission]['parent']
+        if not parent:
+            # initial mission
+            self.__most_fit_missions.append(mission)
+            self.__in_progress_missions.pop(mission)
+            return
+
         parent_fitness = self._get_fitness(parent)
         if fitness >= parent_fitness:
             self.__most_fit_missions.remove(parent)
             self.__most_fit_missions.append(mission)
         self.__in_progress_missions.pop(mission)
+
+
+
