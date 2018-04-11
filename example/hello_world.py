@@ -22,7 +22,7 @@ def run_single_mission_with_coverage(sandbox, mission):
     print(coverage)
 
 ### Run all missions stored to a json file
-def run_all_missions(sut, mission_file):
+def run_all_missions(sut, mission_file, coverage=False):
     missions = []
     with open(mission_file, "r") as f:
         missions_json = json.load(f)
@@ -31,18 +31,47 @@ def run_all_missions(sut, mission_file):
 
 
     outcomes = {}
+    coverages = {}
     def record_outcome(mission, outcome, coverage=None):
         outcomes[mission] = outcome
+        coverages[mission] = coverage
 
-    runner_pool = MissionRunnerPool(sut, 1, missions, record_outcome)
+    runner_pool = MissionRunnerPool(sut, 4, missions, record_outcome, coverage)
     print("Started running")
     runner_pool.run()
     print("Done running")
     print(outcomes)
 
+    with open("example/failed.json", "w") as f:
+        for m in outcomes:
+            if not outcomes[m].passed:
+                f.write(str(m.to_json()))
+                f.write("\n")
+
+    if coverage:
+        from bugzoo.core.coverage import TestSuiteCoverage
+        from bugzoo.core.spectra import Spectra
+        from bugzoo.localization import Localization
+        from bugzoo.localization.suspiciousness import tarantula
+        test_suite_coverage_dict = {}
+        counter = 0
+        for m in coverages:
+            test = {
+                    'test': 't{}'.format(counter),
+                    'outcome': outcomes[m].to_test_outcome_json(0),
+                    'coverage': coverages[m].to_dict()
+            }
+            test_suite_coverage_dict['t{}'.format(counter)] = test
+            counter += 1
+        spectra = Spectra.from_coverage(TestSuiteCoverage.from_dict(test_suite_coverage_dict))
+        l = Localization.from_spectra(spectra, tarantula)
+        print(str(l.get_most_suspicious_lines()))
+        with open("example/localization.json", "w") as f:
+            f.write(str(l))
+
 ### Generate missions
-def generate(sut, initial, environment, number_of_missions):
-    mission_generator = RandomMissionGenerator(sut, initial, environment, max_num_actions=3, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
+def generate(sut, initial, environment, number_of_missions, max_num_actions=3):
+    mission_generator = RandomMissionGenerator(sut, initial, environment, max_num_actions=max_num_actions, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
     resource_limits = ResourceLimits(number_of_missions, 1000)
     missions = mission_generator.generate(100, resource_limits)
     print("### {}".format(missions))
@@ -79,16 +108,19 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 
 
 if __name__=="__main__":
-    sut = houston.ardu.ArduRover('afrl:overflow')
+    #sut = houston.ardu.ArduRover('afrl:overflow')
+    sut = houston.ardu.ArduCopter('afrl:overflow')
 
     # mission description
     actions = [
         houston.action.Action("arm", {'arm': True}),
+        houston.action.Action("takeoff", {'altitude': 3.0}),
         houston.action.Action("goto", {
             'latitude' : -35.361354,
             'longitude': 149.165218,
             'altitude' : 5.0
         }),
+        houston.action.Action("setmode", {'mode': 'LAND'}),
         houston.action.Action("arm", {'arm': False})
     ]
     environment = houston.state.Environment({})
@@ -105,8 +137,12 @@ if __name__=="__main__":
     }, 0.0)
     mission = houston.mission.Mission(environment, initial, actions)
     # create a container for the mission execution
-    sandbox = sut.provision()
+    #sandbox = sut.provision()
 
-    run_all_missions(sut, 'example/missions.json')
+    #run_single_mission_with_coverage(sandbox, mission)
+    #generate(sut, initial, environment, 100, 10)
+    run_all_missions(sut, "example/missions.json", False)
+    #generate_and_run_with_fl(sut, initial, environment, 5)
+    #run_single_mission_with_coverage(sandbox, mission)
 
-    sandbox.destroy()
+    #sandbox.destroy()

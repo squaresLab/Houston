@@ -1,4 +1,5 @@
 from houston.ardu.base import BaseSystem
+from houston.ardu.copter.sandbox import Sandbox
 
 
 class ArduCopter(BaseSystem):
@@ -33,19 +34,7 @@ class ArduCopter(BaseSystem):
     def min_parachute_alt(self) -> float:
         return self.__min_parachute_alt
 
-    # TODO: move to Sandbox for ArduCopter
-    def setup(self, mission):
-        super(ArduCopter, self).setup(mission,  binary_name='arducopter',
-                                                model_name='quad',
-                                                param_file='copter')
 
-        # TODO: is part of this common?
-        self.vehicle.parameters['DISARM_DELAY'] = 0
-        self.vehicle.parameters['RTL_ALT'] = 0
+    def provision(self) -> Sandbox:
+        return Sandbox(self)
 
-        # wait until copter is in desired configuration
-        while True:
-            if self.vehicle.parameters['DISARM_DELAY'] == 0 and \
-               self.vehicle.parameters['RTL_ALT'] == 0:
-                break
-            time.sleep(0.05)

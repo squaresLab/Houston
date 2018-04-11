@@ -1,7 +1,7 @@
 import dronekit
 import houston.ardu.common.goto
 from houston.state import Environment, State
-from houston.action import ActionSchema, Parameter
+from houston.action import Action, ActionSchema, Parameter
 from houston.branch import IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 from houston.ardu.common.goto import DistanceBasedGoToGenerator, \

@@ -31,7 +31,7 @@ class TakeoffSchema(ActionSchema):
                  state: State,
                  environment: Environment
                  ) -> None:
-        vehicle = sandbox.connection.vehicle
+        vehicle = sandbox.connection
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
