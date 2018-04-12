@@ -11,12 +11,12 @@ class MutationBasedMissionGenerator(MissionGenerator):
                  action_generators = [],
                  max_num_actions = 10,
                  initial_mission = None):
-        super(RandomMissionGenerator, self).__init__(system, threads, action_generators, max_num_actions)
+        super(MutationBasedMissionGenerator, self).__init__(system, threads, action_generators, max_num_actions)
         self.__initial_state = initial_state
         self.__env = env
         self.__initial_mission = initial_mission if initial_mission else self._generate_random_mission()
         self.__in_progress_missions = {}
-        self.__most_fit_missions = [self.__initial_mission] #TODO this can be a dictionary instead of a list
+        self.__most_fit_missions = [] #TODO this can be a dictionary instead of a list
 
     
     @property
@@ -43,6 +43,14 @@ class MutationBasedMissionGenerator(MissionGenerator):
         return self.__env
 
 
+    @property
+    def most_fit_missions(self):
+        """
+        Return the most fit missions generated.
+        """
+        return self.__most_fit_missions
+
+
     def _generate_action(self, schema):
         generator = self.action_generator(schema)
         if generator is None:
@@ -61,6 +69,9 @@ class MutationBasedMissionGenerator(MissionGenerator):
 
     def _get_fitness(self, mission):
         #TODO Get the fitness of this mission
+        if mission == self.__initial_mission:
+            return 1.0
+
         outcome = self.outcomes[mission]
         coverage = self.coverage[mission]
         initial_coverage = self.coverage[self.__initial_mission]
@@ -89,7 +100,7 @@ class MutationBasedMissionGenerator(MissionGenerator):
         actions = mission.actions
         if len(actions) <= 1:
             return None
-        actions.pop(self.rng.randint(0, len(actions)-1)
+        actions.pop(self.rng.randint(0, len(actions)-1))
         return Mission(self.__env, self.__initial_state, actions)
 
 
@@ -104,6 +115,7 @@ class MutationBasedMissionGenerator(MissionGenerator):
         generated_mission = None
         while not generated_mission:
             operator = self.rng.choice(mutation_operators)
+            print("Operator: {}".format(str(operator)))
             generated_mission = operator(mission)
         return generated_mission
 
@@ -116,6 +128,7 @@ class MutationBasedMissionGenerator(MissionGenerator):
         parent = self.rng.choice(self.__most_fit_missions)
         mission = self._mutate_mission(parent)
         self.__in_progress_missions[mission] = {'parent': parent}
+        print("Mutated: {}\nfrom: {}".format(mission.to_json(), parent.to_json()))
         return mission
 
 
@@ -126,12 +139,13 @@ class MutationBasedMissionGenerator(MissionGenerator):
         mission failed, the mission is also added to the set of failed
         missions.
         """
-        self.__history.append(mission)
-        self.__outcomes[mission] = outcome
-        self.__coverage[mission] = coverage
+        self.history.append(mission)
+        self.outcomes[mission] = outcome
+        self.coverage[mission] = coverage
+
 
         if outcome.failed:
-            self.__failures.add(mission)
+            self.failures.add(mission)
 
         if not mission in self.__in_progress_missions:
             print("Something went wrong! mission is not in progress")
@@ -140,14 +154,15 @@ class MutationBasedMissionGenerator(MissionGenerator):
         parent = self.__in_progress_missions[mission]['parent']
         if not parent:
             # initial mission
-            self.__most_fit_missions.append(mission)
+            self.most_fit_missions.append(mission)
             self.__in_progress_missions.pop(mission)
             return
 
         parent_fitness = self._get_fitness(parent)
         if fitness >= parent_fitness:
-            self.__most_fit_missions.remove(parent)
-            self.__most_fit_missions.append(mission)
+            if len(self.most_fit_missions) == self.resource_limits.num_missions_selected:
+                self.most_fit_missions.remove(parent)
+            self.most_fit_missions.append(mission)
         self.__in_progress_missions.pop(mission)
 
 
