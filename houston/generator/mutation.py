@@ -68,9 +68,10 @@ class MutationBasedMissionGenerator(MissionGenerator):
 
 
     def _get_fitness(self, mission):
-        #TODO Get the fitness of this mission
-        if mission == self.__initial_mission:
-            return 1.0
+        """
+        Returns a float number as the fitness. Higher is better.
+        """
+        #TODO Come up with a reasonable fitness metric
 
         outcome = self.outcomes[mission]
         coverage = self.coverage[mission]
@@ -79,10 +80,12 @@ class MutationBasedMissionGenerator(MissionGenerator):
         fitness = 1.0
 
         if not outcome.passed:
-            fitness *= 5.0
+            fitness *= 10.0
 
         similar_coverage = coverage.intersection(initial_coverage)
-        fitness += len(similar_coverage)
+        fitness += (len(similar_coverage)/len(coverage))*15
+
+        fitness -= len(mission.actions)*3
 
         return fitness
 
@@ -159,8 +162,9 @@ class MutationBasedMissionGenerator(MissionGenerator):
             return
 
         parent_fitness = self._get_fitness(parent)
-        if fitness >= parent_fitness:
-            if len(self.most_fit_missions) == self.resource_limits.num_missions_selected:
+        print("My fotness: {}, parent fitness: {}".format(fitness, parent_fitness))
+        if fitness >= parent_fitness or self.rng.random() <= 0.05:
+            if len(self.most_fit_missions) >= self.resource_limits.num_missions_selected:
                 self.most_fit_missions.remove(parent)
             self.most_fit_missions.append(mission)
         self.__in_progress_missions.pop(mission)
