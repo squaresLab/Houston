@@ -108,8 +108,14 @@ class MutationBasedMissionGenerator(MissionGenerator):
 
 
     def _edit_action_operator(self, mission):
-        #TODO implement editing an existing action
-        return None
+        actions = mission.actions
+        index = self.rng.randint(0, len(actions)-1)
+        new_action = self._generate_action(self.system.schemas[actions[index].schema_name])
+        if new_action.values == actions[index].values:
+            return None
+        actions[index] = new_action
+
+        return Mission(self.__env, self.__initial_state, actions)
 
 
     def _mutate_mission(self, mission):
@@ -162,7 +168,7 @@ class MutationBasedMissionGenerator(MissionGenerator):
             return
 
         parent_fitness = self._get_fitness(parent)
-        print("My fotness: {}, parent fitness: {}".format(fitness, parent_fitness))
+        print("My fitness: {}, parent fitness: {}".format(fitness, parent_fitness))
         if fitness >= parent_fitness or self.rng.random() <= 0.05:
             if len(self.most_fit_missions) >= self.resource_limits.num_missions_selected:
                 self.most_fit_missions.remove(parent)
