@@ -96,7 +96,7 @@ def generate_and_run(sut, initial, environment, number_of_missions):
 
 ### Generate and run missions with mutation operator
 def generate_and_run_mutation(sut, initial_state, environment, initial_mission, number_of_missions):
-    mission_generator = MutationBasedMissionGenerator(sut, initial, environment, initial_mission=initial_mission, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
+    mission_generator = MutationBasedMissionGenerator(sut, initial, environment, initial_mission, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
     resource_limits = ResourceLimits(number_of_missions*5, 1000, number_of_missions)
     mission_generator.generate_and_run(100, resource_limits, with_coverage=True)
     print("DONE")

@@ -7,14 +7,14 @@ class MutationBasedMissionGenerator(MissionGenerator):
                  system,
                  initial_state,
                  env,
+                 initial_mission,
                  threads = 1,
                  action_generators = [],
-                 max_num_actions = 10,
-                 initial_mission = None):
+                 max_num_actions = 10):
         super(MutationBasedMissionGenerator, self).__init__(system, threads, action_generators, max_num_actions)
         self.__initial_state = initial_state
         self.__env = env
-        self.__initial_mission = initial_mission if initial_mission else self._generate_random_mission()
+        self.__initial_mission = initial_mission
         self.__in_progress_missions = {}
         self.__most_fit_missions = [] #TODO this can be a dictionary instead of a list
 
