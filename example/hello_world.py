@@ -7,6 +7,7 @@ from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 from houston.ardu.common.goto import CircleBasedGotoGenerator
+from houston.root_cause.delta_debugging import DeltaDebugging
 import copy
 
 
@@ -130,6 +131,7 @@ if __name__=="__main__":
 
     # mission description
     actions = [
+        houston.action.Action("arm", {'arm': False}),
         houston.action.Action("arm", {'arm': True}),
         #houston.action.Action("takeoff", {'altitude': 3.0}),
         houston.action.Action("goto", {
@@ -159,8 +161,11 @@ if __name__=="__main__":
     #run_single_mission_with_coverage(sandbox, mission)
     #generate(sut, initial, environment, 100, 10)
     #run_all_missions(sut, "example/missions.json", False)
-    generate_and_run_mutation(sut, initial, environment, mission, 3)
+    #generate_and_run_mutation(sut, initial, environment, mission, 3)
     #generate_and_run_with_fl(sut, initial, environment, 5)
     #run_single_mission_with_coverage(sandbox, mission)
+
+    d = DeltaDebugging(sut, initial, [mission])
+    d.find_root_cause()
 
     #sandbox.destroy()

@@ -1,4 +1,9 @@
+from typing import Set, Optional, Tuple, Dict, List
+
 from houston.root_cause import RootCauseFinder, MissionDomain
+from houston.system import System
+from houston.state import State
+from houston.mission import Mission
 
 
 
@@ -21,29 +26,29 @@ class DeltaDebugging(RootCauseFinder):
         return self.__domain
 
 
-    def find_root_cause(self, time_limit=None): -> MissionDomain
-        empty_domain = MissionDomain(system)
+    def find_root_cause(self, time_limit=None) -> MissionDomain:
+        empty_domain = MissionDomain(self.system)
         return self._dd2(self.domain, empty_domain)
 
 
-    def _dd2(self, c: MissionDomain, r: MissionDomain): -> MissionDomain
+    def _dd2(self, c: MissionDomain, r: MissionDomain) -> MissionDomain:
 
         if c.action_size == 1:
             return c
 
-        c1, c2 = _divide(c)
+        c1, c2 = DeltaDebugging._divide(c)
 
-        m1 = _union(c1, r)
+        m1 = DeltaDebugging._union(c1, r)
         res = self._run(m1)
         if not res:
             return self._dd2(c1, r)
 
-        m2 = _union(c2, r)
+        m2 = DeltaDebugging._union(c2, r)
         res = self._run(m2)
         if not res:
             return self._dd2(c2, r)
 
-        final_domain = _union(self._dd2(c1, m2), self._dd2(c2, m1))
+        final_domain = DeltaDebugging._union(self._dd2(c1, m2), self._dd2(c2, m1))
         return final_domain
 
 
@@ -70,7 +75,7 @@ class DeltaDebugging(RootCauseFinder):
 
 
     @staticmethod
-    def _union(c1: MissionDomain, c2: MissionDomain): -> MissionDomain
+    def _union(c1: MissionDomain, c2: MissionDomain) -> MissionDomain:
         """
         Returns the union of two domains.
         """

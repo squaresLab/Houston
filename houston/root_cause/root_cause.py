@@ -30,7 +30,7 @@ class MissionDomain(object):
 
 
     @property
-    def domain(self): -> List[Tuple[int, str, List[Parameter]]]
+    def domain(self) -> List[Tuple[int, str, List[Parameter]]]:
         """
         The domain specified by sequence of Actions with
         specific parameter ranges.
@@ -45,6 +45,7 @@ class MissionDomain(object):
         of actions in mission and all possible values for parameters.
         """
         i = 0
+        domain = []
         for action in mission.actions:
             if discrete_params:
                 parameters = [Parameter(v, DiscreteValueRange([action.values[v]])) for v in action.values]
@@ -101,7 +102,7 @@ class RootCauseFinder(object):
         return self.__initial_failing_missions
 
 
-    def find_root_cause(self, time_limit=None): -> MissionDomain
+    def find_root_cause(self, time_limit=None) -> MissionDomain:
         """
         The main function that finds the root cause.
         """
