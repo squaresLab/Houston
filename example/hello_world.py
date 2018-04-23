@@ -165,7 +165,7 @@ if __name__=="__main__":
     #generate_and_run_with_fl(sut, initial, environment, 5)
     #run_single_mission_with_coverage(sandbox, mission)
 
-    d = DeltaDebugging(sut, initial, [mission])
+    d = DeltaDebugging(sut, initial, environment, [mission])
     d.find_root_cause()
 
     #sandbox.destroy()

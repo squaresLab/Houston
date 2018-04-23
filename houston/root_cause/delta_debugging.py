@@ -2,7 +2,7 @@ from typing import Set, Optional, Tuple, Dict, List
 
 from houston.root_cause import RootCauseFinder, MissionDomain
 from houston.system import System
-from houston.state import State
+from houston.state import State, Environment
 from houston.mission import Mission
 
 
@@ -12,10 +12,10 @@ class DeltaDebugging(RootCauseFinder):
     Conducts delta debugging on a failing mission to narrow
     it down to main problem.
     """
-    def __init__(self, system: System, initial_state: State, initial_failing_missions: List[Mission]):
+    def __init__(self, system: System, initial_state: State, environment: Environment, initial_failing_missions: List[Mission]):
         self.__domain = MissionDomain.from_initial_mission(system, initial_failing_missions[0], discrete_params=True)
 
-        super(DeltaDebugging, self).__init__(system, initial_state, initial_failing_missions)
+        super(DeltaDebugging, self).__init__(system, initial_state, environment, initial_failing_missions)
 
 
     @property
@@ -52,10 +52,11 @@ class DeltaDebugging(RootCauseFinder):
         return final_domain
 
 
-    def _run(self, mission):
+    def _run(self, mission_domain: MissionDomain):
         """
         runs a mission using sandbox and returns whether the mission passed.
         """
+        mission = mission_domain.generate_mission(self.environment, self.initial_state, self.rng)
         sandbox = self.system.provision()
         res = sandbox.run(mission)
         sandbox.destroy()
