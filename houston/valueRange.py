@@ -43,6 +43,10 @@ class DiscreteValueRange(ValueRange):
             assert all(type(v) == self.__typ for v in values)
 
 
+    def __str__(self):
+        return str(self.__values)
+
+
     @property
     def size(self):
         """

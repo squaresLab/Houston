@@ -80,6 +80,12 @@ class Parameter(object):
         self.__name = name
         self.__value_range = value_range
 
+    def __str__(self):
+        return "{}: {}".format(self.name, str(self.values))
+
+    def __repr__(self):
+        return self.__str__()
+
     @property
     def values(self):
         """

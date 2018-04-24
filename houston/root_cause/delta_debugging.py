@@ -28,10 +28,15 @@ class DeltaDebugging(RootCauseFinder):
 
     def find_root_cause(self, time_limit=None) -> MissionDomain:
         empty_domain = MissionDomain(self.system)
-        return self._dd2(self.domain, empty_domain)
+        final_domain = self._dd2(self.domain, empty_domain)
+        print("FINISHED: {}".format(str(final_domain)))
+
+        return final_domain
 
 
     def _dd2(self, c: MissionDomain, r: MissionDomain) -> MissionDomain:
+
+        print("****** C: {}\n****** R: {}".format(str(c), str(r)))
 
         if c.action_size == 1:
             return c
