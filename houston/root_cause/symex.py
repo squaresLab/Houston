@@ -35,5 +35,17 @@ class SymbolicExecution(object):
         will generate parameters for those actions in order to
         explore all possible action branches.
         """
+
+        actions = mission.actions
+        all_paths = []
+        self_dfs(actions, 0, BranchPath([]), all_paths)
         raise NotImplementedError
+
+
+    def _dfs(self, actions, start_index, path: BranchPath, all_paths: List[BranchPath] = []):
+        if start_index == len(actions)-1:
+            all_paths.append(path)
+            return
+        for b in self.system.schemas[actions[start_index].schema_name].branches:
+            self._dfs(actions, start_index + 1, path.extended(b), allPaths)
 
