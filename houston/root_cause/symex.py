@@ -39,24 +39,34 @@ class SymbolicExecution(object):
 
         actions = mission.actions
         all_paths = []
+        all_missions = []
         self_dfs(actions, 0, BranchPath([]), all_paths)
 
         for bp in all_paths:
             solver = Solver()
             branches = bp.branches
+            seq_id = 0
+            mappings = {}
             for b in branches:
-                b.add_constraints(solver) #TODO We probably need to pass states
+                mapping = b.add_constraints(solver, seq_id)
+                mappings[b] = mapping
+                seq_id += 1
 
             if not solver.check() == sat:
                 continue
 
             model = solver.model()
+            actions = []
             for b in branches:
-                # TODO Get parameters returned by Z3
-                # parameters = b.get_parameters(model)
+                mapping = mappings[b]
+                parameters = {}
+                for z3_var, param in mapping:
+                    parameters[param] = model[z3_var]
+                actions.append(Action(b.schema, parameters))
 
-            # TODO Generate a mission
-        raise NotImplementedError
+            all_missions.append(Mission(self.environment, self.initial_state, actions))
+
+        return all_missions
 
 
     def _dfs(self, actions, start_index, path: BranchPath, all_paths: List[BranchPath] = []):
