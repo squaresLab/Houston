@@ -1,3 +1,4 @@
+from z3 import *
 from typing import Set, Optional, Tuple, Dict, List
 
 from houston.root_cause import MissionDomain
@@ -29,7 +30,7 @@ class SymbolicExecution(object):
         return self.__environment
 
 
-    def execute_symbolically(self, mission: Mission) -> List[Tuple[Mission, MissionOutcome]]:
+    def execute_symbolically(self, mission: Mission) -> List[Mission]:
         """
         Having the sequense of actions in `mission` this function
         will generate parameters for those actions in order to
@@ -39,6 +40,22 @@ class SymbolicExecution(object):
         actions = mission.actions
         all_paths = []
         self_dfs(actions, 0, BranchPath([]), all_paths)
+
+        for bp in all_paths:
+            solver = Solver()
+            branches = bp.branches
+            for b in branches:
+                b.add_constraints(solver) #TODO We probably need to pass states
+
+            if not solver.check() == sat:
+                continue
+
+            model = solver.model()
+            for b in branches:
+                # TODO Get parameters returned by Z3
+                # parameters = b.get_parameters(model)
+
+            # TODO Generate a mission
         raise NotImplementedError
 
 
