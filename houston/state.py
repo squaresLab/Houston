@@ -95,7 +95,6 @@ class State(object):
 
 
 class StateVariable(object):
-
     def __init__(self, name, getter, noise=None):
         """
         Constructs a new state variable
@@ -105,7 +104,6 @@ class StateVariable(object):
         :param  getter: a lambda function, used to obtain the value of this variable
         :param  noise:  the inherent level of noise when measuring this variable
         """
-        assert (isinstance(self, InternalVariable) or isinstance(self, ExternalVariable))
         assert (noise is None or type(noise) in [float, int])
         assert (noise is None or noise >= 0)
 
@@ -113,14 +111,12 @@ class StateVariable(object):
         self.__getter = getter
         self.__noise = noise
 
-
     """
     Returns true if there is inherent noise in the measurement of this variable.
     """
     @property
     def is_noisy(self):
         return self.__noise is not None
-
 
     """
     Returns the inherent level of noise that is to be expected when measuring
@@ -130,7 +126,6 @@ class StateVariable(object):
     def noise(self):
         return self.__noise
 
-
     """
     Returns the name of this system variable
     """
@@ -138,7 +133,6 @@ class StateVariable(object):
     def name(self):
         return self.__name
 
-    
     def eq(self, x, y):
         """
         Determines whether two measurements of this state variable are
@@ -150,7 +144,6 @@ class StateVariable(object):
         d = math.fabs(x - y)
         return d <= self.__noise
 
-
     def neq(self, x, y):
         """
         Determines whether two measurements of this state variable are not
@@ -158,45 +151,23 @@ class StateVariable(object):
         """
         return not self.eq(x, y)
 
-    
     def gt(self, x, y):
         return x > y
 
-    
     def lt(self, x, y):
         return x < y
-
 
     def leq(self, x, y):
         return not self.gt(x, y)
 
-
     def geq(self, x, y):
         return not self.lt(x, y)
-
 
     """
     Inspects the current state of this system variable
     """
     def read(self, sandbox):
         return self.__getter(sandbox)
-
-
-class InternalVariable(StateVariable):
-    """
-    Internal variables describe the internal state of a given system.
-    (i.e., they represent a system's knowledge of itself and its surroundings.)
-    A user-provided lambda function is used to inspect the value of the state
-    variable at any given time.
-    """
-    pass
-
-
-class ExternalVariable(StateVariable):
-    """
-    TODO
-    """
-    pass
 
 
 class Environment(object):
@@ -214,7 +185,6 @@ class Environment(object):
             jsn = json.load(f)
         return Environment.from_json(jsn)
 
-
     @staticmethod
     def from_json(jsn):
         """
@@ -227,7 +197,6 @@ class Environment(object):
     """
     Holds a description of an environment in which a mission should be conducted.
     """
-
     def __init__(self, values):
         """
         Constructs a description of a mission environment.
@@ -237,17 +206,14 @@ class Environment(object):
         """
         self.__values = copy.copy(values)
 
-
     def __getattr(self, variable):
         return self.read(variable)
-
 
     def read(self, variable):
         """
         Returns the value of a given environment constant.
         """
         return self.__values[variable]
-
 
     def to_json(self):
         """
