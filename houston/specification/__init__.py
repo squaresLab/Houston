@@ -33,13 +33,72 @@ class MAVLinkCommand(Command):
 # MessageFormat: convert command to a message
 # - wait for acknowledgement
 
+@attr.s(frozen=True)
+class State(BaseState):
+    armed = attr.ib(type=bool)
+    latitude = attr.ib(type=float)
+    longitude = attr.ib(type=float)
+    altitude = attr.ib(type=float)
+
+
+class ArduPilot(System):
+    # TODO we don't want to use MAVLink
+    # specify properties
+    # TODO we may want to introduce empirical units as types
+    prop("armed", bool)
+    prop("latitude", float)
+    prop("longitude", float)
+    prop("altitude", float)
+
+    # specify actions
+    actions = [
+        GoTo,
+        ReturnToLaunch,
+        Loiter
+    ] # List[Type[Command]]
+
+    # evolvers?
+    # * listen to messages and update state accordingly
+    # TODO be careful with units
+    def evolve(self, state: State, message: MAVLinkMessage) -> State:
+        if isinstance(msg, GlobalPositionIntMessage): # GLOBAL_POSITION_INT
+            return state.evolve(latitude=m.latitude,
+                   longitude=m.longitude)
+
+        # ATTITUDE
+        if isinstance(msg, AttitudeMessage):
+            return state.evolve(pitch=m.pitch,
+                                roll=m.roll,
+                                yaw=m.yaw,
+                                pitchspeed=m.pitchspeed,
+                                yawspeed=m.yawspeed,
+                                rollspeed=m.rollspeed)
+
+        # HOME_POSITION
+        if isinstance(msg, HomePositionMessage):
+            return state.evolve()
+
+        # MOUNT_STATUS
+        if isinstance(msg, MountStatusMessage):
+            return state.evolve()
+
+        return state
+
+    # specify protocol
+    def observe(self, conn: MAVLinkConnection) -> State:
+        conn.location.global_relative_frame.alt
+        pass
+
 
 class MAVLinkConnection(Connection):
     # how do we get the state of the system?
     def __init__(self, ) -> None:
-        cool
+        self.__vehicle = None
 
         # router? how do we deal with messages?
+
+    def receive(self, msg: MAVLinkMessage) -> None:
+        pass
 
     def send(self, msg: MAVLinkMessage) -> None:
         msg = \
@@ -50,7 +109,7 @@ class MAVLinkConnection(Connection):
 
 
 @attr.s
-class MAVLinkMessage(Message):
+class CommandLong(MAVLinkMessage):
     target_system = attr.ib(type=int, default=0)
     target_component = attr.ib(type=int, default=0)
     cmd_id = attr.ib(type=int)
