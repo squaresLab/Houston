@@ -134,11 +134,11 @@ if __name__=="__main__":
         houston.action.Action("arm", {'arm': False}),
         houston.action.Action("arm", {'arm': True}),
         #houston.action.Action("takeoff", {'altitude': 3.0}),
-        houston.action.Action("goto", {
-            'latitude' : -35.361354,
-            'longitude': 149.165218,
-            'altitude' : 5.0
-        }),
+        #houston.action.Action("goto", {
+        #    'latitude' : -35.361354,
+        #    'longitude': 149.165218,
+        #    'altitude' : 5.0
+        #}),
         #houston.action.Action("setmode", {'mode': 'LAND'}),
         houston.action.Action("arm", {'arm': False})
     ]
@@ -156,7 +156,8 @@ if __name__=="__main__":
     }, 0.0)
     mission = houston.mission.Mission(environment, initial, actions)
     # create a container for the mission execution
-    #sandbox = sut.provision()
+    sandbox = sut.provision()
+    run_single_mission(sandbox, mission)
 
     #run_single_mission_with_coverage(sandbox, mission)
     #generate(sut, initial, environment, 100, 10)
@@ -165,7 +166,7 @@ if __name__=="__main__":
     #generate_and_run_with_fl(sut, initial, environment, 5)
     #run_single_mission_with_coverage(sandbox, mission)
 
-    d = DeltaDebugging(sut, initial, environment, [mission])
-    d.find_root_cause()
+    #d = DeltaDebugging(sut, initial, environment, [mission])
+    #d.find_root_cause()
 
     #sandbox.destroy()

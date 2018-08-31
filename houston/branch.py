@@ -3,10 +3,11 @@ import houston.mission
 import random
 
 from houston.util import printflush
+from houston.specification import Specification
 
 
 class Branch(object):
-    def __init__(self, name, schema):
+    def __init__(self, name, schema, specification: Specification):
         """
         Constructs a new outcome branch.
 
@@ -23,6 +24,8 @@ class Branch(object):
         assert isinstance(schema, ActionSchema)
         self.__schema = schema
 
+        self.__specification = specification
+
 
     @property
     def schema(self):
@@ -38,6 +41,14 @@ class Branch(object):
         The name of this branch.
         """
         return self.__name
+
+    
+    @property
+    def specification(self):
+        """
+        Specifications of this branch
+        """
+        return self.__specification
 
 
     @property
@@ -67,7 +78,7 @@ class Branch(object):
         satisify this precondition given a fixed initial state and
         environment.
         """
-        raise NotImplementedError
+        return self.specification.is_satisfiable(system, initial_state, env)
 
 
     def precondition(self, system, action, state, env):
@@ -86,25 +97,39 @@ class Branch(object):
         :returns    True if the guard is satisfied by the given context, \
                     otherwise False.
         """
-        raise NotImplementedError
+        return self.specification.is_precondition_satisfied(system, action.values, state, env)
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
-        raise NotImplementedError
+        return self.specification.is_postcondition_satisfied(system, action.values,
+                state_before, state_after, environment)
 
 
     def timeout(self, system, act, state, environment):
         """
         Computes the timeout for the current branch.
         """
-        raise NotImplementedError
+        return self.specification.timeout()
 
 
 class IdleBranch(Branch):
-    def __init__(self, schema, idle_time=5.0):
+    def __init__(self, schema, parameters=None, idle_time=5.0):
         assert isinstance(idle_time, float)
         self.__idle_time = idle_time
-        super(IdleBranch, self).__init__("idle", schema)
+        specification = Specification(parameters,
+                """
+                (true)
+                """,
+                """
+                (and (= _latitude __latitude)
+                    (= _longitude __longitude)
+                    (= _altitude __altitude)
+                    (= _armed __armed)
+                    (= _armable __armable)
+                    (= _mode __mode))
+                """,
+                None)
+        super(IdleBranch, self).__init__("idle", schema, specification)
 
 
     def timeout(self, system, action, state, environment):

@@ -19,11 +19,11 @@ class ArduCopter(BaseSystem):
         # variables specific to the ArduCopter system
         variables = []
         schemas = [
-            GoToSchema(),
-            TakeoffSchema(),
+#            GoToSchema(),
+#            TakeoffSchema(),
             ArmDisarmSchema(),
-            SetModeSchema(),
-            ParachuteSchema()
+#            SetModeSchema(),
+#            ParachuteSchema()
         ]
         super(ArduCopter, self).__init__(bug_name,
                                          variables,
