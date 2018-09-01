@@ -29,15 +29,24 @@ class GotoNormally(Branch):
         This behaviour will occur for Goto actions when the system is armed and
         not in its `LOITER` mode.
         """
-        return  state['armed'] and state['mode'] != 'LOITER'
+        return state['armed'] and state['mode'] != 'LOITER'
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
         """
         Upon completion of the action, the robot should be at the longitude and
         latitude specified by the action parameters.
         """
-        return  system.variable('longitude').eq(state_after['longitude'], action['longitude']) and \
-                system.variable('latitude').eq(state_after['latitude'], action['latitude'])
+        v = system.variable
+        sat_lon = \
+            v('longitude').eq(state_after['longitude'], action['longitude'])
+        sat_lat = \
+            v('latitude').eq(state_after['latitude'], action['latitude'])
+        return sat_lon and sat_lat
 
     def is_satisfiable(self, system, state, environment):
         return self.precondition(system, None, state, environment)
@@ -58,13 +67,23 @@ class GotoLoiter(Branch):
         return system.constant_timeout_offset
 
     def precondition(self, system, action, state, environment):
-        return  state['armed'] and state['mode'] == 'LOITER'
+        return state['armed'] and state['mode'] == 'LOITER'
 
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  state_after['mode'] == 'LOITER' and \
-                system.variables('longitude').eq(state_after['longitude'], state_before['longitude']) and \
-                system.variables('latitude').eq(state_after['latitude'], state_before['latitude']) and \
-                system.variables('altitude').eq(state_after['altitude'], state_before['altitude'])
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
+        v = system.variables
+        sat_mode = state_after['mode'] == 'LOITER'
+        sat_lon = \
+            v('longitude').eq(state_after['longitude'], state_before['longitude'])  # noqa: pycodestyle
+        sat_lat = \
+            v('latitude').eq(state_after['latitude'], state_before['latitude'])
+        sat_alt = \
+            v('altitude').eq(state_after['altitude'], state_before['altitude'])
+        return sat_mode and sat_lon and sat_lat and sat_alt
 
     def is_satisfiable(self, system, state, environment):
         return self.precondition(system, None, state, environment)
@@ -79,18 +98,18 @@ class DistanceBasedGoToGenerator(ActionGenerator):
     GoTo actions that will take the robot a given distance along a certain
     heading.
     """
-    def __init__(self, max_distance, min_distance = 1.0):
-        assert isinstance(max_distance, float)
-        assert isinstance(min_distance, float)
+    def __init__(self,
+                 max_distance: float,
+                 min_distance: float = 1.0
+                 ) -> None:
         assert (max_distance > min_distance)
         assert (min_distance > 0.0)
-
         self.__max_distance = max_distance
         parameters = [
-            Parameter('distance', ContinuousValueRange(min_distance, max_distance)),
-            Parameter('heading', ContinuousValueRange(0.0, 360.0, True))
-        ]
-
+            Parameter('distance',
+                      ContinuousValueRange(min_distance, max_distance)),
+            Parameter('heading',
+                      ContinuousValueRange(0.0, 360.0, True))]
         super(DistanceBasedGoToGenerator, self).__init__('goto', parameters)
 
     def construct_with_state(self, system, current_state, env, values):
@@ -102,7 +121,7 @@ class DistanceBasedGoToGenerator(ActionGenerator):
 
         origin = geopy.Point(latitude=lat, longitude=lon)
         dist = geopy.distance.VincentyDistance(meters=dist)
-        destination =  dist.destination(origin, heading)
+        destination = dist.destination(origin, heading)
 
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
@@ -137,12 +156,13 @@ class CircleBasedGotoGenerator(ActionGenerator):
 
         origin = geopy.Point(latitude=lat, longitude=lon)
         dist = geopy.distance.VincentyDistance(meters=dist)
-        destination =  dist.destination(origin, heading)
+        destination = dist.destination(origin, heading)
 
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
-        params['altitude'] = 10.0 # small limitation since we don't have current
-                                  # state to get altitude.
+        # FIXME small limitation since we don't have current
+        # state to get altitude.
+        params['altitude'] = 10.0
 
         return params
 

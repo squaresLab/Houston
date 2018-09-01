@@ -46,9 +46,15 @@ class ArmNormally(Branch):
         super(ArmNormally, self).__init__('arm-normal', system)
 
     def precondition(self, system, action, state, environment):
-        return  action['arm'] and self.is_satisfiable(system, state, environment)
+        return action['arm'] \
+            and self.is_satisfiable(system, state, environment)
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
         return state_after['armed']
 
     def timeout(self, system, action, state, environment):
@@ -66,9 +72,15 @@ class DisarmNormally(Branch):
         super(DisarmNormally, self).__init__('disarm-normal', system)
 
     def precondition(self, system, action, state, environment):
-        return  not action['arm'] and self.is_satisfiable(system, state, environment)
+        return not action['arm'] \
+            and self.is_satisfiable(system, state, environment)
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
         return not state_after['armed']
 
     def timeout(self, system, action, state, environment):
@@ -76,7 +88,8 @@ class DisarmNormally(Branch):
 
     # TODO
     def is_satisfiable(self, system, state, environment):
-        return state['armed']# and state['mode'] in ['GUIDED', 'LOITER']
+        # and state['mode'] in ['GUIDED', 'LOITER']
+        return state['armed']
 
     def generate(self, system, state, environment, rng):
         return {'arm': False}

@@ -5,14 +5,14 @@ a description of a mission that should be executed; the server proceeds to
 execute this mission, and returns a summary of its outcome in a JSON format.
 """
 import sys
-import flask
 import json
 
-from houston.system import System
-from houston.mission import Mission
+import flask
+
+from .system import System
+from .mission import Mission
 
 import houston.ardu
-
 
 app = flask.Flask(__name__)
 
@@ -62,7 +62,8 @@ def main():
         exit(1)
 
     port_number = int(sys.argv[1])
-    app.run(host='0.0.0.0', port=port_number, use_reloader=False) #debug=True)
+    app.run(host='0.0.0.0', port=port_number, use_reloader=False)
+
 
 if __name__ == "__main__":
     main()

@@ -10,14 +10,16 @@ from houston.valueRange import DiscreteValueRange
 class ParachuteSchema(ActionSchema):
     def __init__(self):
         parameters = [
-            Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))  # 0=disable, 1=enable, 2=release
+            # 0=disable, 1=enable, 2=release
+            Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
         ]
         branches = [
             ParachuteNormally(self),
             IdleBranch(self)
         ]
-
-        super(ParachuteSchema, self).__init__('parachute', parameters, branches)
+        super(ParachuteSchema, self).__init__('parachute',
+                                              parameters,
+                                              branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
@@ -42,18 +44,26 @@ class ParachuteNormally(Branch):
         timeout += system.constant_timeout_offset
         return timeout
 
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  not state_after['armed'] and \
-                system.variable('altitude').lt(state_after['altitude'], 0.3) and \
-                system.variable('vz').eq(state_after['vz'], 0.0)
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
+        v = system.variable
+        return not state_after['armed'] and \
+            v('altitude').lt(state_after['altitude'], 0.3) and \
+            v('vz').eq(state_after['vz'], 0.0)
 
     def precondition(self, system, action, state, environment):
-        return  action['parachute_action'] == 2 and self.is_satisfiable(system, state, environment)
+        return action['parachute_action'] == 2 and \
+            self.is_satisfiable(system, state, environment)
 
     def is_satisfiable(self, system, state, environment):
-        return  state['armed'] and \
-                state['mode'] == 'GUIDED' and \
-                system.variable('altitude').gt(state['altitude'], system.min_parachute_alt)
+        v = system.variable
+        return state['armed'] and \
+            state['mode'] == 'GUIDED' and \
+            v('altitude').gt(state['altitude'], system.min_parachute_alt)
 
     def generate(self, system, state, env, rng):
         return self.schema.generate(rng)

@@ -48,17 +48,27 @@ class TakeoffNormally(Branch):
         timeout += system.constant_timeout_offset
         return timeout
 
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  system.variable('longitude').eq(state_before['longitude'], state_after['longitude']) and \
-                system.variable('latitude').eq(state_before['latitude'], state_after['latitude']) and \
-                system.variable('altitude').eq(state_after['altitude'], action['altitude']) and \
-                system.variable('vz').eq(state_after['vz'], 0.0)
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment
+                      ) -> bool:
+        v = system.variable
+        sat_lon = v('longitude').eq(state_before['longitude'],
+                                    state_after['longitude'])
+        sat_lat = v('latitude').eq(state_before['latitude'],
+                                   state_after['latitude'])
+        sat_alt = v('altitude').eq(state_after['altitude'],
+                                   action['altitude'])
+        sat_vz = v('vz').eq(state_after['vz'], 0.0)
+        return sat_lon and sat_lat and sat_alt and sat_vz
 
     def precondition(self, system, action, state, environment):
-        return  state['armed'] and \
-                state['mode'] == 'GUIDED' and \
-                system.variable('altitude').lt(state['altitude'], 0.3)
-                # TODO further check; CT: for what?
+        return state['armed'] and \
+               state['mode'] == 'GUIDED' and \
+               system.variable('altitude').lt(state['altitude'], 0.3)
 
     def is_satisfiable(self, system, state, environment):
         return self.precondition(system, None, state, environment)

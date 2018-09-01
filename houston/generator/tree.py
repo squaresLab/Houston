@@ -1,11 +1,11 @@
 import time
 import threading
 
-from houston.generator.base import MissionGenerator
-from houston.branch import BranchID, BranchPath
-from houston.mission import Mission, MissionOutcome
-from houston.action import ActionOutcome, Action, ActionGenerator
-from houston.util import printflush
+from .base import MissionGenerator
+from ..branch import BranchID, BranchPath
+from ..mission import Mission, MissionOutcome
+from ..action import ActionOutcome, Action, ActionGenerator
+from ..util import printflush
 
 
 class TreeBasedMissionGenerator(MissionGenerator):
@@ -13,28 +13,29 @@ class TreeBasedMissionGenerator(MissionGenerator):
                  system,
                  initial_state,
                  env,
-                 threads = 1,
-                 action_generators = [],
-                 max_num_actions = 10):
-        super(TreeBasedMissionGenerator, self).__init__(system, threads, action_generators, max_num_actions)
+                 threads=1,
+                 action_generators=None,
+                 max_num_actions=10):
+        super(TreeBasedMissionGenerator, self).__init__(system,
+                                                        threads,
+                                                        action_generators,
+                                                        max_num_actions)
         self.__seed_mission = Mission(env, initial_state, [])
         self.__queue_lock = threading.Lock()
 
-    
     @property
     def seed_mission(self):
         """
         The mission that is used as a seed when generating new missions.
         """
         return self.__seed_mission
-    
 
     def record_outcome(self, mission, outcome):
         """
         Once the outcome of a mission has been determined, this function is
         reponsible for guiding the generation of new missions based on the
         outcome of that mission.
-        
+
         If the mission failed, it indicates that either:
 
             (a) there is either a bug in the system under test,
@@ -61,16 +62,17 @@ class TreeBasedMissionGenerator(MissionGenerator):
             self.__num_running -= 1
             self.__queue_lock.release()
 
-
-    def prune(self, path):
+    def prune(self, path: BranchPath) -> None:
         """
         Removes a given branch path from the search space, preventing further
         exploration along that path.
         """
-        assert isinstance(path, BranchPath)
-        printflush("Adding path to tabu list: {}".format(path))
-        self.__queue = set(m for m in self.__queue if not self.__intended_paths[m].startswith(path))
+        printflush("Adding path to tabu list: {}".format(path))  # FIXME
 
+        def fltr(m: Mission) -> bool:
+            return not self.__intended_paths[m].startswith(path)
+
+        self.__queue = set(filter(keep, self.__queue))
 
     def prepare(self, seed, resource_limits):
         super(TreeBasedMissionGenerator, self).prepare(seed, resource_limits)
@@ -80,16 +82,13 @@ class TreeBasedMissionGenerator(MissionGenerator):
         self.__num_running = 0
         self.expand(self.seed_mission)
 
-
     def cleanup(self):
         self.__queue = set()
         self.__num_running = 0
 
-    
     def reduce(self):
         # toposort and retain leaves
         return super(TreeBasedMissionGenerator, self).reduce()
-
 
     def exhausted(self):
         """
@@ -100,7 +99,6 @@ class TreeBasedMissionGenerator(MissionGenerator):
         if super(TreeBasedMissionGenerator, self).exhausted():
             return True
         return self.__queue == set() and self.__num_running == 0
-
 
     def generate_mission(self):
         while not self.exhausted():
@@ -121,7 +119,6 @@ class TreeBasedMissionGenerator(MissionGenerator):
         # if the search has been exhausted, stop generating more missions
         raise StopIteration
 
-
     def expand(self, mission):
         """
         Called after a mission has finished executing
@@ -131,12 +128,14 @@ class TreeBasedMissionGenerator(MissionGenerator):
         path = self.executed_path(mission)
 
         # if we've hit the action limit, don't expand
-        if self.max_num_actions is not None and self.max_num_actions == mission.size:
+        has_max_actions = self.max_num_actions is not None
+        if has_max_actions and self.max_num_actions == mission.size:
             return
 
         # otherwise, explore each branch
         branches = self.system.branches
-        branches = [b for b in branches if b.is_satisfiable(self.system, state, env)]
+        branches = [b for b in branches
+                    if b.is_satisfiable(self.system, state, env)]
         for b in branches:
             p = path.extended(b)
             a = self.generate_action(b, env, state)
@@ -144,12 +143,12 @@ class TreeBasedMissionGenerator(MissionGenerator):
             self.__queue.add(m)
             self.__intended_paths[m] = p
 
-
     def generate_action(self, branch, env, state):
         """
         TODO: add branch-specific action generators
         """
         generator = self.action_generator(branch.schema)
         if generator is not None:
-            return generator.generate_action_with_state(self.system, state, env, self.rng)
-        return branch.generate(self.system, state, env, self.rng) 
+            g = generator.generate_action_with_state
+            return g(self.system, state, env, self.rng)
+        return branch.generate(self.system, state, env, self.rng)
