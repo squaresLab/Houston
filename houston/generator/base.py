@@ -15,7 +15,6 @@ class MissionGeneratorStream(object):
         self.__lock = threading.Lock()
         self.__generator = generator
 
-
     def __iter__(self):
         """
         Returns an iterator for lazily fetching missions from the generator
@@ -23,33 +22,41 @@ class MissionGeneratorStream(object):
         """
         return self
 
-    
     def __next__(self):
         """
         Requests the next mission from the mission generator.
         """
+        g = self.__generator
         self.__lock.acquire()
         try:
-            self.__generator.tick()
-            if self.__generator.exhausted():
+            g.tick()
+            if g.exhausted():
                 raise StopIteration
             mission = self.__generator.generate_mission()
-            self.__generator.tick()
-            self.__generator.resource_usage.num_missions += 1
-            print('Generated mission: {}'.format(self.__generator.resource_usage.num_missions))
+            g.tick()
+            g.resource_usage.num_missions += 1
+            mission_num = g.resource_usage.num_missions
+            print('Generated mission: {}'.format(mission_num))  # FIXME
             return mission
         finally:
             self.__lock.release()
 
 
 class MissionGenerator(object):
-
-    def __init__(self, system, threads = 1, action_generators = [],  max_num_actions = 10):
+    def __init__(self,
+                 system: System,
+                 threads: int = 1,
+                 action_generators=None,
+                 max_num_actions: int = 10
+                 ) -> None:
         assert isinstance(system, System)
         assert isinstance(threads, int)
         assert isinstance(max_num_actions, int)
         assert threads > 0
         assert max_num_actions > 0
+
+        if not action_generators:
+            action_generators = []
 
         self.__system = system
         self.__threads = threads
@@ -64,16 +71,13 @@ class MissionGenerator(object):
             assert name not in self.__action_generators
             self.__action_generators[name] = g
 
-
     @property
     def resource_limits(self):
         return self.__resource_limits
 
-
     @property
     def resource_usage(self):
         return self.__resource_usage
-
 
     @property
     def system(self):
@@ -81,7 +85,6 @@ class MissionGenerator(object):
         The system under test.
         """
         return self.__system
-
 
     @property
     def max_num_actions(self):
@@ -91,26 +94,21 @@ class MissionGenerator(object):
         """
         return self.__max_num_actions
 
-    
     @property
     def history(self):
         return self.__history
-
 
     @property
     def outcomes(self):
         return self.__outcomes
 
-    
     @property
     def failures(self):
         return self.__failures
 
-
     @property
     def coverage(self):
         return self.__coverage
-
 
     @property
     def threads(self):
@@ -119,14 +117,12 @@ class MissionGenerator(object):
         """
         return self.__threads
 
-
     @property
     def rng(self):
         """
         Returns the pseudorandom number generator used by this generator.
         """
         return self.__rng
-
 
     def action_generator(self, schema):
         """
@@ -139,7 +135,6 @@ class MissionGenerator(object):
             return self.__action_generators[name]
         return None
 
-
     def exhausted(self):
         """
         Checks whether the resources available to this generator have been
@@ -147,13 +142,11 @@ class MissionGenerator(object):
         """
         return self.__resource_limits.reached(self.__resource_usage)
 
-
     def outcome(self, mission):
         """
         Returns the outcome for a previously-executed mission.
         """
         return self.__outcomes[mission]
-
 
     def end_state(self, mission):
         """
@@ -165,7 +158,6 @@ class MissionGenerator(object):
         outcome = self.__outcomes[mission]
         return outcome.end_state
 
-
     def executed_path(self, m):
         """
         Returns the path that was taken when a given mission was executed.
@@ -175,14 +167,12 @@ class MissionGenerator(object):
         outcome = self.__outcomes[m]
         return outcome.executed_path
 
-
     def tick(self):
         """
         Used to measure the running time of the current generation trial.
         """
         self.__resource_usage.running_time = \
             timeit.default_timer() - self.__start_time
-
 
     def execute_mission(self, mission, container):
         """
@@ -193,7 +183,6 @@ class MissionGenerator(object):
         self.record_outcome(mission, outcome)
         print("\t[DONE]")
         return outcome
-
 
     def record_outcome(self, mission, outcome, coverage=None):
         """
@@ -209,7 +198,6 @@ class MissionGenerator(object):
 
         if outcome.failed:
             self.__failures.add(mission)
-
 
     def generate(self, seed, resource_limits):
         """
@@ -232,7 +220,6 @@ class MissionGenerator(object):
             print("Done with generating missions")
         return missions
 
-
     def generate_and_run(self, seed, resource_limits, with_coverage=False):
         assert isinstance(seed, int)
         self.__runner_pool = None
@@ -250,7 +237,8 @@ class MissionGenerator(object):
             self.tick()
             self.__runner_pool.run()
 
-            # produce a mission suite that best fits the desired characteristics
+            # produce a mission suite that best fits the desired
+            # characteristics
             suite = self.reduce()
 
             # summarise the generation process
@@ -269,13 +257,11 @@ class MissionGenerator(object):
                 self.__runner_pool.shutdown()
                 self.__runner_pool = None
 
-
     def reduce(self):
         """
         """
         # TODO remove all failures from the history list
         return MissionSuite(self.__history)
-
 
     def prepare(self, seed, resource_limits):
         """
@@ -289,7 +275,6 @@ class MissionGenerator(object):
         self.__coverage = {}
         self.__rng = random.Random(seed)
 
-    
     def generate_mission(self):
         """
         Generates a single mission according to the generation strategy defined
@@ -297,13 +282,15 @@ class MissionGenerator(object):
         """
         raise NotImplementedError
 
-
+    # FIXME what does this do? what does fault localization have to do with
+    # test generation in general? feels like this is in the wrong place.
     def report_fault_localization(self):
         from bugzoo.core.coverage import TestSuiteCoverage
         from bugzoo.core.spectra import Spectra
         from bugzoo.localization import Localization
         from bugzoo.localization.suspiciousness import tarantula
 
+        # FIXME why the need to build indirectly?
         test_suite_coverage_dict = {}
         counter = 0
         for m in self.coverage:
@@ -314,7 +301,9 @@ class MissionGenerator(object):
             }
             test_suite_coverage_dict['t{}'.format(counter)] = test
             counter += 1
-        spectra = Spectra.from_coverage(TestSuiteCoverage.from_dict(test_suite_coverage_dict))
-        l = Localization.from_spectra(spectra, tarantula)
+        # FIXME why not build it directly?
+        coverage = TestSuiteCoverage.from_dict(test_suite_coverage_dict)
+        spectra = Spectra.from_coverage(coverage)
+        loc = Localization.from_spectra(spectra, tarantula)
 
-        return l
+        return loc

@@ -1,7 +1,11 @@
+from typing import Optional
+
 import threading
 import time
 import signal
-from houston.util import TimeoutError, printflush
+
+from .util import TimeoutError, printflush
+from .mission import Mission
 
 
 class MissionRunner(threading.Thread):
@@ -9,14 +13,17 @@ class MissionRunner(threading.Thread):
     Mission runners are used to continually fetch pending tests from an
     associated pool, and to execute those tests.
     """
-    def __init__(self, pool, with_coverage=False):
+    def __init__(self,
+                 pool,
+                 with_coverage: bool = False
+                 ) -> None:
         super(MissionRunner, self).__init__()
         self.daemon = True
         self.__pool = pool
         self.__sandbox = pool.system.provision()
         self.__with_coverage = with_coverage
 
-    def run(self):
+    def run(self) -> None:
         """
         Continues to process jobs.
         """
@@ -38,21 +45,24 @@ class MissionRunner(threading.Thread):
             self.__sandbox = None
 
 
-
 class MissionRunnerPool(object):
     """
     Mission runner pools are used to distribute the execution of a stream
     of missions across a given number of workers, each running on a separate
     thread.
     """
-    def __init__(self, system, size, source, callback, with_coverage=False):
-        assert isinstance(size, int)
+    def __init__(self,
+                 system: 'System',
+                 size: int,
+                 source,  # FIXME
+                 callback,  # FIXMe
+                 with_coverage=False):
         assert callable(callback)
         assert size > 0
 
         # if a list is provided, use an iterator for that list
         if isinstance(source, list):
-            source = source.__iter__()
+            source = iter(source)
 
         self.__system = system
         self.__source = source
@@ -60,9 +70,10 @@ class MissionRunnerPool(object):
         self._lock = threading.Lock()
 
         # provision desired number of runners
-        self.__runners = [MissionRunner(self, with_coverage) for _ in range(size)]
+        self.__runners = \
+            [MissionRunner(self, with_coverage) for _ in range(size)]
 
-    def run(self):
+    def run(self) -> None:
         """
 
         """
@@ -81,7 +92,7 @@ class MissionRunnerPool(object):
         finally:
             self.shutdown()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Kills all runners that belong to this pool.
         """
@@ -94,21 +105,21 @@ class MissionRunnerPool(object):
         self.__runners = []
 
     @property
-    def system(self):
+    def system(self) -> 'System':
         """
         The system under test.
         """
         return self.__system
 
     @property
-    def size(self):
+    def size(self) -> int:
         """
         The number of independent threads being used by the pool to run
         tests.
         """
         return self.__runners.length()
 
-    def report(self, mission, outcome, coverage=None):
+    def report(self, mission, outcome, coverage=None) -> None:
         """
         Used to report the outcome of a mission.
 
@@ -117,7 +128,7 @@ class MissionRunnerPool(object):
         """
         self.__callback(mission, outcome, coverage)
 
-    def fetch(self):
+    def fetch(self) -> Optional[Mission]:
         """
         Returns the next mission from the (lazily-generated) queue, or None if
         there are no missions left to run.

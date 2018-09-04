@@ -1,12 +1,15 @@
-from houston.ardu.base import BaseSystem
-from houston.ardu.copter.sandbox import Sandbox
+__all__ = ['ArduCopter']
+
+from .sandbox import Sandbox
+from ..base import BaseSystem
 
 
 class ArduCopter(BaseSystem):
     def __init__(self,
                  bug_name: str,
                  speedup: float = 3.0,
-                 min_parachute_alt: float = 10.0):
+                 min_parachute_alt: float = 10.0
+                 ) -> None:
         from houston.ardu.common import ArmDisarmSchema
         from houston.ardu.copter.goto import GoToSchema
         from houston.ardu.copter.setmode import SetModeSchema
@@ -34,7 +37,5 @@ class ArduCopter(BaseSystem):
     def min_parachute_alt(self) -> float:
         return self.__min_parachute_alt
 
-
     def provision(self) -> Sandbox:
         return Sandbox(self)
-

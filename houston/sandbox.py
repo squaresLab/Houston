@@ -8,10 +8,11 @@ import signal
 import bugzoo
 from bugzoo.core.fileline import FileLineSet
 
-from houston.state import State
-from houston.mission import Mission, MissionOutcome
-from houston.util import TimeoutError, printflush
-from houston.action import ActionOutcome
+from .state import State
+from .mission import Mission, MissionOutcome
+from .util import TimeoutError, printflush
+from .action import ActionOutcome
+
 
 class Sandbox(object):
     """
@@ -30,6 +31,7 @@ class Sandbox(object):
         The system under test by this sandbox.
         """
         return self.__system
+
     sut = system
 
     @property
@@ -51,11 +53,12 @@ class Sandbox(object):
         """
         A flag indicating whether or not this sandbox is alive.
         """
-        return self.__container is not None #and self.__container.alive TODO Fix this when feature returned to BugZoo
+        # FIXME should also check that container is alive via BugZoo API
+        return self.__container is not None
 
     def _start(self, mission: Mission) -> None:
         """
-        Starts a new SITL instance inside this sandbox.
+        Starts a new SITL instance inside this sandbox for a given mission.
         """
         raise NotImplementedError
 
@@ -67,8 +70,7 @@ class Sandbox(object):
 
     def run_with_coverage(self,
                           mission: Mission,
-                          ) -> Tuple[MissionOutcome,
-                                     FileLineSet]:
+                          ) -> Tuple[MissionOutcome, FileLineSet]:
         """
         Executes a given mission and returns detailed coverage information.
 
@@ -79,11 +81,16 @@ class Sandbox(object):
             execution for each source code file belonging to the system under
             test.
         """
+        bz = self.bugzoo
         # TODO: somewhat hardcoded
         if not self.__instrumented:
             self.__instrumented = True
-            self.bugzoo.coverage.instrument(self.container)
-        self.bugzoo.containers.command(self.container, "find . -name *.gcda | xargs rm", stdout=False, stderr=False, block=True)
+            bz.coverage.instrument(self.container)
+
+        # FIXME instruct BugZoo to clean coverage artifacts
+        cmd = "find . -name *.gcda | xargs rm"
+        bz.containers.command(self.container, cmd,
+                              stdout=False, stderr=False, block=True)
         outcome = self.run(mission)
         coverage = self.bugzoo.coverage.extract(self.container)
 
@@ -91,15 +98,15 @@ class Sandbox(object):
 
     def run(self, mission: Mission) -> MissionOutcome:
         """
-        Executes a given mission.
+        Executes a given mission and returns a description of the outcome.
         """
         assert self.alive
         self.__lock.acquire()
         try:
             time_before_setup = timer()
-            print('Setting up...'),
+            print('Setting up...')  # FIXME use logger
             self._start(mission)
-            print('Setup complete.')
+            print('Setup complete.')  # FIXME use logger
             setup_time = timer() - time_before_setup
 
             env = mission.environment
@@ -107,6 +114,7 @@ class Sandbox(object):
 
             # execute each action in sequence
             for action in mission.actions:
+                # FIXME use logger
                 printflush('Performing action: {}\n'.format(action.to_json()))
                 schema = self.system.schemas[action.schema_name]
 
@@ -119,34 +127,38 @@ class Sandbox(object):
                                                action,
                                                state_before,
                                                env)
+                # FIXME use logger
                 printflush('Taking branch: {}\n'.format(branch))
 
                 # enforce a timeout
-                timeout = schema.timeout(self.system,
-                                         action,
-                                         state_before,
-                                         env)
-
+                timeout = \
+                    schema.timeout(self.system, action, state_before, env)
                 time_before = timer()
                 passed = False
                 try:
                     # TODO: dispatch to this container!
                     schema.dispatch(self, action, state_before, env)
 
-                    # block until the postcondition is satisfied (or timeout is hit)
+                    # block until the postcondition is satisfied or
+                    # the timeout is hit
                     while not passed:
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
-                        if branch.postcondition(self.system, action, state_before, state_after, env):
+                        sat = branch.postcondition(self.system,
+                                                   action,
+                                                   state_before,
+                                                   state_after,
+                                                   env)
+                        if sat:
                             passed = True
                         if timer() - time_before >= int(math.ceil(timeout)):
                             raise TimeoutError
                         time.sleep(0.1)
+                        # FIXME use logger
                         print(state_after)
 
                 except TimeoutError:
                     pass
-
                 time_elapsed = timer() - time_before
 
                 # record the outcome of the action execution
@@ -179,6 +191,7 @@ class Sandbox(object):
         if self.__container is not None:
             del self.bugzoo.containers[self.__container.id]
             self.__container = None
+
     delete = destroy
 
     def observe(self, running_time) -> None:

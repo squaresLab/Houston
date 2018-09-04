@@ -43,15 +43,30 @@ class GotoNormally(houston.ardu.common.goto.GotoNormally):
         For GoTo actions within the ArduCopter to exhibit a "normal" behaviour,
         the robot must be at an altitude greater than 0.3 metres.
         """
-        if not super(GotoNormally, self).precondition(system, action, state, environment):
+        base = super(GotoNormally, self).precondition(system,
+                                                      action,
+                                                      state,
+                                                      environment)
+        if not base:
             return False
         return system.variable('altitude').gt(state['altitude'], 0.3)
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
         """
         Upon completion of the action, the robot should be at the longitude,
         latitude, and altitude specified by the action.
         """
-        if not super(GotoNormally, self).postcondition(system, action, state_before, state_after, environment):
+        base = super(GotoNormally, self).postcondition(system,
+                                                       action,
+                                                       state_before,
+                                                       state_after,
+                                                       environment)
+        if not base:
             return False
-        return system.variable('altitude').eq(state_after['altitude'], action['altitude'])
+        return system.variable('altitude').eq(state_after['altitude'],
+                                              action['altitude'])

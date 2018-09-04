@@ -1,15 +1,19 @@
-import bugzoo
+__all__ = ['System']
+
+from typing import List
 import copy
 import time
 import timeit
 import signal
 import math
 
-from houston.sandbox import Sandbox
-from houston.mission import Mission, MissionOutcome
-from houston.action import ActionSchema, ActionOutcome, Action
-from houston.branch import BranchID, Branch, BranchPath
-from houston.state import StateVariable
+import bugzoo
+
+from .sandbox import Sandbox
+from .mission import Mission, MissionOutcome
+from .action import ActionSchema, ActionOutcome, Action
+from .branch import BranchID, Branch, BranchPath
+from .state import Variable
 
 
 class System(object):
@@ -20,8 +24,8 @@ class System(object):
     """
     def __init__(self,
                  bug_name: str,
-                 variables: 'List[StateVariable]',
-                 schemas: 'List[ActionSchema]'
+                 variables: List[Variable],
+                 schemas: List[ActionSchema]
                  ) -> None:
         self.__bugzoo = bugzoo.BugZoo()
         self.__snapshot = self.__bugzoo.bugs[bug_name]
@@ -65,7 +69,7 @@ class System(object):
         schema = self.__schemas[iden.action_name]
         return schema.branch(iden)
 
-    def variable(self, v):
+    def variable(self, v: str) -> Variable:
         return self.__variables[v]
 
     @property

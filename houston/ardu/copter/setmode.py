@@ -1,10 +1,12 @@
 import time
+
 import dronekit
 import geopy
-from houston.state import State, Environment
-from houston.action import ActionSchema, Parameter, Action
-from houston.branch import Branch, IdleBranch
-from houston.valueRange import DiscreteValueRange
+
+from ...state import State, Environment
+from ...action import ActionSchema, Parameter, Action
+from ...branch import Branch, IdleBranch
+from ...valueRange import DiscreteValueRange
 
 
 class SetModeSchema(ActionSchema):
@@ -18,7 +20,8 @@ class SetModeSchema(ActionSchema):
     """
     def __init__(self):
         parameters = [
-            Parameter('mode', DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']))
+            Parameter('mode',
+                      DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']))
         ]
         branches = [
             SetModeGuided(self),
@@ -27,7 +30,6 @@ class SetModeSchema(ActionSchema):
             SetModeLand(self),
             IdleBranch(self)
         ]
-
         super(SetModeSchema, self).__init__('setmode', parameters, branches)
 
     def dispatch(self,
@@ -37,16 +39,6 @@ class SetModeSchema(ActionSchema):
                  environment: Environment
                  ) -> None:
         sandbox.connection.mode = dronekit.VehicleMode(action['mode'])
-
-        # from pymavlink import mavutil
-        # msg = ({
-        #     'RTL': mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, # set_mode_rtl
-        #     'LAND': mavutil.mavlink.MAV_CMD_NAV_LAND,
-        #     'LOITER': mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM # set_mode_loiter
-        # })[action['mode']]
-        # msg = \
-        #     vehicle.message_factory.command_long_encode(0, 0, msg, 0, 0, 0, 0, 0, 0, 0, 0)
-        # vehicle.send_mavlink(msg)
 
 
 class SetModeLand(Branch):
@@ -58,12 +50,20 @@ class SetModeLand(Branch):
         timeout += system.constant_timeout_offset
         return timeout
 
-    def postcondition(self, system, action, state_before, state_after, environment):
-        return  state_after['mode'] == 'LAND' and \
-                state_after['armed'] == False and \
-                system.variable('longitude').eq(state_after['longitude'], state_before['longitude']) and \
-                system.variable('latitude').eq(state_after['latitude'], state_before['latitude']) and \
-                system.variable('altitude').eq(state_after['altitude'], 0.0)
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
+        v = system.variable
+        sat_mode = state_after['mode'] == 'LAND'
+        sat_lon = \
+            v('longitude').eq(state_after['longitude'],
+                              state_before['longitude'])
+        sat_lat = \
+            v('latitude').eq(state_after['latitude'], state_before['latitude'])
+        sat_alt = v('altitude').eq(state_after['altitude'], 0.0)
 
     def precondition(self, system, action, state, environment):
         return action['mode'] == 'LAND' and state['altitude'] > 0.3
@@ -82,7 +82,12 @@ class SetModeGuided(Branch):
     def timeout(self, system, action, state, environment):
         return system.constant_timeout_offset
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
         return state_after['mode'] == 'GUIDED'
 
     def precondition(self, system, action, state, environment):
@@ -102,7 +107,12 @@ class SetModeLoiter(Branch):
     def timeout(self, system, action, state, environment):
         return system.constant_timeout_offset
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
         return state_after['mode'] == 'LOITER'
 
     def precondition(self, system, action, state, environment):
@@ -131,29 +141,40 @@ class SetModeRTL(Branch):
 
         # TODO: what was this? No explanation of logic?
         # Land times and adjustment time for altitude
-        #total_go_up_down_time = \
-        #    math.fabs(10 - state['altitude']) * system.time_per_metre_travelled
+        # total_go_up_down_time = \
+        #    math.fabs(10 - state['altitude']) *
+        # system.time_per_metre_travelled
 
         # compute total timeout
-        timeout = time_goto_phase + time_land_phase + system.constant_timeout_offset
+        timeout = \
+            time_goto_phase + time_land_phase + system.constant_timeout_offset
 
         print('calculated timeout: {} seconds'.format(timeout))
         return timeout
 
-    def postcondition(self, system, action, state_before, state_after, environment):
+    def postcondition(self,
+                      system,
+                      action,
+                      state_before,
+                      state_after,
+                      environment):
+        v = system.variable
         if state_after['mode'] != 'RTL':
-            return False # hmmm?
+            return False  # hmmm?
 
         if state_before['altitude'] < 0.3:
             if state_before['armed'] != state_after['armed']:
                 return False
-        else:
-            if state_before['armed'] != False:
-                return False
+        elif state_before['armed']:
+            return False
 
-        return  system.variable('altitude').eq(state_after['altitude'], 0.0) and \
-                system.variable('latitude').eq(state_after['latitude'], state_before['homeLatitude']) and \
-                system.variable('longitude').eq(state_after['longitude'], state_before['homeLongitude'])
+        sat_alt = v('altitude').eq(state_after['altitude'], 0.0)
+        sat_lat = v('latitude').eq(state_after['latitude'],
+                                   state_before['homeLatitude'])
+        sat_lon = v('longitude').eq(state_after['longitude'],
+                                    state_before['homeLongitude'])
+
+        return sat_alt and sat_lat and sat_lon
 
     def precondition(self, system, action, state, environment):
         return action['mode'] == 'RTL'

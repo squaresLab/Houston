@@ -1,11 +1,15 @@
-from setuptools import setup
+import os
+from glob import glob
+from setuptools import setup, find_packages
+
+path = os.path.join(os.path.dirname(__file__), 'houston/version.py')
+with open(path, 'r') as f:
+    exec(f.read())
 
 setup(
     name='houston',
-    version='0.1.0',
+    version=__version__,
     description='TBA',
-    long_description='TBA',
-    # need to modify to have multiple authors!
     author='Chris Timperley, Jam M. Hernandez Q., Afsoon Afzal',
     author_email='christimperley@gmail.com, jamarck96@gmail.com, afsoona@cs.cmu.edu',
     url='https://github.com/squaresLab/Houston',
@@ -14,12 +18,11 @@ setup(
     install_requires = [
         'flask',
         'pytest',
-        # 'docker',
-        # 'pathos', (this is a dependency of the experiment)
         'pexpect',
         'geopy',
         'bugzoo',
-        'dronekit'
+        'dronekit',
+        'attrs'
     ],
     packages = [
         'houston',
@@ -36,8 +39,5 @@ setup(
         'houston.ardu.common': 'houston/ardu/common',
         'houston.ardu.copter': 'houston/ardu/copter',
         'houston.ardu.rover': 'houston/ardu/rover'
-    },
-    entry_points = {
-        'console_scripts': [ 'houstonserver = houston.server:main' ]
     }
 )

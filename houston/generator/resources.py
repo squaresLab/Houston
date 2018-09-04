@@ -1,3 +1,4 @@
+# FIXME use attrs!
 class ResourceUsage(object):
     """
     Used to monitor and record the resources used during a given
@@ -7,17 +8,13 @@ class ResourceUsage(object):
     def from_json(jsn):
         return ResourceUsage(jsn['num_missions'], jsn['running_time'])
 
-
-    def __init__(self, num_missions = 0, running_time = 0.0):
+    def __init__(self, num_missions=0, running_time=0.0):
         self.num_missions = num_missions
         self.running_time = running_time
 
-
     def to_json(self):
-        return {
-            'num_missions': self.num_missions,
-            'running_time': self.running_time
-        }
+        return {'num_missions': self.num_missions,
+                'running_time': self.running_time}
 
 
 class ResourceLimits(object):
@@ -37,7 +34,6 @@ class ResourceLimits(object):
         self.__running_time = running_time
         self.__num_missions_selected = num_missions_selected
 
-
     def reached(self, usage):
         """
         Determines whether a given resource usage has reached the limits
@@ -48,7 +44,6 @@ class ResourceLimits(object):
         if self.reached_time_limit(usage.running_time):
             return True
         return False
-
 
     @property
     def num_missions_selected(self):
@@ -66,7 +61,6 @@ class ResourceLimits(object):
         """
         return self.__num_missions
 
-    
     @property
     def running_time(self):
         """
@@ -75,23 +69,20 @@ class ResourceLimits(object):
         """
         return self.__running_time
 
-
     def reached_mission_limit(self, num_missions):
         """
         Determines whether a given number of missions exceeds the maximum
         number of missions that can be generated (as specified by this object).
         """
-        return  self.__num_missions is not None and \
-                num_missions >= self.__num_missions
-
+        return self.__num_missions is not None and \
+            num_missions >= self.__num_missions
 
     def reached_time_limit(self, running_time):
         """
         Determines whether a given running time meets or exceeds the limit.
         """
-        return  self.__running_time is not None and \
-                running_time >= self.__running_time
-
+        return self.__running_time is not None and \
+            running_time >= self.__running_time
 
     def to_json(self):
         """
