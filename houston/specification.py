@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
-from sexpdata import loads, dumps
-from z3 import Solver, sat
+import sexpdata
+import z3
 
 from houston.action import ActionSchema, Parameter
 from houston.state import State, Environment
@@ -12,70 +12,61 @@ class InvalidExpression(Exception):
 class Specification():
 
     def __init__(self, parameters: List[Parameter], precondition: str, postcondition: str, timeout: str):
-        
-        if not (Specification.is_expression_valid(precondition) and Specification.is_expression_valid(postcondition)):
-            raise InvalidExpression()
-        
+
+
         self._parameters = parameters
-        self._precondition = precondition
-        self._postcondition = postcondition
+        self._precondition = Expression(precondition, parameters)
+        self._postcondition = Expression(postcondition, parameters)
         self._timeout = timeout
         super().__init__()
 
-    def is_precondition_satisfied(self, system: 'System', parameter_values: Dict[str, Any], state: State, environment: Environment) -> bool:
-        s = Solver()
-        smt = self._prepare_query(system, parameter_values, state)
-        smt += self._precondition
-        s.from_string(smt)
+    @property
+    def precondition(self):
+        return self._precondition
 
-        if s.check() == sat:
-            return True
-        else:
-            return False
-
-
-    def is_postcondition_satisfied(self, system: 'System', parameter_values: Dict[str, Any], state_before: State,
-                                    state_after: State, environment: Environment) -> bool:
-        s = Solver()
-        smt = self._prepare_query(system, parameter_values, state_before, state_after)
-        smt += self._postcondition
-        s.from_string(smt)
-
-        if s.check() == sat:
-            return True
-        else:
-            return False
+    @property
+    def postcondition(self):
+        return self._postcondition
 
     def timeout(self):
         # TODO fix this
         return self._system.constant_timeout_offset
 
-    def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
-        s = Solver()
-        smt = self._get_declarations(system)
-        smt += Specification._values_to_smt('_', state_before.values)
-        smt += self._precondition
-        s.from_string(smt)
 
-        if s.check() == sat:
-            return True
-        else:
-            return False
+class Expression:
+
+    def __init__(self, s_expression: str, parameters: List[Parameter]):
+
+        if not Expression.is_valid(s_expression):
+            raise InvalidExpression
+
+        self._expression = s_expression
+        self._parameters = parameters
 
     @staticmethod
-    def is_expression_valid(string: str):
+    def is_valid(string: str):
         try:
-            parsed = loads(string)
-        except Exception:
+            parsed = sexpdata.loads(string)
+        except (sexpdata.ExpectClosingBracket, sexpdata.ExpectNothing) as e:
             return False
         return True
 
+    def is_satisfied(self, system: 'System', parameter_values: Dict[str, Any], state_before: State,
+                    state_after: State, environment: Environment) -> bool:
+        s = z3.Solver()
+        smt = self._prepare_query(system, parameter_values, state_before, state_after)
+        smt += self._expression
+        print("AAAA " + smt)
+        s.from_string(smt)
+
+        return s.check() == z3.sat
+
     def _prepare_query(self, system: 'System', parameter_values: Dict[str, Any], state_before: State, state_after: State=None):
         smt = self._get_declarations(system)
-        smt += Specification._values_to_smt('$', parameter_values)
-        smt += Specification._values_to_smt('_', state_before.values)
+        smt += Expression._values_to_smt('$', parameter_values)
+        smt += Expression._values_to_smt('_', state_before.values)
         if state_after:
-            smt += Specification._values_to_smt('__', state_before.values)
+            smt += Expression._values_to_smt('__', state_before.values)
         return smt
 
     def _get_declarations(self, system):
@@ -97,8 +88,17 @@ class Specification():
         return declarations
 
     @staticmethod
-    def values_to_smt(prefix: str, values: Dict[str, Any]) -> str:
+    def _values_to_smt(prefix: str, values: Dict[str, Any]) -> str:
         smt = ""
         for n, v in values.items():
             smt += "(assert (= {}{} {}))\n".format(prefix, n, str(v).lower())
         return smt
+
+    def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
+        s = z3.Solver()
+        smt = self._get_declarations(system)
+        smt += Expression._values_to_smt('_', state.values)
+        smt += self._expression
+        s.from_string(smt)
+
+        return s.check() == z3.sat

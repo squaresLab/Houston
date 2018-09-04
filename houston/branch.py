@@ -78,7 +78,7 @@ class Branch(object):
         satisify this precondition given a fixed initial state and
         environment.
         """
-        return self.specification.is_satisfiable(system, initial_state, env)
+        return self.specification.precondition.is_satisfiable(system, initial_state, env)
 
 
     def precondition(self, system, action, state, env):
@@ -97,11 +97,11 @@ class Branch(object):
         :returns    True if the guard is satisfied by the given context, \
                     otherwise False.
         """
-        return self.specification.is_precondition_satisfied(system, action.values, state, env)
+        return self.specification.precondition.is_satisfied(system, action.values, state, None, env)
 
 
     def postcondition(self, system, action, state_before, state_after, environment):
-        return self.specification.is_postcondition_satisfied(system, action.values,
+        return self.specification.postcondition.is_satisfied(system, action.values,
                 state_before, state_after, environment)
 
 
