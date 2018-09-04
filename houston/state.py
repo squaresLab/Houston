@@ -83,9 +83,9 @@ class State(object):
                 'time_offset': self.__time_offset}
 
     def __repr__(self) -> str:
-        vrs = ["{}: {}".format(k, repr(v)) for (k, v) in self.__values]
+        vrs = ["{}: {}".format(k, repr(v)) for (k, v) in self.__values.items()]
         s_vrs = '; '.format(vrs)
-        s = "State(time_offset={.3f}, variables={})"
+        s = "State(time_offset={:.3f}, variables={})"
         s = s.format(self.time_offset, s_vrs)
         return s
 

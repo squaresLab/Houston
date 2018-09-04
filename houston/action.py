@@ -34,7 +34,7 @@ class Action(object):
         """
         Returns the value for a specific parameter in this action.
         """
-        return self.__values[param]
+        return self.values[param]
 
     def to_json(self) -> Dict[str, Any]:
         return {'kind': self.kind,

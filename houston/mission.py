@@ -167,8 +167,8 @@ class MissionOutcome(object):
     def __repr__(self) -> str:
         outcomes = [repr(o) for o in self.__outcomes]  # type: List[str]
         s_passed = "passed={}".format(repr(self.__passed))
-        s_time_setup = "setup_time={.3f}".format(self.__setup_time)
-        s_time_total = "total_time={.3f}".format(self.__total_time)
+        s_time_setup = "setup_time={:.3f}".format(self.__setup_time)
+        s_time_total = "total_time={:.3f}".format(self.__total_time)
         s_outcomes = "outcomes={}".format(repr(outcomes))
         s = '; '.join([s_passed, s_time_setup, s_time_total, s_outcomes])
         s = "MissionOutcome({})".format(s)

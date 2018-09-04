@@ -63,11 +63,13 @@ class Sandbox(BaseSandbox):
         print("COMMAND: {}".format(cmd))
 
         if not verbose:
-            bzc(self.container, cmd, block=False, stdout=False, stderr=False)
+            bzc.command(self.container, cmd, block=False,
+                        stdout=False, stderr=False)
             return
 
         execution_response = \
-            bzc(self.container, cmd, stdout=True, stderr=True, block=False)
+            bzc.command(self.container, cmd, stdout=True,
+                        stderr=True, block=False)
         for line in execution_response.output:
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             print(line, flush=True)
@@ -113,7 +115,7 @@ class Sandbox(BaseSandbox):
         while True:
             observed = self.observe(0.0)
             ready_lon = v('longitude').eq(initial_lon, observed['longitude'])
-            ready_lat = v('latitude').eq(initial_lon, observed['latitude'])
+            ready_lat = v('latitude').eq(initial_lat, observed['latitude'])
             ready_armable = \
                 observed['armable'] == mission.initial_state['armable']
             if ready_lon and ready_lat and ready_armable:
