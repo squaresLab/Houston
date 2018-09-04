@@ -1,114 +1,98 @@
-from typing import List, Dict, Any, Optional
+__all__ = \
+    ['Action', 'ActionSchema', 'Parameter', 'ActionOutcome', 'ActionGenerator']
+
+from typing import List, Dict, Any, Optional, Type, Generic, TypeVar
 import random
+import logging
+
+import attr
 
 from .state import State, Environment
-from .util import printflush
 from .valueRange import ValueRange
 
+logger = logging.getLogger(__name__)   # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
+
+@attr.s(frozen=True)
 class Action(object):
-    """
-    Description of the concept of "Actions".
-    """
+    kind = attr.ib(type=str)
+    values = attr.ib(type=Dict[str, Any], convert=dict)  # FIXME use FrozenDict
+
     @staticmethod
-    def from_json(jsn):
-        """
-        Constructs an Action object from its JSON description.
-        """
-        assert isinstance(jsn, dict)
-        assert ('kind' in jsn)
-        assert ('parameters' in jsn)
+    def from_json(jsn: Dict[str, Any]) -> 'Action':
         return Action(jsn['kind'], jsn['parameters'])
 
-    def __init__(self, kind, values):
-        """
-        Constructs an Action description.
-
-        Args:
-            kind    (str):  the name of the schema to which the action belongs
-            values  (dict): a dictionary of parameter values for the action
-        """
-        assert (isinstance(kind, str) or isinstance(kind, unicode))
-        assert isinstance(values, dict)
-        self.__kind = kind
-        self.__values = values.copy()
-
     @property
-    def schema_name(self):
+    def schema_name(self) -> str:
         """
         The name of the schema to which this action belongs.
         """
-        return self.__kind
+        return self.kind
 
-    def __getitem__(self, param):
+    def __getitem__(self, param: str) -> Any:
         """
         Returns the value for a specific parameter in this action.
         """
         return self.__values[param]
 
-    @property
-    def values(self):
-        """
-        Returns a copy of the parameter values used by this action.
-        """
-        return self.__values.copy()
-
-    def to_json(self):
-        """
-        Returns a JSON description of this action.
-        """
-        return {
-            'kind': self.__kind,
-            'parameters': self.values
-        }
+    def to_json(self) -> Dict[str, Any]:
+        return {'kind': self.kind,
+                'parameters': self.values}
 
 
-class Parameter(object):
+@attr.s(frozen=True)
+class ActionOutcome(object):
     """
-    Docstring.
+    Describes the outcome of a command execution in terms of the state of the
+    system before and after the execution.
     """
-    def __init__(self, name, value_range):
-        """
-        Constructs a Parameter object.
+    action = attr.ib(type=Action)
+    successful = attr.ib(type=bool)
+    start_state = attr.ib(type=State)
+    end_state = attr.ib(type=State)
+    time_elapsed = attr.ib(type=float)  # FIXME use time delta
+    branch_id = attr.ib(type='BranchID')  # FIXME
 
-        Args:
-            name (str):                 the name of this parameter.
-            value_range (ValueRange):   the range of possible values for this
-                parameter, given as a ValueRange object.
-        """
-        # TODO: type checking
-        assert (isinstance(name, str) or isinstance(name, unicode))
-        assert isinstance(value_range, ValueRange)
-        self.__name = name
-        self.__value_range = value_range
+    @staticmethod
+    def from_json(jsn: Dict[str, Any]) -> 'ActionOutcome':
+        from houston.branch import BranchID
+        return ActionOutcome(Action.from_json(jsn['action']),
+                             jsn['successful'],
+                             State.from_json(jsn['start_state']),
+                             State.from_json(jsn['end_state']),
+                             jsn['time_elapsed'],
+                             BranchID.from_string(jsn['branch_id']))
 
-    @property
-    def values(self):
-        """
-        The range of possible values for this parameter.
-        """
-        return self.__value_range
+    def to_json(self) -> Dict[str, Any]:
+        return {'action': self.__action.to_json(),
+                'successful': self.__successful,
+                'start_state': self.start_state.to_json(),
+                'end_state': self.end_state.to_json(),
+                'time_elapsed': self.__time_elapsed,
+                'branch_id': str(self.__branch_id)}
 
-    def generate(self, rng):
+
+T = TypeVar('T')
+
+
+@attr.s(frozen=True)
+class Parameter(Generic[T]):
+    name = attr.ib(type=str)
+    values = attr.ib(type=ValueRange)
+
+    def generate(self, rng: random.Random) -> T:
         """
         Returns a randomly-generated value for this parameter.
         """
-        assert (isinstance(rng, random.Random) and rng is not None)
-        return self.__value_range.sample(rng)
+        return self.values.sample(rng)
 
     @property
-    def type(self):
+    def type(self) -> Type[T]:
         """
         The underlying type of this parameter.
         """
-        return self.__value_range.type
-
-    @property
-    def name(self):
-        """
-        The name of this parameter.
-        """
-        return self.__name
+        return self.values.type
 
 
 class ActionSchema(object):
@@ -182,7 +166,7 @@ class ActionSchema(object):
             environment (Environment): a description of the environment in
                 which the action is being performed
         """
-        raise UnimplementedError
+        raise NotImplementedError
 
     def timeout(self,
                 system: 'System',
@@ -236,76 +220,6 @@ class ActionSchema(object):
         assert (isinstance(rng, random.Random) and rng is not None)
         values = {p.name: p.generate(rng) for p in self.__parameters}
         return Action(self.__name, values)
-
-
-class ActionOutcome(object):
-    """
-    Describes the outcome of a command execution in terms of the state of the
-    system before and after the execution.
-    """
-    @staticmethod
-    def from_json(jsn: Dict[str, Any]) -> 'ActionOutcome':
-        from houston.branch import BranchID
-        from houston.state import State
-        return ActionOutcome(Action.from_json(jsn['action']),
-                             jsn['successful'],
-                             State.from_json(jsn['start_state']),
-                             State.from_json(jsn['end_state']),
-                             jsn['time_elapsed'],
-                             BranchID.from_string(jsn['branch_id']))
-
-    def __init__(self,
-                 action: Action,
-                 successful: bool,
-                 start_state: State,
-                 end_state: State,
-                 time_elapsed: float,
-                 branch_id: 'BranchID'  # FIXME
-                 ) -> None:
-        from houston.branch import BranchID
-        self.__action = action
-        self.__successful = successful
-        self.__start_state = start_state
-        self.__end_state = end_state
-        self.__time_elapsed = time_elapsed
-        self.__branch_id = branch_id
-
-    def to_json(self) -> Dict[str, Any]:
-        return {
-            'action':       self.__action.to_json(),
-            'successful':   self.__successful,
-            'start_state':  self.start_state.to_json(),
-            'end_state':    self.end_state.to_json(),
-            'time_elapsed': self.__time_elapsed,
-            'branch_id':    str(self.__branch_id)}
-
-    @property
-    def branch_id(self) -> str:
-        return self.__branch_id
-
-    @property
-    def passed(self) -> bool:
-        return self.__successful
-
-    @property
-    def failed(self) -> bool:
-        return not self.__successful
-
-    @property
-    def start_state(self) -> State:
-        """
-        A description of the state of the system immediately after the
-        execution of this action.
-        """
-        return self.__start_state
-
-    @property
-    def end_state(self):
-        """
-        A description of the state of the system immediately before the
-        execution of this action.
-        """
-        return self.__end_state
 
 
 class ActionGenerator(object):
