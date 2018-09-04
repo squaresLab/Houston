@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Union
 
 import copy
 import json
@@ -90,9 +90,12 @@ class State(object):
         return s
 
 
-class StateVariable(object):
-
-    def __init__(self, name, getter, noise=None):
+class Variable(object):
+    def __init__(self,
+                 name: str,
+                 getter,  # FIXME add annotation
+                 noise: Optional[Union[int, float]] = None
+                 ) -> None:
         """
         Constructs a new state variable
 
@@ -103,18 +106,17 @@ class StateVariable(object):
                 variable.
             noise: the inherent level of noise when measuring this variable.
         """
-        assert (noise is None or type(noise) in [float, int])
-        assert (noise is None or noise >= 0)
+        assert noise is None or noise >= 0
         self.__name = name
         self.__getter = getter
         self.__noise = noise
 
     @property
-    def is_noisy(self):
+    def is_noisy(self) -> bool:
         return self.__noise is not None
 
     @property
-    def noise(self):
+    def noise(self) -> Optional[Union[int, float]]:
         """
         The inherent level of noise that is to be expected when measuring
         this variable. If no noise is expected, None is returned.
@@ -146,16 +148,16 @@ class StateVariable(object):
         """
         return not self.eq(x, y)
 
-    def gt(self, x, y):
+    def gt(self, x, y) -> bool:
         return x > y
 
-    def lt(self, x, y):
+    def lt(self, x, y) -> bool:
         return x < y
 
-    def leq(self, x, y):
+    def leq(self, x, y) -> bool:
         return not self.gt(x, y)
 
-    def geq(self, x, y):
+    def geq(self, x, y) -> bool:
         return not self.lt(x, y)
 
     def read(self, sandbox):
@@ -163,14 +165,6 @@ class StateVariable(object):
         Inspects the current state of this system variable
         """
         return self.__getter(sandbox)
-
-
-class InternalVariable(StateVariable):
-    pass
-
-
-class ExternalVariable(StateVariable):
-    pass
 
 
 class Environment(object):

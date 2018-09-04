@@ -1,10 +1,10 @@
+from typing import List
+
 from .sandbox import Sandbox
 from ..system import System
 from ..util import printflush
 from ..action import ActionSchema
-from ..state import StateVariable, \
-                    InternalVariable, \
-                    ExternalVariable
+from ..state import Variable
 
 
 class BaseSystem(System):
@@ -13,48 +13,48 @@ class BaseSystem(System):
     """
     def __init__(self,
                  bug_name: str,
-                 variables: 'List[StateVariable]',
-                 schemas: 'List[ActionSchema]',
+                 variables: List[Variable],
+                 schemas: List[ActionSchema],
                  speedup: float = 3.0
                  ) -> None:
         assert speedup != 0.0
         self.__speedup = speedup
 
         variables += [
-            InternalVariable('homeLatitude',
-                             lambda c: -35.362938),  # TODO: fixed
-            InternalVariable('homeLongitude',
-                             lambda c: 149.165085),  # TODO: fixed
-            InternalVariable('altitude',
-                             lambda c: c.connection.location.global_relative_frame.alt,  # noqa: pycodestyle
-                             1.0),
-            InternalVariable('latitude',
-                             lambda c: c.connection.location.global_relative_frame.lat,  # noqa: pycodestyle
-                             0.0005),
-            InternalVariable('longitude',
-                             lambda c: c.connection.location.global_relative_frame.lon,  # noqa: pycodestyle
-                             0.0005),
-            InternalVariable('armable',
-                             lambda c: c.connection.is_armable),
-            InternalVariable('armed', lambda c: c.connection.armed),
-            InternalVariable('mode', lambda c: c.connection.mode.name),
-            InternalVariable('vx', lambda c: c.connection.velocity[0], 0.05),
-            InternalVariable('vy', lambda c: c.connection.velocity[1], 0.05),
-            InternalVariable('vz', lambda c: c.connection.velocity[2], 0.05),
-            InternalVariable('pitch',
-                             lambda c: c.connection.attitude.pitch, 0.05),
-            InternalVariable('yaw', lambda c: c.connection.attitude.yaw, 0.05),
-            InternalVariable('roll',
-                             lambda c: c.connection.attitude.roll, 0.05),
-            InternalVariable('heading', lambda c: c.connection.heading, 2),
-            InternalVariable('airspeed',
-                             lambda c: c.connection.airspeed, 0.05),
-            InternalVariable('groundspeed',
-                             lambda c: c.connection.groundspeed, 0.05),
-            InternalVariable('ekf_ok', lambda c: c.connection.ekf_ok),
-            InternalVariable('throttle_channel',
-                             lambda c: c.connection.channels['3']),
-            InternalVariable('roll_channel',
+            Variable('homeLatitude',
+                     lambda c: -35.362938),  # TODO: fixed
+            Variable('homeLongitude',
+                     lambda c: 149.165085),  # TODO: fixed
+            Variable('altitude',
+                     lambda c: c.connection.location.global_relative_frame.alt,  # noqa: pycodestyle
+                     1.0),
+            Variable('latitude',
+                     lambda c: c.connection.location.global_relative_frame.lat,  # noqa: pycodestyle
+                     0.0005),
+            Variable('longitude',
+                     lambda c: c.connection.location.global_relative_frame.lon,  # noqa: pycodestyle
+                     0.0005),
+            Variable('armable',
+                     lambda c: c.connection.is_armable),
+            Variable('armed', lambda c: c.connection.armed),
+            Variable('mode', lambda c: c.connection.mode.name),
+            Variable('vx', lambda c: c.connection.velocity[0], 0.05),
+            Variable('vy', lambda c: c.connection.velocity[1], 0.05),
+            Variable('vz', lambda c: c.connection.velocity[2], 0.05),
+            Variable('pitch',
+                     lambda c: c.connection.attitude.pitch, 0.05),
+            Variable('yaw', lambda c: c.connection.attitude.yaw, 0.05),
+            Variable('roll',
+                     lambda c: c.connection.attitude.roll, 0.05),
+            Variable('heading', lambda c: c.connection.heading, 2),
+            Variable('airspeed',
+                     lambda c: c.connection.airspeed, 0.05),
+            Variable('groundspeed',
+                     lambda c: c.connection.groundspeed, 0.05),
+            Variable('ekf_ok', lambda c: c.connection.ekf_ok),
+            Variable('throttle_channel',
+                     lambda c: c.connection.channels['3']),
+            Variable('roll_channel',
                              lambda c: c.connection.channels['1']),
         ]
 
