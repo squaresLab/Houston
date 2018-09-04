@@ -54,7 +54,7 @@ class Expression:
 
     def is_satisfied(self, system: 'System', parameter_values: Dict[str, Any], state_before: State,
                     state_after: State, environment: Environment) -> bool:
-        s = z3.Solver()
+        s = z3.SolverFor("QF_NRA")
         smt = self._prepare_query(system, parameter_values, state_before, state_after)
         smt += "(assert {})".format(self._expression)
         print("SMT:\n" + smt)
@@ -106,7 +106,7 @@ class Expression:
         return smt
 
     def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
-        s = z3.Solver()
+        s = z3.SolverFor("QF_NRA")
         smt = self._get_declarations(system)
         smt += Expression._values_to_smt('_', state.values)
         smt += "(assert {})".format(self._expression)
