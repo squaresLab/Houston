@@ -1,8 +1,14 @@
-from setuptools import setup
+import os
+from glob import glob
+from setuptools import setup, find_packages
+
+path = os.path.join(os.path.dirname(__file__), 'houston/version.py')
+with open(path, 'r') as f:
+    exec(f.read())
 
 setup(
     name='houston',
-    version='0.1.0',
+    version=__version__,
     description='TBA',
     author='Chris Timperley, Jam M. Hernandez Q., Afsoon Afzal',
     author_email='christimperley@gmail.com, jamarck96@gmail.com, afsoona@cs.cmu.edu',
@@ -12,7 +18,6 @@ setup(
     install_requires = [
         'flask',
         'pytest',
-        # 'docker',
         'pexpect',
         'geopy',
         'bugzoo',

@@ -1,3 +1,7 @@
+Pipfile
+
+.mypy_cache
+
 env
 bin
 include
