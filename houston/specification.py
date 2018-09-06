@@ -101,6 +101,8 @@ class Expression:
         for n, v in values.items():
             if type(v) == str:
                 smt += "(assert (= {}{} \"{}\"))\n".format(prefix, n, v)
+            elif type(v) == float:
+                smt += "(assert (= {}{} {:.4f}))\n".format(prefix, n, v)
             else:
                 smt += "(assert (= {}{} {}))\n".format(prefix, n, str(v).lower())
         return smt

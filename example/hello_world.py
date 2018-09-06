@@ -134,11 +134,11 @@ if __name__=="__main__":
         houston.action.Action("arm", {'arm': False}),
         houston.action.Action("arm", {'arm': True}),
         #houston.action.Action("takeoff", {'altitude': 3.0}),
-        #houston.action.Action("goto", {
-        #    'latitude' : -35.361354,
-        #    'longitude': 149.165218,
+        houston.action.Action("goto", {
+            'latitude' : -35.361354,
+            'longitude': 149.175218,
         #    'altitude' : 5.0
-        #}),
+        }),
         #houston.action.Action("setmode", {'mode': 'LAND'}),
         houston.action.Action("arm", {'arm': False})
     ]

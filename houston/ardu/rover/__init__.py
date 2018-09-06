@@ -15,7 +15,7 @@ class ArduRover(BaseSystem):
         # rover-specific system variables
         variables = []
         schemas = [
-#            GoToSchema(),
+            GoToSchema(),
             ArmDisarmSchema()
         ]
 

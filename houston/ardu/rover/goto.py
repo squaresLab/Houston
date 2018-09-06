@@ -17,9 +17,9 @@ class GoToSchema(ActionSchema):
         ]
 
         branches = [
-            GotoNormally(self),
-            GotoLoiter(self),
-            IdleBranch(self)
+            GotoNormally(self, parameters),
+            GotoLoiter(self, parameters),
+            IdleBranch(self, parameters)
         ]
 
         super(GoToSchema, self).__init__('goto', parameters, branches)

@@ -4,6 +4,7 @@ from houston.state import State, Environment
 from houston.action import ActionSchema, Parameter, Action, ActionGenerator
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 from houston.branch import Branch, IdleBranch
+from houston.specification import Specification
 
 
 class GotoNormally(Branch):
@@ -13,8 +14,18 @@ class GotoNormally(Branch):
     the precondition on this normal behaviour is stronger; for more
     information, refer to the system-specific subclasses of GotoNormally.
     """
-    def __init__(self, system):
-        super(GotoNormally, self).__init__('normal', system)
+    def __init__(self, schema, parameters):
+        specification = Specification(parameters,
+            """
+            (and (= _armed true)
+                (not (= _mode "LOITER")))
+            """,
+            """
+            (and (= __longitude $longitude)
+                (= __latitude $latitude))
+            """,
+            None)
+        super(GotoNormally, self).__init__('normal', schema, specification)
 
     def timeout(self, system, action, state, environment):
         from_loc = (state['latitude'], state['longitude'])
@@ -24,32 +35,32 @@ class GotoNormally(Branch):
         timeout += system.constant_timeout_offset
         return timeout
 
-    def precondition(self, system, action, state, environment):
-        """
-        This behaviour will occur for Goto actions when the system is armed and
-        not in its `LOITER` mode.
-        """
-        return state['armed'] and state['mode'] != 'LOITER'
-
-    def postcondition(self,
-                      system,
-                      action,
-                      state_before,
-                      state_after,
-                      environment):
-        """
-        Upon completion of the action, the robot should be at the longitude and
-        latitude specified by the action parameters.
-        """
-        v = system.variable
-        sat_lon = \
-            v('longitude').eq(state_after['longitude'], action['longitude'])
-        sat_lat = \
-            v('latitude').eq(state_after['latitude'], action['latitude'])
-        return sat_lon and sat_lat
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
+#    def precondition(self, system, action, state, environment):
+#        """
+#        This behaviour will occur for Goto actions when the system is armed and
+#        not in its `LOITER` mode.
+#        """
+#        return state['armed'] and state['mode'] != 'LOITER'
+#
+#    def postcondition(self,
+#                      system,
+#                      action,
+#                      state_before,
+#                      state_after,
+#                      environment):
+#        """
+#        Upon completion of the action, the robot should be at the longitude and
+#        latitude specified by the action parameters.
+#        """
+#        v = system.variable
+#        sat_lon = \
+#            v('longitude').eq(state_after['longitude'], action['longitude'])
+#        sat_lat = \
+#            v('latitude').eq(state_after['latitude'], action['latitude'])
+#        return sat_lon and sat_lat
+#
+#    def is_satisfiable(self, system, state, environment):
+#        return self.precondition(system, None, state, environment)
 
     def generate(self, state, environment, rng):
         return self.schema.generate(rng)
@@ -60,33 +71,45 @@ class GotoLoiter(Branch):
     If the robot is armed and in its `LOITER` mode, GoTo actions should have no
     effect upon the robot. (Why isn't this covered by Idle?)
     """
-    def __init__(self, system):
-        super(GotoLoiter, self).__init__('loiter', system)
+    def __init__(self, schema, parameters):
+        specification = Specification(parameters,
+        """
+        (and (= _armed true)
+            (= _mode "LOITER"))
+        """,
+        """
+        (and (= __longitude $longitude)
+            (= __latitude $latitude)
+            (= __altitude $altitude)
+            (= __mode "LOITER"))
+        """,
+        None)
+        super(GotoLoiter, self).__init__('loiter', schema, specification)
 
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
-
-    def precondition(self, system, action, state, environment):
-        return state['armed'] and state['mode'] == 'LOITER'
-
-    def postcondition(self,
-                      system,
-                      action,
-                      state_before,
-                      state_after,
-                      environment):
-        v = system.variables
-        sat_mode = state_after['mode'] == 'LOITER'
-        sat_lon = \
-            v('longitude').eq(state_after['longitude'], state_before['longitude'])  # noqa: pycodestyle
-        sat_lat = \
-            v('latitude').eq(state_after['latitude'], state_before['latitude'])
-        sat_alt = \
-            v('altitude').eq(state_after['altitude'], state_before['altitude'])
-        return sat_mode and sat_lon and sat_lat and sat_alt
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
+#    def timeout(self, system, action, state, environment):
+#        return system.constant_timeout_offset
+#
+#    def precondition(self, system, action, state, environment):
+#        return state['armed'] and state['mode'] == 'LOITER'
+#
+#    def postcondition(self,
+#                      system,
+#                      action,
+#                      state_before,
+#                      state_after,
+#                      environment):
+#        v = system.variables
+#        sat_mode = state_after['mode'] == 'LOITER'
+#        sat_lon = \
+#            v('longitude').eq(state_after['longitude'], state_before['longitude'])  # noqa: pycodestyle
+#        sat_lat = \
+#            v('latitude').eq(state_after['latitude'], state_before['latitude'])
+#        sat_alt = \
+#            v('altitude').eq(state_after['altitude'], state_before['altitude'])
+#        return sat_mode and sat_lon and sat_lat and sat_alt
+#
+#    def is_satisfiable(self, system, state, environment):
+#        return self.precondition(system, None, state, environment)
 
     def generate(self, system, state, environment, rng):
         return self.schema.generate(rng)
