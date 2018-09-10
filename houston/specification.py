@@ -39,8 +39,8 @@ class Specification():
 
     def get_constraint(self, state: State, postfix: str=''):
         smt = self._precondition.get_declarations(state, postfix)
-        smt += self._precondition.get_expression(state, postfix)
-        smt += self._postcondition.get_expression(state, postfix)
+        smt += "(assert {})\n".format(self._precondition.get_expression(state, postfix))
+        smt += "(assert {})\n".format(self._postcondition.get_expression(state, postfix))
 
         return smt
 

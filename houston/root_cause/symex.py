@@ -1,16 +1,20 @@
+import random
 import logging
 import re
 import z3
 from typing import Set, Optional, Tuple, Dict, List
 
+from houston.action import Action
 from houston.branch import BranchPath
 from houston.root_cause import MissionDomain
 from houston.system import System
 from houston.state import State, Environment
 from houston.mission import Mission, MissionOutcome
 
+logging.basicConfig(filename="symex.log",level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
+
 
 class SymbolicExecution(object):
 
@@ -42,12 +46,14 @@ class SymbolicExecution(object):
         explore all possible action branches.
         """
 
+        rng = random.Random(1000)
         actions = mission.actions
         all_paths = []
         all_missions = []
         self._dfs(actions, 0, BranchPath([]), all_paths)
 
         for bp in all_paths:
+            logger.info("BP: " + str(bp))
             solver = z3.Solver()
             smt = ""
             branches = bp.branches(system=self.__system)
@@ -65,20 +71,27 @@ class SymbolicExecution(object):
             solver.from_string(smt)
 
 
-            if not solver.check() != z3.sat:
+            if not solver.check() == z3.sat:
                 logger.info("UNSAT")
                 continue
 
             logger.info("SAT")
 
             model = solver.model()
+            model_vars = {}
+            for m in model:
+                model_vars[m.name()] = m
+                logger.debug("{} = {}".format(m.name(), str(model[m])))
             actions = []
             seq_id = 0
             for b in branches:
 #                mapping = mappings[b]
                 parameters = {}
                 for p in b.specification.parameters:
-                    parameters[p.name] = model["${}__{}".format(p.name, seq_id)]
+                    try:
+                        parameters[p.name] = eval(str(model[model_vars["${}__{}".format(p.name, seq_id)]]))
+                    except KeyError:
+                        parameters[p.name] = p.generate(rng)
                 actions.append(Action(b.schema, parameters))
                 seq_id += 1
 
@@ -90,10 +103,11 @@ class SymbolicExecution(object):
         s = ''
         for n, v in self.initial_state.values.items():
             s += '\n'.join(["(assert (= __{0}__{1} _{0}__{2}))".format(n, i, i+1) for i in range(0, number)])
+            s += '\n'
         return s
 
     def _dfs(self, actions, start_index, path: BranchPath, all_paths: List[BranchPath] = []):
-        if start_index == len(actions)-1:
+        if start_index == len(actions):
             all_paths.append(path)
             return
         for b in self.system.schemas[actions[start_index].schema_name].branches:

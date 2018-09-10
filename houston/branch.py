@@ -173,7 +173,7 @@ class IdleBranch(Branch):
         self.__idle_time = idle_time
         specification = Specification(parameters,
                 """
-                (true)
+                true
                 """,
                 """
                 (and (= _latitude __latitude)
