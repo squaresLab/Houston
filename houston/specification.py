@@ -29,9 +29,20 @@ class Specification():
     def postcondition(self):
         return self._postcondition
 
+    @property
+    def parameters(self):
+        return self._parameters
+
     def timeout(self):
         # TODO fix this
         return self._timeout
+
+    def get_constraint(self, state: State, postfix: str=''):
+        smt = self._precondition.get_declarations(state, postfix)
+        smt += self._precondition.get_expression(state, postfix)
+        smt += self._postcondition.get_expression(state, postfix)
+
+        return smt
 
 
 class Expression:
@@ -43,6 +54,10 @@ class Expression:
 
         self._expression = s_expression
         self._parameters = parameters
+
+    @property
+    def expression(self):
+        return self._expression
 
     @staticmethod
     def is_valid(string: str):
@@ -64,23 +79,25 @@ class Expression:
         return s.check() == z3.sat
 
     def _prepare_query(self, system: 'System', parameter_values: Dict[str, Any], state_before: State, state_after: State=None):
-        smt = self._get_declarations(state_before)
+        smt = self.get_declarations(state_before)
         smt += Expression._values_to_smt('$', parameter_values)
         smt += Expression._values_to_smt('_', state_before.values)
         if state_after:
             smt += Expression._values_to_smt('__', state_after.values)
         return smt
 
-    def _get_declarations(self, state):
+    def get_declarations(self, state: State, postfix: str=''):
         declarations = ""
 
         # Declare all parameters
         for p in self._parameters:
-            declarations += "(declare-const ${} {})\n".format(p.name, Expression._type_to_string(p.type))
+            declarations += "(declare-const ${}{} {})\n".format(p.name, postfix,
+                        Expression._type_to_string(p.type))
 
         # Declare all state variables
         for n, v in state.values.items():
-            declarations += "(declare-const _{0} {1})\n(declare-const __{0} {1})\n".format(n, Expression._type_to_string(type(v))) # TODO right now we don't have a way to find out the type of state variables
+            declarations += "(declare-const _{0}{1} {2})\n(declare-const __{0}{1} {2})\n".format(n,
+                        postfix, Expression._type_to_string(type(v))) # TODO right now we don't have a way to find out the type of state variables
 
         return declarations
 
@@ -109,9 +126,22 @@ class Expression:
 
     def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
-        smt = self._get_declarations(system)
+        smt = self.get_declarations(system)
         smt += Expression._values_to_smt('_', state.values)
         smt += "(assert {})".format(self._expression)
         s.from_string(smt)
 
         return s.check() == z3.sat
+
+    def get_expression(self, state: State, postfix: str=''):
+        expr = self._expression
+        if not postfix:
+            return expr
+
+        for p in self._parameters:
+            expr = expr.replace("${}".format(p.name), "${}{}".format(p.name, postfix))
+
+        for n,v in state.values.items():
+            expr = expr.replace("_{}".format(n), "_{}{}".format(n, postfix))
+
+        return expr

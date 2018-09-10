@@ -262,12 +262,12 @@ class BranchPath(object):
         return self.__identifiers[:]
 
     # FIXME this is nasty
-    @property
+    #@property
     def branches(self, system: 'System') -> List[Branch]:
         """
         Returns an ordered list of the branches along this path.
         """
-        return [system.getBranch(i) for i in self.__identifiers]
+        return [system.branch(i) for i in self.__identifiers]
 
     # FIXME avoid Union
     def extended(self, b: Union[BranchID, Branch]) -> 'BranchPath':

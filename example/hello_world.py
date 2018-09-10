@@ -8,6 +8,7 @@ from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 from houston.ardu.common.goto import CircleBasedGotoGenerator
 from houston.root_cause.delta_debugging import DeltaDebugging
+from houston.root_cause.symex import SymbolicExecution 
 import copy
 
 
@@ -156,8 +157,8 @@ if __name__=="__main__":
     }, 0.0)
     mission = houston.mission.Mission(environment, initial, actions)
     # create a container for the mission execution
-    sandbox = sut.provision()
-    run_single_mission(sandbox, mission)
+    #sandbox = sut.provision()
+    #run_single_mission(sandbox, mission)
 
     #run_single_mission_with_coverage(sandbox, mission)
     #generate(sut, initial, environment, 100, 10)
@@ -168,5 +169,9 @@ if __name__=="__main__":
 
     #d = DeltaDebugging(sut, initial, environment, [mission])
     #d.find_root_cause()
+
+    se = SymbolicExecution(sut, initial, environment)
+    mm = se.execute_symbolically(mission)
+    print(str(mm))
 
     #sandbox.destroy()

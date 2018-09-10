@@ -66,8 +66,8 @@ class System(object):
         Returns an outcome branch for this system provided its identifier.
         """
         assert isinstance(iden, BranchID)
-        schema = self.__schemas[iden.action_name]
-        return schema.branch(iden)
+        schema = self.__schemas[iden.schema_name]
+        return schema.get_branch(iden)
 
     def variable(self, v: str) -> Variable:
         return self.__variables[v]

@@ -133,6 +133,9 @@ class ActionSchema(object):
         self.__name = name
         self.__parameters = parameters
         self.__branches = branches
+        self.__branches_dict = {}
+        for b in branches:
+            self.__branches_dict[b.name] = b
 
     @property
     def name(self) -> str:
@@ -152,8 +155,8 @@ class ActionSchema(object):
         from houston.branch import BranchID
 
         assert (isinstance(iden, BranchID) and iden is not None)
-        assert (iden.get_action_name() == self.__name)
-        return self.__branches[iden.get_branch_name()]
+        assert (iden.schema_name == self.__name)
+        return self.__branches_dict[iden.branch_name]
 
     def dispatch(self,
                  sandbox: 'Sandbox',
