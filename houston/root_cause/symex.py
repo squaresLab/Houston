@@ -63,6 +63,12 @@ class SymbolicExecution(object):
             for b in branches:
                 smt += b.specification.get_constraint(self.initial_state, "__{}".format(seq_id))
 
+                for pb in b.schema.branches:
+                    if pb.id == b.id:
+                        break
+                    smt += '(assert (not {}))\n'.format(pb.specification.precondition.get_expression(self.initial_state,
+                                                        "__{}".format(seq_id)))
+
 #                mapping = b.add_constraints(solver, seq_id)
 #                mappings[b] = mapping
                 seq_id += 1
