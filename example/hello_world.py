@@ -153,7 +153,8 @@ if __name__=="__main__":
         "battery"  : 100,
         "armed"    : False,
         "armable"  : True,
-        "mode"     : "AUTO"
+    #    "mode"     : "AUTO"
+        "mode"     : "GUIDED"
     }, 0.0)
     mission = houston.mission.Mission(environment, initial, actions)
     # create a container for the mission execution

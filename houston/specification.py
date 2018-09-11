@@ -80,10 +80,10 @@ class Expression:
 
     def _prepare_query(self, system: 'System', parameter_values: Dict[str, Any], state_before: State, state_after: State=None):
         smt = self.get_declarations(state_before)
-        smt += Expression._values_to_smt('$', parameter_values)
-        smt += Expression._values_to_smt('_', state_before.values)
+        smt += Expression.values_to_smt('$', parameter_values)
+        smt += Expression.values_to_smt('_', state_before.values)
         if state_after:
-            smt += Expression._values_to_smt('__', state_after.values)
+            smt += Expression.values_to_smt('__', state_after.values)
         return smt
 
     def get_declarations(self, state: State, postfix: str=''):
@@ -113,21 +113,21 @@ class Expression:
         return t
 
     @staticmethod
-    def _values_to_smt(prefix: str, values: Dict[str, Any]) -> str:
+    def values_to_smt(prefix: str, values: Dict[str, Any], postfix: str='') -> str:
         smt = ""
         for n, v in values.items():
             if type(v) == str:
-                smt += "(assert (= {}{} \"{}\"))\n".format(prefix, n, v)
+                smt += "(assert (= {}{}{} \"{}\"))\n".format(prefix, n, postfix, v)
             elif type(v) == float:
-                smt += "(assert (= {}{} {:.4f}))\n".format(prefix, n, v)
+                smt += "(assert (= {}{}{} {:.4f}))\n".format(prefix, n, postfix, v)
             else:
-                smt += "(assert (= {}{} {}))\n".format(prefix, n, str(v).lower())
+                smt += "(assert (= {}{}{} {}))\n".format(prefix, n, postfix, str(v).lower())
         return smt
 
     def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
         smt = self.get_declarations(system)
-        smt += Expression._values_to_smt('_', state.values)
+        smt += Expression.values_to_smt('_', state.values)
         smt += "(assert {})".format(self._expression)
         s.from_string(smt)
 
