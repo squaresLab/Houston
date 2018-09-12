@@ -1,11 +1,12 @@
 from typing import Set, Optional, Tuple, Dict, List
 import random
 
-from houston.system import System
-from houston.state import State, Environment
-from houston.mission import Mission, MissionOutcome
-from houston.action import Action, Parameter
-from houston.valueRange import DiscreteValueRange
+from ..system import System
+from ..state import State
+from ..environment import Environment
+from ..mission import Mission, MissionOutcome
+from ..action import Action, Parameter
+from ..valueRange import DiscreteValueRange
 
 
 class MissionDomain(object):

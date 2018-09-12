@@ -1,12 +1,18 @@
 __all__ = ['ArduCopter']
 
+from bugzoo.client import Client as BugZooClient
+from bugzoo.core.bug import Bug as Snapshot
+
+from .state import State
 from .sandbox import Sandbox
 from ..base import BaseSystem
 
 
 class ArduCopter(BaseSystem):
+    state = State
+
     def __init__(self,
-                 bug_name: str,
+                 snapshot: Snapshot,
                  speedup: float = 3.0,
                  min_parachute_alt: float = 10.0
                  ) -> None:
@@ -19,8 +25,6 @@ class ArduCopter(BaseSystem):
         assert speedup != 0.0
         self.__min_parachute_alt = min_parachute_alt
 
-        # variables specific to the ArduCopter system
-        variables = []
         schemas = [
 #            GoToSchema(),
 #            TakeoffSchema(),
@@ -28,8 +32,7 @@ class ArduCopter(BaseSystem):
 #            SetModeSchema(),
 #            ParachuteSchema()
         ]
-        super(ArduCopter, self).__init__(bug_name,
-                                         variables,
+        super(ArduCopter, self).__init__(snapshot,
                                          schemas,
                                          speedup=speedup)
 
@@ -37,5 +40,5 @@ class ArduCopter(BaseSystem):
     def min_parachute_alt(self) -> float:
         return self.__min_parachute_alt
 
-    def provision(self) -> Sandbox:
-        return Sandbox(self)
+    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
+        return Sandbox(self, client_bugzoo)

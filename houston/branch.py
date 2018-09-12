@@ -3,8 +3,9 @@ from typing import List, Iterator, Union
 import random
 
 from .util import printflush
-from .state import State, Environment
 from .specification import Specification
+from .state import State
+from .environment import Environment
 
 
 class BranchID(object):
@@ -27,7 +28,7 @@ class BranchID(object):
 
     def __eq__(self, other: 'BranchID') -> bool:
         return self.__action_name == other.schema_name and \
-               self.__branch_name == other.branch_name
+            self.__branch_name == other.branch_name
 
     @property
     def schema_name(self) -> str:

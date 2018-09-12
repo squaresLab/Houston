@@ -2,8 +2,9 @@ from typing import List, Dict, Any
 import sexpdata
 import z3
 
-from houston.action import ActionSchema, Parameter
-from houston.state import State, Environment
+from .action import ActionSchema, Parameter
+from .state import State
+from .environment import Environment
 #from houston.system import System
 
 class InvalidExpression(Exception):
@@ -95,7 +96,7 @@ class Expression:
                         Expression._type_to_string(p.type))
 
         # Declare all state variables
-        for n, v in state.values.items():
+        for n, v in state.to_json().items():
             declarations += "(declare-const _{0}{1} {2})\n(declare-const __{0}{1} {2})\n".format(n,
                         postfix, Expression._type_to_string(type(v))) # TODO right now we don't have a way to find out the type of state variables
 
@@ -127,7 +128,7 @@ class Expression:
     def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
         smt = self.get_declarations(system)
-        smt += Expression.values_to_smt('_', state.values)
+        smt += Expression.values_to_smt('_', state.to_json())
         smt += "(assert {})".format(self._expression)
         s.from_string(smt)
 
@@ -141,7 +142,7 @@ class Expression:
         for p in self._parameters:
             expr = expr.replace("${}".format(p.name), "${}{}".format(p.name, postfix))
 
-        for n,v in state.values.items():
+        for n,v in state.to_json().items():
             expr = expr.replace("_{}".format(n), "_{}{}".format(n, postfix))
 
         return expr

@@ -20,7 +20,7 @@ setup(
         'pytest',
         'pexpect',
         'geopy',
-        'bugzoo',
+        'bugzoo>=2.1.16',
         'dronekit',
         'attrs'
     ],

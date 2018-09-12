@@ -6,6 +6,8 @@ import threading
 import signal
 
 import bugzoo
+from bugzoo.client import Client as BugZooClient
+from bugzoo.core.bug import Bug as Snapshot
 from bugzoo.core.fileline import FileLineSet
 
 from .state import State
@@ -19,11 +21,23 @@ class Sandbox(object):
     Sandboxes are used to provide an isolated, idempotent environment for
     executing test cases on a given system.
     """
-    def __init__(self, system: 'System') -> None:
+    def __init__(self,
+                 system: 'System',
+                 client_bugzoo: BugZooClient
+                 ) -> None:
         self.__lock = threading.Lock()
         self.__system = system
-        self.__container = system.bugzoo.containers.provision(system.snapshot)
+        self.__snapshot = system.snapshot
+        self._bugzoo = client_bugzoo
+        self.__container = client_bugzoo.containers.provision(self.__snapshot)
         self.__instrumented = False
+
+    @property
+    def snapshot(self) -> Snapshot:
+        """
+        A BugZoo snapshot of the system under test.
+        """
+        return self.__snapshot
 
     @property
     def system(self) -> 'System':
@@ -42,11 +56,11 @@ class Sandbox(object):
         return self.__container
 
     @property
-    def bugzoo(self) -> bugzoo.BugZoo:
+    def bugzoo(self) -> BugZooClient:
         """
         The BugZoo daemon.
         """
-        return self.system.bugzoo
+        return self._bugzoo
 
     @property
     def alive(self) -> bool:
@@ -194,11 +208,12 @@ class Sandbox(object):
 
     delete = destroy
 
-    def observe(self, running_time) -> None:
+    def observe(self, running_time: float) -> None:
         """
         Returns an observation of the current state of the system running
         inside this sandbox.
         """
-        assert self.alive
-        vals = {n: v.read(self) for (n, v) in self.system.variables.items()}
-        return State(vals, running_time)
+        variables = self.system.variables
+        values = {v.name: v.read(self) for v in variables}
+        values['time_offset'] = running_time
+        return self.system.__class__.state.from_json(values)

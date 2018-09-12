@@ -5,6 +5,7 @@ import sys
 import threading
 
 import dronekit
+from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
 from ..sandbox import Sandbox as BaseSandbox
@@ -20,8 +21,11 @@ class NoConnectionError(BaseException):
 
 
 class Sandbox(BaseSandbox):
-    def __init__(self, system: 'BaseSystem') -> None:
-        super().__init__(system)
+    def __init__(self,
+                 system: 'BaseSystem',
+                 client_bugzoo: BugZooClient
+                 ) -> None:
+        super().__init__(system, client_bugzoo)
         self.__connection = None
         self.__sitl_thread = None
 
@@ -55,19 +59,23 @@ class Sandbox(BaseSandbox):
 
         # FIXME #47
         home = "-35.362938,149.165085,584,270"
-        # FIXME #48
-        name_bin = "/experiment/source/build/sitl/bin/{}".format(name_bin)
+        name_bin = os.path.join(self.snapshot.source_dir,
+                                "build/sitl/bin",
+                                name_bin)
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, self.system.speedup,
                          home, fn_param)
         print("COMMAND: {}".format(cmd))
 
         if not verbose:
-            bzc.command(self.container, cmd, block=False, stdout=False, stderr=False)
+            bzc.command(self.container, cmd, block=False,
+                        stdout=False, stderr=False)
             return
 
         execution_response = \
-            bzc.command(self.container, cmd, stdout=True, stderr=True, block=False)
+            bzc.command(self.container, cmd, stdout=True,
+                        stderr=True, block=False)
+
         for line in execution_response.output:
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             print(line, flush=True)

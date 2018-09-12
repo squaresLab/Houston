@@ -1,11 +1,17 @@
+__all__ = ['Sandbox']
+
+import os
+
+from .state import State
 from ..sandbox import Sandbox as ArduSandbox
 from ...mission import Mission
 
 
 class Sandbox(ArduSandbox):
     def _start(self, mission: Mission) -> None:
-        # FIXME #50
-        fn_param = '/experiment/source/Tools/autotest/default_params/copter.parm'  # noqa: pycodestyle
+        # FIXME #66
+        fn_param = os.path.join(self.snapshot.source_dir,
+                                'Tools/autotest/default_params/copter.parm')
         super(Sandbox, self)._start(
             mission,
             binary_name='arducopter',
@@ -16,8 +22,9 @@ class Sandbox(ArduSandbox):
         if not self.connection:
             return False
 
-        self.connection.parameters['DISARM_DELAY'] = 0
-        self.connection.parameters['RTL_ALT'] = 0
+        # FIXME Python 3 incompatibility in pymavlink (see #68)
+        # self.connection.parameters['DISARM_DELAY'] = 0
+        # self.connection.parameters['RTL_ALT'] = 0
 
         # wait until copter is in desired configuration
         # TODO This code doesn't work in python 3

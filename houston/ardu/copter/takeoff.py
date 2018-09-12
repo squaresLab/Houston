@@ -1,11 +1,15 @@
+__all__ = ['TakeoffSchema', 'TakeoffNormally']
+
 import time
 import math
 
 from pymavlink import mavutil
-from houston.state import Environment, State
-from houston.action import ActionSchema, Parameter, Action
-from houston.branch import Branch, IdleBranch
-from houston.valueRange import ContinuousValueRange
+
+from ...state import State
+from ...environment import Environment
+from ...action import ActionSchema, Parameter, Action
+from ...branch import Branch, IdleBranch
+from ...valueRange import ContinuousValueRange
 
 
 class TakeoffSchema(ActionSchema):
@@ -67,8 +71,8 @@ class TakeoffNormally(Branch):
 
     def precondition(self, system, action, state, environment):
         return state['armed'] and \
-               state['mode'] == 'GUIDED' and \
-               system.variable('altitude').lt(state['altitude'], 0.3)
+            state['mode'] == 'GUIDED' and \
+            system.variable('altitude').lt(state['altitude'], 0.3)
 
     def is_satisfiable(self, system, state, environment):
         return self.precondition(system, None, state, environment)

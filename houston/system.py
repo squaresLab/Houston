@@ -1,13 +1,16 @@
 __all__ = ['System']
 
-from typing import List
+from typing import List, Dict, FrozenSet
 import copy
 import time
 import timeit
 import signal
 import math
+import warnings
 
 import bugzoo
+from bugzoo.client import Client as BugZooClient
+from bugzoo.core.bug import Bug as Snapshot
 
 from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
@@ -23,31 +26,20 @@ class System(object):
     with the system-under-test in an idempotent manner.
     """
     def __init__(self,
-                 bug_name: str,
-                 variables: List[Variable],
+                 snapshot: Snapshot,
                  schemas: List[ActionSchema]
                  ) -> None:
-        self.__bugzoo = bugzoo.BugZoo()
-        self.__snapshot = self.__bugzoo.bugs[bug_name]
-        self.__bugzoo.bugs.build(self.__snapshot)
-        self.__variables = {v.name: v for v in variables}
+        self.__snapshot = snapshot
         self.__schemas = {s.name: s for s in schemas}
 
-    def provision(self) -> Sandbox:
+    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         """
         Constructs an interactive, ephemeral sandbox for this system.
         """
         raise NotImplementedError
 
     @property
-    def bugzoo(self):
-        """
-        The BugZoo daemon.
-        """
-        return self.__bugzoo
-
-    @property
-    def snapshot(self):
+    def snapshot(self) -> Snapshot:
         """
         The snapshot, provided by BugZoo, used to provide access to a concrete
         implementation of this system (known as a "sandbox").
@@ -55,13 +47,13 @@ class System(object):
         return self.__snapshot
 
     @property
-    def branches(self):
+    def branches(self) -> List[Branch]:
         """
         A list of the branches for this system.
         """
         return [b for s in self.__schemas.values() for b in s.branches]
 
-    def branch(self, iden):
+    def branch(self, iden) -> Branch:
         """
         Returns an outcome branch for this system provided its identifier.
         """
@@ -70,15 +62,24 @@ class System(object):
         return schema.get_branch(iden)
 
     def variable(self, v: str) -> Variable:
-        return self.__variables[v]
+        warnings.warn("System.variable will soon be removed",
+                      DeprecationWarning)
+        for variable in self.variables:
+            if variable.name == v:
+                return variable
+        raise KeyError("unable to find variable: {}".format(v))
 
     @property
-    def variables(self):
-        return copy.copy(self.__variables)
+    def variables(self) -> FrozenSet[Variable]:
+        warnings.warn("System.variables will soon be transformed into a class method",  # noqa: pycodestyle
+                      DeprecationWarning)
+        return self.__class__.state.variables
 
     @property
-    def schemas(self):
+    def schemas(self) -> Dict[str, ActionSchema]:
         """
         Returns a copy of action schemas
         """
+        warnings.warn("System.schemas will soon be removed",
+                      DeprecationWarning)
         return copy.copy(self.__schemas)

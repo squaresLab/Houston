@@ -4,13 +4,14 @@ import re
 import z3
 from typing import Set, Optional, Tuple, Dict, List
 
-from houston.action import Action
-from houston.branch import BranchPath
-from houston.root_cause import MissionDomain
-from houston.system import System
-from houston.specification import Expression
-from houston.state import State, Environment
-from houston.mission import Mission, MissionOutcome
+from ..action import Action
+from ..branch import BranchPath
+from .root_cause import MissionDomain
+from ..system import System
+from ..specification import Expression
+from ..state import State
+from ..environment import Environment
+from ..mission import Mission, MissionOutcome
 
 logging.basicConfig(filename="symex.log",level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -109,10 +110,10 @@ class SymbolicExecution(object):
     def _connect_pre_and_post(self, number: int) -> str:
         assert(number >= 0)
         s = ''
-        for n, v in self.initial_state.values.items():
+        for n, v in self.initial_state.to_json().items():
             s += '\n'.join(["(assert (= __{0}__{1} _{0}__{2}))".format(n, i, i+1) for i in range(0, number)])
             s += '\n'
-        s += Expression.values_to_smt('_', self.initial_state.values, '__0') # Adding initial state
+        s += Expression.values_to_smt('_', self.initial_state.to_json(), '__0') # Adding initial state
         return s
 
     def _dfs(self, actions, start_index, path: BranchPath, all_paths: List[BranchPath] = []):
