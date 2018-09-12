@@ -3,7 +3,8 @@ from typing import List, Iterator, Union
 import random
 
 from .util import printflush
-from .state import State, Environment
+from .state import State
+from .environment import Environment
 
 
 class BranchID(object):

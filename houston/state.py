@@ -1,4 +1,4 @@
-__all__ = ['State', 'var', 'Environment', 'Variable']
+__all__ = ['State', 'var', 'Variable']
 
 from typing import Dict, Any, Optional, Union, TypeVar, Generic, Type, \
     Callable, FrozenSet
@@ -247,43 +247,3 @@ class State(object, metaclass=StateMeta):
         s = '; '.join(["{}: {}".format(k, v) for (k, v) in fields.items()])
         s = "{}({})".format(self.__class__.__name__, s)
         return s
-
-
-class Environment(object):
-    @staticmethod
-    def from_file(fn: str) -> 'Environment':
-        """
-        Loads an environment description from a given file.
-
-        Returns:
-            the environment described in the file.
-        """
-        with open(fn, "r") as f:
-            jsn = json.load(f)
-        return Environment.from_json(jsn)
-
-    @staticmethod
-    def from_json(jsn: Dict[str, Any]) -> 'Environment':
-        return Environment(jsn['constants'])
-
-    def __init__(self, values: Dict[str, Any]) -> None:
-        """
-        Constructs a description of a mission environment.
-
-        Parameters:
-            values: a dictionary of environment constant values, indexed by
-                the name of those constants.
-        """
-        self.__values = values.copy()
-
-    def __getattr(self, variable: str):
-        return self.read(variable)
-
-    def read(self, variable: str):
-        """
-        Returns the value of a given environment constant.
-        """
-        return self.__values[variable]
-
-    def to_json(self) -> Dict[str, Any]:
-        return {'constants': self.__values.copy()}

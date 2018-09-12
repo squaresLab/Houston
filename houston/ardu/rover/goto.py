@@ -2,7 +2,8 @@ __all__ = ['GoToSchema']
 
 import dronekit
 
-from ...state import Environment, State
+from ...state import State
+from ...environment import Environment
 from ...action import Action, ActionSchema, Parameter
 from ...branch import IdleBranch
 from ...valueRange import ContinuousValueRange, DiscreteValueRange

@@ -1,7 +1,8 @@
 import pytest
 
 from houston.action import Action
-from houston.state import State, Environment, var
+from houston.state import State, var
+from houston.environment import Environment
 from houston.predicate import Postcondition, Precondition, Invariant
 
 

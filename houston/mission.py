@@ -1,7 +1,8 @@
 from typing import Dict, Any, List, Iterator
 
 from .action import Action, ActionOutcome
-from .state import Environment, State
+from .state import State
+from .environment import Environment
 from .branch import BranchPath
 
 

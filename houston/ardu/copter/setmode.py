@@ -1,9 +1,13 @@
+__all__ = ['SetModeSchema', 'SetModeLand', 'SetModeGuided', 'SetModeLoiter',
+           'SetModeRTL']
+
 import time
 
 import dronekit
 import geopy
 
-from ...state import State, Environment
+from ...state import State
+from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
 from ...branch import Branch, IdleBranch
 from ...valueRange import DiscreteValueRange

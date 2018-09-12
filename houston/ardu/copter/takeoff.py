@@ -1,9 +1,12 @@
+__all__ = ['TakeoffSchema', 'TakeoffNormally']
+
 import time
 import math
 
 from pymavlink import mavutil
 
-from ...state import Environment, State
+from ...state import State
+from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
 from ...branch import Branch, IdleBranch
 from ...valueRange import ContinuousValueRange

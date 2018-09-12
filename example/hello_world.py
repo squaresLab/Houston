@@ -6,6 +6,7 @@ import logging
 import bugzoo
 
 import houston
+from houston.environment import Environment
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
@@ -124,7 +125,7 @@ if __name__ == "__main__":
         houston.action.Action("setmode", {'mode': 'LAND'}),
         houston.action.Action("arm", {'arm': False})
     ]
-    environment = houston.state.Environment({})
+    environment = Environment({})
     initial = CopterState(
         home_latitude=-35.3632607,
         home_longitude=149.1652351,

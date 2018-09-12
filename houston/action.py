@@ -7,7 +7,8 @@ import logging
 
 import attr
 
-from .state import State, Environment
+from .state import State
+from .environment import Environment
 from .valueRange import ValueRange
 
 logger = logging.getLogger(__name__)   # type: logging.Logger

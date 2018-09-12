@@ -1,12 +1,16 @@
+__all__ = ['GoToSchema', 'GotoNormally']
+
 import dronekit
-import houston.ardu.common.goto
-from houston.state import Environment, State
-from houston.action import Action, ActionSchema, Parameter
-from houston.branch import IdleBranch
-from houston.valueRange import ContinuousValueRange, DiscreteValueRange
-from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
+
+from ..common.goto import GotoNormally as GotoNormallyBase
+from ..common.goto import DistanceBasedGoToGenerator, \
     CircleBasedGotoGenerator, \
     GotoLoiter
+from ...state import State
+from ...environment import Environment
+from ...action import Action, ActionSchema, Parameter
+from ...branch import IdleBranch
+from ...valueRange import ContinuousValueRange, DiscreteValueRange
 
 
 class GoToSchema(ActionSchema):
@@ -37,7 +41,7 @@ class GoToSchema(ActionSchema):
         sandbox.connection.simple_goto(loc)
 
 
-class GotoNormally(houston.ardu.common.goto.GotoNormally):
+class GotoNormally(GotoNormallyBase):
     def precondition(self, system, action, state, environment):
         """
         For GoTo actions within the ArduCopter to exhibit a "normal" behaviour,
