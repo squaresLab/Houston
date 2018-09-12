@@ -13,14 +13,12 @@ class ArduRover(BaseSystem):
 
         # TODO: RTL_ALT: http://ardupilot.org/copter/docs/rtl-mode.html
         # rover-specific system variables
-        variables = []
         schemas = [
             GoToSchema(),
             ArmDisarmSchema()
         ]
 
         super(ArduRover, self).__init__(bug_name,
-                                        variables,
                                         schemas,
                                         speedup=speedup)
 

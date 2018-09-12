@@ -1,93 +1,19 @@
-from typing import Dict, Any, Optional, Union
+__all__ = ['State', 'var', 'Environment', 'Variable']
 
+from typing import Dict, Any, Optional, Union, TypeVar, Generic, Type, \
+    Callable, FrozenSet
+import logging
 import copy
 import json
 import math
 
+import attr
 
-class State(object):
-    """
-    Describes the state of the system at a given moment in time, in terms of
-    its internal and external variables.
-    """
-    @staticmethod
-    def from_file(fn: str) -> 'State':
-        """
-        Constructs a system state from a given file, containing a JSON-based
-        description of its contents.
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
-        :param  fn  the path to the state description file
 
-        :returns    the corresponding State for that file
-        """
-        with open(fn, "r") as f:
-            jsn = json.load(f)
-        return State.from_json(jsn)
-
-    @staticmethod
-    def from_json(jsn: Dict[str, Any]) -> 'State':
-        return State(jsn['variables'], jsn['time_offset'])
-
-    def __init__(self,
-                 values: Dict[str, Any],
-                 time_offset: float
-                 ) -> None:
-        """
-        Constructs a description of the system state.
-
-        :param  values: a dictionary describing the values of the state
-                        variables, indexed by their names.
-        """
-        self.__values = values.copy()
-        self.__time_offset = time_offset
-
-    @property
-    def values(self) -> Dict[str, Any]:
-        """
-        Returns the values of each of the state variables as a dictionary,
-        indexed by name.
-        """
-        return copy.copy(self.__values)
-
-    @property
-    def time_offset(self) -> float:
-        return self.__time_offset
-
-    def __getitem__(self, variable: str) -> Any:
-        """
-        See `read`
-        """
-        return self.read(variable)
-
-    def read(self, variable: str) -> Any:
-        """
-        Returns the value for a given state variable
-        """
-        return self.__values[variable]
-
-    # FIXME get rid of this
-    def dump(self) -> None:
-        """
-        Prints this state to the standard output.
-        """
-        for variable in self.__values:
-            m = 'Variable: {} - State: {}'
-            m = m.format(variable, self[variable])
-            print(m)
-
-    def to_json(self) -> Dict[str, Any]:
-        """
-        Returns a JSON description of this state.
-        """
-        return {'variables': self.__values.copy(),
-                'time_offset': self.__time_offset}
-
-    def __repr__(self) -> str:
-        vrs = ["{}: {}".format(k, repr(v)) for (k, v) in self.__values.items()]
-        s_vrs = '; '.format(vrs)
-        s = "State(time_offset={:.3f}, variables={})"
-        s = s.format(self.time_offset, s_vrs)
-        return s
+K = TypeVar('K')
 
 
 class Variable(object):
@@ -123,9 +49,13 @@ class Variable(object):
         """
         return self.__noise
 
-    """
-    Returns the name of this system variable
-    """
+    @property
+    def _field(self) -> str:
+        """
+        The name of the field used to store the value of this variable.
+        """
+        return "__{}".format(self.__name)
+
     @property
     def name(self) -> str:
         return self.__name
@@ -165,6 +95,158 @@ class Variable(object):
         Inspects the current state of this system variable
         """
         return self.__getter(sandbox)
+
+
+@attr.s(frozen=True)
+class VariableBuilder(Generic[K]):
+    typ = attr.ib(type=Type[K])
+    getter = attr.ib(type=Callable[['Sandbox'], K])
+    noise = attr.ib(type=Optional[Union[int, float]])
+
+    def build(self, name: str) -> Variable:
+        return Variable(name, self.getter, self.noise)
+
+
+def var(typ: Type,
+        getter: Callable[['Sandbox'], K],
+        noise: Optional[Union[int, float]] = None
+        ) -> VariableBuilder:
+    return VariableBuilder(typ, getter, noise)
+
+
+class StateMeta(type):
+    def __new__(mcl,
+                cls_name: str,
+                bases,  # FIXME
+                ns: Dict[str, Any]
+                ):
+        # collect and build variable definitions
+        variable_builders = {}  # type: Dict[str, VariableBuilder]
+        for name in ns:
+            if isinstance(ns[name], VariableBuilder):
+                logger.debug("found variable: %s", name)
+                variable_builders[name] = ns[name]
+        logger.debug("building variables")
+        variables = frozenset(
+            b.build(name) for (name, b) in variable_builders.items()
+        )  # type: FrozenSet[Variable]
+        logger.debug("built variables: %s", variables)
+
+        logger.debug("storing variables in variables property")
+        ns['variables'] = variables
+        logger.debug("stored variables in variables property")
+
+        logger.debug("constructing properties")
+        for variable in variables:
+            field = variable._field
+            getter = lambda self, f=field: getattr(self, f)
+            ns[variable.name] = property(getter)
+        logger.debug("constructed properties")
+
+        return super().__new__(mcl, cls_name, bases, ns)
+
+
+class State(object, metaclass=StateMeta):
+    """
+    Describes the state of the system at a given moment in time, in terms of
+    its internal and external variables.
+    """
+    @classmethod
+    def from_file(cls: Type['State'], fn: str) -> 'State':
+        """
+        Constructs a system state from a given file, containing a JSON-based
+        description of its contents.
+        """
+        with open(fn, "r") as f:
+            jsn = json.load(f)
+        return cls.from_json(jsn)
+
+    @classmethod
+    def from_json(cls: Type['State'], jsn: Dict[str, Any]) -> 'State':
+        return cls(**jsn)
+
+    def __init__(self, *args, **kwargs) -> None:
+        cls_name = self.__class__.__name__
+        variables = self.__class__.variables  # type: FrozenSet[Variable]
+
+        try:
+            self.__time_offset = kwargs['time_offset']
+        except KeyError:
+            msg = "missing keyword argument [time_offset] to constructor [{}]"
+            msg = msg.format(cls_name)
+            raise TypeError(msg)
+
+        # were any positional arguments passed to the constructor?
+        if args:
+            msg = "constructor [{}] accepts no positional arguments but {} {} given"  # noqa: pycodestyle
+            msg = msg.format(cls_name,
+                             "was" if len(args) == 1 else "were",
+                             len(args))
+            raise TypeError(msg)
+
+        # set values for each variable
+        for v in variables:
+            try:
+                val = kwargs[v.name]
+            except KeyError:
+                msg = "missing keyword argument [{}] to constructor [{}]"
+                msg = msg.format(v.name, cls_name)
+                raise TypeError(msg)
+
+            # TODO perform run-time type checking?
+
+            setattr(self, v._field, val)
+
+        # did we pass any unexpected keyword arguments?
+        if len(kwargs) > len(variables) + 1:
+            actual_args = set(n for n in kwargs)
+            expected_args = \
+                set(v.name for v in variables) | {'time_offset'}
+            unexpected_arguments = list(actual_args - expected_args)
+            msg = "unexpected keyword arguments [{}] supplied to constructor [{}]"  # noqa: pycodestyle
+            msg = msg.format('; '.join(unexpected_arguments), cls_name)
+            raise TypeError(msg)
+
+    @property
+    def time_offset(self) -> float:
+        return self.__time_offset
+
+    def __eq__(self, other: 'State') -> bool:
+        if type(self) != type(other):
+            msg = "illegal comparison of states: [{}] vs. [{}]"
+            msg = msg.format(self.__class__.__name__, state.__class__.__name__)
+            raise Exception(msg)  # FIXME use HoustonException
+        return self.__dict__ == other.__dict__
+
+    def __getitem__(self, name: str) -> Any:
+        # FIXME use frozendict
+        try:
+            variables = self.__class__.variables
+            var = next(v for v in variables if v.name == name)
+        except StopIteration:
+            msg = "no variable [{}] in state [{}]"
+            msg.format(name, self.__class__.__name__)
+            raise KeyError
+        return getattr(self, var._field)
+
+    def to_json(self) -> Dict[str, Any]:
+        fields = {}  # type: Dict[str, Any]
+        fields['time_offset'] = self.__time_offset
+        for var in self.__class__.variables:
+            fields[var.name] = getattr(self, var._field)
+        return fields
+
+    def __repr__(self) -> str:
+        fields = self.to_json()
+        for (name, val) in fields.items():
+            if isinstance(val, float):
+                s = "{:.3f}".format(val)
+            else:
+                s = str(val)
+            fields[name] = val
+        s = '; '.join(["{}: {}".format(k, v) for (k, v) in fields.items()])
+        s = "{}({})".format(self.__class__.__name__, s)
+        return s
 
 
 class Environment(object):

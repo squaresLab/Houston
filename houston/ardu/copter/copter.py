@@ -1,10 +1,13 @@
 __all__ = ['ArduCopter']
 
+from .state import State
 from .sandbox import Sandbox
 from ..base import BaseSystem
 
 
 class ArduCopter(BaseSystem):
+    state = State
+
     def __init__(self,
                  bug_name: str,
                  speedup: float = 3.0,
@@ -19,8 +22,6 @@ class ArduCopter(BaseSystem):
         assert speedup != 0.0
         self.__min_parachute_alt = min_parachute_alt
 
-        # variables specific to the ArduCopter system
-        variables = []
         schemas = [
             GoToSchema(),
             TakeoffSchema(),
@@ -29,7 +30,6 @@ class ArduCopter(BaseSystem):
             ParachuteSchema()
         ]
         super(ArduCopter, self).__init__(bug_name,
-                                         variables,
                                          schemas,
                                          speedup=speedup)
 

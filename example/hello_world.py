@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-import houston
-import bugzoo
+import copy
 import json
+import logging
+
+import bugzoo
+
+import houston
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 from houston.ardu.common.goto import CircleBasedGotoGenerator
-import copy
+from houston.ardu.copter.state import State as CopterState
 
 
-#### Run a single mission
 def run_single_mission(sandbox, mission):
     res = sandbox.run(mission)
     print(res)
 
-#### Run a single mission with coverage
 def run_single_mission_with_coverage(sandbox, mission):
     (res, coverage) = sandbox.run_with_coverage(mission)
     print("Done")
@@ -107,9 +109,8 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
         f.write(str(mission_generator.report_fault_localization()))
 
 
-if __name__=="__main__":
-    #sut = houston.ardu.ArduRover('afrl:overflow')
-    sut = houston.ardu.ArduCopter('afrl:overflow')
+if __name__ == "__main__":
+    sut = houston.ardu.ArduCopter('ardubugs:1a207c91')
 
     # mission description
     actions = [
@@ -124,25 +125,37 @@ if __name__=="__main__":
         houston.action.Action("arm", {'arm': False})
     ]
     environment = houston.state.Environment({})
-    initial = houston.state.State({
-        "homeLatitude" : -35.3632607,
-        "homeLongitude" : 149.1652351,
-        "latitude" : -35.3632607,
-        "longitude": 149.1652351,
-        "altitude" : 0.0,
-        "battery"  : 100,
-        "armed"    : False,
-        "armable"  : True,
-        "mode"     : "AUTO"
-    }, 0.0)
+    initial = CopterState(
+        home_latitude=-35.3632607,
+        home_longitude=149.1652351,
+        latitude=-35.3632607,
+        longitude=149.1652351,
+        altitude=0.0,
+        armed=False,
+        armable=True,
+        mode="AUTO",
+        ekf_ok=True,
+        yaw=0.0,
+        roll=0.0,
+        pitch=0.0,
+        roll_channel=0.0,
+        throttle_channel=0.0,
+        heading=0.0,
+        groundspeed=0.0,
+        airspeed=0.0,
+        vx=0.0,
+        vy=0.0,
+        vz=0.0,
+        time_offset=0.0)
     mission = houston.mission.Mission(environment, initial, actions)
     # create a container for the mission execution
-    #sandbox = sut.provision()
+    sandbox = sut.provision()
+    try:
+        run_single_mission_with_coverage(sandbox, mission)
+        #generate(sut, initial, environment, 100, 10)
+        # run_all_missions(sut, "example/missions.json", False)
+        #generate_and_run_with_fl(sut, initial, environment, 5)
+        #run_single_mission_with_coverage(sandbox, mission)
 
-    #run_single_mission_with_coverage(sandbox, mission)
-    #generate(sut, initial, environment, 100, 10)
-    run_all_missions(sut, "example/missions.json", False)
-    #generate_and_run_with_fl(sut, initial, environment, 5)
-    #run_single_mission_with_coverage(sandbox, mission)
-
-    #sandbox.destroy()
+    finally:
+        sandbox.destroy()

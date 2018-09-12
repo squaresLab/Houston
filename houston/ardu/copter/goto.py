@@ -5,8 +5,8 @@ from houston.action import Action, ActionSchema, Parameter
 from houston.branch import IdleBranch
 from houston.valueRange import ContinuousValueRange, DiscreteValueRange
 from houston.ardu.common.goto import DistanceBasedGoToGenerator, \
-                                     CircleBasedGotoGenerator, \
-                                     GotoLoiter
+    CircleBasedGotoGenerator, \
+    GotoLoiter
 
 
 class GoToSchema(ActionSchema):
