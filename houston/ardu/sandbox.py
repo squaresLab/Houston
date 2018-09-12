@@ -55,8 +55,9 @@ class Sandbox(BaseSandbox):
 
         # FIXME #47
         home = "-35.362938,149.165085,584,270"
-        # FIXME #48
-        name_bin = "/experiment/source/build/sitl/bin/{}".format(name_bin)
+        name_bin = os.path.join(self.container.source_dir,
+                                "/build/sitl/bin",
+                                name_bin)
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, self.system.speedup,
                          home, fn_param)

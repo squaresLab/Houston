@@ -1,11 +1,16 @@
+__all__ = ['Sandbox']
+
+import os
+
 from ..sandbox import Sandbox as ArduSandbox
 from ...mission import Mission
 
 
 class Sandbox(ArduSandbox):
     def _start(self, mission: Mission) -> None:
-        # FIXME #50
-        fn_param = '/experiment/source/Tools/autotest/default_params/copter.parm'  # noqa: pycodestyle
+        # FIXME #66
+        fn_param = os.path.join(self.container.source_dir,
+                                'Tools/autotest/default_params/copter.parm')
         super(Sandbox, self)._start(
             mission,
             binary_name='arducopter',
