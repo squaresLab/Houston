@@ -1,12 +1,8 @@
 __all__ = ['System']
 
-from typing import List, Dict, FrozenSet
-import copy
-import time
-import timeit
-import signal
-import math
+from typing import List, Dict, FrozenSet, Any
 import warnings
+import logging
 
 import bugzoo
 from bugzoo.client import Client as BugZooClient
@@ -16,21 +12,62 @@ from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
 from .action import ActionSchema, ActionOutcome, Action
 from .branch import BranchID, Branch, BranchPath
-from .state import Variable
+from .state import Variable, State
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
-class System(object):
+class SystemMeta(type):
+    def __new__(mcl,
+                cls_name: str,
+                bases,  # FIXME
+                ns: Dict[str, Any]
+                ):
+        # is this an abstract class?
+        if 'is_abstract' in ns:
+            is_abstract = ns['is_abstract']
+            if not isinstance(ns['is_abstract'], bool):
+                typ = type(ns['is_abstract']).__name__
+                msg = "expected 'bool' but was '{}'".format(typ)
+                msg = \
+                    "Unexpected type for 'is_abtract' property: {}".format(msg)
+                raise TypeError(msg)
+        else:
+            is_abstract = False
+
+        # construct an immutable "is_abstract" property
+        ns['is_abstract'] = property(lambda self, v=is_abstract: v)
+
+        if not is_abstract:
+            if 'state' not in ns:
+                msg = "System class definition is missing 'state' property"
+                raise TypeError(msg)
+            if not issubclass(ns['state'], State):
+                typ = ns['state'].__name__
+                msg = "was {} but should be a subclass of State".format(typ)
+                msg = "Unexpected class for 'state' property: {}".format(msg)
+                raise TypeError(msg)
+
+        return super().__new__(mcl, cls_name, bases, ns)
+
+
+class System(object, metaclass=SystemMeta):
     """
     Instances of the System class are used to provide a description of a
     system-under-test, and to provide an interface for safely interacting
     with the system-under-test in an idempotent manner.
     """
+    is_abstract = True
+
     def __init__(self,
-                 snapshot: Snapshot,
-                 schemas: List[ActionSchema]
+                 schemas: List[ActionSchema],
+                 snapshot: Snapshot
                  ) -> None:
+        # TODO do not allow instantiation of abstract classes
         self.__snapshot = snapshot
-        self.__schemas = {s.name: s for s in schemas}
+        # FIXME this should be a class variable
+        self.schemas = {s.name: s for s in schemas}
 
     def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         """
@@ -74,12 +111,3 @@ class System(object):
         warnings.warn("System.variables will soon be transformed into a class method",  # noqa: pycodestyle
                       DeprecationWarning)
         return self.__class__.state.variables
-
-    @property
-    def schemas(self) -> Dict[str, ActionSchema]:
-        """
-        Returns a copy of action schemas
-        """
-        warnings.warn("System.schemas will soon be removed",
-                      DeprecationWarning)
-        return copy.copy(self.__schemas)

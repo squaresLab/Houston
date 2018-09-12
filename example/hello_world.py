@@ -16,6 +16,12 @@ from houston.ardu.common.goto import CircleBasedGotoGenerator
 from houston.ardu.copter.state import State as CopterState
 
 
+def setup_logging() -> None:
+    log_to_stdout = logging.StreamHandler()
+    log_to_stdout.setLevel(logging.DEBUG)
+    logging.getLogger('houston').addHandler(log_to_stdout)
+
+
 def run_single_mission(sandbox, mission):
     res = sandbox.run(mission)
     print(res)
@@ -112,6 +118,7 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 
 
 if __name__ == "__main__":
+    setup_logging()
     bz = BugZoo()
     snapshot = bz.bugs['ardubugs:1a207c91']
     sut = houston.ardu.ArduCopter(snapshot)

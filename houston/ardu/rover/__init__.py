@@ -1,16 +1,16 @@
 __all__ = ['ArduRover']
 
-import time
-
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
 from .sandbox import Sandbox
-from ...util import printflush
+from .state import State
 from ..base import BaseSystem
 
 
 class ArduRover(BaseSystem):
+    state = State
+
     def __init__(self,
                  snapshot: Snapshot,
                  speedup=3.0

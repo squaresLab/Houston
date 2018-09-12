@@ -15,6 +15,8 @@ class BaseSystem(System):
     """
     Description of the ArduCopter system
     """
+    is_abstract = True
+
     def __init__(self,
                  snapshot: Snapshot,
                  schemas: List[ActionSchema],
@@ -22,7 +24,7 @@ class BaseSystem(System):
                  ) -> None:
         assert speedup != 0.0
         self.__speedup = speedup
-        super().__init__(snapshot, schemas)
+        super().__init__(schemas, snapshot)
 
     def provision(self) -> Sandbox:
         return Sandbox(self)

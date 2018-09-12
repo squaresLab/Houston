@@ -1,5 +1,7 @@
 __all__ = ['ArduCopter']
 
+import logging
+
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
@@ -7,9 +9,13 @@ from .state import State
 from .sandbox import Sandbox
 from ..base import BaseSystem
 
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
+
 
 class ArduCopter(BaseSystem):
     state = State
+    schemas = []
 
     def __init__(self,
                  snapshot: Snapshot,
@@ -32,9 +38,9 @@ class ArduCopter(BaseSystem):
             SetModeSchema(),
             ParachuteSchema()
         ]
-        super(ArduCopter, self).__init__(snapshot,
-                                         schemas,
-                                         speedup=speedup)
+        super().__init__(snapshot,
+                         schemas,
+                         speedup=speedup)
 
     @property
     def min_parachute_alt(self) -> float:
