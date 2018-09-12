@@ -2,6 +2,7 @@ __all__ = ['ArduRover']
 
 import time
 
+from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
 from .sandbox import Sandbox
@@ -28,5 +29,5 @@ class ArduRover(BaseSystem):
                                         schemas,
                                         speedup=speedup)
 
-    def provision(self) -> Sandbox:
-        return Sandbox(self)
+    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
+        return Sandbox(self, client_bugzoo)

@@ -9,6 +9,7 @@ import math
 import warnings
 
 import bugzoo
+from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
 from .sandbox import Sandbox
@@ -28,24 +29,14 @@ class System(object):
                  snapshot: Snapshot,
                  schemas: List[ActionSchema]
                  ) -> None:
-        self.__bugzoo = bugzoo.BugZoo()
         self.__snapshot = snapshot
-        self.__bugzoo.bugs.build(self.__snapshot)
         self.__schemas = {s.name: s for s in schemas}
 
-    def provision(self) -> Sandbox:
+    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         """
         Constructs an interactive, ephemeral sandbox for this system.
         """
         raise NotImplementedError
-
-    @property
-    def bugzoo(self):
-        """
-        The BugZoo daemon.
-        """
-        warnings.warn("System.bugzoo will soon be removed", DeprecationWarning)
-        return self.__bugzoo
 
     @property
     def snapshot(self) -> Snapshot:

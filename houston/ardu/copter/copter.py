@@ -1,5 +1,6 @@
 __all__ = ['ArduCopter']
 
+from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
 from .state import State
@@ -39,5 +40,5 @@ class ArduCopter(BaseSystem):
     def min_parachute_alt(self) -> float:
         return self.__min_parachute_alt
 
-    def provision(self) -> Sandbox:
-        return Sandbox(self)
+    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
+        return Sandbox(self, client_bugzoo)

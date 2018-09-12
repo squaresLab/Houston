@@ -5,6 +5,7 @@ import sys
 import threading
 
 import dronekit
+from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
 from ..sandbox import Sandbox as BaseSandbox
@@ -20,8 +21,11 @@ class NoConnectionError(BaseException):
 
 
 class Sandbox(BaseSandbox):
-    def __init__(self, system: 'BaseSystem') -> None:
-        super().__init__(system)
+    def __init__(self,
+                 system: 'BaseSystem',
+                 client_bugzoo: BugZooClient
+                 ) -> None:
+        super().__init__(system, client_bugzoo)
         self.__connection = None
         self.__sitl_thread = None
 

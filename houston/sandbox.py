@@ -6,6 +6,7 @@ import threading
 import signal
 
 import bugzoo
+from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 from bugzoo.core.fileline import FileLineSet
 
@@ -20,11 +21,15 @@ class Sandbox(object):
     Sandboxes are used to provide an isolated, idempotent environment for
     executing test cases on a given system.
     """
-    def __init__(self, system: 'System') -> None:
+    def __init__(self,
+                 system: 'System',
+                 client_bugzoo: BugZooClient
+                 ) -> None:
         self.__lock = threading.Lock()
         self.__system = system
         self.__snapshot = system.snapshot
-        self.__container = system.bugzoo.containers.provision(self.__snapshot)
+        self._bugzoo = client_bugzoo
+        self.__container = client_bugzoo.containers.provision(self.__snapshot)
         self.__instrumented = False
 
     @property
@@ -51,11 +56,11 @@ class Sandbox(object):
         return self.__container
 
     @property
-    def bugzoo(self) -> bugzoo.BugZoo:
+    def bugzoo(self) -> BugZooClient:
         """
         The BugZoo daemon.
         """
-        return self.system.bugzoo
+        return self._bugzoo
 
     @property
     def alive(self) -> bool:

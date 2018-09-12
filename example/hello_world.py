@@ -153,7 +153,7 @@ if __name__ == "__main__":
         time_offset=0.0)
     mission = houston.mission.Mission(environment, initial, actions)
     # create a container for the mission execution
-    sandbox = sut.provision()
+    sandbox = sut.provision(bz)
     try:
         run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
