@@ -1,8 +1,12 @@
-__all__ = ['Predicate']
+__all__ = ['Predicate', 'Invariant', 'Postcondition', 'Precondition']
 
 from typing import Callable
 
 import attr
+
+from .action import Action
+from .state import State
+from .environment import Environment
 
 
 @attr.s(frozen=True)
@@ -13,13 +17,13 @@ class Predicate(object):
     of purposes.
     """
     name = attr.ib(type=str)
-    predicate = attr.ib(type=Callable[['Action', 'State', 'Environment'],
+    predicate = attr.ib(type=Callable[[Action, State, Environment],
                                       bool])
 
     def check(self,
-              action: 'Action',
-              state: 'State',
-              environment: 'Environment'
+              action: Action,
+              state: State,
+              environment: Environment
               ) -> bool:
         """
         Determines whether this predicate is satisfied by a given action,
