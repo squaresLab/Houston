@@ -4,6 +4,7 @@ import json
 import logging
 
 import bugzoo
+from bugzoo import BugZoo
 
 import houston
 from houston.environment import Environment
@@ -111,7 +112,9 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 
 
 if __name__ == "__main__":
-    sut = houston.ardu.ArduCopter('ardubugs:1a207c91')
+    bz = BugZoo()
+    snapshot = bz.bugs['ardubugs:1a207c91']
+    sut = houston.ardu.ArduCopter(snapshot)
 
     # mission description
     actions = [

@@ -25,11 +25,11 @@ class System(object):
     with the system-under-test in an idempotent manner.
     """
     def __init__(self,
-                 bug_name: str,
+                 snapshot: Snapshot,
                  schemas: List[ActionSchema]
                  ) -> None:
         self.__bugzoo = bugzoo.BugZoo()
-        self.__snapshot = self.__bugzoo.bugs[bug_name]
+        self.__snapshot = snapshot
         self.__bugzoo.bugs.build(self.__snapshot)
         self.__schemas = {s.name: s for s in schemas}
 

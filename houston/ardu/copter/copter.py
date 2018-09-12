@@ -1,5 +1,7 @@
 __all__ = ['ArduCopter']
 
+from bugzoo.core.bug import Bug as Snapshot
+
 from .state import State
 from .sandbox import Sandbox
 from ..base import BaseSystem
@@ -9,7 +11,7 @@ class ArduCopter(BaseSystem):
     state = State
 
     def __init__(self,
-                 bug_name: str,
+                 snapshot: Snapshot,
                  speedup: float = 3.0,
                  min_parachute_alt: float = 10.0
                  ) -> None:
@@ -29,7 +31,7 @@ class ArduCopter(BaseSystem):
             SetModeSchema(),
             ParachuteSchema()
         ]
-        super(ArduCopter, self).__init__(bug_name,
+        super(ArduCopter, self).__init__(snapshot,
                                          schemas,
                                          speedup=speedup)
 

@@ -1,4 +1,8 @@
+__all__ = ['BaseSystem']
+
 from typing import List
+
+from bugzoo.core.bug import Bug as Snapshot
 
 from .sandbox import Sandbox
 from ..system import System
@@ -12,13 +16,13 @@ class BaseSystem(System):
     Description of the ArduCopter system
     """
     def __init__(self,
-                 bug_name: str,
+                 snapshot: Snapshot,
                  schemas: List[ActionSchema],
                  speedup: float = 3.0
                  ) -> None:
         assert speedup != 0.0
         self.__speedup = speedup
-        super(BaseSystem, self).__init__(bug_name, schemas)
+        super().__init__(snapshot, schemas)
 
     def provision(self) -> Sandbox:
         return Sandbox(self)
