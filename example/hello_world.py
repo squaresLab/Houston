@@ -135,24 +135,25 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 if __name__ == "__main__":
     bz = BugZoo()
     snapshot = bz.bugs['afrl:overflow']
-    sut = houston.ardu.ArduRover(snapshot)
+    sut = houston.ardu.ArduCopter(snapshot)
 
     # mission description
     actions = [
         houston.action.Action("arm", {'arm': False}),
         houston.action.Action("arm", {'arm': True}),
-        #houston.action.Action("takeoff", {'altitude': 3.0}),
-#        houston.action.Action("goto", {
-#            'latitude' : -35.361354,
-#            'longitude': 149.175218,
-        #    'altitude' : 5.0
-#        }),
-        #houston.action.Action("setmode", {'mode': 'LAND'}),
+        houston.action.Action("setmode", {"mode": 'GUIDED'}),
+        houston.action.Action("takeoff", {'altitude': 3.0}),
+        houston.action.Action("goto", {
+            'latitude' : -35.361354,
+            'longitude': 149.175218,
+            'altitude' : 5.0
+        }),
+        houston.action.Action("setmode", {'mode': 'LAND'}),
         houston.action.Action("arm", {'arm': False})
     ]
     
     environment = Environment({})
-    initial = RoverState(
+    initial = CopterState(
         home_latitude=-35.3632607,
         home_longitude=149.1652351,
         latitude=-35.3632607,

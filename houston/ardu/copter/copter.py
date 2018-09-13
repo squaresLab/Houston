@@ -26,11 +26,11 @@ class ArduCopter(BaseSystem):
         self.__min_parachute_alt = min_parachute_alt
 
         schemas = [
-#            GoToSchema(),
-#            TakeoffSchema(),
+            GoToSchema(),
+            TakeoffSchema(),
             ArmDisarmSchema(),
-#            SetModeSchema(),
-#            ParachuteSchema()
+            SetModeSchema(),
+            ParachuteSchema()
         ]
         super(ArduCopter, self).__init__(snapshot,
                                          schemas,

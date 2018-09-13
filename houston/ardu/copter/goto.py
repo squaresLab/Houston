@@ -1,15 +1,17 @@
 __all__ = ['GoToSchema', 'GotoNormally']
 
 import dronekit
+import geopy
 
 from ..common.goto import GotoNormally as GotoNormallyBase
 from ..common.goto import DistanceBasedGoToGenerator, \
     CircleBasedGotoGenerator, \
     GotoLoiter
 from ...state import State
+from ...specification import Specification
 from ...environment import Environment
 from ...action import Action, ActionSchema, Parameter
-from ...branch import IdleBranch
+from ...branch import IdleBranch, Branch
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
 
 
@@ -22,9 +24,9 @@ class GoToSchema(ActionSchema):
         ]
 
         branches = [
-            GotoNormally(self),
-            GotoLoiter(self),
-            IdleBranch(self)
+            GotoNormally(self, parameters),
+            GotoLoiter(self, parameters),
+            IdleBranch(self, parameters)
         ]
 
         super(GoToSchema, self).__init__('goto', parameters, branches)
@@ -41,36 +43,28 @@ class GoToSchema(ActionSchema):
         sandbox.connection.simple_goto(loc)
 
 
-class GotoNormally(GotoNormallyBase):
-    def precondition(self, system, action, state, environment):
-        """
-        For GoTo actions within the ArduCopter to exhibit a "normal" behaviour,
-        the robot must be at an altitude greater than 0.3 metres.
-        """
-        base = super(GotoNormally, self).precondition(system,
-                                                      action,
-                                                      state,
-                                                      environment)
-        if not base:
-            return False
-        return system.variable('altitude').gt(state['altitude'], 0.3)
+class GotoNormally(Branch):
 
-    def postcondition(self,
-                      system,
-                      action,
-                      state_before,
-                      state_after,
-                      environment):
-        """
-        Upon completion of the action, the robot should be at the longitude,
-        latitude, and altitude specified by the action.
-        """
-        base = super(GotoNormally, self).postcondition(system,
-                                                       action,
-                                                       state_before,
-                                                       state_after,
-                                                       environment)
-        if not base:
-            return False
-        return system.variable('altitude').eq(state_after['altitude'],
-                                              action['altitude'])
+    def __init__(self, schema, parameters):
+        specification = Specification(parameters,
+            """
+            (and (= _armed true)
+                (not (= _mode "LOITER"))
+                (> _altitude 0.3))
+            """,
+            """
+            (and (= __longitude $longitude)
+                (= __latitude $latitude)
+                (= __altitude $altitude))
+            """,
+            None)
+        super(GotoNormally, self).__init__('normal', schema, specification)
+    
+    def timeout(self, system, action, state, environment):
+        from_loc = (state['latitude'], state['longitude'])
+        to_loc = (action['latitude'], action['longitude'])
+        dist = geopy.distance.great_circle(from_loc, to_loc).meters
+        timeout = dist * system.time_per_metre_travelled
+        timeout += system.constant_timeout_offset
+        return timeout
+

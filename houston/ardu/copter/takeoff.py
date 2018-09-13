@@ -6,6 +6,7 @@ import math
 from pymavlink import mavutil
 
 from ...state import State
+from ...specification import Specification
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
 from ...branch import Branch, IdleBranch
@@ -23,8 +24,8 @@ class TakeoffSchema(ActionSchema):
             Parameter('altitude', ContinuousValueRange(0.3, 100.0))
         ]
         branches = [
-            TakeoffNormally(self),
-            IdleBranch(self)
+            TakeoffNormally(self, parameters),
+            IdleBranch(self, parameters)
         ]
 
         super(TakeoffSchema, self).__init__('takeoff', parameters, branches)
@@ -44,38 +45,51 @@ class TakeoffSchema(ActionSchema):
 
 
 class TakeoffNormally(Branch):
-    def __init__(self, system):
-        super(TakeoffNormally, self).__init__("normal", system)
+    def __init__(self, schema, parameters):
+        specification = Specification(parameters,
+            """
+            (and (= _armed true)
+                (= _mode "GUIDED")
+                (< _altitude 0.3))
+            """,
+            """
+            (and(= _longitude __longitude)
+                (= _latitude __latitude)
+                (= __altitude $altitude)
+                (= __vz 0.0))
+            """,
+            None)
+        super().__init__('normal', schema, specification)
 
     def timeout(self, system, action, state, environment):
         timeout = action['altitude'] * system.time_per_metre_travelled
         timeout += system.constant_timeout_offset
         return timeout
 
-    def postcondition(self,
-                      system,
-                      action,
-                      state_before,
-                      state_after,
-                      environment
-                      ) -> bool:
-        v = system.variable
-        sat_lon = v('longitude').eq(state_before['longitude'],
-                                    state_after['longitude'])
-        sat_lat = v('latitude').eq(state_before['latitude'],
-                                   state_after['latitude'])
-        sat_alt = v('altitude').eq(state_after['altitude'],
-                                   action['altitude'])
-        sat_vz = v('vz').eq(state_after['vz'], 0.0)
-        return sat_lon and sat_lat and sat_alt and sat_vz
-
-    def precondition(self, system, action, state, environment):
-        return state['armed'] and \
-            state['mode'] == 'GUIDED' and \
-            system.variable('altitude').lt(state['altitude'], 0.3)
-
-    def is_satisfiable(self, system, state, environment):
-        return self.precondition(system, None, state, environment)
+#    def postcondition(self,
+#                      system,
+#                      action,
+#                      state_before,
+#                      state_after,
+#                      environment
+#                      ) -> bool:
+#        v = system.variable
+#        sat_lon = v('longitude').eq(state_before['longitude'],
+#                                    state_after['longitude'])
+#        sat_lat = v('latitude').eq(state_before['latitude'],
+#                                   state_after['latitude'])
+#        sat_alt = v('altitude').eq(state_after['altitude'],
+#                                   action['altitude'])
+#        sat_vz = v('vz').eq(state_after['vz'], 0.0)
+#        return sat_lon and sat_lat and sat_alt and sat_vz
+#
+#    def precondition(self, system, action, state, environment):
+#        return state['armed'] and \
+#            state['mode'] == 'GUIDED' and \
+#            system.variable('altitude').lt(state['altitude'], 0.3)
+#
+#    def is_satisfiable(self, system, state, environment):
+#        return self.precondition(system, None, state, environment)
 
     def generate(self, system, state, env, rng):
         return self.schema.generate(rng)
