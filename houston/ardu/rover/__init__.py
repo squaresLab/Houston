@@ -6,10 +6,12 @@ from bugzoo.core.bug import Bug as Snapshot
 from .sandbox import Sandbox
 from .state import State
 from ..base import BaseSystem
+from ..configuration import Configuration
 
 
 class ArduRover(BaseSystem):
     state = State
+    configuration = Configuration
 
     def __init__(self,
                  snapshot: Snapshot,

@@ -1,8 +1,5 @@
 __all__ = ['ParachuteSchema', 'ParachuteNormally']
 
-import time
-import math
-
 from pymavlink import mavutil
 
 from ...state import State

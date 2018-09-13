@@ -8,6 +8,7 @@ import bugzoo
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
+from .configuration import Configuration
 from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
 from .action import ActionSchema, ActionOutcome, Action
@@ -47,6 +48,16 @@ class SystemMeta(type):
                 typ = ns['state'].__name__
                 msg = "was {} but should be a subclass of State".format(typ)
                 msg = "Unexpected class for 'state' property: {}".format(msg)
+                raise TypeError(msg)
+
+            if 'configuration' not in ns:
+                msg = "System class definition is missing 'configuration' property"  # noqa: pycodestyle
+                raise TypeError(msg)
+            if not issubclass(ns['configuration'], Configuration):
+                msg = "was {} but should be a subclass of Configuration"
+                msg = msg.format(ns['configuration'].__name__)
+                tpl = "Unexpected class for 'configuration' property: {}"
+                msg = tpl.format(msg)
                 raise TypeError(msg)
 
         return super().__new__(mcl, cls_name, bases, ns)

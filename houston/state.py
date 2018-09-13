@@ -226,7 +226,7 @@ class State(object, metaclass=StateMeta):
         except StopIteration:
             msg = "no variable [{}] in state [{}]"
             msg.format(name, self.__class__.__name__)
-            raise KeyError
+            raise KeyError(msg)
         return getattr(self, var._field)
 
     def to_json(self) -> Dict[str, Any]:
