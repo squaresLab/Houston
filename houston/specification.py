@@ -82,9 +82,9 @@ class Expression:
     def _prepare_query(self, system: 'System', parameter_values: Dict[str, Any], state_before: State, state_after: State=None):
         smt = self.get_declarations(state_before)
         smt += Expression.values_to_smt('$', parameter_values)
-        smt += Expression.values_to_smt('_', state_before.values)
+        smt += Expression.values_to_smt('_', state_before.to_json())
         if state_after:
-            smt += Expression.values_to_smt('__', state_after.values)
+            smt += Expression.values_to_smt('__', state_after.to_json())
         return smt
 
     def get_declarations(self, state: State, postfix: str=''):

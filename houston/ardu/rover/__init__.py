@@ -8,9 +8,13 @@ from bugzoo.core.bug import Bug as Snapshot
 from .sandbox import Sandbox
 from ...util import printflush
 from ..base import BaseSystem
+from .state import State
 
 
 class ArduRover(BaseSystem):
+
+    state = State
+
     def __init__(self,
                  snapshot: Snapshot,
                  speedup=3.0
