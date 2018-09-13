@@ -134,8 +134,8 @@ class SetModeRTL(Branch):
             (and (= __mode "RTL")
                 (ite (< _altitude 0.3) (= _armed __armed)
                     (= _armed false))
-                (= __longitude _homeLongitude)
-                (= __latitude _homeLatitude)
+                (= __longitude _home_longitude)
+                (= __latitude _home_latitude)
                 (= __altitude 0.0))
             """,
             None)
@@ -144,7 +144,7 @@ class SetModeRTL(Branch):
     def timeout(self, system, action, state, environment):
         # compute distance
         from_loc = (state['latitude'], state['longitude'])
-        to_loc = (state['homeLatitude'], state['homeLongitude'])
+        to_loc = (state['home_latitude'], state['home_longitude'])
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
 
         # compute time taken to travel from A to B, and time taken to land

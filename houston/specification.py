@@ -39,11 +39,11 @@ class Specification():
         return self._timeout
 
     def get_constraint(self, state: State, postfix: str=''):
-        smt = self._precondition.get_declarations(state, postfix)
-        smt += "(assert {})\n".format(self._precondition.get_expression(state, postfix))
-        smt += "(assert {})\n".format(self._postcondition.get_expression(state, postfix))
+        decls = self._precondition.get_declarations(state, postfix)
+        smt = self._precondition.get_expression(decls)
+        smt.extend(self._postcondition.get_expression(decls))
 
-        return smt
+        return smt, decls
 
 
 class Expression:
@@ -71,39 +71,41 @@ class Expression:
     def is_satisfied(self, system: 'System', parameter_values: Dict[str, Any], state_before: State,
                     state_after: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
-        smt = self._prepare_query(system, parameter_values, state_before, state_after)
-        smt += "(assert {})".format(self._expression)
-        print("SMT:\n" + smt)
-        s.from_string(smt)
+        smt, decls = self._prepare_query(system, parameter_values, state_before, state_after)
+        expr = self.get_expression(decls)
+        smt.extend(expr)
+        print("SMT: {}".format(smt))
+#        s.from_string(smt)
+        s.add(smt)
 
         print("Z3 result: " + str(s.check()))
         return s.check() == z3.sat
 
     def _prepare_query(self, system: 'System', parameter_values: Dict[str, Any], state_before: State, state_after: State=None):
-        smt = self.get_declarations(state_before)
-        smt += Expression.values_to_smt('$', parameter_values)
-        smt += Expression.values_to_smt('_', state_before.to_json())
+        decls = self.get_declarations(state_before)
+        smt = Expression.values_to_smt('$', parameter_values, decls)
+        smt.extend(Expression.values_to_smt('_', state_before.to_json(), decls))
         if state_after:
-            smt += Expression.values_to_smt('__', state_after.to_json())
-        return smt
+            smt.extend(Expression.values_to_smt('__', state_after.to_json(), decls))
+        return smt, decls
 
     def get_declarations(self, state: State, postfix: str=''):
-        declarations = ""
+        declarations = {}
 
         # Declare all parameters
         for p in self._parameters:
-            declarations += "(declare-const ${}{} {})\n".format(p.name, postfix,
-                        Expression._type_to_string(p.type))
+            declarations['${}'.format(p.name)] = Expression._type_to_z3(p.type, '${}{}'.format(p.name, postfix))
 
         # Declare all state variables
         for n, v in state.to_json().items():
-            declarations += "(declare-const _{0}{1} {2})\n(declare-const __{0}{1} {2})\n".format(n,
-                        postfix, Expression._type_to_string(type(v))) # TODO right now we don't have a way to find out the type of state variables
+            declarations['_{}'.format(n)] = Expression._type_to_z3(type(v), '_{}{}'.format(n, postfix))
+            declarations['__{}'.format(n)] = Expression._type_to_z3(type(v), '__{}{}'.format(n, postfix))
+            # TODO right now we don't have a way to find out the type of state variables
 
         return declarations
 
     @staticmethod
-    def _type_to_string(typ):
+    def _type_to_string(typ) -> str:
         t = "Int"
         if typ == float:
             t = "Real"
@@ -114,35 +116,38 @@ class Expression:
         return t
 
     @staticmethod
-    def values_to_smt(prefix: str, values: Dict[str, Any], postfix: str='') -> str:
-        smt = ""
+    def _type_to_z3(typ, name):
+        if typ == float:
+            t = z3.Real(name)
+        elif typ == bool:
+            t = z3.Bool(name)
+        elif typ == str:
+            t = z3.String(name)
+        else:
+            t = z3.Int(name)
+        return t
+
+
+    @staticmethod
+    def values_to_smt(prefix: str, values: Dict[str, Any], declarations: Dict[str, Any]) -> str:
+        smt = []
         for n, v in values.items():
             if type(v) == str:
-                smt += "(assert (= {}{}{} \"{}\"))\n".format(prefix, n, postfix, v)
-            elif type(v) == float:
-                smt += "(assert (= {}{}{} {:.4f}))\n".format(prefix, n, postfix, v)
+                smt.append(declarations['{}{}'.format(prefix, n)] == z3.StringVal(v))
             else:
-                smt += "(assert (= {}{}{} {}))\n".format(prefix, n, postfix, str(v).lower())
+                smt.append(declarations['{}{}'.format(prefix, n)] == v)
         return smt
 
     def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
-        smt = self.get_declarations(system)
-        smt += Expression.values_to_smt('_', state.to_json())
-        smt += "(assert {})".format(self._expression)
-        s.from_string(smt)
+        decls = self.get_declarations(state)
+        smt = Expression.values_to_smt('_', state.to_json(), decls)
+        smt.extend(self.get_expression(decls))
+#        s.from_string(smt)
+        s.add(smt)
 
         return s.check() == z3.sat
 
-    def get_expression(self, state: State, postfix: str=''):
-        expr = self._expression
-        if not postfix:
-            return expr
-
-        for p in self._parameters:
-            expr = expr.replace("${}".format(p.name), "${}{}".format(p.name, postfix))
-
-        for n,v in state.to_json().items():
-            expr = expr.replace("_{}".format(n), "_{}{}".format(n, postfix))
-
-        return expr
+    def get_expression(self, decls: Dict[str, Any]):
+        expr = z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls)
+        return list(expr)

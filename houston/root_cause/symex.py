@@ -2,7 +2,7 @@ import random
 import logging
 import re
 import z3
-from typing import Set, Optional, Tuple, Dict, List
+from typing import Set, Optional, Tuple, Dict, List, Any
 
 from ..action import Action
 from ..branch import BranchPath
@@ -57,26 +57,27 @@ class SymbolicExecution(object):
         for bp in all_paths:
             logger.info("BP: " + str(bp))
             solver = z3.Solver()
-            smt = ""
+            smts = []
             branches = bp.branches(system=self.__system)
             seq_id = 0
-#            mappings = {}
+            mappings = {}
             for b in branches:
-                smt += b.specification.get_constraint(self.initial_state, "__{}".format(seq_id))
+                smt, decls = b.specification.get_constraint(self.initial_state, "__{}".format(seq_id))
 
                 for pb in b.schema.branches:
                     if pb.id == b.id:
                         break
-                    smt += '(assert (not {}))\n'.format(pb.specification.precondition.get_expression(self.initial_state,
-                                                        "__{}".format(seq_id)))
+                    smt.append(z3.Not(pb.specification.precondition.get_expression(decls)[0]))
 
-#                mapping = b.add_constraints(solver, seq_id)
-#                mappings[b] = mapping
+                logger.debug("BBBB {}".format(smts))
+                mappings[seq_id] = decls
+                smts.extend(smt)
                 seq_id += 1
 
-            smt += self._connect_pre_and_post(seq_id - 1)
-            logger.debug("AAA " + smt)
-            solver.from_string(smt)
+            smts.extend(self._connect_pre_and_post(seq_id - 1, mappings))
+            logger.debug("AAA " + str(smt))
+#            solver.from_string(smt)
+            solver.add(smts)
 
 
             if not solver.check() == z3.sat:
@@ -86,18 +87,13 @@ class SymbolicExecution(object):
             logger.info("SAT")
 
             model = solver.model()
-            model_vars = {}
-            for m in model:
-                model_vars[m.name()] = m
-                logger.debug("{} = {}".format(m.name(), str(model[m])))
             actions = []
             seq_id = 0
             for b in branches:
-#                mapping = mappings[b]
                 parameters = {}
                 for p in b.specification.parameters:
                     try:
-                        parameters[p.name] = eval(str(model[model_vars["${}__{}".format(p.name, seq_id)]]))
+                        parameters[p.name] = eval(str(model[mappings[seq_id]["${}".format(p.name)]]))
                     except KeyError:
                         parameters[p.name] = p.generate(rng)
                 actions.append(Action(b.schema, parameters))
@@ -107,13 +103,13 @@ class SymbolicExecution(object):
 
         return all_missions
 
-    def _connect_pre_and_post(self, number: int) -> str:
+    def _connect_pre_and_post(self, number: int, mappings: Dict[int, Dict[str, Any]]) -> List:
         assert(number >= 0)
-        s = ''
+        s = []
         for n, v in self.initial_state.to_json().items():
-            s += '\n'.join(["(assert (= __{0}__{1} _{0}__{2}))".format(n, i, i+1) for i in range(0, number)])
-            s += '\n'
-        s += Expression.values_to_smt('_', self.initial_state.to_json(), '__0') # Adding initial state
+            for i in range(0, number):
+                s.append(mappings[i]['__{}'.format(n)] == mappings[i+1]['_{}'.format(n)])
+        s.extend(Expression.values_to_smt('_', self.initial_state.to_json(), mappings[0]))
         return s
 
     def _dfs(self, actions, start_index, path: BranchPath, all_paths: List[BranchPath] = []):
