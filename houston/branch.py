@@ -228,8 +228,8 @@ class IdleBranch(Branch):
                          state_before: State,
                          state_after: State
                          ) -> bool:
-        for v in system.variables.keys():
-            if not system.variable(v).eq(state_before[v], state_after[v]):
+        for v in system.variables:
+            if not v.eq(state_before[v.name], state_after[v.name]):
                 return False
         return True
 

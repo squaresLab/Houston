@@ -17,6 +17,7 @@ from houston.root_cause.delta_debugging import DeltaDebugging
 from houston.root_cause.symex import SymbolicExecution 
 import copy
 from houston.ardu.copter.state import State as CopterState
+from houston.ardu.rover.state import State as RoverState
 
 
 def run_single_mission(sandbox, mission):
@@ -151,7 +152,7 @@ if __name__ == "__main__":
     ]
     
     environment = Environment({})
-    initial = CopterState(
+    initial = RoverState(
         home_latitude=-35.3632607,
         home_longitude=149.1652351,
         latitude=-35.3632607,
@@ -177,7 +178,7 @@ if __name__ == "__main__":
     # create a container for the mission execution
     sandbox = sut.provision(bz)
     try:
-        #run_single_mission_with_coverage(sandbox, mission)
+        run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -194,10 +195,10 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        se = SymbolicExecution(sut, initial, environment)
-        mm = se.execute_symbolically(mission)
-        for m in mm:
-            print(m.to_json())
+        #se = SymbolicExecution(sut, initial, environment)
+        #mm = se.execute_symbolically(mission)
+        #for m in mm:
+        #    print(m.to_json())
 
 
     finally:
