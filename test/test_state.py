@@ -66,6 +66,16 @@ def test_eq():
         assert S(foo=1, bar=2, time_offset=0.0) == Y(foo=1, bar=2, time_offset=0.0)
 
 
+def test_equiv():
+    class S(State):
+        foo = var(int, lambda c: 0)
+        bar = var(int, lambda c: 0)
+
+    assert S(foo=1, bar=1, time_offset=0.0).equiv(S(foo=1, bar=1, time_offset=0.0))
+    assert S(foo=1, bar=1, time_offset=0.0).equiv(S(foo=1, bar=1, time_offset=1.0))
+    assert not S(foo=0, bar=1, time_offset=0.0).equiv(S(foo=1, bar=1, time_offset=0.0))
+
+
 def test_to_and_from_json():
     class S(State):
         foo = var(int, lambda c: 0)
