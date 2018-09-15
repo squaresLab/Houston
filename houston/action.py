@@ -7,6 +7,7 @@ import logging
 
 import attr
 
+from .configuration import Configuration
 from .state import State
 from .environment import Environment
 from .valueRange import ValueRange
@@ -39,7 +40,7 @@ class Action(object):
 
     def to_json(self) -> Dict[str, Any]:
         return {'kind': self.kind,
-                'parameters': self.values}
+                'parameters': self.values.copy()}
 
 
 @attr.s(frozen=True)
@@ -134,27 +135,25 @@ class ActionSchema(object):
         return self.__name
 
     @property
-    def branches(self):
+    def branches(self) -> List['Branch']:
         """
         A list of the branches for this action schema.
         """
         return self.__branches[:]
 
-    def get_branch(self, iden):
+    def get_branch(self, iden: 'BranchID') -> 'Branch':
         """
         Returns a branch belonging to this action schema using its identifier.
         """
-        from houston.branch import BranchID
-
-        assert (isinstance(iden, BranchID) and iden is not None)
-        assert (iden.get_action_name() == self.__name)
+        assert iden.get_action_name() == self.__name
         return self.__branches[iden.get_branch_name()]
 
     def dispatch(self,
                  sandbox: 'Sandbox',
                  action: Action,
                  state: State,
-                 environment: Environment
+                 environment: Environment,
+                 configuration: Configuration
                  ) -> None:
         """
         Responsible for invoking an action belonging to this schema.
@@ -170,17 +169,16 @@ class ActionSchema(object):
         raise NotImplementedError
 
     def timeout(self,
-                system: 'System',
                 action: Action,
                 state: State,
-                environment: Environment
+                environment: Environment,
+                config: Configuration
                 ) -> float:
         """
         Responsible for calculating the maximum time that a given action
         should take to finish its execution.
 
         Parameters:
-            system: the system under test.
             action: the action.
             state: the state of the system prior to the execution of the
                 action.
@@ -191,8 +189,8 @@ class ActionSchema(object):
             Maximum length of time (in seconds) that the action may take to
             complete its execution.
         """
-        branch = self.resolve_branch(system, action, state, environment)
-        return branch.timeout(system, action, state, environment)
+        branch = self.resolve_branch(action, state, environment, config)
+        return branch.timeout(action, state, environment, config)
 
     # FIXME replace with frozenset
     @property
@@ -200,17 +198,17 @@ class ActionSchema(object):
         return self.__parameters[:]
 
     def resolve_branch(self,
-                       system: 'System',
                        action: Action,
-                       initial_state: State,
-                       environment: Environment
+                       state: State,
+                       environment: Environment,
+                       config: Configuration
                        ) -> 'Branch':
         """
         Returns the branch of this action schema that will be taken for a
         given action, state, and environment.
         """
         for b in self.__branches:
-            if b.precondition(system, action, initial_state, environment):
+            if b.precondition(action, state, environment, config):
                 return b
         raise Exception("failed to resolve branch")
 
@@ -220,7 +218,7 @@ class ActionSchema(object):
         """
         assert (isinstance(rng, random.Random) and rng is not None)
         values = {p.name: p.generate(rng) for p in self.__parameters}
-        return Action(self.__name, values)
+        return Action(self.name, values)
 
 
 class ActionGenerator(object):
@@ -239,7 +237,12 @@ class ActionGenerator(object):
         self.__schema_name = schema_name
         self.__parameters = parameters if parameters else []
 
-    def construct_with_state(self, system, current_state, env, values):
+    def construct_with_state(self,
+                             state: State,
+                             env: Environment,
+                             config: Configuration,
+                             values: Any  # FIXME
+                             ) -> Action:
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -249,7 +252,11 @@ class ActionGenerator(object):
         """
         raise NotImplementedError
 
-    def construct_without_state(self, system, env, values):
+    def construct_without_state(self,
+                                env: Environment,
+                                config: Configuration,
+                                values: Any  # FIXME
+                                ) -> Action:
         """
         Responsible for constructing a dictionary of Action arguments based
         on the current state of the robot, a description of the environment,
@@ -268,14 +275,22 @@ class ActionGenerator(object):
         """
         return self.__schema_name
 
-    def generate_action_with_state(self, system, current_state, env, rng):
-        assert isinstance(rng, random.Random)
+    def generate_action_with_state(self,
+                                   state: State,
+                                   env: Environment,
+                                   config: Configuration,
+                                   rng: random.Random
+                                   ) -> Action:
         values = {p.name: p.generate(rng) for p in self.__parameters}
-        values = self.construct_with_state(system, current_state, env, values)
+        values = self.construct_with_state(state, env, config, values)
         return Action(self.__schema_name, values)
 
-    def generate_action_without_state(self, system, env, rng):
+    def generate_action_without_state(self,
+                                      env: Environment,
+                                      config: Configuration,
+                                      rng: random.Random,
+                                      ) -> Action:
         assert isinstance(rng, random.Random)
         values = {p.name: p.generate(rng) for p in self.__parameters}
-        values = self.construct_without_state(system, env, values)
+        values = self.construct_without_state(system, env, config, values)
         return Action(self.__schema_name, values)

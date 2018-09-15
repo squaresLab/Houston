@@ -14,6 +14,7 @@ from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 from houston.ardu.common.goto import CircleBasedGotoGenerator
 from houston.ardu.copter.state import State as CopterState
+from houston.ardu.configuration import Configuration as ArduConfig
 
 
 def setup_logging() -> None:
@@ -121,7 +122,12 @@ if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
     snapshot = bz.bugs['ardubugs:1a207c91']
-    sut = houston.ardu.ArduCopter(snapshot)
+    config = ArduConfig(
+        speedup=1,
+        time_per_metre_travelled=5.0,
+        constant_timeout_offset=1.0,
+        min_parachute_alt=10.0)
+    sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
     actions = [
@@ -158,7 +164,8 @@ if __name__ == "__main__":
         vy=0.0,
         vz=0.0,
         time_offset=0.0)
-    mission = houston.mission.Mission(environment, initial, actions)
+    mission = Mission(config, environment, initial, actions)
+
     # create a container for the mission execution
     sandbox = sut.provision(bz)
     try:

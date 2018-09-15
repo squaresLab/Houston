@@ -50,15 +50,15 @@ class SystemMeta(type):
                 msg = "Unexpected class for 'state' property: {}".format(msg)
                 raise TypeError(msg)
 
-            if 'configuration' not in ns:
-                msg = "System class definition is missing 'configuration' property"  # noqa: pycodestyle
-                raise TypeError(msg)
-            if not issubclass(ns['configuration'], Configuration):
-                msg = "was {} but should be a subclass of Configuration"
-                msg = msg.format(ns['configuration'].__name__)
-                tpl = "Unexpected class for 'configuration' property: {}"
-                msg = tpl.format(msg)
-                raise TypeError(msg)
+            # if 'configuration' not in ns:
+            #     msg = "System class definition is missing 'configuration' property"  # noqa: pycodestyle
+            #     raise TypeError(msg)
+            # if not issubclass(ns['configuration'], Configuration):
+            #     msg = "was {} but should be a subclass of Configuration"
+            #     msg = msg.format(ns['configuration'].__name__)
+            #     tpl = "Unexpected class for 'configuration' property: {}"
+            #     msg = tpl.format(msg)
+            #     raise TypeError(msg)
 
         return super().__new__(mcl, cls_name, bases, ns)
 
@@ -73,10 +73,12 @@ class System(object, metaclass=SystemMeta):
 
     def __init__(self,
                  schemas: List[ActionSchema],
-                 snapshot: Snapshot
+                 snapshot: Snapshot,
+                 config: Configuration
                  ) -> None:
         # TODO do not allow instantiation of abstract classes
         self.__snapshot = snapshot
+        self.__configuration = config
         # FIXME this should be a class variable
         self.schemas = {s.name: s for s in schemas}
 
@@ -85,6 +87,10 @@ class System(object, metaclass=SystemMeta):
         Constructs an interactive, ephemeral sandbox for this system.
         """
         raise NotImplementedError
+
+    @property
+    def configuration(self) -> Configuration:
+        return self.__configuration
 
     @property
     def snapshot(self) -> Snapshot:
@@ -122,3 +128,19 @@ class System(object, metaclass=SystemMeta):
         warnings.warn("System.variables will soon be transformed into a class method",  # noqa: pycodestyle
                       DeprecationWarning)
         return self.__class__.state.variables
+
+    def duration(self, mission: Mission) -> float:
+        """
+        Computes an estimate of the length of time required to finish
+        executing a given mission.
+        """
+        # FIXME move to Mission.duration when circular dependencies are broken
+        duration = 0.0
+        for command in mission:
+            schema = self.schemas[command.schema_name]
+            timeout = schema.compute_timeout(command,
+                                             mission.initial_state,
+                                             mission.environment,
+                                             self.configuration)
+            duration += timeout
+        return duration

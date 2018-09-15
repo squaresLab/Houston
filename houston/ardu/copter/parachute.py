@@ -2,6 +2,7 @@ __all__ = ['ParachuteSchema', 'ParachuteNormally']
 
 from pymavlink import mavutil
 
+from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
@@ -19,15 +20,14 @@ class ParachuteSchema(ActionSchema):
             ParachuteNormally(self),
             IdleBranch(self)
         ]
-        super(ParachuteSchema, self).__init__('parachute',
-                                              parameters,
-                                              branches)
+        super().__init__('parachute', parameters, branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
                  action: Action,
                  state: State,
-                 environment: Environment
+                 environment: Environment,
+                 config: Configuration
                  ) -> None:
         vehicle = sandbox.connection
         msg = vehicle.message_factory.command_long_encode(
@@ -38,34 +38,39 @@ class ParachuteSchema(ActionSchema):
 
 
 class ParachuteNormally(Branch):
-    def __init__(self, system):
-        super(ParachuteNormally, self).__init__("normal", system)
+    def __init__(self, schema):
+        super().__init__("normal", schema)
 
-    def timeout(self, system, action, state, environment):
-        timeout = state['altitude'] * system.time_per_metre_travelled
-        timeout += system.constant_timeout_offset
+    def timeout(self, action, state, environment, config):
+        timeout = state.altitude * config.time_per_metre_travelled
+        timeout += config.constant_timeout_offset
         return timeout
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
-        v = system.variable
-        return not state_after['armed'] and \
-            v('altitude').lt(state_after['altitude'], 0.3) and \
-            v('vz').eq(state_after['vz'], 0.0)
+                      environment,
+                      config):
+        # FIXME #82
+        noise_alt = 0.1
+        noise_vz = 0.05
+        sat_armed = not state_after.armed
+        sat_alt = state_after.altitude < 0.3 + noise_alt
+        sat_vz = 0.0 <= state_after.vz <= noise_vz
+        return sat_armed and sat_alt and sat_vz
 
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config):
         return action['parachute_action'] == 2 and \
-            self.is_satisfiable(system, state, environment)
+            self.is_satisfiable(state, environment, config)
 
-    def is_satisfiable(self, system, state, environment):
-        v = system.variable
-        return state['armed'] and \
-            state['mode'] == 'GUIDED' and \
-            v('altitude').gt(state['altitude'], system.min_parachute_alt)
+    def is_satisfiable(self, state, environment, config):
+        # FIXME #82
+        noise_alt = 0.1
+        sat_armed = state.armed
+        sat_mode = state.mode == 'GUIDED'
+        sat_alt = state.alt > config.min_parachute_alt - noise_alt
+        return sat_armed and sat_mode and sat_alt
 
-    def generate(self, system, state, env, rng):
+    def generate(self, state, env, config, rng):
         return self.schema.generate(rng)

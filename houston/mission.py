@@ -1,156 +1,95 @@
+__all__ = ['Mission', 'MissionOutcome', 'CrashedMissionOutcome',
+           'MissionSuite']
+
 from typing import Dict, Any, List, Iterator
 
+import attr
+
+from .configuration import Configuration
 from .action import Action, ActionOutcome
 from .state import State
 from .environment import Environment
 from .branch import BranchPath
 
 
+@attr.s(frozen=True)
 class Mission(object):
     """
     A mission is represented as a sequence of actions that are carried out in
     a given environment and initial state.
     """
+    configuration = attr.ib(type=Configuration)
+    environment = attr.ib(type=Environment)
+    initial_state = attr.ib(type=State)
+    actions = attr.ib(type=List[Action])  # FIXME
+
     @staticmethod
-    def from_json(jsn: Dict[str, Any]) -> 'Mission':
-        """
-        Constructs a mission object from a given JSON description.
-        """
+    def from_dict(jsn: Dict[str, Any]) -> 'Mission':
         env = Environment.from_json(jsn['environment'])
+        config = Configuration.from_json(jsn['configuration'])
         initial_state = State.from_json(jsn['initial_state'])
         actions = [Action.from_json(a) for a in jsn['actions']]
-        return Mission(env, initial_state, actions)
-
-    def __init__(self,
-                 environment: Environment,
-                 initial_state: State,
-                 actions: List[Action]
-                 ) -> None:
-        """
-        Constructs a new Mission description.
-
-        Parameters:
-            environment: a description of the environment.
-            initial_state: a description of the initial state.
-            external: a description of the initial external state.
-            actions: a list of actions.
-        """
-        self.__environment = environment
-        self.__initial_state = initial_state
-        self.__actions = actions
-
-    @property
-    def environment(self) -> Environment:
-        """
-        A description of the (initial) state of the environment in which
-        this mission should be executed.
-        """
-        return self.__environment
+        return Mission(config, env, initial_state, actions)
 
     def is_empty(self) -> bool:
         """
         Returns True if this mission contains no actions.
         """
-        return self.__actions == []
-
-    @property
-    def initial_state(self) -> State:
-        return self.__initial_state
+        return self.actions == []
 
     def __iter__(self) -> Iterator[Action]:
         """
         Returns an iterator over the actions contained in this mission.
         """
-        yield from self.__actions
-
-    # FIXME prefer iterator
-    @property
-    def actions(self) -> List[Action]:
-        return self.__actions[:]
+        yield from self.actions
 
     @property
     def size(self) -> int:
         """
         The number of actions in this mission.
         """
-        return len(self.__actions)
-
-    def get_expected_duration(self, system: 'System') -> float:
-        """
-        Returns the expected time taken to complete the mission, computed as
-        the sum of the timeouts for its constituent actions.
-        """
-        duration = 0.0
-        schemas = system.schemas
-        for action in self.__actions:
-            schema = schemas[action.schema_name]
-            timeout = schema.compute_timeout(action,
-                                             self.initial_state,
-                                             self.environment)
-            duration += timeout
-        return duration
+        return len(self.actions)
 
     def extended(self, action: Action) -> 'Mission':
         """
         Returns a variant of this mission with a given action added onto the
         end.
         """
-        actions = self.__actions + [action]
+        actions = self.actions + [action]
         return Mission(self.environment, self.initial_state, actions)
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
+            'configuration': self.configuration.to_json(),
             'environment': self.environment.to_json(),
             'initial_state': self.initial_state.to_json(),
             'actions': [a.to_json() for a in self.__actions]}
 
 
+@attr.s(frozen=True)
 class MissionOutcome(object):
     """
     Mission outcomes are used to summarise and record the outcome of performing
     a mission.
     """
+    passed = attr.ib(type=bool)
+    outcomes = attr.ib(type=List[ActionOutcome])
+    time_setup = attr.ib(type=float)
+    time_total = attr.ib(type=float)
+
     @staticmethod
-    def from_json(jsn: Dict[str, Any]) -> 'MissionOutcome':
-        """
-        Constructs a MissionOutcome from a JSON description.
-        """
+    def from_dict(dkt: Dict[str, Any]) -> 'MissionOutcome':
         actions = [ActionOutcome.from_json(a) for a in jsn['actions']]
-        return MissionOutcome(jsn['passed'],
+        return MissionOutcome(dkt['passed'],
                               actions,
-                              jsn['setup_time'],
-                              jsn['total_time'])
+                              dkt['time_setup'],
+                              dkt['time_total'])
 
-    def __init__(self,
-                 passed: bool,
-                 outcomes: List[ActionOutcome],
-                 setup_time: float,
-                 total_time: float
-                 ) -> None:
-        """
-        Constructs a MissionOutcome object.
-
-        Parameters:
-            passed: indicates the success (or failure) of the mission.
-                True if mission was successful, else False.
-            outcomes: the outcome of each action within this mission,
-                given in sequence.
-            setup_time: the number of seconds to prepare the system before
-                beginning the mission.
-            total_time: the number of seconds to complete the mission,
-                including the time taken to perform setup.
-        """
-        self.__passed = passed
-        self.__outcomes = outcomes
-        self.__setup_time = setup_time
-        self.__total_time = total_time
-
-    def to_json(self) -> Dict[str, Any]:
-        return {
-            'passed': self.__passed,
-            'actions': [outcome.to_json() for outcome in self.__outcomes],
-            'setup_time': self.__setup_time,
-            'total_time': self.__total_time}
+    def to_dict(self) -> Dict[str, Any]:
+        return {'passed': self.passed,
+                'actions': [outcome.to_json() for outcome in self.outcomes],
+                'time_setup': self.time_setup,
+                'time_total': self.time_total}
 
     # FIXME what is this for?
     def to_test_outcome_json(self, code: int) -> Dict[str, Any]:
@@ -160,16 +99,16 @@ class MissionOutcome(object):
         """
         response = {
             'code': code,
-            'duration': self.__total_time,
-            'output': json.dump([o.to_json() for o in self.__outcomes])}
+            'duration': self.time_total,
+            'output': json.dump([o.to_json() for o in self.outcomes])}
         return {'passed': self.__passed,
                 'response': response}
 
     def __repr__(self) -> str:
-        outcomes = [repr(o) for o in self.__outcomes]  # type: List[str]
-        s_passed = "passed={}".format(repr(self.__passed))
-        s_time_setup = "setup_time={:.3f}".format(self.__setup_time)
-        s_time_total = "total_time={:.3f}".format(self.__total_time)
+        outcomes = [repr(o) for o in self.outcomes]  # type: List[str]
+        s_passed = "passed={}".format(repr(self.passed))
+        s_time_setup = "time_setup={:.3f}".format(self.time_setup)
+        s_time_total = "time_total={:.3f}".format(self.time_total)
         s_outcomes = "outcomes={}".format(repr(outcomes))
         s = '; '.join([s_passed, s_time_setup, s_time_total, s_outcomes])
         s = "MissionOutcome({})".format(s)
@@ -180,7 +119,7 @@ class MissionOutcome(object):
         """
         Returns the branch path that was taken by this mission execution.
         """
-        return BranchPath([o.branch_id for o in self.__outcomes])
+        return BranchPath([o.branch_id for o in self.outcomes])
 
     @property
     def end_state(self) -> State:
@@ -188,7 +127,7 @@ class MissionOutcome(object):
         A description of the state of the system immediately after the
         execution of this mission.
         """
-        return self.__outcomes[-1].end_state
+        return self.outcomes[-1].end_state
 
     @property
     def start_state(self) -> State:
@@ -196,62 +135,36 @@ class MissionOutcome(object):
         A description of the state of the system immediately before the
         execution of this mission.
         """
-        return self.__outcomes[0].start_state
-
-    @property
-    def passed(self) -> bool:
-        return self.__passed
-
-    @property
-    def failed(self) -> bool:
-        return not self.passed
+        return self.outcomes[0].start_state
 
 
 class CrashedMissionOutcome(MissionOutcome):
-    def __init__(self, total_time):
-        super(CrashedMissionOutcome, self).__init__(False, [], 0.0, total_time)
+    def __init__(self, total_time: float) -> None:
+        super().__init__(False, [], 0.0, total_time)
 
-    def to_json(self):
-        jsn = super(CrashedMissionOutcome, self).to_json()
-        jsn['crashed'] = True
-        return jsn
+    def to_dict(self):
+        dkt = super().to_dict()
+        dkt['crashed'] = True
+        return dkt
 
 
 class MissionSuite(object):
     @staticmethod
-    def from_json(jsn):
-        assert isinstance(jsn, dict)
-        contents = jsn['contents']
-        contents = [Mission.from_json(m) for m in contents]
+    def from_dict(dkt: Dict[str, Any]) -> 'MissionSuite':
+        contents = [Mission.from_dict(m) for m in dkt['contents']]
         return MissionSuite(contents)
 
-    def __init__(self, contents):
-        assert isinstance(contents, list)
-        assert all(isinstance(m, Mission) for m in contents)
+    def __init__(self, contents: List[Mission]) -> None:
         self.__contents = contents
 
     @property
-    def size(self):
-        """
-        The number of missions within this suite.
-        """
+    def size(self) -> int:
         return self.__contents.length()
 
-    @property
-    def contents(self):
-        """
-        The contents of this mission suite.
-        """
-        return self.__contents[:]
-
     def __iter__(self):
-        for m in self.__contents:
-            yield m
+        yield from self.__contents
 
-    def to_json(self):
-        """
-        Produces a JSON-ready description of this mission suite.
-        """
-        contents = [m.to_json() for m in self.__contents]
-        jsn = {'contents': contents}
-        return jsn
+    def to_dict(self) -> Dict[str, Any]:
+        contents = [m.to_dict() for m in self.__contents]
+        dkt = {'contents': contents}
+        return dkt

@@ -4,6 +4,7 @@ import math
 import time
 import threading
 import signal
+import logging
 
 import bugzoo
 from bugzoo.client import Client as BugZooClient
@@ -14,6 +15,9 @@ from .state import State
 from .mission import Mission, MissionOutcome
 from .util import TimeoutError, printflush
 from .action import ActionOutcome
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class Sandbox(object):
@@ -115,21 +119,21 @@ class Sandbox(object):
         Executes a given mission and returns a description of the outcome.
         """
         assert self.alive
+        config = self.system.configuration
         self.__lock.acquire()
         try:
             time_before_setup = timer()
-            print('Setting up...')  # FIXME use logger
+            logger.debug("preparing for mission")
             self._start(mission)
-            print('Setup complete.')  # FIXME use logger
             setup_time = timer() - time_before_setup
+            logger.debug("prepared for mission (took %.3f seconds)",
+                         setup_time)
 
             env = mission.environment
             outcomes = []
 
-            # execute each action in sequence
-            for action in mission.actions:
-                # FIXME use logger
-                printflush('Performing action: {}\n'.format(action.to_json()))
+            for action in mission:
+                logger.debug('performing action: %s', action)
                 schema = self.system.schemas[action.schema_name]
 
                 # compute expected state
@@ -137,42 +141,43 @@ class Sandbox(object):
                 state_before = state_after = self.observe(0.0)
 
                 # determine which branch the system should take
-                branch = schema.resolve_branch(self.system,
-                                               action,
+                branch = schema.resolve_branch(action,
                                                state_before,
-                                               env)
-                # FIXME use logger
-                printflush('Taking branch: {}\n'.format(branch))
+                                               env,
+                                               config)
+                logger.debug('taking branch: %s', branch)
 
                 # enforce a timeout
                 timeout = \
-                    schema.timeout(self.system, action, state_before, env)
+                    schema.timeout(action, state_before, env, config)
+                logger.debug("enforcing timeout: %.3f seconds", timeout)
                 time_before = timer()
                 passed = False
                 try:
                     # TODO: dispatch to this container!
-                    schema.dispatch(self, action, state_before, env)
+                    schema.dispatch(self, action, state_before, config, env)
 
                     # block until the postcondition is satisfied or
                     # the timeout is hit
                     while not passed:
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
-                        sat = branch.postcondition(self.system,
-                                                   action,
+                        sat = branch.postcondition(action,
                                                    state_before,
                                                    state_after,
-                                                   env)
+                                                   env,
+                                                   config)
                         if sat:
+                            logger.debug("command was successful")
                             passed = True
+                            break
                         if timer() - time_before >= int(math.ceil(timeout)):
                             raise TimeoutError
                         time.sleep(0.1)
-                        # FIXME use logger
-                        print(state_after)
+                        logger.debug("state: %s", state_after)
 
                 except TimeoutError:
-                    pass
+                    logger.debug("reached timeout before postcondition was satisfied")  # noqa: pycodestyle
                 time_elapsed = timer() - time_before
 
                 # record the outcome of the action execution

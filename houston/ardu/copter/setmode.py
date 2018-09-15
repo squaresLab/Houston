@@ -2,15 +2,20 @@ __all__ = ['SetModeSchema', 'SetModeLand', 'SetModeGuided', 'SetModeLoiter',
            'SetModeRTL']
 
 import time
+import logging
 
 import dronekit
 import geopy
 
+from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
 from ...branch import Branch, IdleBranch
 from ...valueRange import DiscreteValueRange
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class SetModeSchema(ActionSchema):
@@ -34,157 +39,164 @@ class SetModeSchema(ActionSchema):
             SetModeLand(self),
             IdleBranch(self)
         ]
-        super(SetModeSchema, self).__init__('setmode', parameters, branches)
+        super().__init__('setmode', parameters, branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
                  action: Action,
                  state: State,
-                 environment: Environment
+                 environment: Environment,
+                 config: Configuration
                  ) -> None:
         sandbox.connection.mode = dronekit.VehicleMode(action['mode'])
 
 
 class SetModeLand(Branch):
-    def __init__(self, system):
-        super(SetModeLand, self).__init__('land', system)
+    def __init__(self, schema):
+        super().__init__('land', schema)
 
-    def timeout(self, system, action, state, environment):
-        timeout = state['altitude'] * system.time_per_metre_travelled
-        timeout += system.constant_timeout_offset
+    def timeout(self, action, state, environment, config):
+        timeout = state.altitude * config.time_per_metre_travelled
+        timeout += config.constant_timeout_offset
         return timeout
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
-        v = system.variable
-        sat_mode = state_after['mode'] == 'LAND'
+                      environment,
+                      config):
+        delta_lon = 0.1
+        delta_lat = 0.1
+        delta_alt = 1.0
+        sat_mode = state_after.mode == 'LAND'
         sat_lon = \
-            v('longitude').eq(state_after['longitude'],
-                              state_before['longitude'])
+            abs(state_after.longitude - state_before.longitude) < delta_lon
         sat_lat = \
-            v('latitude').eq(state_after['latitude'], state_before['latitude'])
-        sat_alt = v('altitude').eq(state_after['altitude'], 0.0)
+            abs(state_after.latitude - state_before.latitude) < delta_lat
+        sat_alt = \
+            abs(state_after.altitude - 0.3) < delta_alt
+        return sat_lon and sat_lat and sat_alt
 
-    def precondition(self, system, action, state, environment):
-        return action['mode'] == 'LAND' and state['altitude'] > 0.3
+    def precondition(self, action, state, environment, config):
+        return action['mode'] == 'LAND' and state.altitude > 0.3
 
-    def is_satisfiable(self, system, state, environment):
-        return state['altitude'] > 0.3
+    def is_satisfiable(self, state, environment, config):
+        return state.altitude > 0.3
 
-    def generate(self, system, state, environment, rng):
+    def generate(self, state, environment, config, rng):
         return Action(self.schema.name, {'mode': 'LAND'})
 
 
 class SetModeGuided(Branch):
-    def __init__(self, system):
-        super(SetModeGuided, self).__init__('guided', system)
+    def __init__(self, schema) -> None:
+        super().__init__('guided', schema)
 
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
+    def timeout(self, action, state, environment, config):
+        return config.constant_timeout_offset
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
-        return state_after['mode'] == 'GUIDED'
+                      environment,
+                      config):
+        return state_after.mode == 'GUIDED'
 
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config):
         return action['mode'] == 'GUIDED'
 
-    def is_satisfiable(self, system, state, environment):
+    def is_satisfiable(self, state, environment, config):
         return True
 
-    def generate(self, system, state, environment, rng):
+    def generate(self, state, environment, config, rng):
         return Action(self.schema.name, {'mode': 'GUIDED'})
 
 
 class SetModeLoiter(Branch):
-    def __init__(self, system):
-        super(SetModeLoiter, self).__init__('loiter', system)
+    def __init__(self, schema):
+        super().__init__('loiter', schema)
 
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
+    def timeout(self, action, state, environment, config):
+        return config.constant_timeout_offset
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
-        return state_after['mode'] == 'LOITER'
+                      environment,
+                      config):
+        return state_after.mode == 'LOITER'
 
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config):
         return action['mode'] == 'LOITER'
 
-    def is_satisfiable(self, system, state, environment):
+    def is_satisfiable(self, state, environment, config):
         return True
 
-    def generate(self, system, state, environment, rng):
+    def generate(self, state, environment, config, rng):
         return Action(self.schema.name, {'mode': 'LOITER'})
 
 
 class SetModeRTL(Branch):
-    def __init__(self, system):
-        super(SetModeRTL, self).__init__('rtl', system)
+    def __init__(self, schema):
+        super().__init__('rtl', schema)
 
-    def timeout(self, system, action, state, environment):
+    def timeout(self, action, state, environment, config):
         # compute distance
-        from_loc = (state['latitude'], state['longitude'])
-        to_loc = (state['homeLatitude'], state['homeLongitude'])
+        from_loc = (state.latitude, state.longitude)
+        to_loc = (state.home_latitude, state.home_longitude)
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
 
         # compute time taken to travel from A to B, and time taken to land
-        time_goto_phase = dist * system.time_per_metre_travelled
-        time_land_phase = state['altitude'] * system.time_per_metre_travelled
+        time_goto_phase = dist * config.time_per_metre_travelled
+        time_land_phase = state.altitude * config.time_per_metre_travelled
 
         # TODO: what was this? No explanation of logic?
         # Land times and adjustment time for altitude
         # total_go_up_down_time = \
         #    math.fabs(10 - state['altitude']) *
-        # system.time_per_metre_travelled
+        # config.time_per_metre_travelled
 
         # compute total timeout
         timeout = \
-            time_goto_phase + time_land_phase + system.constant_timeout_offset
+            time_goto_phase + time_land_phase + config.constant_timeout_offset
 
-        print('calculated timeout: {} seconds'.format(timeout))
+        logger.debug("calculated timeout: %.3f seconds", timeout)
         return timeout
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
-        v = system.variable
-        if state_after['mode'] != 'RTL':
+                      environment,
+                      config):
+        if state_after.mode != 'RTL':
             return False  # hmmm?
 
-        if state_before['altitude'] < 0.3:
-            if state_before['armed'] != state_after['armed']:
+        if state_before.altitude < 0.3:
+            if state_before.armed != state_after.armed:
                 return False
-        elif state_before['armed']:
+        elif state_before.armed:
             return False
 
-        sat_alt = v('altitude').eq(state_after['altitude'], 0.0)
-        sat_lat = v('latitude').eq(state_after['latitude'],
-                                   state_before['homeLatitude'])
-        sat_lon = v('longitude').eq(state_after['longitude'],
-                                    state_before['homeLongitude'])
+        err_alt = 1.0
+        err_lat = 0.1
+        err_lon = 0.1
+
+        sat_alt = abs(state_after.altitude) <= noise_alt
+        diff_lat = abs(state_after.latitude - state_before.home_latitude)
+        sat_lat = diff_lat <= noise_lat
+        diff_lon = abs(state_after.longitude - state_before.home_longitude)
+        sat_lon = diff_lon <= err_lon
 
         return sat_alt and sat_lat and sat_lon
 
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config):
         return action['mode'] == 'RTL'
 
-    def is_satisfiable(self, system, state, environment):
+    def is_satisfiable(self, state, environment, config):
         return True
 
-    def generate(self, system, state, environment, rng):
+    def generate(self, state, environment, config, rng):
         return Action(self.schema.name, {'mode': 'RTL'})

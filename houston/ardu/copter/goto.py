@@ -6,6 +6,7 @@ from ..common.goto import GotoNormally as GotoNormallyBase
 from ..common.goto import DistanceBasedGoToGenerator, \
     CircleBasedGotoGenerator, \
     GotoLoiter
+from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import Action, ActionSchema, Parameter
@@ -14,26 +15,25 @@ from ...valueRange import ContinuousValueRange, DiscreteValueRange
 
 
 class GoToSchema(ActionSchema):
-    def __init__(self):
+    def __init__(self) -> None:
         parameters = [
             Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
             Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
             Parameter('altitude', ContinuousValueRange(0.3, 100.0))
         ]
-
         branches = [
             GotoNormally(self),
             GotoLoiter(self),
             IdleBranch(self)
         ]
-
-        super(GoToSchema, self).__init__('goto', parameters, branches)
+        super().__init__('goto', parameters, branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
                  action: Action,
                  state: State,
-                 environment: Environment
+                 environment: Environment,
+                 config: Configuration
                  ) -> None:
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],
@@ -42,35 +42,34 @@ class GoToSchema(ActionSchema):
 
 
 class GotoNormally(GotoNormallyBase):
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config) -> bool:
         """
         For GoTo actions within the ArduCopter to exhibit a "normal" behaviour,
         the robot must be at an altitude greater than 0.3 metres.
         """
-        base = super(GotoNormally, self).precondition(system,
-                                                      action,
-                                                      state,
-                                                      environment)
+        base = super().precondition(action, state, environment, config)
         if not base:
             return False
-        return system.variable('altitude').gt(state['altitude'], 0.3)
+        # FIXME 82
+        err_alt = 0.1
+        sat_alt = state.altitude + err_alt > 0.3
+        return sat_alt
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
+                      environment,
+                      config) -> bool:
         """
         Upon completion of the action, the robot should be at the longitude,
         latitude, and altitude specified by the action.
         """
-        base = super(GotoNormally, self).postcondition(system,
-                                                       action,
-                                                       state_before,
-                                                       state_after,
-                                                       environment)
+        base = super().postcondition(action, state_before, state_after,
+                                     environment, config)
         if not base:
             return False
-        return system.variable('altitude').eq(state_after['altitude'],
-                                              action['altitude'])
+        # FIXME 82
+        err_alt = 0.1
+        sat_alt = abs(state_after.altitude - action['altitude']) <= err_alt
+        return sat_alt

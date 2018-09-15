@@ -2,6 +2,9 @@ __all__ = ['ArmDisarmSchema']
 
 import time
 
+from pymavlink import mavutil
+
+from ...configuration import Configuration
 from ...action import ActionSchema, Parameter, Action, ActionGenerator
 from ...branch import Branch, IdleBranch
 from ...state import State
@@ -18,7 +21,7 @@ class ArmDisarmSchema(ActionSchema):
         Idle: if the conditions above cannot be met, the robot will ignore the
             command.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         parameters = [
             Parameter('arm', DiscreteValueRange([True, False]))
         ]
@@ -27,15 +30,15 @@ class ArmDisarmSchema(ActionSchema):
             DisarmNormally(self),
             IdleBranch(self)
         ]
-        super(ArmDisarmSchema, self).__init__('arm', parameters, branches)
+        super().__init__('arm', parameters, branches)
 
     def dispatch(self,
                  sandbox: Sandbox,
                  action: Action,
                  state: State,
-                 environment: Environment
+                 environment: Environment,
+                 configuration: Configuration
                  ) -> None:
-        from pymavlink import mavutil
         vehicle = sandbox.connection
         arm_flag = 1 if action['arm'] else 0
         msg = vehicle.message_factory.command_long_encode(
@@ -46,54 +49,54 @@ class ArmDisarmSchema(ActionSchema):
 
 
 class ArmNormally(Branch):
-    def __init__(self, system):
-        super(ArmNormally, self).__init__('arm-normal', system)
+    def __init__(self, schema):
+        super().__init__('arm-normal', schema)
 
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config):
         return action['arm'] \
-            and self.is_satisfiable(system, state, environment)
+            and self.is_satisfiable(state, environment, config)
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
+                      environment,
+                      config):
         return state_after['armed']
 
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
+    def timeout(self, action, state, environment, config):
+        return config.constant_timeout_offset + 1.0
 
-    def is_satisfiable(self, system, state, environment):
+    def is_satisfiable(self, state, environment, config):
         return state['armable'] and state['mode'] in ['GUIDED', 'LOITER']
 
-    def generate(self, system, state, environment, rng):
+    def generate(self, state, environment, rng, config):
         return {'arm': True}
 
 
 class DisarmNormally(Branch):
-    def __init__(self, system):
-        super(DisarmNormally, self).__init__('disarm-normal', system)
+    def __init__(self, schema):
+        super().__init__('disarm-normal', schema)
 
-    def precondition(self, system, action, state, environment):
+    def precondition(self, action, state, environment, config):
         return not action['arm'] \
-            and self.is_satisfiable(system, state, environment)
+            and self.is_satisfiable(state, environment, config)
 
     def postcondition(self,
-                      system,
                       action,
                       state_before,
                       state_after,
-                      environment):
+                      environment,
+                      config):
         return not state_after['armed']
 
-    def timeout(self, system, action, state, environment):
-        return system.constant_timeout_offset
+    def timeout(self, action, state, environment, config):
+        return config.constant_timeout_offset + 1
 
     # TODO
-    def is_satisfiable(self, system, state, environment):
+    def is_satisfiable(self, state, environment, config):
         # and state['mode'] in ['GUIDED', 'LOITER']
         return state['armed']
 
-    def generate(self, system, state, environment, rng):
+    def generate(self, state, environment, rng, config):
         return {'arm': False}

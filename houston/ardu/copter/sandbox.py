@@ -12,11 +12,10 @@ class Sandbox(ArduSandbox):
         # FIXME #66
         fn_param = os.path.join(self.snapshot.source_dir,
                                 'Tools/autotest/default_params/copter.parm')
-        super(Sandbox, self)._start(
-            mission,
-            binary_name='arducopter',
-            model_name='quad',
-            param_file=fn_param)
+        super()._start(mission,
+                       binary_name='arducopter',
+                       model_name='quad',
+                       param_file=fn_param)
 
     def _post_connection_setup(self):
         if not self.connection:

@@ -2,6 +2,7 @@ __all__ = ['GoToSchema']
 
 import dronekit
 
+from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import Action, ActionSchema, Parameter
@@ -14,25 +15,24 @@ from ..common.goto import DistanceBasedGoToGenerator, \
 
 
 class GoToSchema(ActionSchema):
-    def __init__(self):
+    def __init__(self) -> None:
         parameters = [
             Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
             Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True))
         ]
-
         branches = [
             GotoNormally(self),
             GotoLoiter(self),
             IdleBranch(self)
         ]
-
-        super(GoToSchema, self).__init__('goto', parameters, branches)
+        super().__init__('goto', parameters, branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
                  action: Action,
                  state: State,
-                 environment: Environment
+                 environment: Environment,
+                 config: Configuration
                  ) -> None:
         loc = dronekit.LocationGlobalRelative(action['latitude'],
                                               action['longitude'],

@@ -5,6 +5,7 @@ import random
 from .util import printflush
 from .state import State
 from .environment import Environment
+from .configuration import Configuration
 
 
 class BranchID(object):
@@ -85,22 +86,20 @@ class Branch(object):
     def id(self) -> BranchID:
         return BranchID(self.__schema.name, self.__name)
 
-    def generate(self, system, initial_state, env, rng) -> 'Action':
+    def generate(self,
+                 state: State,
+                 env: Environment,
+                 config: Configuration,
+                 rng: random.Random) -> 'Action':
         """
         Generates an action that would cause the system to take this branch.
-
-        :param  initialState:   the state of the system immediately before \
-                                executing the generated action.
-        :param  env:            the environment in which the mission will be \
-                                conducted.
-        :param  rng:            the random number generator
         """
         raise NotImplementedError
 
     def is_satisfiable(self,
-                       system: 'System',
-                       initial_state: State,
-                       environment: Environment
+                       state: State,
+                       environment: Environment,
+                       configuration: Configuration
                        ) -> bool:
         """
         Determines whether there exists a set of parameter values that would
@@ -110,27 +109,27 @@ class Branch(object):
         raise NotImplementedError
 
     def precondition(self,
-                     system: 'System',
                      action: 'Action',
                      state: State,
-                     environment: Environment
+                     environment: Environment,
+                     configuration: Configuration
                      ) -> bool:
         raise NotImplementedError
 
     def postcondition(self,
-                      system: 'System',
                       action: 'Action',
                       state_before: State,
                       state_after: State,
-                      environment: Environment
+                      environment: Environment,
+                      configuration: Configuration
                       ) -> bool:
         raise NotImplementedError
 
     def timeout(self,
-                system: 'System',
-                act: 'Action',
+                action: 'Action',
                 state: State,
-                environment: Environment
+                environment: Environment,
+                configuration: Configuration
                 ) -> float:
         """
         Computes the maximum length of time that is required to execute a
@@ -150,53 +149,41 @@ class IdleBranch(Branch):
                  ) -> None:
         assert idle_time > 0
         self.__idle_time = idle_time
-        super(IdleBranch, self).__init__("idle", schema)
+        super().__init__("idle", schema)
 
     def timeout(self, system, action, state, environment):
         return self.__idle_time + 2.0
 
     def precondition(self,
-                     system: 'System',
                      action: 'Action',
                      state: State,
-                     environment: Environment
+                     environment: Environment,
+                     configuration: Configuration
                      ) -> bool:
         return True
 
     def postcondition(self,
-                      system: 'System',
                       action: 'Action',
                       state_before: State,
                       state_after: State,
-                      environment: Environment
+                      environment: Environment,
+                      configuration: Configuration
                       ) -> bool:
         time_passed = state_after.time_offset - state_before.time_offset
         reached_idle_time = time_passed > self.__idle_time
-        remained_same = self.are_states_equal(system,
-                                              state_before,
-                                              state_after)
+        remained_same = state_before.equiv(state_after)
         return reached_idle_time and remained_same
 
     def is_satisfiable(self, system, state, environment):
         return True
 
     def generate(self,
-                 system: 'System',
                  state: State,
                  environment: Environment,
+                 configuration: Configuration,
                  rng: random.Random
                  ) -> 'Action':
         return self.schema.generate(rng)
-
-    def are_states_equal(self,
-                         system: 'System',
-                         state_before: State,
-                         state_after: State
-                         ) -> bool:
-        for v in system.variables.keys():
-            if not system.variable(v).eq(state_before[v], state_after[v]):
-                return False
-        return True
 
 
 class BranchPath(object):

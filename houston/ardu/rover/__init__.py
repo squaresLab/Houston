@@ -11,11 +11,10 @@ from ..configuration import Configuration
 
 class ArduRover(BaseSystem):
     state = State
-    configuration = Configuration
 
     def __init__(self,
                  snapshot: Snapshot,
-                 speedup=3.0
+                 config: Configuration
                  ) -> None:
         from ..common import ArmDisarmSchema
         from .goto import GoToSchema
@@ -26,10 +25,7 @@ class ArduRover(BaseSystem):
             GoToSchema(),
             ArmDisarmSchema()
         ]
-
-        super(ArduRover, self).__init__(snapshot,
-                                        schemas,
-                                        speedup=speedup)
+        super().__init__(snapshot, schemas, config)
 
     def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         return Sandbox(self, client_bugzoo)
