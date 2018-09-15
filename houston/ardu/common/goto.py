@@ -19,8 +19,8 @@ class GotoNormally(Branch):
     the precondition on this normal behaviour is stronger; for more
     information, refer to the system-specific subclasses of GotoNormally.
     """
-    def __init__(self, schema) -> None:
-        super().__init__('normal', schema)
+    def __init__(self, name_schema: str) -> None:
+        super().__init__(name_schema, 'normal')
 
     def timeout(self, action, state, environment, config):
         from_loc = (state.latitude, state.longitude)
@@ -35,7 +35,7 @@ class GotoNormally(Branch):
         This behaviour will occur for Goto actions when the system is armed and
         not in its `LOITER` mode.
         """
-        return state['armed'] and state['mode'] != 'LOITER'
+        return state.armed and state.mode != 'LOITER'
 
     def postcondition(self,
                       action,
@@ -67,8 +67,8 @@ class GotoLoiter(Branch):
     If the robot is armed and in its `LOITER` mode, GoTo actions should have no
     effect upon the robot. (Why isn't this covered by Idle?)
     """
-    def __init__(self, schema) -> None:
-        super().__init__('loiter', schema)
+    def __init__(self, name_schema: str) -> None:
+        super().__init__(name_schema, 'loiter')
 
     def timeout(self, action, state, environment, config):
         return config.constant_timeout_offset

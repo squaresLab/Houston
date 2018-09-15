@@ -12,15 +12,16 @@ from ...valueRange import DiscreteValueRange
 
 class ParachuteSchema(ActionSchema):
     def __init__(self):
+        name = 'parachute'
         parameters = [
             # 0=disable, 1=enable, 2=release
             Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
         ]
         branches = [
-            ParachuteNormally(self),
-            IdleBranch(self)
+            ParachuteNormally(name),
+            IdleBranch(name)
         ]
-        super().__init__('parachute', parameters, branches)
+        super().__init__(name, parameters, branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',

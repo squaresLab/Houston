@@ -22,15 +22,16 @@ class ArmDisarmSchema(ActionSchema):
             command.
     """
     def __init__(self) -> None:
+        name = 'arm'
         parameters = [
             Parameter('arm', DiscreteValueRange([True, False]))
         ]
         branches = [
-            ArmNormally(self),
-            DisarmNormally(self),
-            IdleBranch(self)
+            ArmNormally(name),
+            DisarmNormally(name),
+            IdleBranch(name)
         ]
-        super().__init__('arm', parameters, branches)
+        super().__init__(name, parameters, branches)
 
     def dispatch(self,
                  sandbox: Sandbox,
@@ -49,8 +50,8 @@ class ArmDisarmSchema(ActionSchema):
 
 
 class ArmNormally(Branch):
-    def __init__(self, schema):
-        super().__init__('arm-normal', schema)
+    def __init__(self, name_schema: str) -> None:
+        super().__init__(name_schema, 'arm-normal')
 
     def precondition(self, action, state, environment, config):
         return action['arm'] \
@@ -62,21 +63,21 @@ class ArmNormally(Branch):
                       state_after,
                       environment,
                       config):
-        return state_after['armed']
+        return state_after.armed
 
     def timeout(self, action, state, environment, config):
         return config.constant_timeout_offset + 1.0
 
     def is_satisfiable(self, state, environment, config):
-        return state['armable'] and state['mode'] in ['GUIDED', 'LOITER']
+        return state.armable and state.mode in ['GUIDED', 'LOITER']
 
     def generate(self, state, environment, rng, config):
         return {'arm': True}
 
 
 class DisarmNormally(Branch):
-    def __init__(self, schema):
-        super().__init__('disarm-normal', schema)
+    def __init__(self, name_schema: str) -> None:
+        super().__init__(name_schema, 'disarm-normal')
 
     def precondition(self, action, state, environment, config):
         return not action['arm'] \
@@ -88,7 +89,7 @@ class DisarmNormally(Branch):
                       state_after,
                       environment,
                       config):
-        return not state_after['armed']
+        return not state_after.armed
 
     def timeout(self, action, state, environment, config):
         return config.constant_timeout_offset + 1
@@ -96,7 +97,7 @@ class DisarmNormally(Branch):
     # TODO
     def is_satisfiable(self, state, environment, config):
         # and state['mode'] in ['GUIDED', 'LOITER']
-        return state['armed']
+        return state.armed
 
     def generate(self, state, environment, rng, config):
         return {'arm': False}

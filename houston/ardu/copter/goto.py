@@ -16,17 +16,18 @@ from ...valueRange import ContinuousValueRange, DiscreteValueRange
 
 class GoToSchema(ActionSchema):
     def __init__(self) -> None:
+        name = 'goto'
         parameters = [
             Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
             Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
             Parameter('altitude', ContinuousValueRange(0.3, 100.0))
         ]
         branches = [
-            GotoNormally(self),
-            GotoLoiter(self),
-            IdleBranch(self)
+            GotoNormally(name),
+            GotoLoiter(name),
+            IdleBranch(name)
         ]
-        super().__init__('goto', parameters, branches)
+        super().__init__(name, parameters, branches)
 
     def dispatch(self,
                  sandbox: 'Sandbox',

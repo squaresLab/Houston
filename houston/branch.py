@@ -1,56 +1,27 @@
-from typing import List, Iterator, Union
+__all__ = ['BranchID', 'Branch', 'IdleBranch', 'BranchPath']
 
+from typing import List, Iterator, Union
 import random
 
-from .util import printflush
+import attr
+
 from .state import State
 from .environment import Environment
 from .configuration import Configuration
 
 
+@attr.s(frozen=True)
 class BranchID(object):
+    name_action = attr.ib(type=str)
+    name_branch = attr.ib(type=str)
+
     @staticmethod
     def from_string(s: str) -> 'BranchID':
         action_name, _, branch_name = s.partition(':')
         return BranchID(action_name, branch_name)
 
-    def __init__(self,
-                 action_name: str,
-                 branch_name: str):
-        assert action_name is not ''
-        assert branch_name is not ''
-
-        self.__action_name = str(action_name)
-        self.__branch_name = str(branch_name)
-
-    def equals(self, other: 'BranchID') -> bool:
-        return self.__eq__(other)
-
-    def __eq__(self, other: 'BranchID') -> bool:
-        return self.__action_name == other.schema_name and \
-            self.__branch_name == other.branch_name
-
-    @property
-    def schema_name(self) -> str:
-        """
-        The name of the schema to which this branch identifier belongs.
-        """
-        return self.__action_name
-
-    @property
-    def branch_name(self) -> str:
-        """
-        The (unqualified) name of the branch to which this identifier belongs.
-        """
-        return self.__branch_name
-
     def __str__(self) -> str:
-        return "{}:{}".format(self.__action_name, self.__branch_name)
-
-    def __repr__(self):
-        r = "BranchID(\"{}\", \"{}\")"
-        r = r.format(self.schema_name, self.branch_name)
-        return r
+        return "{}:{}".format(self.name_action, self.name_branch)
 
 
 class Branch(object):
@@ -59,32 +30,28 @@ class Branch(object):
     state of the system before and after executing the action.
     """
     def __init__(self,
-                 name: str,
-                 schema: 'ActionSchema'
+                 name_schema: str,
+                 name_branch: str,
                  ) -> None:
         """
         Constructs a new outcome branch.
 
         Parameters:
-            name: the name of the branch.
-            schema: the action schema to which this outcome branch belongs.
+            name_schema: the name of the schema to which the branch belongs.
+            name_branch: the name of the branch.
         """
-        from houston.action import ActionSchema  # FIXME
-        assert name is not ""
-        self.__name = name
-        self.__schema = schema
-
-    @property
-    def schema(self) -> 'ActionSchema':
-        return self.__schema
+        assert name_schema is not ""
+        assert name_branch is not ""
+        self.__name_schema = name_schema
+        self.__name_branch = name_branch
 
     @property
     def name(self) -> str:
-        return self.__name
+        return "{}:{}".format(self.__name_schema, self.__name_branch)
 
     @property
     def id(self) -> BranchID:
-        return BranchID(self.__schema.name, self.__name)
+        return BranchID(self.__name_schema, self.__name_branch)
 
     def generate(self,
                  state: State,
@@ -144,12 +111,12 @@ class Branch(object):
 
 class IdleBranch(Branch):
     def __init__(self,
-                 schema: 'ActionSchema',
+                 name_schema: str,
                  idle_time: float = 5.0
                  ) -> None:
         assert idle_time > 0
         self.__idle_time = idle_time
-        super().__init__("idle", schema)
+        super().__init__(name_schema, "idle")
 
     def timeout(self, system, action, state, environment):
         return self.__idle_time + 2.0
