@@ -21,9 +21,9 @@ class GoToSchema(ActionSchema):
             Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True))
         ]
         branches = [
-            GotoNormally(self),
-            GotoLoiter(self),
-            IdleBranch(self)
+            GotoNormally(),
+            GotoLoiter(),
+            IdleBranch()
         ]
         super().__init__('goto', parameters, branches)
 

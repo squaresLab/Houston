@@ -54,25 +54,21 @@ class ActionOutcome(object):
     start_state = attr.ib(type=State)
     end_state = attr.ib(type=State)
     time_elapsed = attr.ib(type=float)  # FIXME use time delta
-    branch_id = attr.ib(type='BranchID')  # FIXME
 
     @staticmethod
     def from_json(jsn: Dict[str, Any]) -> 'ActionOutcome':
-        from houston.branch import BranchID
         return ActionOutcome(Action.from_json(jsn['action']),
                              jsn['successful'],
                              State.from_json(jsn['start_state']),
                              State.from_json(jsn['end_state']),
-                             jsn['time_elapsed'],
-                             BranchID.from_string(jsn['branch_id']))
+                             jsn['time_elapsed'])
 
     def to_json(self) -> Dict[str, Any]:
         return {'action': self.__action.to_json(),
                 'successful': self.__successful,
                 'start_state': self.start_state.to_json(),
                 'end_state': self.end_state.to_json(),
-                'time_elapsed': self.__time_elapsed,
-                'branch_id': str(self.__branch_id)}
+                'time_elapsed': self.__time_elapsed}
 
 
 T = TypeVar('T')
@@ -140,13 +136,6 @@ class ActionSchema(object):
         A list of the branches for this action schema.
         """
         return self.__branches[:]
-
-    def get_branch(self, iden: 'BranchID') -> 'Branch':
-        """
-        Returns a branch belonging to this action schema using its identifier.
-        """
-        assert iden.get_action_name() == self.__name
-        return self.__branches[iden.get_branch_name()]
 
     def dispatch(self,
                  sandbox: 'Sandbox',

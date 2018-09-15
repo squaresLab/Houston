@@ -185,8 +185,7 @@ class Sandbox(object):
                                         passed,
                                         state_before,
                                         state_after,
-                                        time_elapsed,
-                                        branch.id)
+                                        time_elapsed)
                 outcomes.append(outcome)
 
                 if not passed:

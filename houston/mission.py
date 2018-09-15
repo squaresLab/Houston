@@ -9,7 +9,6 @@ from .configuration import Configuration
 from .action import Action, ActionOutcome
 from .state import State
 from .environment import Environment
-from .branch import BranchPath
 
 
 @attr.s(frozen=True)
@@ -113,13 +112,6 @@ class MissionOutcome(object):
         s = '; '.join([s_passed, s_time_setup, s_time_total, s_outcomes])
         s = "MissionOutcome({})".format(s)
         return s
-
-    @property
-    def executed_path(self) -> BranchPath:
-        """
-        Returns the branch path that was taken by this mission execution.
-        """
-        return BranchPath([o.branch_id for o in self.outcomes])
 
     @property
     def end_state(self) -> State:

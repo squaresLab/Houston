@@ -33,11 +33,11 @@ class SetModeSchema(ActionSchema):
                       DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']))
         ]
         branches = [
-            SetModeGuided(self),
-            SetModeLoiter(self),
-            SetModeRTL(self),
-            SetModeLand(self),
-            IdleBranch(self)
+            SetModeGuided(),
+            SetModeLoiter(),
+            SetModeRTL(),
+            SetModeLand(),
+            IdleBranch()
         ]
         super().__init__('setmode', parameters, branches)
 
@@ -52,8 +52,8 @@ class SetModeSchema(ActionSchema):
 
 
 class SetModeLand(Branch):
-    def __init__(self, schema):
-        super().__init__('land', schema)
+    def __init__(self) -> None:
+        super().__init__('land')
 
     def timeout(self, action, state, environment, config):
         timeout = state.altitude * config.time_per_metre_travelled
@@ -89,8 +89,8 @@ class SetModeLand(Branch):
 
 
 class SetModeGuided(Branch):
-    def __init__(self, schema) -> None:
-        super().__init__('guided', schema)
+    def __init__(self) -> None:
+        super().__init__('guided')
 
     def timeout(self, action, state, environment, config):
         return config.constant_timeout_offset
@@ -114,8 +114,8 @@ class SetModeGuided(Branch):
 
 
 class SetModeLoiter(Branch):
-    def __init__(self, schema):
-        super().__init__('loiter', schema)
+    def __init__(self) -> None:
+        super().__init__('loiter')
 
     def timeout(self, action, state, environment, config):
         return config.constant_timeout_offset
@@ -139,8 +139,8 @@ class SetModeLoiter(Branch):
 
 
 class SetModeRTL(Branch):
-    def __init__(self, schema):
-        super().__init__('rtl', schema)
+    def __init__(self) -> None:
+        super().__init__('rtl')
 
     def timeout(self, action, state, environment, config):
         # compute distance

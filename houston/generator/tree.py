@@ -2,7 +2,6 @@ import time
 import threading
 
 from .base import MissionGenerator
-from ..branch import BranchID, BranchPath
 from ..mission import Mission, MissionOutcome
 from ..action import ActionOutcome, Action, ActionGenerator
 from ..util import printflush
@@ -62,7 +61,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
             self.__num_running -= 1
             self.__queue_lock.release()
 
-    def prune(self, path: BranchPath) -> None:
+    def prune(self, path: 'BranchPath') -> None:
         """
         Removes a given branch path from the search space, preventing further
         exploration along that path.

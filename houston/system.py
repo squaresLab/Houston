@@ -12,7 +12,7 @@ from .configuration import Configuration
 from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
 from .action import ActionSchema, ActionOutcome, Action
-from .branch import BranchID, Branch, BranchPath
+from .branch import Branch
 from .state import Variable, State
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -99,21 +99,6 @@ class System(object, metaclass=SystemMeta):
         implementation of this system (known as a "sandbox").
         """
         return self.__snapshot
-
-    @property
-    def branches(self) -> List[Branch]:
-        """
-        A list of the branches for this system.
-        """
-        return [b for s in self.__schemas.values() for b in s.branches]
-
-    def branch(self, iden) -> Branch:
-        """
-        Returns an outcome branch for this system provided its identifier.
-        """
-        assert isinstance(iden, BranchID)
-        schema = self.__schemas[iden.action_name]
-        return schema.branch(iden)
 
     def variable(self, v: str) -> Variable:
         warnings.warn("System.variable will soon be removed",

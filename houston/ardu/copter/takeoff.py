@@ -24,8 +24,8 @@ class TakeoffSchema(ActionSchema):
             Parameter('altitude', ContinuousValueRange(0.3, 100.0))
         ]
         branches = [
-            TakeoffNormally(self),
-            IdleBranch(self)
+            TakeoffNormally(),
+            IdleBranch()
         ]
         super().__init__('takeoff', parameters, branches)
 
@@ -45,8 +45,8 @@ class TakeoffSchema(ActionSchema):
 
 
 class TakeoffNormally(Branch):
-    def __init__(self, schema):
-        super().__init__("normal", schema)
+    def __init__(self) -> None:
+        super().__init__("normal")
 
     def timeout(self, action, state, environment, config):
         # FIXME add rate of ascent

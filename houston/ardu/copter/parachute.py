@@ -18,8 +18,8 @@ class ParachuteSchema(ActionSchema):
             Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
         ]
         branches = [
-            ParachuteNormally(name),
-            IdleBranch(name)
+            ParachuteNormally(),
+            IdleBranch()
         ]
         super().__init__(name, parameters, branches)
 
@@ -39,8 +39,8 @@ class ParachuteSchema(ActionSchema):
 
 
 class ParachuteNormally(Branch):
-    def __init__(self, schema):
-        super().__init__("normal", schema)
+    def __init__(self):
+        super().__init__("normal")
 
     def timeout(self, action, state, environment, config):
         timeout = state.altitude * config.time_per_metre_travelled

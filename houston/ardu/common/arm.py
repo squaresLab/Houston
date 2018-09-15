@@ -27,9 +27,9 @@ class ArmDisarmSchema(ActionSchema):
             Parameter('arm', DiscreteValueRange([True, False]))
         ]
         branches = [
-            ArmNormally(name),
-            DisarmNormally(name),
-            IdleBranch(name)
+            ArmNormally(),
+            DisarmNormally(),
+            IdleBranch()
         ]
         super().__init__(name, parameters, branches)
 
@@ -50,8 +50,8 @@ class ArmDisarmSchema(ActionSchema):
 
 
 class ArmNormally(Branch):
-    def __init__(self, name_schema: str) -> None:
-        super().__init__(name_schema, 'arm-normal')
+    def __init__(self) -> None:
+        super().__init__('arm-normal')
 
     def precondition(self, action, state, environment, config):
         return action['arm'] \
@@ -76,8 +76,8 @@ class ArmNormally(Branch):
 
 
 class DisarmNormally(Branch):
-    def __init__(self, name_schema: str) -> None:
-        super().__init__(name_schema, 'disarm-normal')
+    def __init__(self) -> None:
+        super().__init__('disarm-normal')
 
     def precondition(self, action, state, environment, config):
         return not action['arm'] \
