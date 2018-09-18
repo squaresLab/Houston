@@ -11,10 +11,7 @@ class RandomMissionGenerator(MissionGenerator):
                  action_generators=None,
                  max_num_actions=10
                  ) -> None:
-        super(RandomMissionGenerator, self).__init__(system,
-                                                     threads,
-                                                     action_generators,
-                                                     max_num_actions)
+        super().__init__(system, threads, action_generators, max_num_actions)
         self.__initial_state = initial_state
         self.__env = env
 

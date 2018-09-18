@@ -15,10 +15,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
                  threads=1,
                  action_generators=None,
                  max_num_actions=10):
-        super(TreeBasedMissionGenerator, self).__init__(system,
-                                                        threads,
-                                                        action_generators,
-                                                        max_num_actions)
+        super().__init__(system, threads, action_generators, max_num_actions)
         self.__seed_mission = Mission(env, initial_state, [])
         self.__queue_lock = threading.Lock()
 
@@ -74,7 +71,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         self.__queue = set(filter(keep, self.__queue))
 
     def prepare(self, seed, resource_limits):
-        super(TreeBasedMissionGenerator, self).prepare(seed, resource_limits)
+        super().prepare(seed, resource_limits)
 
         self.__intended_paths = {}
         self.__queue = set()

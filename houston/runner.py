@@ -17,7 +17,7 @@ class MissionRunner(threading.Thread):
                  pool,
                  with_coverage: bool = False
                  ) -> None:
-        super(MissionRunner, self).__init__()
+        super().__init__()
         self.daemon = True
         self.__pool = pool
         self.__sandbox = pool.system.provision()
