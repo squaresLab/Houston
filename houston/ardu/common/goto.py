@@ -1,4 +1,4 @@
-__all__ = ['GotoNormally', 'GotoLoiter']
+__all__ = ['GotoLoiter']
 
 from typing import Tuple
 
@@ -12,85 +12,24 @@ from ...valueRange import ContinuousValueRange, DiscreteValueRange
 from ...specification import Specification, Idle
 
 
-class GotoNormally(Specification):
-    """
-    If the robot is armed and not in its `LOITER` mode, GoTo actions should
-    cause the robot to move to the desired location. For certain Ardu systems,
-    the precondition on this normal behaviour is stronger; for more
-    information, refer to the system-specific subclasses of GotoNormally.
-    """
-    def __init__(self) -> None:
-        super().__init__('normal')
-
-    def timeout(self, action, state, environment, config):
-        from_loc = (state.latitude, state.longitude)
-        to_loc = (action['latitude'], action['longitude'])
-        dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = dist * config.time_per_metre_travelled
-        timeout += config.constant_timeout_offset
-        return timeout
-
-    def precondition(self, action, state, environment, config):
-        """
-        This behaviour will occur for Goto actions when the system is armed and
-        not in its `LOITER` mode.
-        """
-        return state.armed and state.mode != 'LOITER'
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        """
-        Upon completion of the action, the robot should be at the longitude and
-        latitude specified by the action parameters.
-        """
-        err_lon = 0.1
-        err_lat = 0.1
-        sat_lon = \
-            abs(state_after.longitude - action['longitude']) <= err_lon
-        sat_lat = \
-            abs(state_after.latitude - action['latitude']) <= err_lat
-        return sat_lon and sat_lat
-
-    def is_satisfiable(self, state, environment, config):
-        return self.precondition(None, state, environment, config)
-
-
 class GotoLoiter(Specification):
     """
     If the robot is armed and in its `LOITER` mode, GoTo actions should have no
     effect upon the robot. (Why isn't this covered by Idle?)
     """
     def __init__(self) -> None:
-        super().__init__('loiter')
+        pre = lambda a, s, e, c: s.armed and s.mode == 'LOITER'
+        timeout = lambda a, s, e, c: c.constant_timeout_offset
 
-    def timeout(self, action, state, environment, config):
-        return config.constant_timeout_offset
+        def post(a, s0, s1, e, c) -> bool:
+            sat_mode = s1.mode == 'LOITER'
+            # FIXME 82
+            err_lon = 0.1
+            err_lat = 0.1
+            err_alt = 0.5
+            sat_lon = abs(s1.longitude - s0.longitude) <= err_lon
+            sat_lat = abs(s1.latitude - s0.latitude) <= err_lat
+            sat_alt = abs(s1.altitude - s0.altitude) <= err_alt
+            return sat_mode and sat_lon and sat_lat and sat_alt
 
-    def precondition(self, action, state, environment, config):
-        return state.armed and state.mode == 'LOITER'
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        sat_mode = state_after.mode == 'LOITER'
-        # FIXME 82
-        err_lon = 0.1
-        err_lat = 0.1
-        err_alt = 0.5
-        sat_lon = \
-            abs(state_after.longitude - state_before.longitude) <= err_lon
-        sat_lat = \
-            abs(state_after.latitude - state_before.latitude) <= err_lat
-        sat_alt = \
-            abs(state_after.altitude - state_before.altitude) <= err_alt
-        return sat_mode and sat_lon and sat_lat and sat_alt
-
-    def is_satisfiable(self, state, environment, config):
-        return self.precondition(None, state, environment, config)
+        super().__init__('loiter', pre, post, timeout)

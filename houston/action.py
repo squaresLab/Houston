@@ -104,7 +104,7 @@ class ActionSchema(object):
     def __init__(self,
                  name: str,
                  parameters: List[Parameter],
-                 specifications: List[Specification]
+                 specs: List[Specification]
                  ) -> None:
         """
         Constructs an ActionSchema object.

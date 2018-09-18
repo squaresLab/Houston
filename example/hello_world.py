@@ -12,7 +12,6 @@ from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
 from houston.runner import MissionRunnerPool
-from houston.ardu.common.goto import CircleBasedGotoGenerator
 from houston.ardu.copter.state import State as CopterState
 from houston.ardu.configuration import Configuration as ArduConfig
 

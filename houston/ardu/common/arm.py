@@ -51,47 +51,17 @@ class ArmDisarmSchema(ActionSchema):
 
 class ArmNormally(Specification):
     def __init__(self) -> None:
-        super().__init__('arm-normal')
-
-    def precondition(self, action, state, environment, config):
-        return action['arm'] \
-            and self.is_satisfiable(state, environment, config)
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        return state_after.armed
-
-    def timeout(self, action, state, environment, config):
-        return config.constant_timeout_offset + 1.0
-
-    def is_satisfiable(self, state, environment, config):
-        return state.armable and state.mode in ['GUIDED', 'LOITER']
+        pre = lambda a, s, e, c:\
+            a['arm'] and s.armable and s.mode in ['GUIDED', 'LOITER']
+        post = lambda a, s0, s1, e, c: s1.armed
+        timeout = lambda a, s, e, c: c.constant_timeout_offset + 1.0
+        super().__init__('arm-normal', pre, post, timeout)
 
 
 class DisarmNormally(Specification):
     def __init__(self) -> None:
-        super().__init__('disarm-normal')
-
-    def precondition(self, action, state, environment, config):
-        return not action['arm'] \
-            and self.is_satisfiable(state, environment, config)
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        return not state_after.armed
-
-    def timeout(self, action, state, environment, config):
-        return config.constant_timeout_offset + 1
-
-    # TODO
-    def is_satisfiable(self, state, environment, config):
-        # and state['mode'] in ['GUIDED', 'LOITER']
-        return state.armed
+        pre = lambda a, s, e, c:\
+            a['arm'] and s.armed
+        post = lambda a, s0, s1, e, c: not s1.armed
+        timeout = lambda a, s, e, c: c.constant_timeout_offset + 1.0
+        super().__init__('disarm-normal', pre, post, timeout)

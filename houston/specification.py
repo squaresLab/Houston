@@ -1,6 +1,6 @@
 __all__ = ['Specification', 'Idle']
 
-from typing import List, Iterator, Union
+from typing import List, Iterator, Union, Callable
 import random
 
 import attr
@@ -9,89 +9,31 @@ from .state import State
 from .environment import Environment
 from .configuration import Configuration
 
+Precondition = Callable[['Action', State, Environment, Configuration], bool]
+Postcondition = \
+    Callable[['Action', State, State, Environment, Configuration], bool]
+Timeout = \
+    Callable[['Action', State, Environment, Configuration], float]
+
 
 @attr.s
 class Specification(object):
     name = attr.ib(type=str)
-
-    """
-    Describes a possible behaviour of an action via a specification over the
-    state of the system before and after executing the action.
-    """
-    def is_satisfiable(self,
-                       state: State,
-                       environment: Environment,
-                       configuration: Configuration
-                       ) -> bool:
-        """
-        Determines whether there exists a set of parameter values that would
-        satisify this precondition given a fixed initial state and
-        environment.
-        """
-        raise NotImplementedError
-
-    def precondition(self,
-                     action: 'Action',
-                     state: State,
-                     environment: Environment,
-                     configuration: Configuration
-                     ) -> bool:
-        raise NotImplementedError
-
-    def postcondition(self,
-                      action: 'Action',
-                      state_before: State,
-                      state_after: State,
-                      environment: Environment,
-                      configuration: Configuration
-                      ) -> bool:
-        raise NotImplementedError
-
-    def timeout(self,
-                action: 'Action',
-                state: State,
-                environment: Environment,
-                configuration: Configuration
-                ) -> float:
-        """
-        Computes the maximum length of time that is required to execute a
-        given action (that will traverse this specification) in a particular
-        state and environment.
-
-        Returns:
-            maximum length of time given in seconds.
-        """
-        raise NotImplementedError
+    precondition = attr.ib(type=Precondition)
+    postcondition = attr.ib(type=Postcondition)
+    timeout = attr.ib(type=Timeout)
 
 
 class Idle(Specification):
     def __init__(self, idle_time: float = 5.0) -> None:
         assert idle_time > 0
-        self.__idle_time = idle_time
-        super().__init__("idle")
 
-    def timeout(self, system, action, state, environment):
-        return self.__idle_time + 2.0
+        def post(a, s0, s1, e, c) -> bool:
+            time_passed = s1.time_offset - s0.time_offset
+            reached_idle_time = time_passed > idle_time
+            remained_same = s0.equiv(s1)
+            return reached_idle_time and remained_same
 
-    def precondition(self,
-                     action: 'Action',
-                     state: State,
-                     environment: Environment,
-                     configuration: Configuration
-                     ) -> bool:
-        return True
-
-    def postcondition(self,
-                      action: 'Action',
-                      state_before: State,
-                      state_after: State,
-                      environment: Environment,
-                      configuration: Configuration
-                      ) -> bool:
-        time_passed = state_after.time_offset - state_before.time_offset
-        reached_idle_time = time_passed > self.__idle_time
-        remained_same = state_before.equiv(state_after)
-        return reached_idle_time and remained_same
-
-    def is_satisfiable(self, system, state, environment):
-        return True
+        pre = lambda a, s, e, c: True
+        timeout = lambda a, s, e, c: idle_time + 2.0
+        super().__init__("idle", pre, post, timeout)

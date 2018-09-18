@@ -40,35 +40,27 @@ class ParachuteSchema(ActionSchema):
 
 class ParachuteNormally(Specification):
     def __init__(self):
-        super().__init__("normal")
+        def pre(a, s, e, c) -> bool:
+            # FIXME #82
+            sat_action = a['parachute_action'] == 2
+            noise_alt = 0.1
+            sat_armed = s.armed
+            sat_mode = s.mode == 'GUIDED'
+            sat_alt = s.alt > c.min_parachute_alt - noise_alt
+            return sat_action and sat_armed and sat_mode and sat_alt
 
-    def timeout(self, action, state, environment, config):
-        timeout = state.altitude * config.time_per_metre_travelled
-        timeout += config.constant_timeout_offset
-        return timeout
+        def post(a, s0, s1, e, c) -> bool:
+            # FIXME #82
+            noise_alt = 0.1
+            noise_vz = 0.05
+            sat_armed = not s1.armed
+            sat_alt = s1.altitude < 0.3 + noise_alt
+            sat_vz = 0.0 <= s1.vz <= noise_vz
+            return sat_armed and sat_alt and sat_vz
 
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        # FIXME #82
-        noise_alt = 0.1
-        noise_vz = 0.05
-        sat_armed = not state_after.armed
-        sat_alt = state_after.altitude < 0.3 + noise_alt
-        sat_vz = 0.0 <= state_after.vz <= noise_vz
-        return sat_armed and sat_alt and sat_vz
+        def timeout(a, s, e, c) -> float:
+            timeout = s.altitude * c.time_per_metre_travelled
+            timeout += c.constant_timeout_offset
+            return timeout
 
-    def precondition(self, action, state, environment, config):
-        return action['parachute_action'] == 2 and \
-            self.is_satisfiable(state, environment, config)
-
-    def is_satisfiable(self, state, environment, config):
-        # FIXME #82
-        noise_alt = 0.1
-        sat_armed = state.armed
-        sat_mode = state.mode == 'GUIDED'
-        sat_alt = state.alt > config.min_parachute_alt - noise_alt
-        return sat_armed and sat_mode and sat_alt
+        super().__init__("normal", pre, post, timeout)

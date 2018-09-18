@@ -53,138 +53,78 @@ class SetModeSchema(ActionSchema):
 
 class SetModeLand(Specification):
     def __init__(self) -> None:
-        super().__init__('land')
+        pre = lambda a, s, e, c: a['mode'] == 'LAND' and s.altitude > 0.3
 
-    def timeout(self, action, state, environment, config):
-        timeout = state.altitude * config.time_per_metre_travelled
-        timeout += config.constant_timeout_offset
-        return timeout
+        def post(a, s0, s1, e, c) -> bool:
+            delta_lon = 0.1
+            delta_lat = 0.1
+            delta_alt = 1.0
+            sat_mode = s1.mode == 'LAND'
+            sat_lon = abs(s1.longitude - s0.longitude) < delta_lon
+            sat_lat = abs(s1.latitude - s0.latitude) < delta_lat
+            sat_alt = abs(s1.altitude - 0.3) < delta_alt
+            return sat_lon and sat_lat and sat_alt
 
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        delta_lon = 0.1
-        delta_lat = 0.1
-        delta_alt = 1.0
-        sat_mode = state_after.mode == 'LAND'
-        sat_lon = \
-            abs(state_after.longitude - state_before.longitude) < delta_lon
-        sat_lat = \
-            abs(state_after.latitude - state_before.latitude) < delta_lat
-        sat_alt = \
-            abs(state_after.altitude - 0.3) < delta_alt
-        return sat_lon and sat_lat and sat_alt
+        def timeout(a, s, e, c) -> float:
+            timeout = s.altitude * c.time_per_metre_travelled
+            timeout += c.constant_timeout_offset
+            return timeout
 
-    def precondition(self, action, state, environment, config):
-        return action['mode'] == 'LAND' and state.altitude > 0.3
-
-    def is_satisfiable(self, state, environment, config):
-        return state.altitude > 0.3
+        super().__init__('land', pre, post, timeout)
 
 
 class SetModeGuided(Specification):
     def __init__(self) -> None:
-        super().__init__('guided')
-
-    def timeout(self, action, state, environment, config):
-        return config.constant_timeout_offset
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        return state_after.mode == 'GUIDED'
-
-    def precondition(self, action, state, environment, config):
-        return action['mode'] == 'GUIDED'
-
-    def is_satisfiable(self, state, environment, config):
-        return True
+        pre = lambda a, s, e, c: a['mode'] == 'GUIDED'
+        post = lambda a, s0, s1, e, c: s1.mode == 'GUIDED'
+        timeout = lambda a, s, e, c: c.constant_timeout_offset
+        super().__init__('guided', pre, post, timeout)
 
 
 class SetModeLoiter(Specification):
     def __init__(self) -> None:
-        super().__init__('loiter')
-
-    def timeout(self, action, state, environment, config):
-        return config.constant_timeout_offset
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        return state_after.mode == 'LOITER'
-
-    def precondition(self, action, state, environment, config):
-        return action['mode'] == 'LOITER'
-
-    def is_satisfiable(self, state, environment, config):
-        return True
+        pre = lambda a, s, e, c: a['mode'] == 'LOITER'
+        post = lambda a, s0, s1, e, c: s1.mode == 'LOITER'
+        timeout = lambda a, s, e, c: c.constant_timeout_offset
+        super().__init__('loiter', pre, post, timeout)
 
 
 class SetModeRTL(Specification):
     def __init__(self) -> None:
-        super().__init__('rtl')
+        pre = lambda a, s, e, c: a['mode'] == 'RTL'
 
-    def timeout(self, action, state, environment, config):
-        # compute distance
-        from_loc = (state.latitude, state.longitude)
-        to_loc = (state.home_latitude, state.home_longitude)
-        dist = geopy.distance.great_circle(from_loc, to_loc).meters
+        def post(a, s0, s1, e, c) -> bool:
+            if s1.mode != 'RTL':
+                return False  # hmmm?
 
-        # compute time taken to travel from A to B, and time taken to land
-        time_goto_phase = dist * config.time_per_metre_travelled
-        time_land_phase = state.altitude * config.time_per_metre_travelled
-
-        # TODO: what was this? No explanation of logic?
-        # Land times and adjustment time for altitude
-        # total_go_up_down_time = \
-        #    math.fabs(10 - state['altitude']) *
-        # config.time_per_metre_travelled
-
-        # compute total timeout
-        timeout = \
-            time_goto_phase + time_land_phase + config.constant_timeout_offset
-
-        logger.debug("calculated timeout: %.3f seconds", timeout)
-        return timeout
-
-    def postcondition(self,
-                      action,
-                      state_before,
-                      state_after,
-                      environment,
-                      config):
-        if state_after.mode != 'RTL':
-            return False  # hmmm?
-
-        if state_before.altitude < 0.3:
-            if state_before.armed != state_after.armed:
+            if s1.altitude < 0.3:
+                if s0.armed != s1.armed:
+                    return False
+            elif s0.armed:
                 return False
-        elif state_before.armed:
-            return False
 
-        err_alt = 1.0
-        err_lat = 0.1
-        err_lon = 0.1
+            err_alt = 1.0
+            err_lat = 0.1
+            err_lon = 0.1
 
-        sat_alt = abs(state_after.altitude) <= noise_alt
-        diff_lat = abs(state_after.latitude - state_before.home_latitude)
-        sat_lat = diff_lat <= noise_lat
-        diff_lon = abs(state_after.longitude - state_before.home_longitude)
-        sat_lon = diff_lon <= err_lon
+            sat_alt = abs(s1.altitude) <= noise_alt
+            diff_lat = abs(s1.latitude - s0.home_latitude)
+            sat_lat = diff_lat <= noise_lat
+            diff_lon = abs(s1.longitude - s0.home_longitude)
+            sat_lon = diff_lon <= err_lon
 
-        return sat_alt and sat_lat and sat_lon
+            return sat_alt and sat_lat and sat_lon
 
-    def precondition(self, action, state, environment, config):
-        return action['mode'] == 'RTL'
+        def timeout(a, s, e, c) -> float:
+            from_loc = (s.latitude, s.longitude)
+            to_loc = (s.home_latitude, s.home_longitude)
+            dist = geopy.distance.great_circle(from_loc, to_loc).meters
 
-    def is_satisfiable(self, state, environment, config):
-        return True
+            time_goto_phase = dist * c.time_per_metre_travelled
+            time_land_phase = state.altitude * c.time_per_metre_travelled
+
+            timeout = \
+                time_goto_phase + time_land_phase + c.constant_timeout_offset
+            return timeout
+
+        super().__init__('rtl', pre, post, timeout)
