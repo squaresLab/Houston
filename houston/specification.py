@@ -18,17 +18,6 @@ class Specification(object):
     Describes a possible behaviour of an action via a specification over the
     state of the system before and after executing the action.
     """
-    def generate(self,
-                 state: State,
-                 env: Environment,
-                 config: Configuration,
-                 rng: random.Random
-                 ) -> 'Action':
-        """
-        Generates an action that would cause the system to take this branch.
-        """
-        raise NotImplementedError
-
     def is_satisfiable(self,
                        state: State,
                        environment: Environment,
@@ -66,8 +55,8 @@ class Specification(object):
                 ) -> float:
         """
         Computes the maximum length of time that is required to execute a
-        given action (that will traverse this branch) in a particular state
-        and environment.
+        given action (that will traverse this specification) in a particular
+        state and environment.
 
         Returns:
             maximum length of time given in seconds.
@@ -106,11 +95,3 @@ class Idle(Specification):
 
     def is_satisfiable(self, system, state, environment):
         return True
-
-    def generate(self,
-                 state: State,
-                 environment: Environment,
-                 configuration: Configuration,
-                 rng: random.Random
-                 ) -> 'Action':
-        return self.schema.generate(rng)

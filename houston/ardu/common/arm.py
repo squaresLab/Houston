@@ -71,9 +71,6 @@ class ArmNormally(Specification):
     def is_satisfiable(self, state, environment, config):
         return state.armable and state.mode in ['GUIDED', 'LOITER']
 
-    def generate(self, state, environment, rng, config):
-        return {'arm': True}
-
 
 class DisarmNormally(Specification):
     def __init__(self) -> None:
@@ -98,6 +95,3 @@ class DisarmNormally(Specification):
     def is_satisfiable(self, state, environment, config):
         # and state['mode'] in ['GUIDED', 'LOITER']
         return state.armed
-
-    def generate(self, state, environment, rng, config):
-        return {'arm': False}

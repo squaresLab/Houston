@@ -85,6 +85,3 @@ class TakeoffNormally(Specification):
 
     def is_satisfiable(self, state, environment, config):
         return self.precondition(None, state, environment, config)
-
-    def generate(self, state, env, config, rng):
-        return self.schema.generate(rng)

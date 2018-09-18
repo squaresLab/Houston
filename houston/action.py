@@ -130,7 +130,7 @@ class ActionSchema(object):
         return self.__name
 
     @property
-    def specifications(self) -> List['Specification']:
+    def specifications(self) -> List[Specification]:
         """
         A list of the specifications for this action schema.
         """
@@ -190,7 +190,7 @@ class ActionSchema(object):
                 state: State,
                 environment: Environment,
                 config: Configuration
-                ) -> 'Specification':
+                ) -> Specification:
         """
         Returns the specification of this action schema that will be taken for
         a given action, state, and environment.
@@ -199,11 +199,3 @@ class ActionSchema(object):
             if spec.precondition(action, state, environment, config):
                 return spec
         raise Exception("failed to resolve specification")
-
-    def generate(self, rng: random.Random) -> Action:
-        """
-        Randomly generates an action belonging to this schema.
-        """
-        assert (isinstance(rng, random.Random) and rng is not None)
-        values = {p.name: p.generate(rng) for p in self.__parameters}
-        return Action(self.name, values)

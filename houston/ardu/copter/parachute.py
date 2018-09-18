@@ -72,6 +72,3 @@ class ParachuteNormally(Specification):
         sat_mode = state.mode == 'GUIDED'
         sat_alt = state.alt > config.min_parachute_alt - noise_alt
         return sat_armed and sat_mode and sat_alt
-
-    def generate(self, state, env, config, rng):
-        return self.schema.generate(rng)

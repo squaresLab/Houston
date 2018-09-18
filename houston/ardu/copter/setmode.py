@@ -84,9 +84,6 @@ class SetModeLand(Specification):
     def is_satisfiable(self, state, environment, config):
         return state.altitude > 0.3
 
-    def generate(self, state, environment, config, rng):
-        return Action(self.schema.name, {'mode': 'LAND'})
-
 
 class SetModeGuided(Specification):
     def __init__(self) -> None:
@@ -109,9 +106,6 @@ class SetModeGuided(Specification):
     def is_satisfiable(self, state, environment, config):
         return True
 
-    def generate(self, state, environment, config, rng):
-        return Action(self.schema.name, {'mode': 'GUIDED'})
-
 
 class SetModeLoiter(Specification):
     def __init__(self) -> None:
@@ -133,9 +127,6 @@ class SetModeLoiter(Specification):
 
     def is_satisfiable(self, state, environment, config):
         return True
-
-    def generate(self, state, environment, config, rng):
-        return Action(self.schema.name, {'mode': 'LOITER'})
 
 
 class SetModeRTL(Specification):
@@ -197,6 +188,3 @@ class SetModeRTL(Specification):
 
     def is_satisfiable(self, state, environment, config):
         return True
-
-    def generate(self, state, environment, config, rng):
-        return Action(self.schema.name, {'mode': 'RTL'})

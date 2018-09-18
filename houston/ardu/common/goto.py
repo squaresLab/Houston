@@ -58,9 +58,6 @@ class GotoNormally(Specification):
     def is_satisfiable(self, state, environment, config):
         return self.precondition(None, state, environment, config)
 
-    def generate(self, state, environment, config, rng):
-        return self.schema.generate(rng)
-
 
 class GotoLoiter(Specification):
     """
@@ -97,6 +94,3 @@ class GotoLoiter(Specification):
 
     def is_satisfiable(self, state, environment, config):
         return self.precondition(None, state, environment, config)
-
-    def generate(self, state, environment, config, rng):
-        return self.schema.generate(rng)
