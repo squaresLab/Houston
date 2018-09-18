@@ -3,9 +3,7 @@ __all__ = ['GoToSchema', 'GotoNormally']
 import dronekit
 
 from ..common.goto import GotoNormally as GotoNormallyBase
-from ..common.goto import DistanceBasedGoToGenerator, \
-    CircleBasedGotoGenerator, \
-    GotoLoiter
+from ..common.goto import GotoLoiter
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment

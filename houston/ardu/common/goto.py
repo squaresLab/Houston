@@ -1,4 +1,4 @@
-__all__ = ['GotoNormally', 'GotoLoiter', 'CircleBasedGotoGenerator']
+__all__ = ['GotoNormally', 'GotoLoiter']
 
 from typing import Tuple
 
@@ -7,7 +7,7 @@ import geopy.distance
 
 from ...state import State
 from ...environment import Environment
-from ...action import ActionSchema, Parameter, Action, ActionGenerator
+from ...action import ActionSchema, Parameter, Action
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
 from ...branch import Branch, IdleBranch
 
@@ -100,78 +100,3 @@ class GotoLoiter(Branch):
 
     def generate(self, state, environment, config, rng):
         return self.schema.generate(rng)
-
-
-class DistanceBasedGoToGenerator(ActionGenerator):
-    """
-    This action generator uses its knowledge of the system state to generate
-    GoTo actions that will take the robot a given distance along a certain
-    heading.
-    """
-    def __init__(self,
-                 max_distance: float,
-                 min_distance: float = 1.0
-                 ) -> None:
-        assert max_distance > min_distance
-        assert min_distance > 0.0
-        self.__max_distance = max_distance
-        parameters = [
-            Parameter('distance',
-                      ContinuousValueRange(min_distance, max_distance)),
-            Parameter('heading',
-                      ContinuousValueRange(0.0, 360.0, True))]
-        super().__init__('goto', parameters)
-
-    def construct_with_state(self, current_state, env, config, values):
-        dist = values['distance']
-        heading = values['heading']
-        lon = current_state.longitude
-        lat = current_state.latitude
-        params = {}
-
-        origin = geopy.Point(latitude=lat, longitude=lon)
-        dist = geopy.distance.VincentyDistance(meters=dist)
-        destination = dist.destination(origin, heading)
-
-        params['latitude'] = destination.latitude
-        params['longitude'] = destination.longitude
-        params['altitude'] = current_state.altitude
-
-        return params
-
-    def construct_without_state(self, env, config, values):
-        raise NotImplementedError
-
-
-class CircleBasedGotoGenerator(ActionGenerator):
-    def __init__(self,
-                 centre_coords: Tuple[float, float],
-                 radius: float
-                 ) -> None:
-        self.__centre_coords = centre_coords
-        parameters = [
-            Parameter('heading', ContinuousValueRange(0.0, 360.0, True)),
-            Parameter('distance', ContinuousValueRange(0.0, radius))
-        ]
-        super().__init__('goto', parameters)
-
-    def construct_without_state(self, env, config, values):
-        (lat, lon) = self.__centre_coords
-        heading = values['heading']
-        dist = values['distance']
-        params = {}
-
-        origin = geopy.Point(latitude=lat, longitude=lon)
-        dist = geopy.distance.VincentyDistance(meters=dist)
-        destination = dist.destination(origin, heading)
-
-        params['latitude'] = destination.latitude
-        params['longitude'] = destination.longitude
-        # FIXME small limitation since we don't have current
-        # state to get altitude.
-        params['altitude'] = 10.0
-
-        return params
-
-    def construct_with_state(self, current_state, env, config, values):
-        return self.construct_without_state(env, config, values)

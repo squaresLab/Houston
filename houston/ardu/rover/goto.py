@@ -8,10 +8,7 @@ from ...environment import Environment
 from ...action import Action, ActionSchema, Parameter
 from ...branch import IdleBranch
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
-from ..common.goto import DistanceBasedGoToGenerator, \
-    CircleBasedGotoGenerator, \
-    GotoNormally, \
-    GotoLoiter
+from ..common.goto import GotoNormally, GotoLoiter
 
 
 class GoToSchema(ActionSchema):

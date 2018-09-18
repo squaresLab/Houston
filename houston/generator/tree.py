@@ -3,7 +3,7 @@ import threading
 
 from .base import MissionGenerator
 from ..mission import Mission, MissionOutcome
-from ..action import ActionOutcome, Action, ActionGenerator
+from ..action import ActionOutcome, Action
 from ..util import printflush
 
 

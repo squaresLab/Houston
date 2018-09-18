@@ -5,7 +5,7 @@ import time
 from pymavlink import mavutil
 
 from ...configuration import Configuration
-from ...action import ActionSchema, Parameter, Action, ActionGenerator
+from ...action import ActionSchema, Parameter, Action
 from ...branch import Branch, IdleBranch
 from ...state import State
 from ...environment import Environment
