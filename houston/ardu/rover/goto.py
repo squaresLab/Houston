@@ -8,7 +8,7 @@ from ...environment import Environment
 from ...command import Command, CommandSchema, Parameter
 from ...specification import Idle, Specification
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
-from ..common.goto import GotoLoiter
+from ..common import GotoLoiter
 
 
 class GotoNormally(Specification):

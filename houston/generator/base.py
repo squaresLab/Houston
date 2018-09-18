@@ -2,11 +2,13 @@ import random
 import threading
 import timeit
 
-from houston.runner import MissionRunnerPool
-from houston.system import System
-from houston.mission import Mission, MissionSuite
-from houston.generator.resources import ResourceUsage, ResourceLimits
-from houston.generator.report import MissionGeneratorReport
+import bugzoo
+
+from ..runner import MissionRunnerPool
+from ..system import System
+from ..mission import Mission, MissionSuite
+from .resources import ResourceUsage, ResourceLimits
+from .report import MissionGeneratorReport
 
 
 class MissionGeneratorStream(object):

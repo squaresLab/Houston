@@ -3,7 +3,7 @@ __all__ = ['GoToSchema']
 import dronekit
 import geopy.distance
 
-from ..common.goto import GotoLoiter
+from ..common import GotoLoiter
 from ...specification import Specification
 from ...configuration import Configuration
 from ...command import CommandSchema, Command, Parameter
