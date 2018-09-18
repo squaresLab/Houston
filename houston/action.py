@@ -7,6 +7,7 @@ import logging
 
 import attr
 
+from .specification import Specification
 from .configuration import Configuration
 from .state import State
 from .environment import Environment
@@ -103,7 +104,7 @@ class ActionSchema(object):
     def __init__(self,
                  name: str,
                  parameters: List[Parameter],
-                 branches: 'List[Branch]'
+                 specifications: List[Specification]
                  ) -> None:
         """
         Constructs an ActionSchema object.
@@ -114,28 +115,26 @@ class ActionSchema(object):
             branches: a list of the possible outcomes for actions belonging to
                 this schema.
         """
-        from houston.branch import Branch  # FIXME this is awful
-
         assert len(name) > 0
-        assert len(branches) > 0
+        assert len(specs) > 0
 
-        # unique branch names
-        assert (len(set(b.name for b in branches)) == len(branches))
+        # unique specification names
+        assert len(set(s.name for s in specs)) == len(specs)
 
         self.__name = name
         self.__parameters = parameters
-        self.__branches = branches
+        self.__specifications = specs
 
     @property
     def name(self) -> str:
         return self.__name
 
     @property
-    def branches(self) -> List['Branch']:
+    def specifications(self) -> List['Specification']:
         """
-        A list of the branches for this action schema.
+        A list of the specifications for this action schema.
         """
-        return self.__branches[:]
+        return self.__specifications[:]
 
     def dispatch(self,
                  sandbox: 'Sandbox',
@@ -178,28 +177,28 @@ class ActionSchema(object):
             Maximum length of time (in seconds) that the action may take to
             complete its execution.
         """
-        branch = self.resolve_branch(action, state, environment, config)
-        return branch.timeout(action, state, environment, config)
+        spec = self.resolve(action, state, environment, config)
+        return spec.timeout(action, state, environment, config)
 
     # FIXME replace with frozenset
     @property
     def parameters(self) -> List[Parameter]:
         return self.__parameters[:]
 
-    def resolve_branch(self,
-                       action: Action,
-                       state: State,
-                       environment: Environment,
-                       config: Configuration
-                       ) -> 'Branch':
+    def resolve(self,
+                action: Action,
+                state: State,
+                environment: Environment,
+                config: Configuration
+                ) -> 'Specification':
         """
-        Returns the branch of this action schema that will be taken for a
-        given action, state, and environment.
+        Returns the specification of this action schema that will be taken for
+        a given action, state, and environment.
         """
-        for b in self.__branches:
-            if b.precondition(action, state, environment, config):
-                return b
-        raise Exception("failed to resolve branch")
+        for spec in self.__specifications:
+            if spec.precondition(action, state, environment, config):
+                return spec
+        raise Exception("failed to resolve specification")
 
     def generate(self, rng: random.Random) -> Action:
         """

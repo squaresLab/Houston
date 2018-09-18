@@ -140,12 +140,9 @@ class Sandbox(object):
                 start_time = time.time()
                 state_before = state_after = self.observe(0.0)
 
-                # determine which branch the system should take
-                branch = schema.resolve_branch(action,
-                                               state_before,
-                                               env,
-                                               config)
-                logger.debug('taking branch: %s', branch)
+                # determine which spec the system should observe
+                spec = schema.resolve(action, state_before, env, config)
+                logger.debug('enforcing specification: %s', spec)
 
                 # enforce a timeout
                 timeout = \
@@ -162,11 +159,11 @@ class Sandbox(object):
                     while not passed:
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
-                        sat = branch.postcondition(action,
-                                                   state_before,
-                                                   state_after,
-                                                   env,
-                                                   config)
+                        sat = spec.postcondition(action,
+                                                 state_before,
+                                                 state_after,
+                                                 env,
+                                                 config)
                         if sat:
                             logger.debug("command was successful")
                             passed = True

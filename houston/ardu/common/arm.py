@@ -6,7 +6,7 @@ from pymavlink import mavutil
 
 from ...configuration import Configuration
 from ...action import ActionSchema, Parameter, Action
-from ...branch import Branch, IdleBranch
+from ...specification import Specification, Idle
 from ...state import State
 from ...environment import Environment
 from ...valueRange import DiscreteValueRange
@@ -26,12 +26,12 @@ class ArmDisarmSchema(ActionSchema):
         parameters = [
             Parameter('arm', DiscreteValueRange([True, False]))
         ]
-        branches = [
+        specs = [
             ArmNormally(),
             DisarmNormally(),
-            IdleBranch()
+            Idle()
         ]
-        super().__init__(name, parameters, branches)
+        super().__init__(name, parameters, specs)
 
     def dispatch(self,
                  sandbox: Sandbox,
@@ -49,7 +49,7 @@ class ArmDisarmSchema(ActionSchema):
         vehicle.send_mavlink(msg)
 
 
-class ArmNormally(Branch):
+class ArmNormally(Specification):
     def __init__(self) -> None:
         super().__init__('arm-normal')
 
@@ -75,7 +75,7 @@ class ArmNormally(Branch):
         return {'arm': True}
 
 
-class DisarmNormally(Branch):
+class DisarmNormally(Specification):
     def __init__(self) -> None:
         super().__init__('disarm-normal')
 

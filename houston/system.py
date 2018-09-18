@@ -12,7 +12,7 @@ from .configuration import Configuration
 from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
 from .action import ActionSchema, ActionOutcome, Action
-from .branch import Branch
+from .specification import Specification
 from .state import Variable, State
 
 logger = logging.getLogger(__name__)  # type: logging.Logger

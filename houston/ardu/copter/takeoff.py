@@ -9,7 +9,7 @@ from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
-from ...branch import Branch, IdleBranch
+from ...specification import Specification, Idle
 from ...valueRange import ContinuousValueRange
 
 
@@ -23,11 +23,11 @@ class TakeoffSchema(ActionSchema):
         parameters = [
             Parameter('altitude', ContinuousValueRange(0.3, 100.0))
         ]
-        branches = [
+        specs = [
             TakeoffNormally(),
-            IdleBranch()
+            Idle()
         ]
-        super().__init__('takeoff', parameters, branches)
+        super().__init__('takeoff', parameters, specs)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
@@ -44,7 +44,7 @@ class TakeoffSchema(ActionSchema):
         vehicle.send_mavlink(msg)
 
 
-class TakeoffNormally(Branch):
+class TakeoffNormally(Specification):
     def __init__(self) -> None:
         super().__init__("normal")
 

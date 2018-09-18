@@ -9,10 +9,10 @@ from ...state import State
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
-from ...branch import Branch, IdleBranch
+from ...specification import Specification, Idle
 
 
-class GotoNormally(Branch):
+class GotoNormally(Specification):
     """
     If the robot is armed and not in its `LOITER` mode, GoTo actions should
     cause the robot to move to the desired location. For certain Ardu systems,
@@ -62,7 +62,7 @@ class GotoNormally(Branch):
         return self.schema.generate(rng)
 
 
-class GotoLoiter(Branch):
+class GotoLoiter(Specification):
     """
     If the robot is armed and in its `LOITER` mode, GoTo actions should have no
     effect upon the robot. (Why isn't this covered by Idle?)

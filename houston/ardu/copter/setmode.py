@@ -11,7 +11,7 @@ from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
-from ...branch import Branch, IdleBranch
+from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -32,14 +32,14 @@ class SetModeSchema(ActionSchema):
             Parameter('mode',
                       DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']))
         ]
-        branches = [
+        specs = [
             SetModeGuided(),
             SetModeLoiter(),
             SetModeRTL(),
             SetModeLand(),
-            IdleBranch()
+            Idle()
         ]
-        super().__init__('setmode', parameters, branches)
+        super().__init__('setmode', parameters, specs)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
@@ -51,7 +51,7 @@ class SetModeSchema(ActionSchema):
         sandbox.connection.mode = dronekit.VehicleMode(action['mode'])
 
 
-class SetModeLand(Branch):
+class SetModeLand(Specification):
     def __init__(self) -> None:
         super().__init__('land')
 
@@ -88,7 +88,7 @@ class SetModeLand(Branch):
         return Action(self.schema.name, {'mode': 'LAND'})
 
 
-class SetModeGuided(Branch):
+class SetModeGuided(Specification):
     def __init__(self) -> None:
         super().__init__('guided')
 
@@ -113,7 +113,7 @@ class SetModeGuided(Branch):
         return Action(self.schema.name, {'mode': 'GUIDED'})
 
 
-class SetModeLoiter(Branch):
+class SetModeLoiter(Specification):
     def __init__(self) -> None:
         super().__init__('loiter')
 
@@ -138,7 +138,7 @@ class SetModeLoiter(Branch):
         return Action(self.schema.name, {'mode': 'LOITER'})
 
 
-class SetModeRTL(Branch):
+class SetModeRTL(Specification):
     def __init__(self) -> None:
         super().__init__('rtl')
 

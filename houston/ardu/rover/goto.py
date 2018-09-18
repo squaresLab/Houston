@@ -6,7 +6,7 @@ from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import Action, ActionSchema, Parameter
-from ...branch import IdleBranch
+from ...specification import Idle
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
 from ..common.goto import GotoNormally, GotoLoiter
 
@@ -17,12 +17,12 @@ class GoToSchema(ActionSchema):
             Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
             Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True))
         ]
-        branches = [
+        specs = [
             GotoNormally(),
             GotoLoiter(),
-            IdleBranch()
+            Idle()
         ]
-        super().__init__('goto', parameters, branches)
+        super().__init__('goto', parameters, specs)
 
     def dispatch(self,
                  sandbox: 'Sandbox',

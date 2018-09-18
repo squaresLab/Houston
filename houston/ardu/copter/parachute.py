@@ -6,7 +6,7 @@ from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
 from ...action import ActionSchema, Parameter, Action
-from ...branch import Branch, IdleBranch
+from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
 
 
@@ -17,11 +17,11 @@ class ParachuteSchema(ActionSchema):
             # 0=disable, 1=enable, 2=release
             Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
         ]
-        branches = [
+        specs = [
             ParachuteNormally(),
-            IdleBranch()
+            Idle()
         ]
-        super().__init__(name, parameters, branches)
+        super().__init__(name, parameters, specs)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
@@ -38,7 +38,7 @@ class ParachuteSchema(ActionSchema):
         vehicle.send_mavlink(msg)
 
 
-class ParachuteNormally(Branch):
+class ParachuteNormally(Specification):
     def __init__(self):
         super().__init__("normal")
 

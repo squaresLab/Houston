@@ -1,4 +1,4 @@
-__all__ = ['Branch', 'IdleBranch']
+__all__ = ['Specification', 'Idle']
 
 from typing import List, Iterator, Union
 import random
@@ -11,7 +11,7 @@ from .configuration import Configuration
 
 
 @attr.s
-class Branch(object):
+class Specification(object):
     name = attr.ib(type=str)
 
     """
@@ -75,7 +75,7 @@ class Branch(object):
         raise NotImplementedError
 
 
-class IdleBranch(Branch):
+class Idle(Specification):
     def __init__(self, idle_time: float = 5.0) -> None:
         assert idle_time > 0
         self.__idle_time = idle_time
