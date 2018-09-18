@@ -5,12 +5,12 @@ from pymavlink import mavutil
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...action import ActionSchema, Parameter, Action
+from ...command import CommandSchema, Parameter, Command
 from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
 
 
-class ParachuteSchema(ActionSchema):
+class ParachuteSchema(CommandSchema):
     def __init__(self):
         name = 'parachute'
         parameters = [
@@ -25,7 +25,7 @@ class ParachuteSchema(ActionSchema):
 
     def dispatch(self,
                  sandbox: 'Sandbox',
-                 action: Action,
+                 cmd: Command,
                  state: State,
                  environment: Environment,
                  config: Configuration
@@ -34,7 +34,7 @@ class ParachuteSchema(ActionSchema):
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
-            0, action['parachute_action'], 0, 0, 0, 0, 0, 0)
+            0, cmd['parachute_action'], 0, 0, 0, 0, 0, 0)
         vehicle.send_mavlink(msg)
 
 

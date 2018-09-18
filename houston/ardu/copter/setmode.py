@@ -10,7 +10,7 @@ import geopy
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...action import ActionSchema, Parameter, Action
+from ...command import CommandSchema, Parameter, Command
 from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-class SetModeSchema(ActionSchema):
+class SetModeSchema(CommandSchema):
     """
     Branches:
         Guided:
@@ -43,12 +43,12 @@ class SetModeSchema(ActionSchema):
 
     def dispatch(self,
                  sandbox: 'Sandbox',
-                 action: Action,
+                 cmd: Command,
                  state: State,
                  environment: Environment,
                  config: Configuration
                  ) -> None:
-        sandbox.connection.mode = dronekit.VehicleMode(action['mode'])
+        sandbox.connection.mode = dronekit.VehicleMode(cmd['mode'])
 
 
 class SetModeLand(Specification):

@@ -8,7 +8,7 @@ from .sandbox import Sandbox
 from ..configuration import Configuration
 from ..system import System
 from ..util import printflush
-from ..action import ActionSchema
+from ..command import CommandSchema
 from ..state import Variable
 
 
@@ -20,7 +20,7 @@ class BaseSystem(System):
 
     def __init__(self,
                  snapshot: Snapshot,
-                 schemas: List[ActionSchema],
+                 schemas: List[CommandSchema],
                  config: Configuration
                  ) -> None:
         super().__init__(schemas, snapshot, config)

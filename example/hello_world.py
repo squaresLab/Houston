@@ -7,6 +7,7 @@ import bugzoo
 from bugzoo import BugZoo
 
 import houston
+from houston.command import Command
 from houston.environment import Environment
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
@@ -129,16 +130,16 @@ if __name__ == "__main__":
     sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
-    actions = [
-        houston.action.Action("arm", {'arm': True}),
-        houston.action.Action("takeoff", {'altitude': 3.0}),
-        houston.action.Action("goto", {
+    cmds = [
+        Command("arm", {'arm': True}),
+        Command("takeoff", {'altitude': 3.0}),
+        Command("goto", {
             'latitude' : -35.361354,
             'longitude': 149.165218,
             'altitude' : 5.0
         }),
-        houston.action.Action("setmode", {'mode': 'LAND'}),
-        houston.action.Action("arm", {'arm': False})
+        Command("setmode", {'mode': 'LAND'}),
+        Command("arm", {'arm': False})
     ]
     environment = Environment({})
     initial = CopterState(
@@ -163,7 +164,7 @@ if __name__ == "__main__":
         vy=0.0,
         vz=0.0,
         time_offset=0.0)
-    mission = Mission(config, environment, initial, actions)
+    mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
     sandbox = sut.provision(bz)

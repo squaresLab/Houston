@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Iterator
 import attr
 
 from .configuration import Configuration
-from .action import Action, ActionOutcome
+from .command import Command, CommandOutcome
 from .state import State
 from .environment import Environment
 
@@ -14,55 +14,55 @@ from .environment import Environment
 @attr.s(frozen=True)
 class Mission(object):
     """
-    A mission is represented as a sequence of actions that are carried out in
+    A mission is represented as a sequence of commands that are carried out in
     a given environment and initial state.
     """
     configuration = attr.ib(type=Configuration)
     environment = attr.ib(type=Environment)
     initial_state = attr.ib(type=State)
-    actions = attr.ib(type=List[Action])  # FIXME
+    commands = attr.ib(type=List[Command])  # FIXME
 
     @staticmethod
     def from_dict(jsn: Dict[str, Any]) -> 'Mission':
         env = Environment.from_json(jsn['environment'])
         config = Configuration.from_json(jsn['configuration'])
         initial_state = State.from_json(jsn['initial_state'])
-        actions = [Action.from_json(a) for a in jsn['actions']]
-        return Mission(config, env, initial_state, actions)
+        cmds = [Command.from_json(c) for c in jsn['commands']]
+        return Mission(config, env, initial_state, cmds)
 
     def is_empty(self) -> bool:
         """
-        Returns True if this mission contains no actions.
+        Returns True if this mission contains no commands.
         """
-        return self.actions == []
+        return self.commands == []
 
-    def __iter__(self) -> Iterator[Action]:
+    def __iter__(self) -> Iterator[Command]:
         """
-        Returns an iterator over the actions contained in this mission.
+        Returns an iterator over the commands contained in this mission.
         """
-        yield from self.actions
+        yield from self.commands
 
     @property
     def size(self) -> int:
         """
-        The number of actions in this mission.
+        The number of commands in this mission.
         """
-        return len(self.actions)
+        return len(self.commands)
 
-    def extended(self, action: Action) -> 'Mission':
+    def extended(self, cmd: Command) -> 'Mission':
         """
-        Returns a variant of this mission with a given action added onto the
+        Returns a variant of this mission with a given command added onto the
         end.
         """
-        actions = self.actions + [action]
-        return Mission(self.environment, self.initial_state, actions)
+        cmds = self.commands + [cmd]
+        return Mission(self.environment, self.initial_state, cmds)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'configuration': self.configuration.to_json(),
             'environment': self.environment.to_json(),
             'initial_state': self.initial_state.to_json(),
-            'actions': [a.to_json() for a in self.__actions]}
+            'commands': [c.to_json() for c in self.commands]}
 
 
 @attr.s(frozen=True)
@@ -72,21 +72,21 @@ class MissionOutcome(object):
     a mission.
     """
     passed = attr.ib(type=bool)
-    outcomes = attr.ib(type=List[ActionOutcome])
+    outcomes = attr.ib(type=List[CommandOutcome])
     time_setup = attr.ib(type=float)
     time_total = attr.ib(type=float)
 
     @staticmethod
-    def from_dict(dkt: Dict[str, Any]) -> 'MissionOutcome':
-        actions = [ActionOutcome.from_json(a) for a in jsn['actions']]
+    def from_dict(dkt: Dict[str, Any]) -> 'CommandOutcome':
+        cmds = [CommandOutcome.from_json(a) for a in jsn['commands']]
         return MissionOutcome(dkt['passed'],
-                              actions,
+                              cmds,
                               dkt['time_setup'],
                               dkt['time_total'])
 
     def to_dict(self) -> Dict[str, Any]:
         return {'passed': self.passed,
-                'actions': [outcome.to_json() for outcome in self.outcomes],
+                'commands': [o.to_json() for o in self.outcomes],
                 'time_setup': self.time_setup,
                 'time_total': self.time_total}
 
@@ -100,7 +100,7 @@ class MissionOutcome(object):
             'code': code,
             'duration': self.time_total,
             'output': json.dump([o.to_json() for o in self.outcomes])}
-        return {'passed': self.__passed,
+        return {'passed': self.passed,
                 'response': response}
 
     def __repr__(self) -> str:

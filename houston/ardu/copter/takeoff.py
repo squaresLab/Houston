@@ -8,12 +8,12 @@ from pymavlink import mavutil
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...action import ActionSchema, Parameter, Action
+from ...command import CommandSchema, Parameter, Command
 from ...specification import Specification, Idle
 from ...valueRange import ContinuousValueRange
 
 
-class TakeoffSchema(ActionSchema):
+class TakeoffSchema(CommandSchema):
     """
     Branches:
         Normally:
@@ -31,7 +31,7 @@ class TakeoffSchema(ActionSchema):
 
     def dispatch(self,
                  sandbox: 'Sandbox',
-                 action: Action,
+                 cmd: Command,
                  state: State,
                  environment: Environment,
                  config: Configuration
@@ -40,7 +40,7 @@ class TakeoffSchema(ActionSchema):
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, 1, 0, 0, 0, 0, 0, action['altitude'])
+            0, 1, 0, 0, 0, 0, 0, cmd['altitude'])
         vehicle.send_mavlink(msg)
 
 

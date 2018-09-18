@@ -11,7 +11,7 @@ from bugzoo.core.bug import Bug as Snapshot
 from .configuration import Configuration
 from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
-from .action import ActionSchema, ActionOutcome, Action
+from .command import CommandSchema, CommandOutcome, Command
 from .specification import Specification
 from .state import Variable, State
 
@@ -72,7 +72,7 @@ class System(object, metaclass=SystemMeta):
     is_abstract = True
 
     def __init__(self,
-                 schemas: List[ActionSchema],
+                 schemas: List[CommandSchema],
                  snapshot: Snapshot,
                  config: Configuration
                  ) -> None:

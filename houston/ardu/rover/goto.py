@@ -5,7 +5,7 @@ import dronekit
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...action import Action, ActionSchema, Parameter
+from ...command import Command, CommandSchema, Parameter
 from ...specification import Idle, Specification
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
 from ..common.goto import GotoLoiter
@@ -39,7 +39,7 @@ class GotoNormally(Specification):
         super().__init__('normal', pre, post, timeout)
 
 
-class GoToSchema(ActionSchema):
+class GoToSchema(CommandSchema):
     def __init__(self) -> None:
         parameters = [
             Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
@@ -54,12 +54,12 @@ class GoToSchema(ActionSchema):
 
     def dispatch(self,
                  sandbox: 'Sandbox',
-                 action: Action,
+                 cmd: Command,
                  state: State,
                  environment: Environment,
                  config: Configuration
                  ) -> None:
-        loc = dronekit.LocationGlobalRelative(action['latitude'],
-                                              action['longitude'],
-                                              state['altitude'])
+        loc = dronekit.LocationGlobalRelative(cmd['latitude'],
+                                              cmd['longitude'],
+                                              state.altitude)
         sandbox.connection.simple_goto(loc)

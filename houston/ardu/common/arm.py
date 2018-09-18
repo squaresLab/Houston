@@ -5,7 +5,7 @@ import time
 from pymavlink import mavutil
 
 from ...configuration import Configuration
-from ...action import ActionSchema, Parameter, Action
+from ...command import CommandSchema, Parameter, Command
 from ...specification import Specification, Idle
 from ...state import State
 from ...environment import Environment
@@ -13,7 +13,7 @@ from ...valueRange import DiscreteValueRange
 from ..sandbox import Sandbox
 
 
-class ArmDisarmSchema(ActionSchema):
+class ArmDisarmSchema(CommandSchema):
     """
     Behaviours:
         Normal: if the robot is armable and is in either its 'GUIDED' or
@@ -35,13 +35,13 @@ class ArmDisarmSchema(ActionSchema):
 
     def dispatch(self,
                  sandbox: Sandbox,
-                 action: Action,
+                 cmd: Command,
                  state: State,
                  environment: Environment,
                  configuration: Configuration
                  ) -> None:
         vehicle = sandbox.connection
-        arm_flag = 1 if action['arm'] else 0
+        arm_flag = 1 if cmd['arm'] else 0
         msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,

@@ -7,7 +7,6 @@ import geopy.distance
 
 from ...state import State
 from ...environment import Environment
-from ...action import ActionSchema, Parameter, Action
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
 from ...specification import Specification, Idle
 

@@ -14,7 +14,7 @@ from bugzoo.core.fileline import FileLineSet
 from .state import State
 from .mission import Mission, MissionOutcome
 from .util import TimeoutError, printflush
-from .action import ActionOutcome
+from .command import CommandOutcome
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -132,34 +132,34 @@ class Sandbox(object):
             env = mission.environment
             outcomes = []
 
-            for action in mission:
-                logger.debug('performing action: %s', action)
-                schema = self.system.schemas[action.schema_name]
+            for cmd in mission:
+                logger.debug('performing command: %s', cmd)
+                schema = self.system.schemas[cmd.schema_name]
 
                 # compute expected state
                 start_time = time.time()
                 state_before = state_after = self.observe(0.0)
 
                 # determine which spec the system should observe
-                spec = schema.resolve(action, state_before, env, config)
+                spec = schema.resolve(cmd, state_before, env, config)
                 logger.debug('enforcing specification: %s', spec)
 
                 # enforce a timeout
                 timeout = \
-                    schema.timeout(action, state_before, env, config)
+                    schema.timeout(cmd, state_before, env, config)
                 logger.debug("enforcing timeout: %.3f seconds", timeout)
                 time_before = timer()
                 passed = False
                 try:
                     # TODO: dispatch to this container!
-                    schema.dispatch(self, action, state_before, config, env)
+                    schema.dispatch(self, cmd, state_before, config, env)
 
                     # block until the postcondition is satisfied or
                     # the timeout is hit
                     while not passed:
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
-                        sat = spec.postcondition(action,
+                        sat = spec.postcondition(cmd,
                                                  state_before,
                                                  state_after,
                                                  env,
@@ -177,12 +177,12 @@ class Sandbox(object):
                     logger.debug("reached timeout before postcondition was satisfied")  # noqa: pycodestyle
                 time_elapsed = timer() - time_before
 
-                # record the outcome of the action execution
-                outcome = ActionOutcome(action,
-                                        passed,
-                                        state_before,
-                                        state_after,
-                                        time_elapsed)
+                # record the outcome of the command execution
+                outcome = CommandOutcome(cmd,
+                                         passed,
+                                         state_before,
+                                         state_after,
+                                         time_elapsed)
                 outcomes.append(outcome)
 
                 if not passed:
