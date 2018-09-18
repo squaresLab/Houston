@@ -67,7 +67,8 @@ class SymbolicExecution(object):
                 for pb in b.schema.branches:
                     if pb.id == b.id:
                         break
-                    smt.append(z3.Not(pb.specification.precondition.get_expression(decls)[0]))
+                    smt.append(z3.Not(pb.specification.precondition.get_expression(decls,
+                                            self.initial_state, "__{}".format(seq_id))[0]))
 
                 logger.debug("BBBB {}".format(smts))
                 mappings[seq_id] = decls

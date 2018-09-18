@@ -1,3 +1,4 @@
+import math
 from typing import List, Dict, Any
 import sexpdata
 import z3
@@ -40,8 +41,8 @@ class Specification():
 
     def get_constraint(self, state: State, postfix: str=''):
         decls = self._precondition.get_declarations(state, postfix)
-        smt = self._precondition.get_expression(decls)
-        smt.extend(self._postcondition.get_expression(decls))
+        smt = self._precondition.get_expression(decls, state, postfix)
+        smt.extend(self._postcondition.get_expression(decls, state, postfix))
 
         return smt, decls
 
@@ -72,7 +73,7 @@ class Expression:
                     state_after: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
         smt, decls = self._prepare_query(system, parameter_values, state_before, state_after)
-        expr = self.get_expression(decls)
+        expr = self.get_expression(decls, state_before)
         smt.extend(expr)
         print("SMT: {}".format(smt))
 #        s.from_string(smt)
@@ -142,12 +143,61 @@ class Expression:
         s = z3.SolverFor("QF_NRA")
         decls = self.get_declarations(state)
         smt = Expression.values_to_smt('_', state.to_json(), decls)
-        smt.extend(self.get_expression(decls))
+        smt.extend(self.get_expression(decls, state))
 #        s.from_string(smt)
         s.add(smt)
 
         return s.check() == z3.sat
 
-    def get_expression(self, decls: Dict[str, Any]):
-        expr = z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls)
-        return list(expr)
+    def get_expression(self, decls: Dict[str, Any], state: State, postfix: str=""):
+        expr = list(z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls))
+        variables = {}
+        for v in state.variables:
+            variables['_{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
+            variables['__{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
+        expr_with_noise = [Expression.recreate_with_noise(e, variables) for e in expr]
+        print('AAAA {}'.format(expr_with_noise))
+        return expr_with_noise
+
+    @staticmethod
+    def recreate_with_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]):
+        d = expr.decl()
+        if str(d) != '==':
+            children = [Expression.recreate_with_noise(c, variables) for c in expr.children()]
+            #TODO find a better solution
+            if str(d) == 'And':
+                return z3.And(*children)
+            elif str(d) == 'Or':
+                return z3.Or(*children)
+            return d(*children)
+        lhs, rhs = expr.children()[0], expr.children()[1]
+        if not isinstance(lhs, z3.ArithRef) or not isinstance(rhs, z3.ArithRef):
+            return d(lhs, rhs)
+        def absolute(x):
+            return z3.If(x > 0, x, -x)
+        return absolute(lhs - rhs) <= Expression.get_noise(expr, variables)
+
+    @staticmethod
+    def get_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]) -> float:
+        if len(expr.children()) == 0:
+            print('BBBB {} {}'.format(str(expr), variables))
+            if isinstance(expr, z3.ArithRef) and str(expr) in variables:
+                return variables[str(expr)]
+            else:
+                return 0.0
+        noises = []
+        for c in expr.children():
+            noises.append(Expression.get_noise(c, variables))
+        if str(expr.decl()) == '*':
+            f = 1.0
+            for i in noises:
+                f *= i
+            return f
+        elif str(expr.decl()) == '**':
+            if isinstance(expr.children()[1], z3.IntNumRef):
+                return math.pow(noises[0], int(expr.children()[1]))
+            else:
+                #TODO: FIX
+                return noises[0]
+        else:
+            return math.fsum(noises)

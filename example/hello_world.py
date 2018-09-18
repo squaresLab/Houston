@@ -135,6 +135,7 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 if __name__ == "__main__":
     bz = BugZoo()
     snapshot = bz.bugs['afrl:overflow']
+    #snapshot = bz.bugs['afrl:AIS-Scenario1']
     sut = houston.ardu.ArduCopter(snapshot)
 
     # mission description
@@ -145,8 +146,8 @@ if __name__ == "__main__":
         houston.action.Action("takeoff", {'altitude': 3.0}),
         houston.action.Action("goto", {
             'latitude' : -35.361354,
-            'longitude': 149.175218,
-            'altitude' : 5.0
+            'longitude': 149.165218,
+            'altitude' : 4.0
         }),
         houston.action.Action("setmode", {'mode': 'LAND'}),
         houston.action.Action("arm", {'arm': False})
@@ -204,3 +205,4 @@ if __name__ == "__main__":
 
     finally:
         sandbox.destroy()
+        #pass
