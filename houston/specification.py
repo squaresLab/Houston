@@ -4,7 +4,7 @@ import logging
 import random
 import attr
 import math
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import sexpdata
 import z3
 
@@ -19,55 +19,22 @@ logger.setLevel(logging.DEBUG)
 class InvalidExpression(Exception):
     pass
 
-class Specification():
-
-    def __init__(self, name: str, precondition: str, postcondition: str):
-
-        self._name = name
-        self._precondition = Expression(precondition)
-        self._postcondition = Expression(postcondition)
-        super().__init__()
-
-    @property
-    def precondition(self):
-        return self._precondition
-
-    @property
-    def postcondition(self):
-        return self._postcondition
-
-    @property
-    def name(self):
-        return self._name
-
-    def timeout(self, command: 'Command', state: State, environment: Environment,
-        config: Configuration) -> float:
-        # TODO fix this
-        return 1.0
-
-    def get_constraint(self, command: 'Command', state: State, postfix: str=''):
-        decls = self._precondition.get_declarations(command, state, postfix)
-        smt = self._precondition.get_expression(decls, state, postfix)
-        smt.extend(self._postcondition.get_expression(decls, state, postfix))
-
-        return smt, decls
-
 
 class Expression:
 
-    def __init__(self, s_expression: str):
+    def __init__(self, s_expression: str) -> None:
 
         if not Expression.is_valid(s_expression):
             raise InvalidExpression
 
-        self._expression = s_expression
+        self.__expression = s_expression
 
     @property
-    def expression(self):
-        return self._expression
+    def expression(self) -> str:
+        return self.__expression
 
     @staticmethod
-    def is_valid(string: str):
+    def is_valid(string: str) -> bool:
         try:
             parsed = sexpdata.loads(string)
         except (sexpdata.ExpectClosingBracket, sexpdata.ExpectNothing) as e:
@@ -88,7 +55,8 @@ class Expression:
         logger.debug("Z3 result: " + str(s.check()))
         return s.check() == z3.sat
 
-    def _prepare_query(self, command: 'Command', state_before: State, state_after: State=None):
+    def _prepare_query(self, command: 'Command', state_before: State, state_after: State=None)\
+                                                    -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
         decls = self.get_declarations(command, state_before)
         smt = Expression.values_to_smt('$', command.to_json(), decls)
         smt.extend(Expression.values_to_smt('_', state_before.to_json(), decls))
@@ -96,7 +64,7 @@ class Expression:
             smt.extend(Expression.values_to_smt('__', state_after.to_json(), decls))
         return smt, decls
 
-    def get_declarations(self, command: 'Command', state: State, postfix: str=''):
+    def get_declarations(self, command: 'Command', state: State, postfix: str='') -> Dict[str, Any]:
         declarations = {}
 
         # Declare all parameters
@@ -123,7 +91,7 @@ class Expression:
         return t
 
     @staticmethod
-    def _type_to_z3(typ, name):
+    def _type_to_z3(typ, name: str):
         if typ == float:
             t = z3.Real(name)
         elif typ == bool:
@@ -155,7 +123,7 @@ class Expression:
 
         return s.check() == z3.sat
 
-    def get_expression(self, decls: Dict[str, Any], state: State, postfix: str=""):
+    def get_expression(self, decls: Dict[str, Any], state: State, postfix: str="") -> List[z3.ExprRef]:
         expr = list(z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls))
         variables = {}
         for v in state.variables:
@@ -165,7 +133,7 @@ class Expression:
         return expr_with_noise
 
     @staticmethod
-    def recreate_with_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]):
+    def recreate_with_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]) -> z3.ExprRef:
         d = expr.decl()
         if str(d) != '==':
             children = [Expression.recreate_with_noise(c, variables) for c in expr.children()]
@@ -205,6 +173,41 @@ class Expression:
                 return noises[0]
         else:
             return math.fsum(noises)
+
+
+class Specification():
+
+    def __init__(self, name: str, precondition: str, postcondition: str) -> None:
+
+        self.__name = name
+        self.__precondition = Expression(precondition)
+        self.__postcondition = Expression(postcondition)
+        super().__init__()
+
+    @property
+    def precondition(self) -> Expression:
+        return self.__precondition
+
+    @property
+    def postcondition(self) -> Expression:
+        return self.__postcondition
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    def timeout(self, command: 'Command', state: State, environment: Environment,
+        config: Configuration) -> float:
+        # TODO fix this
+        return 1.0
+
+    def get_constraint(self, command: 'Command', state: State, postfix: str='')\
+                                        -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
+        decls = self.precondition.get_declarations(command, state, postfix)
+        smt = self.precondition.get_expression(decls, state, postfix)
+        smt.extend(self.postcondition.get_expression(decls, state, postfix))
+
+        return smt, decls
 
 
 class Idle(Specification):

@@ -9,30 +9,21 @@ from ..valueRange import DiscreteValueRange
 from ..command import Command, Parameter
 from ..configuration import Configuration
 
+Domain = List[Tuple[int, Any, List[Parameter]]]
 
 class MissionDomain(object):
     """
     Specification of a range of missions.
     """
-    def __init__(self, system: System, initial_domain=[]):
-        self.__system = system
+    def __init__(self, initial_domain: Domain=[]):
         self.__domain = initial_domain
 
 
     def __str__(self):
         return str(self.domain)
 
-
     @property
-    def system(self):
-        """
-        The system under which this domain is defined.
-        """
-        return self.__system
-
-
-    @property
-    def domain(self) -> List[Tuple[int, Any, List[Parameter]]]:
+    def domain(self) -> Domain:
         """
         The domain specified by sequence of Actions with
         specific parameter ranges.
@@ -41,7 +32,8 @@ class MissionDomain(object):
 
 
     @staticmethod
-    def from_initial_mission(system: System, mission: Mission, discrete_params=False):
+    def from_initial_mission(mission: Mission, discrete_params=False)\
+                -> 'MissionDomain':
         """
         Create a mission domain by considering the initial sequence
         of actions in mission and all possible values for parameters.
@@ -50,23 +42,25 @@ class MissionDomain(object):
         domain = []
         for command in mission.commands:
             if discrete_params:
-                parameters = [Parameter(p.name, DiscreteValueRange([command[p.name]])) for p in command.parameters]
+                parameters = [Parameter(p.name, DiscreteValueRange([command[p.name]]))\
+                                for p in command.parameters]
             else:
                 parameters = command.parameters
             domain.append((i, command.__class__, parameters))
             i += 1
-        return MissionDomain(system, domain)
+        return MissionDomain(domain)
 
 
     @property
-    def command_size(self):
+    def command_size(self) -> int:
         """
         Number of actions in this domain.
         """
         return len(self.__domain)
 
 
-    def generate_mission(self, environment: Environment, initial_state: State, config: Configuration, rng) -> Mission:
+    def generate_mission(self, environment: Environment, initial_state: State,
+                                config: Configuration, rng) -> Mission:
         """
         Return a mission in this domain.
         """
@@ -85,8 +79,10 @@ class RootCauseFinder(object):
     results in mission failure the same way that initial failing
     missions do. 
     """
-    def __init__(self, system: System, initial_state: State, environment: Environment,
-        config: Configuration, initial_failing_missions: List[Mission], random_seed=100):
+    def __init__(self, system: System, initial_state: State,
+                    environment: Environment, config: Configuration,
+                    initial_failing_missions: List[Mission],
+                    random_seed=100) -> None:
 
         assert(len(initial_failing_missions) > 0)
 
@@ -99,7 +95,7 @@ class RootCauseFinder(object):
 
 
     @property
-    def system(self):
+    def system(self) -> System:
         """
         The system under test.
         """
@@ -107,7 +103,7 @@ class RootCauseFinder(object):
 
 
     @property
-    def initial_state(self):
+    def initial_state(self) -> State:
         """
         the initial state used for running all missions.
         """
@@ -115,7 +111,7 @@ class RootCauseFinder(object):
 
 
     @property
-    def environment(self):
+    def environment(self) -> Environment:
         """
         the environment used for running all missions.
         """
@@ -123,22 +119,22 @@ class RootCauseFinder(object):
 
 
     @property
-    def initial_failing_missions(self):
+    def initial_failing_missions(self) -> Mission:
         """
         the failing missions provided by the user.
         """
         return self.__initial_failing_missions
 
     @property
-    def configuration(self):
+    def configuration(self) -> Configuration:
         return self.__configuration
 
     @property
-    def rng(self):
+    def rng(self) -> random.Random:
         return self.__rng
 
 
-    def find_root_cause(self, time_limit=None) -> MissionDomain:
+    def find_root_cause(self, time_limit: float=0.0) -> MissionDomain:
         """
         The main function that finds the root cause.
         """
