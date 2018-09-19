@@ -22,7 +22,9 @@ setup(
         'geopy',
         'bugzoo>=2.1.16',
         'dronekit',
-        'attrs'
+        'attrs',
+        'sexpdata',
+        'z3'
     ],
     packages = [
         'houston',
