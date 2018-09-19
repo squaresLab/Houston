@@ -14,7 +14,7 @@ from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 #from houston.ardu.common.goto import CircleBasedGotoGenerator
-#from houston.root_cause.delta_debugging import DeltaDebugging
+from houston.root_cause.delta_debugging import DeltaDebugging
 from houston.root_cause.symex import SymbolicExecution 
 import copy
 from houston.ardu.copter.state import State as CopterState
@@ -146,15 +146,15 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
-    #snapshot = bz.bugs['afrl:overflow']
-    snapshot = bz.bugs['afrl:AIS-Scenario1']
+    snapshot = bz.bugs['afrl:overflow']
+    #snapshot = bz.bugs['afrl:AIS-Scenario1']
 
     config = ArduConfig(
         speedup=1,
         time_per_metre_travelled=5.0,
         constant_timeout_offset=1.0,
         min_parachute_alt=10.0)
-    sut = houston.ardu.ArduCopter(snapshot, config)
+    sut = houston.ardu.ArduRover(snapshot, config)
 
     # mission description
     cmds = [
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 #        Takeoff(altitude=3.0),
 #        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
 #        SetMode(mode='LAND'),
-#        ArmDisarm(arm=False)
+        ArmDisarm(arm=False)
     ]
     
     environment = Environment({})
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    #sandbox = sut.provision(bz)
+#    sandbox = sut.provision(bz)
     try:
         #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
@@ -203,8 +203,8 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        #d = DeltaDebugging(sut, initial, environment, [mission])
-        #d.find_root_cause()
+        d = DeltaDebugging(sut, initial, environment, config, [mission])
+        d.find_root_cause()
 
 
         #generate(sut, initial, environment, 100, 10)
@@ -212,12 +212,12 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        se = SymbolicExecution(sut, initial, environment, config)
-        mm = se.execute_symbolically(mission)
-        for m in mm:
-            print(m.to_dict())
+        #se = SymbolicExecution(sut, initial, environment, config)
+        #mm = se.execute_symbolically(mission)
+        #for m in mm:
+        #    print(m.to_dict())
 
 
     finally:
-        #sandbox.destroy()
+#        sandbox.destroy()
         pass

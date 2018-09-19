@@ -75,7 +75,7 @@ class MissionDomain(object):
             parameters = {}
             for p in params:
                 parameters[p.name] = p.generate(rng)
-            cmds.append(schema(**parameters))
+            cmds.append(cmd_class(**parameters))
         return Mission(config, environment, initial_state, cmds)
 
 

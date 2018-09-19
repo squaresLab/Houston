@@ -1,4 +1,5 @@
 from typing import Set, Optional, Tuple, Dict, List
+from bugzoo import BugZoo
 
 from .root_cause import RootCauseFinder, MissionDomain
 from ..system import System
@@ -79,7 +80,7 @@ class DeltaDebugging(RootCauseFinder):
         """
         Divides a domain into two almost equal domains.
         """
-        mid = int(c.action_size/2)
+        mid = int(c.command_size/2)
         c1 = MissionDomain(c.system, c.domain[:mid])
         c2 = MissionDomain(c.system, c.domain[mid:])
         return c1, c2

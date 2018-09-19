@@ -11,21 +11,22 @@ from ..configuration import Configuration
 
 class ArduRover(BaseSystem):
     state = State
+    schemas = []
 
     def __init__(self,
                  snapshot: Snapshot,
-                 config: Configuration
+                 configuration: Configuration
                  ) -> None:
-        from ..common import ArmDisarmSchema
-        from .goto import GoToSchema
+        from ..common import ArmDisarm
+        from .goto import GoTo
 
         # TODO: RTL_ALT: http://ardupilot.org/copter/docs/rtl-mode.html
         # rover-specific system variables
-        schemas = [
-            GoToSchema(),
-            ArmDisarmSchema()
+        commands = [
+            GoTo,
+            ArmDisarm
         ]
-        super().__init__(snapshot, schemas, config)
+        super().__init__(snapshot, commands, configuration)
 
     def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         return Sandbox(self, client_bugzoo)
