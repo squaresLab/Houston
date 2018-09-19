@@ -1,1 +1,1 @@
-from houston.root_cause.root_cause import RootCauseFinder, MissionDomain
+from .root_cause import RootCauseFinder, MissionDomain

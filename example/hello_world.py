@@ -15,7 +15,7 @@ from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 #from houston.ardu.common.goto import CircleBasedGotoGenerator
 #from houston.root_cause.delta_debugging import DeltaDebugging
-#from houston.root_cause.symex import SymbolicExecution 
+from houston.root_cause.symex import SymbolicExecution 
 import copy
 from houston.ardu.copter.state import State as CopterState
 from houston.ardu.rover.state import State as RoverState
@@ -160,11 +160,11 @@ if __name__ == "__main__":
     cmds = [
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
-        SetMode(mode='GUIDED'),
-        Takeoff(altitude=3.0),
-        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-        SetMode(mode='LAND'),
-        ArmDisarm(arm=False)
+#        SetMode(mode='GUIDED'),
+#        Takeoff(altitude=3.0),
+#        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+#        SetMode(mode='LAND'),
+#        ArmDisarm(arm=False)
     ]
     
     environment = Environment({})
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         altitude=0.0,
         armed=False,
         armable=True,
-        mode="AUTO",
+        mode="GUIDED",
         ekf_ok=True,
         yaw=0.0,
         roll=0.0,
@@ -193,9 +193,9 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    sandbox = sut.provision(bz)
+    #sandbox = sut.provision(bz)
     try:
-        run_single_mission(sandbox, mission)
+        #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -212,12 +212,12 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        #se = SymbolicExecution(sut, initial, environment)
-        #mm = se.execute_symbolically(mission)
-        #for m in mm:
-        #    print(m.to_json())
+        se = SymbolicExecution(sut, initial, environment, config)
+        mm = se.execute_symbolically(mission)
+        for m in mm:
+            print(m.to_dict())
 
 
     finally:
-        sandbox.destroy()
-        #pass
+        #sandbox.destroy()
+        pass

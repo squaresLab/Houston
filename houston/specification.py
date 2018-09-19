@@ -1,5 +1,6 @@
 __all__ = ['Specification', 'Expression', 'Idle']
 
+import logging
 import random
 import attr
 import math
@@ -11,6 +12,9 @@ from .configuration import Configuration
 from .state import State
 from .environment import Environment
 #from houston.system import System
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class InvalidExpression(Exception):
     pass
@@ -72,15 +76,16 @@ class Expression:
 
     def is_satisfied(self, command: 'Command', state_before: State,
                     state_after: State, environment: Environment, config: Configuration) -> bool:
+        logger.debug("Checking for command {}".format(command.__class__.__name__))
         s = z3.SolverFor("QF_NRA")
         smt, decls = self._prepare_query(command, state_before, state_after)
         expr = self.get_expression(decls, state_before)
         smt.extend(expr)
-        print("SMT: {}".format(smt))
+        logger.info("SMT: {}".format(smt))
 #        s.from_string(smt)
         s.add(smt)
 
-        print("Z3 result: " + str(s.check()))
+        logger.debug("Z3 result: " + str(s.check()))
         return s.check() == z3.sat
 
     def _prepare_query(self, command: 'Command', state_before: State, state_after: State=None):
@@ -157,7 +162,6 @@ class Expression:
             variables['_{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
             variables['__{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
         expr_with_noise = [Expression.recreate_with_noise(e, variables) for e in expr]
-        print('AAAA {}'.format(expr_with_noise))
         return expr_with_noise
 
     @staticmethod
@@ -181,7 +185,6 @@ class Expression:
     @staticmethod
     def get_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]) -> float:
         if len(expr.children()) == 0:
-            print('BBBB {} {}'.format(str(expr), variables))
             if isinstance(expr, z3.ArithRef) and str(expr) in variables:
                 return variables[str(expr)]
             else:

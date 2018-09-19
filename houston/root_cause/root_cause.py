@@ -1,12 +1,13 @@
-from typing import Set, Optional, Tuple, Dict, List
+from typing import Set, Optional, Tuple, Dict, List, Any
 import random
 
 from ..system import System
 from ..state import State
 from ..environment import Environment
 from ..mission import Mission, MissionOutcome
-from ..action import Action, Parameter
 from ..valueRange import DiscreteValueRange
+from ..command import Command, Parameter
+from ..configuration import Configuration
 
 
 class MissionDomain(object):
@@ -31,7 +32,7 @@ class MissionDomain(object):
 
 
     @property
-    def domain(self) -> List[Tuple[int, str, List[Parameter]]]:
+    def domain(self) -> List[Tuple[int, Any, List[Parameter]]]:
         """
         The domain specified by sequence of Actions with
         specific parameter ranges.
@@ -47,32 +48,35 @@ class MissionDomain(object):
         """
         i = 0
         domain = []
-        for action in mission.actions:
+        for command in mission.commands:
             if discrete_params:
-                parameters = [Parameter(v, DiscreteValueRange([action.values[v]])) for v in action.values]
+                parameters = [Parameter(p.name, DiscreteValueRange([command[p.name]])) for p in command.parameters]
             else:
-                parameters = system.schemas[action.schema_name].parameters
-            domain.append((i, action.schema_name, parameters))
+                parameters = command.parameters
+            domain.append((i, command.__class__, parameters))
             i += 1
         return MissionDomain(system, domain)
 
 
     @property
-    def action_size(self):
+    def command_size(self):
         """
         Number of actions in this domain.
         """
         return len(self.__domain)
 
 
-    def generate_mission(self, environment: Environment, initial_state: State, rng) -> Mission:
+    def generate_mission(self, environment: Environment, initial_state: State, config: Configuration, rng) -> Mission:
         """
         Return a mission in this domain.
         """
-        actions = []
-        for _, schema, params in self.domain:
-            actions.append(Action(schema, {p.name: p.generate(rng) for p in params}))
-        return Mission(environment, initial_state, actions)
+        cmds = []
+        for _, cmd_class, params in self.domain:
+            parameters = {}
+            for p in params:
+                parameters[p.name] = p.generate(rng)
+            cmds.append(schema(**parameters))
+        return Mission(config, environment, initial_state, cmds)
 
 
 class RootCauseFinder(object):
@@ -81,7 +85,9 @@ class RootCauseFinder(object):
     results in mission failure the same way that initial failing
     missions do. 
     """
-    def __init__(self, system: System, initial_state: State, environment: Environment, initial_failing_missions: List[Mission], random_seed=100):
+    def __init__(self, system: System, initial_state: State, environment: Environment,
+        config: Configuration, initial_failing_missions: List[Mission], random_seed=100):
+
         assert(len(initial_failing_missions) > 0)
 
         self.__system = system
@@ -89,6 +95,7 @@ class RootCauseFinder(object):
         self.__environment = environment
         self.__rng = random.Random(random_seed)
         self.__initial_failing_missions = initial_failing_missions
+        self.__configuration = config
 
 
     @property
@@ -122,6 +129,9 @@ class RootCauseFinder(object):
         """
         return self.__initial_failing_missions
 
+    @property
+    def configuration(self):
+        return self.__configuration
 
     @property
     def rng(self):

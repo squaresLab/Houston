@@ -2,28 +2,29 @@ import random
 import logging
 import re
 import z3
+import copy
 from typing import Set, Optional, Tuple, Dict, List, Any
 
-from ..action import Action
-from ..branch import BranchPath
 from .root_cause import MissionDomain
 from ..system import System
-from ..specification import Expression
+from ..specification import Specification, Expression
 from ..state import State
 from ..environment import Environment
 from ..mission import Mission, MissionOutcome
+from ..configuration import Configuration
+from ..command import Command
 
-logging.basicConfig(filename="symex.log",level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class SymbolicExecution(object):
 
-    def __init__(self, system: System, initial_state: State, environment: Environment):
+    def __init__(self, system: System, initial_state: State, environment: Environment, configuration: Configuration):
         self.__system = system
         self.__initial_state = initial_state
         self.__environment = environment
+        self.__configuration = configuration
 
 
     @property
@@ -40,6 +41,9 @@ class SymbolicExecution(object):
     def environment(self):
         return self.__environment
 
+    @property
+    def configuration(self):
+        return self.__configuration
 
     def execute_symbolically(self, mission: Mission) -> List[Mission]:
         """
@@ -49,34 +53,35 @@ class SymbolicExecution(object):
         """
 
         rng = random.Random(1000)
-        actions = mission.actions
-        all_paths = []
+        commands = mission.commands
+        all_paths = [] # type List[List[Specification]]
         all_missions = []
-        self._dfs(actions, 0, BranchPath([]), all_paths)
+        self._dfs(commands, 0, [], all_paths)
 
         for bp in all_paths:
             logger.info("BP: " + str(bp))
+            logger.info("CMD: " + str(commands))
             solver = z3.Solver()
             smts = []
-            branches = bp.branches(system=self.__system)
             seq_id = 0
             mappings = {}
-            for b in branches:
-                smt, decls = b.specification.get_constraint(self.initial_state, "__{}".format(seq_id))
+            for b in bp:
+                smt, decls = b.get_constraint(commands[seq_id], self.initial_state, "__{}".format(seq_id))
 
-                for pb in b.schema.branches:
-                    if pb.id == b.id:
+                for pb in commands[seq_id].specifications:
+                    if pb.name == b.name:
                         break
-                    smt.append(z3.Not(pb.specification.precondition.get_expression(decls,
-                                            self.initial_state, "__{}".format(seq_id))[0]))
+                    smt.append(z3.Not(pb.precondition.get_expression(
+                        decls, self.initial_state,
+                        "__{}".format(seq_id))[0]))
 
-                logger.debug("BBBB {}".format(smts))
+                logger.debug("SSS {}".format(smt))
                 mappings[seq_id] = decls
                 smts.extend(smt)
                 seq_id += 1
 
             smts.extend(self._connect_pre_and_post(seq_id - 1, mappings))
-            logger.debug("AAA " + str(smt))
+            logger.debug("Final " + str(smts))
 #            solver.from_string(smt)
             solver.add(smts)
 
@@ -88,19 +93,23 @@ class SymbolicExecution(object):
             logger.info("SAT")
 
             model = solver.model()
-            actions = []
+            logger.debug("Model: {}".format(model))
+            commands_list = []
             seq_id = 0
-            for b in branches:
+            for b in bp:
                 parameters = {}
-                for p in b.specification.parameters:
-                    try:
-                        parameters[p.name] = eval(str(model[mappings[seq_id]["${}".format(p.name)]]))
-                    except KeyError:
-                        parameters[p.name] = p.generate(rng)
-                actions.append(Action(b.schema, parameters))
+                for p in commands[seq_id].parameters:
+                    parameters[p.name] = eval(str(model[mappings[seq_id]["${}".format(p.name)]]))
+                    if parameters[p.name] == None:
+                        v = p.generate(rng)
+                        logger.debug("PP {} {}".format(p.name, v))
+                        parameters[p.name] = v
+                logger.debug("Parameters: {}".format(parameters))
+                commands_list.append(commands[seq_id].__class__(**parameters))
                 seq_id += 1
 
-            all_missions.append(Mission(self.environment, self.initial_state, actions))
+            logger.debug("Added: {}".format(commands_list))
+            all_missions.append(Mission(self.configuration, self.environment, self.initial_state, commands_list))
 
         return all_missions
 
@@ -113,10 +122,12 @@ class SymbolicExecution(object):
         s.extend(Expression.values_to_smt('_', self.initial_state.to_json(), mappings[0]))
         return s
 
-    def _dfs(self, actions, start_index, path: BranchPath, all_paths: List[BranchPath] = []):
-        if start_index == len(actions):
+    def _dfs(self, commands: List[Command], start_index: int, path: List[Specification], all_paths: List[List[Specification]] = []):
+        if start_index == len(commands):
             all_paths.append(path)
             return
-        for b in self.system.schemas[actions[start_index].schema_name].branches:
-            self._dfs(actions, start_index + 1, path.extended(b), all_paths)
+        for s in commands[start_index].specifications:
+            new_path = copy.deepcopy(path)
+            new_path.append(s)
+            self._dfs(commands, start_index + 1, new_path, all_paths)
 

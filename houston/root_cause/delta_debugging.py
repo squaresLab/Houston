@@ -5,6 +5,7 @@ from ..system import System
 from ..state import State
 from ..environment import Environment
 from ..mission import Mission
+from ..configuration import Configuration
 
 
 
@@ -13,10 +14,12 @@ class DeltaDebugging(RootCauseFinder):
     Conducts delta debugging on a failing mission to narrow
     it down to main problem.
     """
-    def __init__(self, system: System, initial_state: State, environment: Environment, initial_failing_missions: List[Mission]):
+    def __init__(self, system: System, initial_state: State,
+        environment: Environment, config: Configuration,
+        initial_failing_missions: List[Mission]):
         self.__domain = MissionDomain.from_initial_mission(system, initial_failing_missions[0], discrete_params=True)
 
-        super(DeltaDebugging, self).__init__(system, initial_state, environment, initial_failing_missions)
+        super(DeltaDebugging, self).__init__(system, initial_state, environment, config, initial_failing_missions)
 
 
     @property
@@ -39,7 +42,7 @@ class DeltaDebugging(RootCauseFinder):
 
         print("****** C: {}\n****** R: {}".format(str(c), str(r)))
 
-        if c.action_size == 1:
+        if c.command_size == 1:
             return c
 
         c1, c2 = DeltaDebugging._divide(c)
@@ -62,8 +65,9 @@ class DeltaDebugging(RootCauseFinder):
         """
         runs a mission using sandbox and returns whether the mission passed.
         """
-        mission = mission_domain.generate_mission(self.environment, self.initial_state, self.rng)
-        sandbox = self.system.provision()
+        mission = mission_domain.generate_mission(self.environment, self.initial_state, self.configuration, self.rng)
+        bz = BugZoo()
+        sandbox = self.system.provision(bz)
         res = sandbox.run(mission)
         sandbox.destroy()
 
@@ -86,16 +90,16 @@ class DeltaDebugging(RootCauseFinder):
         """
         Returns the union of two domains.
         """
-        action_list = []
+        command_list = []
         i1 , i2 = 0, 0
-        while i1 < c1.action_size or i2 < c2.action_size:
-            if i1 >= c1.action_size or (i2 < c2.action_size and c2.domain[i2][0] < c1.domain[i1][0]):
-                action_list.append(c2.domain[i2])
+        while i1 < c1.command_size or i2 < c2.command_size:
+            if i1 >= c1.command_size or (i2 < c2.command_size and c2.domain[i2][0] < c1.domain[i1][0]):
+                command_list.append(c2.domain[i2])
                 i2 += 1
             else:
-                action_list.append(c1.domain[i1])
+                command_list.append(c1.domain[i1])
                 i1 += 1
-        c = MissionDomain(c1.system, action_list)
+        c = MissionDomain(c1.system, command_list)
         return c
 
 
