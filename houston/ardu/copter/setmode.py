@@ -1,5 +1,4 @@
-__all__ = ['SetModeSchema', 'SetModeLand', 'SetModeGuided', 'SetModeLoiter',
-           'SetModeRTL']
+__all__ = ['SetMode']
 
 import time
 import logging
@@ -10,45 +9,12 @@ import geopy
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...command import CommandSchema, Parameter, Command
+from ...command import Parameter, Command
 from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
-
-
-class SetModeSchema(CommandSchema):
-    """
-    Branches:
-        Guided:
-        Loiter:
-        RTL:
-        Land:
-        Idle:
-    """
-    def __init__(self):
-        parameters = [
-            Parameter('mode',
-                      DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']))
-        ]
-        specs = [
-            SetModeGuided(),
-            SetModeLoiter(),
-            SetModeRTL(),
-            SetModeLand(),
-            Idle()
-        ]
-        super().__init__('setmode', parameters, specs)
-
-    def dispatch(self,
-                 sandbox: 'Sandbox',
-                 cmd: Command,
-                 state: State,
-                 environment: Environment,
-                 config: Configuration
-                 ) -> None:
-        sandbox.connection.mode = dronekit.VehicleMode(cmd['mode'])
 
 
 class SetModeLand(Specification):
@@ -128,3 +94,26 @@ class SetModeRTL(Specification):
             return timeout
 
         super().__init__('rtl', pre, post, timeout)
+
+
+class SetMode(Command):
+    name = 'set-mode'
+    parameters = [
+        Parameter('mode',
+                  DiscreteValueRange(['GUIDED', 'LOITER', 'RTL', 'LAND']))
+    ]
+    specifications = [
+        SetModeGuided(),
+        SetModeLoiter(),
+        SetModeRTL(),
+        SetModeLand(),
+        Idle()
+    ]
+
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 state: State,
+                 environment: Environment,
+                 config: Configuration
+                 ) -> None:
+        sandbox.connection.mode = dronekit.VehicleMode(self.mode)

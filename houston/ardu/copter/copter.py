@@ -22,19 +22,19 @@ class ArduCopter(BaseSystem):
                  snapshot: Snapshot,
                  configuration: Configuration
                  ) -> None:
-        from houston.ardu.common import ArmDisarmSchema
-        from houston.ardu.copter.goto import GoToSchema
-        from houston.ardu.copter.setmode import SetModeSchema
-        from houston.ardu.copter.takeoff import TakeoffSchema
-        from houston.ardu.copter.parachute import ParachuteSchema
-        schemas = [
-            GoToSchema(),
-            TakeoffSchema(),
-            ArmDisarmSchema(),
-            SetModeSchema(),
-            ParachuteSchema()
+        from houston.ardu.common import ArmDisarm
+        from houston.ardu.copter.goto import GoTo
+        from houston.ardu.copter.setmode import SetMode
+        from houston.ardu.copter.takeoff import Takeoff
+        from houston.ardu.copter.parachute import Parachute
+        commands = [
+            GoTo,
+            Takeoff,
+            ArmDisarm,
+            SetMode,
+            Parachute
         ]
-        super().__init__(snapshot, schemas, configuration)
+        super().__init__(snapshot, commands, configuration)
 
     def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         return Sandbox(self, client_bugzoo)

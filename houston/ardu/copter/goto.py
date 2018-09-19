@@ -1,4 +1,4 @@
-__all__ = ['GoToSchema']
+__all__ = ['GoTo']
 
 import dronekit
 import geopy.distance
@@ -6,7 +6,7 @@ import geopy.distance
 from ..common import GotoLoiter
 from ...specification import Specification
 from ...configuration import Configuration
-from ...command import CommandSchema, Command, Parameter
+from ...command import Command, Parameter
 from ...state import State
 from ...environment import Environment
 from ...specification import Idle
@@ -50,29 +50,26 @@ class GotoNormally(Specification):
         super().__init__('normal', pre, post, timeout)
 
 
-class GoToSchema(CommandSchema):
-    def __init__(self) -> None:
-        name = 'goto'
-        parameters = [
-            Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
-            Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
-            Parameter('altitude', ContinuousValueRange(0.3, 100.0))
-        ]
-        specs = [
-            GotoNormally(),
-            GotoLoiter(),
-            Idle()
-        ]
-        super().__init__(name, parameters, specs)
+class GoTo(Command):
+    name = 'goto'
+    parameters = [
+        Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
+        Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
+        Parameter('altitude', ContinuousValueRange(0.3, 100.0))
+    ]
+    specifications = [
+        GotoNormally(),
+        GotoLoiter(),
+        Idle()
+    ]
 
     def dispatch(self,
                  sandbox: 'Sandbox',
-                 cmd: Command,
                  state: State,
                  environment: Environment,
                  config: Configuration
                  ) -> None:
-        loc = dronekit.LocationGlobalRelative(cmd['latitude'],
-                                              cmd['longitude'],
-                                              cmd['altitude'])
+        loc = dronekit.LocationGlobalRelative(self.latitude,
+                                              self.longitude,
+                                              self.altitude)
         sandbox.connection.simple_goto(loc)

@@ -1,41 +1,13 @@
-__all__ = ['ParachuteSchema', 'ParachuteNormally']
+__all__ = ['Parachute']
 
 from pymavlink import mavutil
 
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...command import CommandSchema, Parameter, Command
+from ...command import Parameter, Command
 from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
-
-
-class ParachuteSchema(CommandSchema):
-    def __init__(self):
-        name = 'parachute'
-        parameters = [
-            # 0=disable, 1=enable, 2=release
-            Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
-        ]
-        specs = [
-            ParachuteNormally(),
-            Idle()
-        ]
-        super().__init__(name, parameters, specs)
-
-    def dispatch(self,
-                 sandbox: 'Sandbox',
-                 cmd: Command,
-                 state: State,
-                 environment: Environment,
-                 config: Configuration
-                 ) -> None:
-        vehicle = sandbox.connection
-        msg = vehicle.message_factory.command_long_encode(
-            0, 0,
-            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
-            0, cmd['parachute_action'], 0, 0, 0, 0, 0, 0)
-        vehicle.send_mavlink(msg)
 
 
 class ParachuteNormally(Specification):
@@ -64,3 +36,28 @@ class ParachuteNormally(Specification):
             return timeout
 
         super().__init__("normal", pre, post, timeout)
+
+
+class Parachute(Command):
+    name = 'parachute'
+    parameters = [
+        # 0=disable, 1=enable, 2=release
+        Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
+    ]
+    specifications = [
+        ParachuteNormally(),
+        Idle()
+    ]
+
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 state: State,
+                 environment: Environment,
+                 config: Configuration
+                 ) -> None:
+        vehicle = sandbox.connection
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            0, self.parachute_action, 0, 0, 0, 0, 0, 0)
+        vehicle.send_mavlink(msg)

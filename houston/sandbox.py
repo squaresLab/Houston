@@ -134,25 +134,23 @@ class Sandbox(object):
 
             for cmd in mission:
                 logger.debug('performing command: %s', cmd)
-                schema = self.system.schemas[cmd.schema_name]
 
                 # compute expected state
                 start_time = time.time()
                 state_before = state_after = self.observe(0.0)
 
                 # determine which spec the system should observe
-                spec = schema.resolve(cmd, state_before, env, config)
+                spec = cmd.resolve(state_before, env, config)
                 logger.debug('enforcing specification: %s', spec)
 
                 # enforce a timeout
-                timeout = \
-                    schema.timeout(cmd, state_before, env, config)
+                timeout = cmd.timeout(state_before, env, config)
                 logger.debug("enforcing timeout: %.3f seconds", timeout)
                 time_before = timer()
                 passed = False
                 try:
                     # TODO: dispatch to this container!
-                    schema.dispatch(self, cmd, state_before, config, env)
+                    cmd.dispatch(self, state_before, config, env)
 
                     # block until the postcondition is satisfied or
                     # the timeout is hit

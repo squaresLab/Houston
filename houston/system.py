@@ -1,6 +1,6 @@
 __all__ = ['System']
 
-from typing import List, Dict, FrozenSet, Any
+from typing import List, Dict, FrozenSet, Any, Type
 import warnings
 import logging
 
@@ -11,7 +11,7 @@ from bugzoo.core.bug import Bug as Snapshot
 from .configuration import Configuration
 from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
-from .command import CommandSchema, CommandOutcome, Command
+from .command import CommandOutcome, Command
 from .specification import Specification
 from .state import Variable, State
 
@@ -29,10 +29,10 @@ class SystemMeta(type):
         if 'is_abstract' in ns:
             is_abstract = ns['is_abstract']
             if not isinstance(ns['is_abstract'], bool):
+                tpl = "Unexpected type for 'is_abstract' property: {}"
                 typ = type(ns['is_abstract']).__name__
                 msg = "expected 'bool' but was '{}'".format(typ)
-                msg = \
-                    "Unexpected type for 'is_abtract' property: {}".format(msg)
+                msg = tpl.format(msg)
                 raise TypeError(msg)
         else:
             is_abstract = False
@@ -72,7 +72,7 @@ class System(object, metaclass=SystemMeta):
     is_abstract = True
 
     def __init__(self,
-                 schemas: List[CommandSchema],
+                 commands: List[Type[Command]],
                  snapshot: Snapshot,
                  config: Configuration
                  ) -> None:
@@ -80,7 +80,7 @@ class System(object, metaclass=SystemMeta):
         self.__snapshot = snapshot
         self.__configuration = config
         # FIXME this should be a class variable
-        self.schemas = {s.name: s for s in schemas}
+        self.commands = {c.name: c for c in commands}
 
     def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
         """
@@ -113,19 +113,3 @@ class System(object, metaclass=SystemMeta):
         warnings.warn("System.variables will soon be transformed into a class method",  # noqa: pycodestyle
                       DeprecationWarning)
         return self.__class__.state.variables
-
-    def duration(self, mission: Mission) -> float:
-        """
-        Computes an estimate of the length of time required to finish
-        executing a given mission.
-        """
-        # FIXME move to Mission.duration when circular dependencies are broken
-        duration = 0.0
-        for command in mission:
-            schema = self.schemas[command.schema_name]
-            timeout = schema.compute_timeout(command,
-                                             mission.initial_state,
-                                             mission.environment,
-                                             self.configuration)
-            duration += timeout
-        return duration

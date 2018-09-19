@@ -17,6 +17,9 @@ from houston.ardu.copter.state import State as CopterState
 from houston.ardu.configuration import Configuration as ArduConfig
 
 
+from houston.ardu.copter import Takeoff, GoTo, ArmDisarm, SetMode
+
+
 def setup_logging() -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG)
@@ -131,15 +134,11 @@ if __name__ == "__main__":
 
     # mission description
     cmds = [
-        Command("arm", {'arm': True}),
-        Command("takeoff", {'altitude': 3.0}),
-        Command("goto", {
-            'latitude' : -35.361354,
-            'longitude': 149.165218,
-            'altitude' : 5.0
-        }),
-        Command("setmode", {'mode': 'LAND'}),
-        Command("arm", {'arm': False})
+        ArmDisarm(arm=True),
+        Takeoff(altitude=3.0),
+        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+        SetMode(mode='LAND'),
+        ArmDisarm(arm=False)
     ]
     environment = Environment({})
     initial = CopterState(

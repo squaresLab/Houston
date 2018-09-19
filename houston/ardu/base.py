@@ -1,6 +1,6 @@
 __all__ = ['BaseSystem']
 
-from typing import List
+from typing import List, Type
 
 from bugzoo.core.bug import Bug as Snapshot
 
@@ -8,7 +8,7 @@ from .sandbox import Sandbox
 from ..configuration import Configuration
 from ..system import System
 from ..util import printflush
-from ..command import CommandSchema
+from ..command import Command
 from ..state import Variable
 
 
@@ -20,10 +20,10 @@ class BaseSystem(System):
 
     def __init__(self,
                  snapshot: Snapshot,
-                 schemas: List[CommandSchema],
+                 commands: List[Type[Command]],
                  config: Configuration
                  ) -> None:
-        super().__init__(schemas, snapshot, config)
+        super().__init__(commands, snapshot, config)
 
     def provision(self) -> Sandbox:
         return Sandbox(self)

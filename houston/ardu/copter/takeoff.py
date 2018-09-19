@@ -1,4 +1,4 @@
-__all__ = ['TakeoffSchema', 'TakeoffNormally']
+__all__ = ['Takeoff']
 
 import time
 import math
@@ -8,40 +8,9 @@ from pymavlink import mavutil
 from ...configuration import Configuration
 from ...state import State
 from ...environment import Environment
-from ...command import CommandSchema, Parameter, Command
+from ...command import Parameter, Command
 from ...specification import Specification, Idle
 from ...valueRange import ContinuousValueRange
-
-
-class TakeoffSchema(CommandSchema):
-    """
-    Branches:
-        Normally:
-        Idle:
-    """
-    def __init__(self):
-        parameters = [
-            Parameter('altitude', ContinuousValueRange(0.3, 100.0))
-        ]
-        specs = [
-            TakeoffNormally(),
-            Idle()
-        ]
-        super().__init__('takeoff', parameters, specs)
-
-    def dispatch(self,
-                 sandbox: 'Sandbox',
-                 cmd: Command,
-                 state: State,
-                 environment: Environment,
-                 config: Configuration
-                 ) -> None:
-        vehicle = sandbox.connection
-        msg = vehicle.message_factory.command_long_encode(
-            0, 0,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, 1, 0, 0, 0, 0, 0, cmd['altitude'])
-        vehicle.send_mavlink(msg)
 
 
 class TakeoffNormally(Specification):
@@ -74,3 +43,27 @@ class TakeoffNormally(Specification):
             return t
 
         super().__init__("normal", pre, post, timeout)
+
+
+class Takeoff(Command):
+    name = 'takeoff'
+    parameters = [
+        Parameter('altitude', ContinuousValueRange(0.3, 100.0))
+    ]
+    specifications = [
+        TakeoffNormally(),
+        Idle()
+    ]
+
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 state: State,
+                 environment: Environment,
+                 config: Configuration
+                 ) -> None:
+        vehicle = sandbox.connection
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            0, 1, 0, 0, 0, 0, 0, self.altitude)
+        vehicle.send_mavlink(msg)

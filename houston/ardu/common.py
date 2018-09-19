@@ -1,4 +1,4 @@
-__all__ = ['GotoLoiter', 'ArmDisarmSchema']
+__all__ = ['GotoLoiter', 'ArmDisarm']
 
 import time
 
@@ -11,44 +11,8 @@ from ..state import State
 from ..environment import Environment
 from ..valueRange import ContinuousValueRange, DiscreteValueRange
 from ..configuration import Configuration
-from ..command import CommandSchema, Parameter, Command
+from ..command import Parameter, Command
 from ..specification import Specification, Idle
-
-
-class ArmDisarmSchema(CommandSchema):
-    """
-    Behaviours:
-        Normal: if the robot is armable and is in either its 'GUIDED' or
-            'LOITER' modes, the robot will become armed.
-        Idle: if the conditions above cannot be met, the robot will ignore the
-            command.
-    """
-    def __init__(self) -> None:
-        name = 'arm'
-        parameters = [
-            Parameter('arm', DiscreteValueRange([True, False]))
-        ]
-        specs = [
-            ArmNormally(),
-            DisarmNormally(),
-            Idle()
-        ]
-        super().__init__(name, parameters, specs)
-
-    def dispatch(self,
-                 sandbox: Sandbox,
-                 cmd: Command,
-                 state: State,
-                 environment: Environment,
-                 configuration: Configuration
-                 ) -> None:
-        vehicle = sandbox.connection
-        arm_flag = 1 if cmd['arm'] else 0
-        msg = vehicle.message_factory.command_long_encode(
-            0, 0,
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0, arm_flag, 0, 0, 0, 0, 0, 0)
-        vehicle.send_mavlink(msg)
 
 
 class ArmNormally(Specification):
@@ -90,3 +54,36 @@ class GotoLoiter(Specification):
             return sat_mode and sat_lon and sat_lat and sat_alt
 
         super().__init__('loiter', pre, post, timeout)
+
+
+class ArmDisarm(Command):
+    """
+    Behaviours:
+        Normal: if the robot is armable and is in either its 'GUIDED' or
+            'LOITER' modes, the robot will become armed.
+        Idle: if the conditions above cannot be met, the robot will ignore the
+            command.
+    """
+    name = 'arm'
+    parameters = [
+        Parameter('arm', DiscreteValueRange([True, False]))
+    ]
+    specifications = [
+        ArmNormally(),
+        DisarmNormally(),
+        Idle()
+    ]
+
+    def dispatch(self,
+                 sandbox: Sandbox,
+                 state: State,
+                 environment: Environment,
+                 configuration: Configuration
+                 ) -> None:
+        vehicle = sandbox.connection
+        arm_flag = 1 if self.arm else 0
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            0, arm_flag, 0, 0, 0, 0, 0, 0)
+        vehicle.send_mavlink(msg)
