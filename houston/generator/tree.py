@@ -2,9 +2,8 @@ import time
 import threading
 
 from .base import MissionGenerator
-from ..branch import BranchID, BranchPath
 from ..mission import Mission, MissionOutcome
-from ..action import ActionOutcome, Action, ActionGenerator
+from ..command import CommandOutcome, Command
 from ..util import printflush
 
 
@@ -16,10 +15,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
                  threads=1,
                  action_generators=None,
                  max_num_actions=10):
-        super(TreeBasedMissionGenerator, self).__init__(system,
-                                                        threads,
-                                                        action_generators,
-                                                        max_num_actions)
+        super().__init__(system, threads, action_generators, max_num_actions)
         self.__seed_mission = Mission(env, initial_state, [])
         self.__queue_lock = threading.Lock()
 
@@ -62,7 +58,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
             self.__num_running -= 1
             self.__queue_lock.release()
 
-    def prune(self, path: BranchPath) -> None:
+    def prune(self, path: 'BranchPath') -> None:
         """
         Removes a given branch path from the search space, preventing further
         exploration along that path.
@@ -75,7 +71,7 @@ class TreeBasedMissionGenerator(MissionGenerator):
         self.__queue = set(filter(keep, self.__queue))
 
     def prepare(self, seed, resource_limits):
-        super(TreeBasedMissionGenerator, self).prepare(seed, resource_limits)
+        super().prepare(seed, resource_limits)
 
         self.__intended_paths = {}
         self.__queue = set()

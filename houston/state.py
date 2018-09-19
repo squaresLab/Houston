@@ -211,12 +211,20 @@ class State(object, metaclass=StateMeta):
     def time_offset(self) -> float:
         return self.__time_offset
 
-    def __eq__(self, other: 'State') -> bool:
+    def equiv(self, other: 'State') -> bool:
         if type(self) != type(other):
             msg = "illegal comparison of states: [{}] vs. [{}]"
             msg = msg.format(self.__class__.__name__, state.__class__.__name__)
             raise Exception(msg)  # FIXME use HoustonException
-        return self.__dict__ == other.__dict__
+        for v in self.__class__.variables:
+            if self.__dict__[v._field] != other.__dict__[v._field]:
+                return False
+        return True
+
+    def exact(self, other: 'State') -> bool:
+        return self.equiv(other) and self.time_offset == other.time_offset
+
+    __eq__ = exact
 
     def __getitem__(self, name: str) -> Any:
         # FIXME use frozendict
@@ -226,7 +234,7 @@ class State(object, metaclass=StateMeta):
         except StopIteration:
             msg = "no variable [{}] in state [{}]"
             msg.format(name, self.__class__.__name__)
-            raise KeyError
+            raise KeyError(msg)
         return getattr(self, var._field)
 
     def to_json(self) -> Dict[str, Any]:

@@ -11,6 +11,7 @@ class Sandbox(ArduSandbox):
         # FIXME #66
         fn_param = os.path.join(self.snapshot.source_dir,
                                 'Tools/autotest/default_params/rover.parm')
-        super(Sandbox, self)._start(
-            mission,
-            binary_name='ardurover', model_name='rover', param_file=fn_param)
+        super()._start(mission,
+                       binary_name='ardurover',
+                       model_name='rover',
+                       param_file=fn_param)

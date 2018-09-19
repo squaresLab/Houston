@@ -4,6 +4,7 @@ import math
 import time
 import threading
 import signal
+import logging
 
 import bugzoo
 from bugzoo.client import Client as BugZooClient
@@ -13,7 +14,10 @@ from bugzoo.core.fileline import FileLineSet
 from .state import State
 from .mission import Mission, MissionOutcome
 from .util import TimeoutError, printflush
-from .action import ActionOutcome
+from .command import CommandOutcome
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class Sandbox(object):
@@ -115,73 +119,68 @@ class Sandbox(object):
         Executes a given mission and returns a description of the outcome.
         """
         assert self.alive
+        config = self.system.configuration
         self.__lock.acquire()
         try:
             time_before_setup = timer()
-            print('Setting up...')  # FIXME use logger
+            logger.debug("preparing for mission")
             self._start(mission)
-            print('Setup complete.')  # FIXME use logger
             setup_time = timer() - time_before_setup
+            logger.debug("prepared for mission (took %.3f seconds)",
+                         setup_time)
 
             env = mission.environment
             outcomes = []
 
-            # execute each action in sequence
-            for action in mission.actions:
-                # FIXME use logger
-                printflush('Performing action: {}\n'.format(action.to_json()))
-                schema = self.system.schemas[action.schema_name]
+            for cmd in mission:
+                logger.debug('performing command: %s', cmd)
 
                 # compute expected state
                 start_time = time.time()
                 state_before = state_after = self.observe(0.0)
 
-                # determine which branch the system should take
-                branch = schema.resolve_branch(self.system,
-                                               action,
-                                               state_before,
-                                               env)
-                # FIXME use logger
-                printflush('Taking branch: {}\n'.format(branch))
+                # determine which spec the system should observe
+                spec = cmd.resolve(state_before, env, config)
+                logger.debug('enforcing specification: %s', spec)
 
                 # enforce a timeout
-                timeout = \
-                    schema.timeout(self.system, action, state_before, env)
+                timeout = cmd.timeout(state_before, env, config)
+                logger.debug("enforcing timeout: %.3f seconds", timeout)
                 time_before = timer()
                 passed = False
                 try:
                     # TODO: dispatch to this container!
-                    schema.dispatch(self, action, state_before, env)
+                    cmd.dispatch(self, state_before, config, env)
 
                     # block until the postcondition is satisfied or
                     # the timeout is hit
                     while not passed:
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
-                        sat = branch.postcondition(self.system,
-                                                   action,
-                                                   state_before,
-                                                   state_after,
-                                                   env)
+                        sat = spec.postcondition.is_satisfied(cmd,
+                                                 state_before,
+                                                 state_after,
+                                                 env,
+                                                 config)
                         if sat:
+                            logger.debug("command was successful")
                             passed = True
+                            break
                         if timer() - time_before >= int(math.ceil(timeout)):
                             raise TimeoutError
                         time.sleep(0.1)
-                        # FIXME use logger
-                        print(state_after)
+                        logger.debug("state: %s", state_after)
 
                 except TimeoutError:
-                    pass
+                    logger.debug("reached timeout before postcondition was satisfied")  # noqa: pycodestyle
                 time_elapsed = timer() - time_before
 
-                # record the outcome of the action execution
-                outcome = ActionOutcome(action,
-                                        passed,
-                                        state_before,
-                                        state_after,
-                                        time_elapsed,
-                                        branch.id)
+                # record the outcome of the command execution
+                outcome = CommandOutcome(cmd,
+                                         passed,
+                                         state_before,
+                                         state_after,
+                                         time_elapsed)
                 outcomes.append(outcome)
 
                 if not passed:

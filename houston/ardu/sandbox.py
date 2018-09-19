@@ -62,9 +62,9 @@ class Sandbox(BaseSandbox):
         name_bin = os.path.join(self.snapshot.source_dir,
                                 "build/sitl/bin",
                                 name_bin)
+        speedup = self.system.configuration.speedup
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
-        cmd = cmd.format(name_bin, name_model, self.system.speedup,
-                         home, fn_param)
+        cmd = cmd.format(name_bin, name_model, speedup, home, fn_param)
         print("COMMAND: {}".format(cmd))
 
         if not verbose:

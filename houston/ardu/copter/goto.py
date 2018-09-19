@@ -1,52 +1,29 @@
-__all__ = ['GoToSchema', 'GotoNormally']
+__all__ = ['GoTo']
 
 import dronekit
-import geopy
+import geopy.distance
 
-from ..common.goto import GotoNormally as GotoNormallyBase
-from ..common.goto import DistanceBasedGoToGenerator, \
-    CircleBasedGotoGenerator, \
-    GotoLoiter
+from ..common import GotoLoiter
+from ...specification import Specification
+from ...configuration import Configuration
+from ...command import Command, Parameter
 from ...state import State
 from ...specification import Specification
 from ...environment import Environment
-from ...action import Action, ActionSchema, Parameter
-from ...branch import IdleBranch, Branch
+from ...specification import Idle
 from ...valueRange import ContinuousValueRange, DiscreteValueRange
 
 
-class GoToSchema(ActionSchema):
-    def __init__(self):
-        parameters = [
-            Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
-            Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
-            Parameter('altitude', ContinuousValueRange(0.3, 100.0))
-        ]
-
-        branches = [
-            GotoNormally(self, parameters),
-            GotoLoiter(self, parameters),
-            IdleBranch(self, parameters)
-        ]
-
-        super(GoToSchema, self).__init__('goto', parameters, branches)
-
-    def dispatch(self,
-                 sandbox: 'Sandbox',
-                 action: Action,
-                 state: State,
-                 environment: Environment
-                 ) -> None:
-        loc = dronekit.LocationGlobalRelative(action['latitude'],
-                                              action['longitude'],
-                                              action['altitude'])
-        sandbox.connection.simple_goto(loc)
-
-
-class GotoNormally(Branch):
-
-    def __init__(self, schema, parameters):
-        specification = Specification(parameters,
+class GotoNormally(Specification):
+    """
+    If the robot is armed and not in its `LOITER` mode, GoTo actions should
+    cause the robot to move to the desired location. For certain Ardu systems,
+    the precondition on this normal behaviour is stronger; for more
+    information, refer to the system-specific subclasses of GotoNormally.
+    """
+ 
+    def __init__(self) -> None:
+        super().__init__('normal',
             """
             (and (= _armed true)
                 (not (= _mode "LOITER"))
@@ -56,15 +33,37 @@ class GotoNormally(Branch):
             (and (= __longitude $longitude)
                 (= __latitude $latitude)
                 (= __altitude $altitude))
-            """,
-            None)
-        super(GotoNormally, self).__init__('normal', schema, specification)
+            """)
     
-    def timeout(self, system, action, state, environment):
-        from_loc = (state['latitude'], state['longitude'])
-        to_loc = (action['latitude'], action['longitude'])
+    def timeout(self, cmd: Command, s: State, e: Environment, c: Configuration):
+        from_loc = (s['latitude'], s['longitude'])
+        to_loc = (cmd['latitude'], cmd['longitude'])
         dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = dist * system.time_per_metre_travelled
-        timeout += system.constant_timeout_offset
+        timeout = dist * c.time_per_metre_travelled
+        timeout += c.constant_timeout_offset
         return timeout
 
+
+class GoTo(Command):
+    name = 'goto'
+    parameters = [
+        Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),
+        Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True)),
+        Parameter('altitude', ContinuousValueRange(0.3, 100.0))
+    ]
+    specifications = [
+        GotoNormally(),
+        GotoLoiter(),
+        Idle()
+    ]
+
+    def dispatch(self,
+                 sandbox: 'Sandbox',
+                 state: State,
+                 environment: Environment,
+                 config: Configuration
+                 ) -> None:
+        loc = dronekit.LocationGlobalRelative(self.latitude,
+                                              self.longitude,
+                                              self.altitude)
+        sandbox.connection.simple_goto(loc)

@@ -28,7 +28,6 @@ setup(
         'houston',
         'houston.generator',
         'houston.ardu',
-        'houston.ardu.common',
         'houston.ardu.copter',
         'houston.ardu.rover'
     ],

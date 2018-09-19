@@ -7,17 +7,28 @@ import bugzoo
 from bugzoo import BugZoo
 
 import houston
+from houston.command import Command
 from houston.environment import Environment
 from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
 from houston.runner import MissionRunnerPool
-from houston.ardu.common.goto import CircleBasedGotoGenerator
-from houston.root_cause.delta_debugging import DeltaDebugging
-from houston.root_cause.symex import SymbolicExecution 
+#from houston.ardu.common.goto import CircleBasedGotoGenerator
+#from houston.root_cause.delta_debugging import DeltaDebugging
+#from houston.root_cause.symex import SymbolicExecution 
 import copy
 from houston.ardu.copter.state import State as CopterState
 from houston.ardu.rover.state import State as RoverState
+from houston.ardu.configuration import Configuration as ArduConfig
+
+
+from houston.ardu.copter import Takeoff, GoTo, ArmDisarm, SetMode
+
+
+def setup_logging() -> None:
+    log_to_stdout = logging.StreamHandler()
+    log_to_stdout.setLevel(logging.DEBUG)
+    logging.getLogger('houston').addHandler(log_to_stdout)
 
 
 def run_single_mission(sandbox, mission):
@@ -133,24 +144,27 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 
 
 if __name__ == "__main__":
+    setup_logging()
     bz = BugZoo()
-    snapshot = bz.bugs['afrl:overflow']
-    #snapshot = bz.bugs['afrl:AIS-Scenario1']
-    sut = houston.ardu.ArduCopter(snapshot)
+    #snapshot = bz.bugs['afrl:overflow']
+    snapshot = bz.bugs['afrl:AIS-Scenario1']
+
+    config = ArduConfig(
+        speedup=1,
+        time_per_metre_travelled=5.0,
+        constant_timeout_offset=1.0,
+        min_parachute_alt=10.0)
+    sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
-    actions = [
-        houston.action.Action("arm", {'arm': False}),
-        houston.action.Action("arm", {'arm': True}),
-        houston.action.Action("setmode", {"mode": 'GUIDED'}),
-        houston.action.Action("takeoff", {'altitude': 3.0}),
-        houston.action.Action("goto", {
-            'latitude' : -35.361354,
-            'longitude': 149.165218,
-            'altitude' : 4.0
-        }),
-        houston.action.Action("setmode", {'mode': 'LAND'}),
-        houston.action.Action("arm", {'arm': False})
+    cmds = [
+        ArmDisarm(arm=False),
+        ArmDisarm(arm=True),
+        SetMode(mode='GUIDED'),
+        Takeoff(altitude=3.0),
+        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+        SetMode(mode='LAND'),
+        ArmDisarm(arm=False)
     ]
     
     environment = Environment({})
@@ -176,7 +190,8 @@ if __name__ == "__main__":
         vy=0.0,
         vz=0.0,
         time_offset=0.0)
-    mission = houston.mission.Mission(environment, initial, actions)
+    mission = Mission(config, environment, initial, cmds)
+
     # create a container for the mission execution
     sandbox = sut.provision(bz)
     try:

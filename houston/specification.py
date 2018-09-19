@@ -1,9 +1,13 @@
+__all__ = ['Specification', 'Expression', 'Idle']
+
+import random
+import attr
 import math
 from typing import List, Dict, Any
 import sexpdata
 import z3
 
-from .action import ActionSchema, Parameter
+from .configuration import Configuration
 from .state import State
 from .environment import Environment
 #from houston.system import System
@@ -13,14 +17,11 @@ class InvalidExpression(Exception):
 
 class Specification():
 
-    def __init__(self, parameters: List[Parameter], precondition: str, postcondition: str, timeout: str):
+    def __init__(self, name: str, precondition: str, postcondition: str):
 
-
-        self._parameters = parameters
-        self._precondition = Expression(precondition, parameters)
-        self._postcondition = Expression(postcondition, parameters)
-        #self._timeout = timeout
-        self._timeout = 1.0
+        self._name = name
+        self._precondition = Expression(precondition)
+        self._postcondition = Expression(postcondition)
         super().__init__()
 
     @property
@@ -32,15 +33,16 @@ class Specification():
         return self._postcondition
 
     @property
-    def parameters(self):
-        return self._parameters
+    def name(self):
+        return self._name
 
-    def timeout(self):
+    def timeout(self, command: 'Command', state: State, environment: Environment,
+        config: Configuration) -> float:
         # TODO fix this
-        return self._timeout
+        return 1.0
 
-    def get_constraint(self, state: State, postfix: str=''):
-        decls = self._precondition.get_declarations(state, postfix)
+    def get_constraint(self, command: 'Command', state: State, postfix: str=''):
+        decls = self._precondition.get_declarations(command, state, postfix)
         smt = self._precondition.get_expression(decls, state, postfix)
         smt.extend(self._postcondition.get_expression(decls, state, postfix))
 
@@ -49,13 +51,12 @@ class Specification():
 
 class Expression:
 
-    def __init__(self, s_expression: str, parameters: List[Parameter]):
+    def __init__(self, s_expression: str):
 
         if not Expression.is_valid(s_expression):
             raise InvalidExpression
 
         self._expression = s_expression
-        self._parameters = parameters
 
     @property
     def expression(self):
@@ -69,10 +70,10 @@ class Expression:
             return False
         return True
 
-    def is_satisfied(self, system: 'System', parameter_values: Dict[str, Any], state_before: State,
-                    state_after: State, environment: Environment) -> bool:
+    def is_satisfied(self, command: 'Command', state_before: State,
+                    state_after: State, environment: Environment, config: Configuration) -> bool:
         s = z3.SolverFor("QF_NRA")
-        smt, decls = self._prepare_query(system, parameter_values, state_before, state_after)
+        smt, decls = self._prepare_query(command, state_before, state_after)
         expr = self.get_expression(decls, state_before)
         smt.extend(expr)
         print("SMT: {}".format(smt))
@@ -82,19 +83,19 @@ class Expression:
         print("Z3 result: " + str(s.check()))
         return s.check() == z3.sat
 
-    def _prepare_query(self, system: 'System', parameter_values: Dict[str, Any], state_before: State, state_after: State=None):
-        decls = self.get_declarations(state_before)
-        smt = Expression.values_to_smt('$', parameter_values, decls)
+    def _prepare_query(self, command: 'Command', state_before: State, state_after: State=None):
+        decls = self.get_declarations(command, state_before)
+        smt = Expression.values_to_smt('$', command.to_json(), decls)
         smt.extend(Expression.values_to_smt('_', state_before.to_json(), decls))
         if state_after:
             smt.extend(Expression.values_to_smt('__', state_after.to_json(), decls))
         return smt, decls
 
-    def get_declarations(self, state: State, postfix: str=''):
+    def get_declarations(self, command: 'Command', state: State, postfix: str=''):
         declarations = {}
 
         # Declare all parameters
-        for p in self._parameters:
+        for p in command.parameters:
             declarations['${}'.format(p.name)] = Expression._type_to_z3(p.type, '${}{}'.format(p.name, postfix))
 
         # Declare all state variables
@@ -139,9 +140,9 @@ class Expression:
                 smt.append(declarations['{}{}'.format(prefix, n)] == v)
         return smt
 
-    def is_satisfiable(self, system: 'System', state: State, environment: Environment) -> bool:
+    def is_satisfiable(self, command: 'Command', state: State, environment: Environment) -> bool:
         s = z3.SolverFor("QF_NRA")
-        decls = self.get_declarations(state)
+        decls = self.get_declarations(command, state)
         smt = Expression.values_to_smt('_', state.to_json(), decls)
         smt.extend(self.get_expression(decls, state))
 #        s.from_string(smt)
@@ -201,3 +202,20 @@ class Expression:
                 return noises[0]
         else:
             return math.fsum(noises)
+
+
+class Idle(Specification):
+    def __init__(self) -> None:
+        super().__init__("idle",
+            """
+            true
+            """,
+            """
+            (and (= _latitude __latitude)
+                (= _longitude __longitude)
+                (= _altitude __altitude)
+                (= _armed __armed)
+                (= _armable __armable)
+                (= _mode __mode))
+            """)
+
