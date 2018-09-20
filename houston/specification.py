@@ -1,20 +1,21 @@
 __all__ = ['Specification', 'Expression', 'Idle']
 
+from typing import List, Dict, Any, Tuple
 import logging
 import random
-import attr
 import math
-from typing import List, Dict, Any, Tuple
+
+import attr
 import sexpdata
 import z3
 
 from .configuration import Configuration
 from .state import State
 from .environment import Environment
-#from houston.system import System
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
+
 
 class InvalidExpression(Exception):
     pass
