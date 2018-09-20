@@ -1,6 +1,6 @@
 __all__ = ['Specification', 'Expression', 'Idle']
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Type, Optional
 import logging
 import random
 import math
@@ -95,7 +95,7 @@ class Expression(object):
         return declarations
 
     @staticmethod
-    def _type_to_z3(typ, name: str):
+    def _type_to_z3(typ: Type, name: str):
         if typ == float:
             t = z3.Real(name)
         elif typ == bool:
