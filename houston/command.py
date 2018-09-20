@@ -170,6 +170,13 @@ class Command(object, metaclass=CommandMeta):
             raise KeyError(msg)
         return getattr(self, param._field)
 
+    @property
+    def name(self) -> str:
+        """
+        Returns the name of the type of this command.
+        """
+        return self.__class__.__name__
+
     def to_json(self) -> Dict[str, Any]:
         fields = {}  # type: Dict[str, any]
         for param in self.__class__.parameters:
