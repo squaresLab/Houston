@@ -21,6 +21,16 @@ class InvalidExpression(Exception):
     pass
 
 
+class UnsupportedVariableType(Exception):
+    """
+    Houston and/or Z3 do not support variables of a given Python type.
+    """
+    def __init__(self, type_py: Type) -> None:
+        msg = "Houston and/or Z3 does not support variable type: {}"
+        msg = msg.format(type_py.__name__)
+        super().__init__(msg)
+
+
 class Expression(object):
     def __init__(self, s_expression: str) -> None:
         if not Expression.is_valid(s_expression):
