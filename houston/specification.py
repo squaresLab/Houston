@@ -138,14 +138,30 @@ class Expression(object):
                 smt.append(declarations['{}{}'.format(prefix, n)] == v)
         return smt
 
-    def is_satisfiable(self, command: 'Command', state: State, environment: Environment) -> bool:
+    def is_satisfiable(self,
+                       command: 'Command',
+                       state: State,
+                       environment: Environment
+                       ) -> bool:
+        """
+        Determines whether this specification is satisifiable in a given
+        context (i.e., command, state, environment, configuration).
+
+        Parameters:
+            command: the parameters supplied to the command.
+            state: the state of the system immediately prior to executing the
+                command.
+            environment: the state of the environment immediately prior to
+                executing the command.
+
+        Returns:
+            True if satisfiable, false if not.
+        """
         s = z3.SolverFor("QF_NRA")
         decls = self.get_declarations(command, state)
         smt = Expression.values_to_smt('_', state.to_json(), decls)
         smt.extend(self.get_expression(decls, state))
-#        s.from_string(smt)
         s.add(smt)
-
         return s.check() == z3.sat
 
     def get_expression(self, decls: Dict[str, Any], state: State, postfix: str="") -> List[z3.ExprRef]:
