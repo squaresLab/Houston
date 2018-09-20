@@ -44,6 +44,10 @@ class Expression(object):
 
     @staticmethod
     def is_valid(string: str) -> bool:
+        """
+        Determines whether a given specification, encoded as a string, is
+        valid.
+        """
         try:
             parsed = sexpdata.loads(string)
         except (sexpdata.ExpectClosingBracket, sexpdata.ExpectNothing) as e:
@@ -164,7 +168,11 @@ class Expression(object):
         s.add(smt)
         return s.check() == z3.sat
 
-    def get_expression(self, decls: Dict[str, Any], state: State, postfix: str="") -> List[z3.ExprRef]:
+    def get_expression(self,
+                       decls: Dict[str, Any],
+                       state: State,
+                       postfix: str=""
+                       ) -> List[z3.ExprRef]:
         expr = list(z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls))
         variables = {}
         for v in state.variables:
@@ -174,7 +182,9 @@ class Expression(object):
         return expr_with_noise
 
     @staticmethod
-    def recreate_with_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]) -> z3.ExprRef:
+    def recreate_with_noise(expr: z3.ExprRef,
+                            variables: Dict[z3.ArithRef, float]
+                            ) -> z3.ExprRef:
         d = expr.decl()
         if str(d) != '==':
             children = [Expression.recreate_with_noise(c, variables) for c in expr.children()]
@@ -192,7 +202,9 @@ class Expression(object):
         return absolute(lhs - rhs) <= Expression.get_noise(expr, variables)
 
     @staticmethod
-    def get_noise(expr: z3.ExprRef, variables: Dict[z3.ArithRef, float]) -> float:
+    def get_noise(expr: z3.ExprRef,
+                  variables: Dict[z3.ArithRef, float]
+                  ) -> float:
         if len(expr.children()) == 0:
             if isinstance(expr, z3.ArithRef) and str(expr) in variables:
                 return variables[str(expr)]
@@ -216,10 +228,12 @@ class Expression(object):
             return math.fsum(noises)
 
 
-class Specification():
-
-    def __init__(self, name: str, precondition: str, postcondition: str) -> None:
-
+class Specification(object):
+    def __init__(self,
+                 name: str,
+                 precondition: str,
+                 postcondition: str
+                 ) -> None:
         self.__name = name
         self.__precondition = Expression(precondition)
         self.__postcondition = Expression(postcondition)
@@ -251,18 +265,15 @@ class Specification():
         return smt, decls
 
 
-class Idle(Specification):
-    def __init__(self) -> None:
-        super().__init__("idle",
-            """
-            true
-            """,
-            """
-            (and (= _latitude __latitude)
-                (= _longitude __longitude)
-                (= _altitude __altitude)
-                (= _armed __armed)
-                (= _armable __armable)
-                (= _mode __mode))
-            """)
-
+# FIXME generate an Idle for a given system
+Idle = Specification(
+    "idle",
+    "true",
+    """
+    (and (= _latitude __latitude)
+         (= _longitude __longitude)
+         (= _altitude __altitude)
+         (= _armed __armed)
+         (= _armable __armable)
+         (= _mode __mode))
+    """)
