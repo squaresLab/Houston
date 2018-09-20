@@ -61,6 +61,11 @@ class Expression(object):
                      environment: Environment,
                      config: Configuration
                      ) -> bool:
+        """
+        Determines whether this specification is satisfied by a given
+        before and after state in a particular context (i.e, command
+        arguments, configuration and environment).
+        """
         logger.debug("Checking for command: %s", command.name)  # FIXME
         solver = z3.SolverFor("QF_NRA")
         smt, decls = self._prepare_query(command, state_before, state_after)
