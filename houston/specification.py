@@ -95,16 +95,29 @@ class Expression(object):
         return declarations
 
     @staticmethod
-    def _type_to_z3(typ: Type, name: str):
-        if typ == float:
-            t = z3.Real(name)
-        elif typ == bool:
-            t = z3.Bool(name)
-        elif typ == str:
-            t = z3.String(name)
-        else:
-            t = z3.Int(name)
-        return t
+    def create_z3_var(type_py: Type, name: str):
+        """
+        Creates a named Z3 variable with a type corresponding to a given
+        Python type.
+
+        Parameters:
+            type_py: the Python type of the variable.
+            name: the name of the variable.
+
+        Raises:
+            UnsupportedVariableType: Houston and/or Z3 do not support the
+                given Python type.
+        """
+        py_to_z3 = {float: z3.Real,
+                    bool: z3.Bool,
+                    str: z3.String,
+                    int: z3.Int}
+        try:
+            type_z3 = py_to_z3[type_py]
+        except KeyError:
+            raise UnsupportedVariableType(type_py)
+        var = type_z3(name)
+        return var
 
     @staticmethod
     def values_to_smt(prefix: str, values: Dict[str, Any], declarations: Dict[str, Any]) -> str:
