@@ -178,6 +178,10 @@ class Expression(object):
                        state: State,
                        postfix: str=""
                        ) -> List[z3.ExprRef]:
+        """
+        Constructs a Z3 expression from this expression for a particular
+        state and set of declaration mappings.
+        """
         expr = list(z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls))
         variables = {}
         for v in state.variables:
@@ -190,9 +194,10 @@ class Expression(object):
     def recreate_with_noise(expr: z3.ExprRef,
                             variables: Dict[z3.ArithRef, float]
                             ) -> z3.ExprRef:
+        recreate = Expression.recreate_with_noise
         d = expr.decl()
         if str(d) != '==':
-            children = [Expression.recreate_with_noise(c, variables) for c in expr.children()]
+            children = [recreate(c, variables) for c in expr.children()]
             #TODO find a better solution
             if str(d) == 'And':
                 return z3.And(*children)
