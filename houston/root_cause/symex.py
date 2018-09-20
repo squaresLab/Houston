@@ -20,29 +20,31 @@ logger.setLevel(logging.DEBUG)
 
 class SymbolicExecution(object):
 
-    def __init__(self, system: System, initial_state: State, environment: Environment, configuration: Configuration):
+    def __init__(self,
+                 system: System,
+                 initial_state: State,
+                 environment: Environment,
+                 configuration: Configuration
+                 ) -> None:
         self.__system = system
         self.__initial_state = initial_state
         self.__environment = environment
         self.__configuration = configuration
 
-
     @property
-    def system(self):
+    def system(self) -> System:
         return self.__system
 
-
     @property
-    def initial_state(self):
+    def initial_state(self) -> State:
         return self.__initial_state
 
-
     @property
-    def environment(self):
+    def environment(self) -> Environment:
         return self.__environment
 
     @property
-    def configuration(self):
+    def configuration(self) -> Configuration:
         return self.__configuration
 
     def execute_symbolically(self, mission: Mission) -> List[Mission]:
@@ -54,7 +56,7 @@ class SymbolicExecution(object):
 
         rng = random.Random(1000)
         commands = mission.commands
-        all_paths = [] # type List[List[Specification]]
+        all_paths = []  # type List[List[Specification]]
         all_missions = []
         self._dfs(commands, 0, [], all_paths)
 
@@ -66,7 +68,9 @@ class SymbolicExecution(object):
             seq_id = 0
             mappings = {}
             for b in bp:
-                smt, decls = b.get_constraint(commands[seq_id], self.initial_state, "__{}".format(seq_id))
+                smt, decls = b.get_constraint(commands[seq_id],
+                                              self.initial_state,
+                                              "__{}".format(seq_id))
 
                 for pb in commands[seq_id].specifications:
                     if pb.name == b.name:
@@ -85,7 +89,6 @@ class SymbolicExecution(object):
 #            solver.from_string(smt)
             solver.add(smts)
 
-
             if not solver.check() == z3.sat:
                 logger.info("UNSAT")
                 continue
@@ -99,8 +102,9 @@ class SymbolicExecution(object):
             for b in bp:
                 parameters = {}
                 for p in commands[seq_id].parameters:
-                    parameters[p.name] = eval(str(model[mappings[seq_id]["${}".format(p.name)]]))
-                    if parameters[p.name] == None:
+                    val = model[mappings[seq_id]["${}".format(p.name)]]
+                    parameters[p.name] = eval(str(val))
+                    if parameters[p.name] is None:
                         v = p.generate(rng)
                         logger.debug("PP {} {}".format(p.name, v))
                         parameters[p.name] = v
@@ -109,20 +113,38 @@ class SymbolicExecution(object):
                 seq_id += 1
 
             logger.debug("Added: {}".format(commands_list))
-            all_missions.append(Mission(self.configuration, self.environment, self.initial_state, commands_list))
+            all_missions.append(Mission(self.configuration,
+                                        self.environment,
+                                        self.initial_state,
+                                        commands_list))
 
         return all_missions
 
-    def _connect_pre_and_post(self, number: int, mappings: Dict[int, Dict[str, Any]]) -> List:
+    def _connect_pre_and_post(self,
+                              number: int,
+                              mappings: Dict[int, Dict[str, Any]]
+                              ) -> List[z3.ExprRef]:
         assert(number >= 0)
         s = []
         for n, v in self.initial_state.to_json().items():
             for i in range(0, number):
-                s.append(mappings[i]['__{}'.format(n)] == mappings[i+1]['_{}'.format(n)])
-        s.extend(Expression.values_to_smt('_', self.initial_state.to_json(), mappings[0]))
+                m1 = mappings[i]['__{}'.format(n)]
+                m2 = mappings[i + 1]['_{}'.format(n)]
+                s.append(m1 == m2)
+        s.extend(Expression.values_to_smt('_',
+                                          self.initial_state.to_json(),
+                                          mappings[0]))
         return s
 
-    def _dfs(self, commands: List[Command], start_index: int, path: List[Specification], all_paths: List[List[Specification]] = []):
+    def _dfs(self,
+             commands: List[Command],
+             start_index: int,
+             path: List[Specification],
+             all_paths: List[List[Specification]] = None
+             ) -> None:
+
+        if not all_paths:
+            all_paths = []
         if start_index == len(commands):
             all_paths.append(path)
             return
@@ -130,4 +152,3 @@ class SymbolicExecution(object):
             new_path = copy.deepcopy(path)
             new_path.append(s)
             self._dfs(commands, start_index + 1, new_path, all_paths)
-
