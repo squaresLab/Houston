@@ -81,6 +81,10 @@ class Expression(object):
                        state_before: State,
                        state_after: State=None
                        ) -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
+        """
+        Prepares the declarations and value assignment for a query
+        given the command and states before and after.
+        """
         decls = self.get_declarations(command, state_before)
         smt = Expression.values_to_smt('$', command.to_json(), decls)
         smt.extend(Expression.values_to_smt('_', state_before.to_json(), decls))
@@ -92,7 +96,21 @@ class Expression(object):
                          command: 'Command',
                          state: State,
                          postfix: Optional[str] = None
-                         ) -> Dict[str, Any]:
+                         ) -> Dict[str, z3.ArithRef]:
+        """
+        Creates a Z3 variable for all state variables and command
+        parameters.
+        Parameters:
+            command: the command for which the declarations are
+                being prepared.
+            state: the state for which the declarations are being
+                prepared.
+            postfix: the optional string that could be used to
+                properly rename the variables in the query.
+        Returns:
+            A dictionary with the name of variables as key and
+            Z3 variable as value.
+        """
         declarations = {}
         var = Expression.create_z3_var
 
@@ -138,7 +156,12 @@ class Expression(object):
         return var
 
     @staticmethod
-    def values_to_smt(prefix: str, values: Dict[str, Any], declarations: Dict[str, Any]) -> str:
+    def values_to_smt(prefix: str, values: Dict[str, Any], declarations: Dict[str, Any]) -> List[z3.ExprRef]:
+        """
+        Creates a Z3 equality expression for all varibales in values
+        dictionary to assert their values and returns a list of Z3
+        expressions.
+        """
         smt = []
         for n, v in values.items():
             if type(v) == str:
@@ -182,12 +205,12 @@ class Expression(object):
         Constructs a Z3 expression from this expression for a particular
         state and set of declaration mappings.
         """
-        expr = list(z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls))
+        expr = z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls)
         variables = {}
         for v in state.variables:
             variables['_{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
             variables['__{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
-        expr_with_noise = [Expression.recreate_with_noise(e, variables) for e in expr]
+        expr_with_noise = [Expression.recreate_with_noise(expr, variables)]
         return expr_with_noise
 
     @staticmethod
