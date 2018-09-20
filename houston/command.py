@@ -248,7 +248,11 @@ class Command(object, metaclass=CommandMeta):
         configuration.
         """
         for spec in self.__class__.specifications:
-            if spec.precondition.is_satisfied(self, state, None, environment, config):
+            if spec.precondition.is_satisfied(self,
+                                              state,
+                                              None,
+                                              environment,
+                                              config):
                 return spec
         raise Exception("failed to resolve specification")
 

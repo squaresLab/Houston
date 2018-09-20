@@ -158,10 +158,10 @@ class Sandbox(object):
                         state_after = self.observe(time.time() - start_time)
                         # TODO implement idle! (add timeout in idle dispatch)
                         sat = spec.postcondition.is_satisfied(cmd,
-                                                 state_before,
-                                                 state_after,
-                                                 env,
-                                                 config)
+                                                              state_before,
+                                                              state_after,
+                                                              env,
+                                                              config)
                         if sat:
                             logger.debug("command was successful")
                             passed = True
