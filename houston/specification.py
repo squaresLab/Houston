@@ -129,12 +129,10 @@ class Expression(object):
         for v in state.variables:
             n = v.name
             typ = v.type
-            declarations['_{}'.format(n)] = var(typ,
-                                                '_{}{}'
-                                                .format(n, postfix))
-            declarations['__{}'.format(n)] = var(typ,
-                                                 '__{}{}'
-                                                 .format(n, postfix))
+            name = '_{}'.format(n)
+            declarations[name] = var(typ, '{}{}'.format(name, postfix))
+            name = '__{}'.format(n)
+            declarations[name] = var(typ, '{}{}'.format(name, postfix))
 
         return declarations
 
@@ -167,9 +165,20 @@ class Expression(object):
     def values_to_smt(prefix: str, values: Dict[str, Any],
                       declarations: Dict[str, Any]) -> List[z3.ExprRef]:
         """
-        Creates a Z3 equality expression for all varibales in values
+        Creates a Z3 equality expression for all variables in values
         dictionary to assert their values and returns a list of Z3
         expressions.
+        Parameters:
+            prefix: the prefix that is added to this set of variables
+                in the declarations.
+            values: a dictionary of variable names as keys and their
+                value as values.
+            declarations: a dictionary of all variables (e.g. command
+                parameters and state variables) name as key and Z3
+                variable as value.
+        Returns:
+            A list of Z3 expressions that assert equality of variables
+                and their values.
         """
         smt = []
         for n, v in values.items():
@@ -299,9 +308,12 @@ class Specification(object):
     def name(self) -> str:
         return self.__name
 
-    def timeout(self, command: 'Command', state: State,
+    def timeout(self,
+                command: 'Command',
+                state: State,
                 environment: Environment,
-                config: Configuration) -> float:
+                config: Configuration
+                ) -> float:
         # TODO fix this
         return 1.0
 
