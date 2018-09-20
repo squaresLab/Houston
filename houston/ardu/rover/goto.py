@@ -20,14 +20,14 @@ class GotoNormally(Specification):
     """
     def __init__(self) -> None:
         super().__init__('normal',
-            """
-            (and (= _armed true)
-                (not (= _mode "LOITER")))
-            """,
-            """
-            (and (= __longitude $longitude)
-                (= __latitude $latitude))
-            """)
+                         """
+                (and (= _armed true)
+                    (not (= _mode "LOITER")))
+                         """,
+                         """
+                (and (= __longitude $longitude)
+                    (= __latitude $latitude))
+                         """)
 
     def timeout(self, a, s, e, c) -> float:
         from_loc = (s.latitude, s.longitude)

@@ -16,19 +16,18 @@ from ...valueRange import ContinuousValueRange
 
 class TakeoffNormally(Specification):
     def __init__(self) -> None:
-    	super().__init__("normal",
-	    """
-            (and (= _armed true)
-                (= _mode "GUIDED")
-                (< _altitude 0.3))
-            """,
-            """
-            (and(= _longitude __longitude)
-                (= _latitude __latitude)
-                (= __altitude $altitude)
-                (= __vz 0.0))
-            """)
- 
+        super().__init__("normal",
+                         """
+                (and (= _armed true)
+                    (= _mode "GUIDED")
+                    (< _altitude 0.3))
+                         """,
+                         """
+                (and(= _longitude __longitude)
+                    (= _latitude __latitude)
+                    (= __altitude $altitude)
+                    (= __vz 0.0))
+                         """)
 
     def timeout(self, a, s, e, c) -> float:
         # FIXME add rate of ascent
@@ -60,4 +59,3 @@ class Takeoff(Command):
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             0, 1, 0, 0, 0, 0, 0, self.altitude)
         vehicle.send_mavlink(msg)
-

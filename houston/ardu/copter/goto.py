@@ -21,21 +21,26 @@ class GotoNormally(Specification):
     the precondition on this normal behaviour is stronger; for more
     information, refer to the system-specific subclasses of GotoNormally.
     """
- 
+
     def __init__(self) -> None:
         super().__init__('normal',
-            """
-            (and (= _armed true)
-                (not (= _mode "LOITER"))
-                (> _altitude 0.3))
-            """,
-            """
-            (and (= __longitude $longitude)
-                (= __latitude $latitude)
-                (= __altitude $altitude))
-            """)
-    
-    def timeout(self, cmd: Command, s: State, e: Environment, c: Configuration):
+                         """
+                         (and (= _armed true)
+                            (not (= _mode "LOITER"))
+                            (> _altitude 0.3))
+                         """,
+                         """
+                         (and (= __longitude $longitude)
+                            (= __latitude $latitude)
+                            (= __altitude $altitude))
+                         """)
+
+    def timeout(self,
+                cmd: Command,
+                s: State,
+                e: Environment,
+                c: Configuration
+                ) -> float:
         from_loc = (s['latitude'], s['longitude'])
         to_loc = (cmd['latitude'], cmd['longitude'])
         dist = geopy.distance.great_circle(from_loc, to_loc).meters

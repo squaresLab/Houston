@@ -21,16 +21,16 @@ logger.setLevel(logging.DEBUG)
 class SetModeLand(Specification):
     def __init__(self):
         super().__init__('land',
-            """
-            (and (= $mode "LAND")
-                (> _altitude 0.3))
-            """,
-            """
-            (and (= __mode "LAND")
-                (= _longitude __longitude)
-                (= _latitude __latitude)
-                (= __altitude 0.0))
-            """)
+                         """
+                (and (= $mode "LAND")
+                    (> _altitude 0.3))
+                         """,
+                         """
+                (and (= __mode "LAND")
+                    (= _longitude __longitude)
+                    (= _latitude __latitude)
+                    (= __altitude 0.0))
+                         """)
 
     def timeout(self, a, s, e, c) -> float:
         timeout = s.altitude * c.time_per_metre_travelled
@@ -41,39 +41,39 @@ class SetModeLand(Specification):
 class SetModeGuided(Specification):
     def __init__(self) -> None:
         super().__init__('guided',
-            """
-            (= $mode "GUIDED")
-            """,
-            """
-            (= __mode "GUIDED")
-            """)
+                         """
+                (= $mode "GUIDED")
+                         """,
+                         """
+                (= __mode "GUIDED")
+                         """)
 
 
 class SetModeLoiter(Specification):
     def __init__(self) -> None:
         super().__init__('loiter',
-            """
-            (= $mode "LOITER")
-            """,
-            """
-            (= __mode "LOITER")
-            """)
+                         """
+                (= $mode "LOITER")
+                         """,
+                         """
+                (= __mode "LOITER")
+                         """)
 
 
 class SetModeRTL(Specification):
     def __init__(self):
         super().__init__('rtl',
-            """
-            (= $mode "RTL")
-            """,
-            """
-            (and (= __mode "RTL")
-                (ite (< _altitude 0.3) (= _armed __armed)
-                    (= _armed false))
-                (= __longitude _home_longitude)
-                (= __latitude _home_latitude)
-                (= __altitude 0.0))
-            """)
+                         """
+                (= $mode "RTL")
+                         """,
+                         """
+                (and (= __mode "RTL")
+                    (ite (< _altitude 0.3) (= _armed __armed)
+                        (= _armed false))
+                    (= __longitude _home_longitude)
+                    (= __latitude _home_latitude)
+                    (= __altitude 0.0))
+                         """)
 
     def timeout(self, a, s, e, c):
         # compute distance

@@ -18,26 +18,26 @@ from ..specification import Specification, Idle
 class ArmNormally(Specification):
     def __init__(self) -> None:
         super().__init__('arm-normal',
-		"""
-                (and (= $arm true)
-                    (= _armable true)
-                    (or (= _mode "GUIDED") (= _mode "LOITER")))
-                """,
-                """
-                (= __armed true)
-                """)
+                         """
+                         (and (= $arm true)
+                            (= _armable true)
+                            (or (= _mode "GUIDED") (= _mode "LOITER")))
+                         """,
+                         """
+                         (= __armed true)
+                         """)
 
 
 class DisarmNormally(Specification):
     def __init__(self) -> None:
-        super().__init__('disarm-normal', 
-		"""
-                (and (= $arm false)
-                    (= _armed true))
-                """,
-                """
-                (= __armed false)
-                """)
+        super().__init__('disarm-normal',
+                         """
+                         (and (= $arm false)
+                            (= _armed true))
+                         """,
+                         """
+                         (= __armed false)
+                         """)
 
 
 class GotoLoiter(Specification):
@@ -48,16 +48,16 @@ class GotoLoiter(Specification):
     def __init__(self) -> None:
 
         super().__init__('loiter',
-	"""
-        (and (= _armed true)
-            (= _mode "LOITER"))
-        """,
-        """
-        (and (= __longitude $longitude)
-            (= __latitude $latitude)
-            (= __altitude $altitude)
-            (= __mode "LOITER"))
-        """)
+                         """
+                         (and (= _armed true)
+                            (= _mode "LOITER"))
+                         """,
+                         """
+                         (and (= __longitude $longitude)
+                            (= __latitude $latitude)
+                            (= __altitude $altitude)
+                            (= __mode "LOITER"))
+                         """)
 
 
 class ArmDisarm(Command):
