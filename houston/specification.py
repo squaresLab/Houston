@@ -21,10 +21,8 @@ class InvalidExpression(Exception):
     pass
 
 
-class Expression:
-
+class Expression(object):
     def __init__(self, s_expression: str) -> None:
-
         if not Expression.is_valid(s_expression):
             raise InvalidExpression
 
@@ -42,19 +40,22 @@ class Expression:
             return False
         return True
 
-    def is_satisfied(self, command: 'Command', state_before: State,
-                    state_after: State, environment: Environment, config: Configuration) -> bool:
-        logger.debug("Checking for command {}".format(command.__class__.__name__))
-        s = z3.SolverFor("QF_NRA")
+    def is_satisfied(self,
+                     command: 'Command',
+                     state_before: State,
+                     state_after: State,
+                     environment: Environment,
+                     config: Configuration
+                     ) -> bool:
+        logger.debug("Checking for command: %s", command.name)  # FIXME
+        solver = z3.SolverFor("QF_NRA")
         smt, decls = self._prepare_query(command, state_before, state_after)
         expr = self.get_expression(decls, state_before)
         smt.extend(expr)
-        logger.info("SMT: {}".format(smt))
-#        s.from_string(smt)
-        s.add(smt)
-
-        logger.debug("Z3 result: " + str(s.check()))
-        return s.check() == z3.sat
+        logger.info("SMT: %s", smt)
+        solver.add(smt)
+        logger.debug("Z3 result: %s", str(solver.check()))
+        return solver.check() == z3.sat
 
     def _prepare_query(self, command: 'Command', state_before: State, state_after: State=None)\
                                                     -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
