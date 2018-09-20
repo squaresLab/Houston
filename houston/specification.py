@@ -95,17 +95,6 @@ class Expression(object):
         return declarations
 
     @staticmethod
-    def _type_to_string(typ) -> str:
-        t = "Int"
-        if typ == float:
-            t = "Real"
-        elif typ == bool:
-            t = "Bool"
-        elif typ == str:
-            t = "String"
-        return t
-
-    @staticmethod
     def _type_to_z3(typ, name: str):
         if typ == float:
             t = z3.Real(name)
@@ -116,7 +105,6 @@ class Expression(object):
         else:
             t = z3.Int(name)
         return t
-
 
     @staticmethod
     def values_to_smt(prefix: str, values: Dict[str, Any], declarations: Dict[str, Any]) -> str:
