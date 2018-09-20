@@ -57,8 +57,11 @@ class Expression(object):
         logger.debug("Z3 result: %s", str(solver.check()))
         return solver.check() == z3.sat
 
-    def _prepare_query(self, command: 'Command', state_before: State, state_after: State=None)\
-                                                    -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
+    def _prepare_query(self,
+                       command: 'Command',
+                       state_before: State,
+                       state_after: State=None
+                       ) -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
         decls = self.get_declarations(command, state_before)
         smt = Expression.values_to_smt('$', command.to_json(), decls)
         smt.extend(Expression.values_to_smt('_', state_before.to_json(), decls))
@@ -66,15 +69,25 @@ class Expression(object):
             smt.extend(Expression.values_to_smt('__', state_after.to_json(), decls))
         return smt, decls
 
-    def get_declarations(self, command: 'Command', state: State, postfix: str='') -> Dict[str, Any]:
+    def get_declarations(self,
+                         command: 'Command',
+                         state: State,
+                         postfix: Optional[str] = None
+                         ) -> Dict[str, Any]:
+        if not postfix:
+            postfix = ''
+
         declarations = {}
 
         # Declare all parameters
         for p in command.parameters:
-            declarations['${}'.format(p.name)] = Expression._type_to_z3(p.type, '${}{}'.format(p.name, postfix))
+            ex = Expression._type_to_z3(p.type, '${}{}'.format(p.name, postfix))
+            declarations['${}'.format(p.name)] = ex
 
         # Declare all state variables
-        for n, v in state.to_json().items():
+        for v in state.__class__.variables:
+            n = v.name
+            typ = v.type
             declarations['_{}'.format(n)] = Expression._type_to_z3(type(v), '_{}{}'.format(n, postfix))
             declarations['__{}'.format(n)] = Expression._type_to_z3(type(v), '__{}{}'.format(n, postfix))
             # TODO right now we don't have a way to find out the type of state variables
