@@ -79,7 +79,7 @@ class Expression(object):
     def _prepare_query(self,
                        command: 'Command',
                        state_before: State,
-                       state_after: State=None
+                       state_after: State = None
                        ) -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
         """
         Prepares the declarations and value assignment for a query
@@ -87,9 +87,13 @@ class Expression(object):
         """
         decls = self.get_declarations(command, state_before)
         smt = Expression.values_to_smt('$', command.to_json(), decls)
-        smt.extend(Expression.values_to_smt('_', state_before.to_json(), decls))
+        smt.extend(Expression.values_to_smt('_',
+                                            state_before.to_json(),
+                                            decls))
         if state_after:
-            smt.extend(Expression.values_to_smt('__', state_after.to_json(), decls))
+            smt.extend(Expression.values_to_smt('__',
+                                                state_after.to_json(),
+                                                decls))
         return smt, decls
 
     def get_declarations(self,
@@ -125,8 +129,12 @@ class Expression(object):
         for v in state.variables:
             n = v.name
             typ = v.type
-            declarations['_{}'.format(n)] = var(typ, '_{}{}'.format(n, postfix))
-            declarations['__{}'.format(n)] = var(typ, '__{}{}'.format(n, postfix))
+            declarations['_{}'.format(n)] = var(typ,
+                                                '_{}{}'
+                                                .format(n, postfix))
+            declarations['__{}'.format(n)] = var(typ,
+                                                 '__{}{}'
+                                                 .format(n, postfix))
 
         return declarations
 
@@ -156,7 +164,8 @@ class Expression(object):
         return var
 
     @staticmethod
-    def values_to_smt(prefix: str, values: Dict[str, Any], declarations: Dict[str, Any]) -> List[z3.ExprRef]:
+    def values_to_smt(prefix: str, values: Dict[str, Any],
+                      declarations: Dict[str, Any]) -> List[z3.ExprRef]:
         """
         Creates a Z3 equality expression for all varibales in values
         dictionary to assert their values and returns a list of Z3
@@ -164,10 +173,11 @@ class Expression(object):
         """
         smt = []
         for n, v in values.items():
+            d = declarations['{}{}'.format(prefix, n)]
             if type(v) == str:
-                smt.append(declarations['{}{}'.format(prefix, n)] == z3.StringVal(v))
+                smt.append(d == z3.StringVal(v))
             else:
-                smt.append(declarations['{}{}'.format(prefix, n)] == v)
+                smt.append(d == v)
         return smt
 
     def is_satisfiable(self,
@@ -199,17 +209,20 @@ class Expression(object):
     def get_expression(self,
                        decls: Dict[str, Any],
                        state: State,
-                       postfix: str=""
+                       postfix: str = ""
                        ) -> List[z3.ExprRef]:
         """
         Constructs a Z3 expression from this expression for a particular
         state and set of declaration mappings.
         """
-        expr = z3.parse_smt2_string('(assert {})'.format(self.expression), decls=decls)
+        expr = z3.parse_smt2_string('(assert {})'
+                                    .format(self.expression), decls=decls)
         variables = {}
         for v in state.variables:
-            variables['_{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
-            variables['__{}{}'.format(v.name, postfix)] = float(v.noise) if v.is_noisy else 0.0
+            variables['_{}{}'.format(v.name, postfix)] = float(v.noise) \
+                if v.is_noisy else 0.0
+            variables['__{}{}'.format(v.name, postfix)] = float(v.noise) \
+                if v.is_noisy else 0.0
         expr_with_noise = [Expression.recreate_with_noise(expr, variables)]
         return expr_with_noise
 
@@ -221,15 +234,17 @@ class Expression(object):
         d = expr.decl()
         if str(d) != '==':
             children = [recreate(c, variables) for c in expr.children()]
-            #TODO find a better solution
+            # TODO find a better solution
             if str(d) == 'And':
                 return z3.And(*children)
             elif str(d) == 'Or':
                 return z3.Or(*children)
             return d(*children)
         lhs, rhs = expr.children()[0], expr.children()[1]
-        if not isinstance(lhs, z3.ArithRef) or not isinstance(rhs, z3.ArithRef):
+        if not isinstance(lhs, z3.ArithRef) or \
+                not isinstance(rhs, z3.ArithRef):
             return d(lhs, rhs)
+
         def absolute(x):
             return z3.If(x > 0, x, -x)
         return absolute(lhs - rhs) <= Expression.get_noise(expr, variables)
@@ -255,7 +270,7 @@ class Expression(object):
             if isinstance(expr.children()[1], z3.IntNumRef):
                 return math.pow(noises[0], int(expr.children()[1]))
             else:
-                #TODO: FIX
+                # TODO: FIX
                 return noises[0]
         else:
             return math.fsum(noises)
@@ -284,13 +299,15 @@ class Specification(object):
     def name(self) -> str:
         return self.__name
 
-    def timeout(self, command: 'Command', state: State, environment: Environment,
-        config: Configuration) -> float:
+    def timeout(self, command: 'Command', state: State,
+                environment: Environment,
+                config: Configuration) -> float:
         # TODO fix this
         return 1.0
 
-    def get_constraint(self, command: 'Command', state: State, postfix: str='')\
-                                        -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
+    def get_constraint(self, command: 'Command', state: State,
+                       postfix: str = '')\
+            -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
         decls = self.precondition.get_declarations(command, state, postfix)
         smt = self.precondition.get_expression(decls, state, postfix)
         smt.extend(self.postcondition.get_expression(decls, state, postfix))
