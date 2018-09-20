@@ -24,9 +24,10 @@ class ResourceLimits(object):
     """
     @staticmethod
     def from_json(jsn):
+        num_missions_selected = jsn['num_missions_selected']
         return ResourceLimits(num_missions=jsn['num_missions'],
                               running_time=jsn['running_time'],
-                              num_missions_selected=jsn['num_missions_selected'])
+                              num_missions_selected=num_missions_selected)
 
     def __init__(self,
                  num_missions=None,

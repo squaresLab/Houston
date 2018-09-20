@@ -99,8 +99,7 @@ class DeltaDebugging(RootCauseFinder):
         i1, i2 = 0, 0
         while i1 < c1.command_size or i2 < c2.command_size:
             if i1 >= c1.command_size or \
-                    (i2 < c2.command_size and
-                        c2.domain[i2][0] < c1.domain[i1][0]):
+               (i2 < c2.command_size and c2.domain[i2][0] < c1.domain[i1][0]):
                 command_list.append(c2.domain[i2])
                 i2 += 1
             else:
