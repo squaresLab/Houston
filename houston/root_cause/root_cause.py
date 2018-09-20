@@ -11,15 +11,17 @@ from ..configuration import Configuration
 
 Domain = List[Tuple[int, Any, List[Parameter]]]
 
+
 class MissionDomain(object):
     """
     Specification of a range of missions.
     """
-    def __init__(self, initial_domain: Domain=[]):
+    def __init__(self, initial_domain: Domain = None) -> None:
+        if not initial_domain:
+            initial_domain = []
         self.__domain = initial_domain
 
-
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.domain)
 
     @property
@@ -30,10 +32,10 @@ class MissionDomain(object):
         """
         return self.__domain
 
-
     @staticmethod
-    def from_initial_mission(mission: Mission, discrete_params=False)\
-                -> 'MissionDomain':
+    def from_initial_mission(mission: Mission,
+                             discrete_params: bool = False)\
+            -> 'MissionDomain':
         """
         Create a mission domain by considering the initial sequence
         of actions in mission and all possible values for parameters.
@@ -42,14 +44,14 @@ class MissionDomain(object):
         domain = []
         for command in mission.commands:
             if discrete_params:
-                parameters = [Parameter(p.name, DiscreteValueRange([command[p.name]]))\
-                                for p in command.parameters]
+                parameters = [Parameter(p.name,
+                                        DiscreteValueRange([command[p.name]]))
+                              for p in command.parameters]
             else:
                 parameters = command.parameters
             domain.append((i, command.__class__, parameters))
             i += 1
         return MissionDomain(domain)
-
 
     @property
     def command_size(self) -> int:
@@ -58,9 +60,12 @@ class MissionDomain(object):
         """
         return len(self.__domain)
 
-
-    def generate_mission(self, environment: Environment, initial_state: State,
-                                config: Configuration, rng) -> Mission:
+    def generate_mission(self,
+                         environment: Environment,
+                         initial_state: State,
+                         config: Configuration,
+                         rng: random.Random
+                         ) -> Mission:
         """
         Return a mission in this domain.
         """
@@ -77,12 +82,16 @@ class RootCauseFinder(object):
     """
     RootCauseFinder is used to find minimum requirements that
     results in mission failure the same way that initial failing
-    missions do. 
+    missions do.
     """
-    def __init__(self, system: System, initial_state: State,
-                    environment: Environment, config: Configuration,
-                    initial_failing_missions: List[Mission],
-                    random_seed=100) -> None:
+    def __init__(self,
+                 system: System,
+                 initial_state: State,
+                 environment: Environment,
+                 config: Configuration,
+                 initial_failing_missions: List[Mission],
+                 random_seed: int = 100
+                 ) -> None:
 
         assert(len(initial_failing_missions) > 0)
 
@@ -93,14 +102,12 @@ class RootCauseFinder(object):
         self.__initial_failing_missions = initial_failing_missions
         self.__configuration = config
 
-
     @property
     def system(self) -> System:
         """
         The system under test.
         """
         return self.__system
-
 
     @property
     def initial_state(self) -> State:
@@ -109,14 +116,12 @@ class RootCauseFinder(object):
         """
         return self.__initial_state
 
-
     @property
     def environment(self) -> Environment:
         """
         the environment used for running all missions.
         """
         return self.__environment
-
 
     @property
     def initial_failing_missions(self) -> Mission:
@@ -133,10 +138,8 @@ class RootCauseFinder(object):
     def rng(self) -> random.Random:
         return self.__rng
 
-
-    def find_root_cause(self, time_limit: float=0.0) -> MissionDomain:
+    def find_root_cause(self, time_limit: float = 0.0) -> MissionDomain:
         """
         The main function that finds the root cause.
         """
         raise NotImplementedError
-
