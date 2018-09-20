@@ -84,23 +84,22 @@ class Expression(object):
                          state: State,
                          postfix: Optional[str] = None
                          ) -> Dict[str, Any]:
+        declarations = {}
+        var = Expression.create_z3_var
+
         if not postfix:
             postfix = ''
 
-        declarations = {}
-
-        # Declare all parameters
         for p in command.parameters:
-            ex = Expression._type_to_z3(p.type, '${}{}'.format(p.name, postfix))
+            name = '${}{}'.format(p.name, postfix)
+            ex = var(p.type, name)
             declarations['${}'.format(p.name)] = ex
 
-        # Declare all state variables
-        for v in state.__class__.variables:
+        for v in state.variables:
             n = v.name
             typ = v.type
-            declarations['_{}'.format(n)] = Expression._type_to_z3(type(v), '_{}{}'.format(n, postfix))
-            declarations['__{}'.format(n)] = Expression._type_to_z3(type(v), '__{}{}'.format(n, postfix))
-            # TODO right now we don't have a way to find out the type of state variables
+            declarations['_{}'.format(n)] = var(typ, '_{}{}'.format(n, postfix))
+            declarations['__{}'.format(n)] = var(typ, '__{}{}'.format(n, postfix))
 
         return declarations
 
