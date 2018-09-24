@@ -326,9 +326,11 @@ class Specification(object):
                 ) -> float:
         return self.__timeout(command, state, environment, config)
 
-    def get_constraint(self, command: 'Command', state: State,
-                       postfix: str = '')\
-            -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
+    def get_constraint(self,
+                       command: 'Command',
+                       state: State,
+                       postfix: str = ''
+                       ) -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
         decls = self.precondition.get_declarations(command, state, postfix)
         smt = self.precondition.get_expression(decls, state, postfix)
         smt.extend(self.postcondition.get_expression(decls, state, postfix))
