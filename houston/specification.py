@@ -1,6 +1,7 @@
 __all__ = ['Specification', 'Expression', 'Idle']
 
-from typing import List, Dict, Any, Tuple, Type, Optional
+from typing import List, Dict, Any, Tuple, Type, \
+    Optional, Callable, Union
 import logging
 import random
 import math
@@ -16,9 +17,17 @@ from .environment import Environment
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+Timeout = \
+    Callable[['Command', State, Environment, Configuration], float]
+
 
 class InvalidExpression(Exception):
-    pass
+    """
+    The s-expression does not have a valid format.
+    """
+    def __init__(self) -> None:
+        msg = "The s-expression does not have a valid format."
+        super().__init__(msg)
 
 
 class UnsupportedVariableType(Exception):
@@ -86,13 +95,13 @@ class Expression(object):
         given the command and states before and after.
         """
         decls = self.get_declarations(command, state_before)
-        smt = Expression.values_to_smt('$', command.to_json(), decls)
+        smt = Expression.values_to_smt('$', command, decls)
         smt.extend(Expression.values_to_smt('_',
-                                            state_before.to_json(),
+                                            state_before,
                                             decls))
         if state_after:
             smt.extend(Expression.values_to_smt('__',
-                                                state_after.to_json(),
+                                                state_after,
                                                 decls))
         return smt, decls
 
@@ -128,7 +137,7 @@ class Expression(object):
 
         for v in state.variables:
             n = v.name
-            typ = v.type
+            typ = type(state[v.name])
             name = '_{}'.format(n)
             declarations[name] = var(typ, '{}{}'.format(name, postfix))
             name = '__{}'.format(n)
@@ -162,7 +171,7 @@ class Expression(object):
         return var
 
     @staticmethod
-    def values_to_smt(prefix: str, values: Dict[str, Any],
+    def values_to_smt(prefix: str, values: Union[State, 'Command'],
                       declarations: Dict[str, Any]) -> List[z3.ExprRef]:
         """
         Creates a Z3 equality expression for all variables in values
@@ -171,8 +180,8 @@ class Expression(object):
         Parameters:
             prefix: the prefix that is added to this set of variables
                 in the declarations.
-            values: a dictionary of variable names as keys and their
-                value as values.
+            values: a state or command which contains the variables
+                or parameters we want to add to query.
             declarations: a dictionary of all variables (e.g. command
                 parameters and state variables) name as key and Z3
                 variable as value.
@@ -181,12 +190,13 @@ class Expression(object):
                 and their values.
         """
         smt = []
-        for n, v in values.items():
-            d = declarations['{}{}'.format(prefix, n)]
-            if type(v) == str:
-                smt.append(d == z3.StringVal(v))
+        for v in values:
+            d = declarations['{}{}'.format(prefix, v.name)]
+            val = values[v.name]
+            if type(val) == str:
+                smt.append(d == z3.StringVal(val))
             else:
-                smt.append(d == v)
+                smt.append(d == val)
         return smt
 
     def is_satisfiable(self,
@@ -210,7 +220,7 @@ class Expression(object):
         """
         s = z3.SolverFor("QF_NRA")
         decls = self.get_declarations(command, state)
-        smt = Expression.values_to_smt('_', state.to_json(), decls)
+        smt = Expression.values_to_smt('_', state, decls)
         smt.extend(self.get_expression(decls, state))
         s.add(smt)
         return s.check() == z3.sat
@@ -289,12 +299,12 @@ class Specification(object):
     def __init__(self,
                  name: str,
                  precondition: str,
-                 postcondition: str
-                 ) -> None:
+                 postcondition: str,
+                 timeout: Timeout = lambda c, s, e, o: 1.0) -> None:
         self.__name = name
         self.__precondition = Expression(precondition)
         self.__postcondition = Expression(postcondition)
-        super().__init__()
+        self.__timeout = timeout
 
     @property
     def precondition(self) -> Expression:
@@ -314,8 +324,7 @@ class Specification(object):
                 environment: Environment,
                 config: Configuration
                 ) -> float:
-        # TODO fix this
-        return 1.0
+        return self.__timeout(command, state, environment, config)
 
     def get_constraint(self, command: 'Command', state: State,
                        postfix: str = '')\

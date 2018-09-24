@@ -160,10 +160,10 @@ if __name__ == "__main__":
     cmds = [
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
-#        SetMode(mode='GUIDED'),
-#        Takeoff(altitude=3.0),
-#        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-#        SetMode(mode='LAND'),
+        SetMode(mode='GUIDED'),
+        Takeoff(altitude=3.0),
+        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+        SetMode(mode='LAND'),
         ArmDisarm(arm=False)
     ]
     
@@ -193,9 +193,9 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-#    sandbox = sut.provision(bz)
+    sandbox = sut.provision(bz)
     try:
-        #run_single_mission(sandbox, mission)
+        run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -203,8 +203,8 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        d = DeltaDebugging(sut, initial, environment, config, [mission])
-        d.find_root_cause()
+        #d = DeltaDebugging(sut, initial, environment, config, [mission])
+        #d.find_root_cause()
 
 
         #generate(sut, initial, environment, 100, 10)
@@ -219,5 +219,5 @@ if __name__ == "__main__":
 
 
     finally:
-#        sandbox.destroy()
-        pass
+        sandbox.destroy()
+#        pass

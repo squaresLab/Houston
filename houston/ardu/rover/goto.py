@@ -19,6 +19,14 @@ class GotoNormally(Specification):
     information, refer to the system-specific subclasses of GotoNormally.
     """
     def __init__(self) -> None:
+        def timeout(a, s, e, c) -> float:
+            from_loc = (s.latitude, s.longitude)
+            to_loc = (a['latitude'], a['longitude'])
+            dist = geopy.distance.great_circle(from_loc, to_loc).meters
+            timeout = dist * c.time_per_metre_travelled
+            timeout += c.constant_timeout_offset
+            return timeout
+
         super().__init__('normal',
                          """
                 (and (= _armed true)
@@ -27,15 +35,8 @@ class GotoNormally(Specification):
                          """
                 (and (= __longitude $longitude)
                     (= __latitude $latitude))
-                         """)
-
-    def timeout(self, a, s, e, c) -> float:
-        from_loc = (s.latitude, s.longitude)
-        to_loc = (a['latitude'], a['longitude'])
-        dist = geopy.distance.great_circle(from_loc, to_loc).meters
-        timeout = dist * c.time_per_metre_travelled
-        timeout += c.constant_timeout_offset
-        return timeout
+                         """,
+                         timeout)
 
 
 class GoTo(Command):
@@ -47,7 +48,7 @@ class GoTo(Command):
     specifications = [
         GotoNormally(),
         GotoLoiter(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,

@@ -13,6 +13,11 @@ from ...valueRange import DiscreteValueRange
 
 class ParachuteNormally(Specification):
     def __init__(self):
+        def timeout(a, s, e, c) -> float:
+            timeout = s.altitude * c.time_per_metre_travelled
+            timeout += c.constant_timeout_offset
+            return timeout
+
         super().__init__('normal',
                          """
                 (and (= $parachute_action 2)
@@ -24,12 +29,8 @@ class ParachuteNormally(Specification):
                 (and (= __armed false)
                     (< __altitude 0.3)
                     (= __vz 0.0))
-                         """)
-
-    def timeout(self, a, s, e, c) -> float:
-        timeout = s.altitude * c.time_per_metre_travelled
-        timeout += c.constant_timeout_offset
-        return timeout
+                         """,
+                         timeout)
 
 
 class Parachute(Command):
@@ -40,7 +41,7 @@ class Parachute(Command):
     ]
     specifications = [
         ParachuteNormally(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,

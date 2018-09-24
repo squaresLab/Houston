@@ -20,6 +20,11 @@ logger.setLevel(logging.DEBUG)
 
 class SetModeLand(Specification):
     def __init__(self):
+        def timeout(a, s, e, c) -> float:
+            timeout = s.altitude * c.time_per_metre_travelled
+            timeout += c.constant_timeout_offset
+            return timeout
+
         super().__init__('land',
                          """
                 (and (= $mode "LAND")
@@ -30,12 +35,8 @@ class SetModeLand(Specification):
                     (= _longitude __longitude)
                     (= _latitude __latitude)
                     (= __altitude 0.0))
-                         """)
-
-    def timeout(self, a, s, e, c) -> float:
-        timeout = s.altitude * c.time_per_metre_travelled
-        timeout += c.constant_timeout_offset
-        return timeout
+                         """,
+                         timeout)
 
 
 class SetModeGuided(Specification):
@@ -62,6 +63,22 @@ class SetModeLoiter(Specification):
 
 class SetModeRTL(Specification):
     def __init__(self):
+        def timeout(a, s, e, c):
+            # compute distance
+            from_loc = (s['latitude'], s['longitude'])
+            to_loc = (s['home_latitude'], s['home_longitude'])
+            dist = geopy.distance.great_circle(from_loc, to_loc).meters
+
+            # compute time taken to travel from A to B, and time taken to land
+            time_goto_phase = dist * c.time_per_metre_travelled
+            time_land_phase = s['altitude'] * c.time_per_metre_travelled
+
+            # compute total timeout
+            timeout = \
+                time_goto_phase + time_land_phase + s.constant_timeout_offset
+
+            return timeout
+
         super().__init__('rtl',
                          """
                 (= $mode "RTL")
@@ -73,23 +90,8 @@ class SetModeRTL(Specification):
                     (= __longitude _home_longitude)
                     (= __latitude _home_latitude)
                     (= __altitude 0.0))
-                         """)
-
-    def timeout(self, a, s, e, c):
-        # compute distance
-        from_loc = (s['latitude'], s['longitude'])
-        to_loc = (s['home_latitude'], s['home_longitude'])
-        dist = geopy.distance.great_circle(from_loc, to_loc).meters
-
-        # compute time taken to travel from A to B, and time taken to land
-        time_goto_phase = dist * c.time_per_metre_travelled
-        time_land_phase = s['altitude'] * c.time_per_metre_travelled
-
-        # compute total timeout
-        timeout = \
-            time_goto_phase + time_land_phase + system.constant_timeout_offset
-
-        return timeout
+                         """,
+                         timeout)
 
 
 class SetMode(Command):
@@ -103,7 +105,7 @@ class SetMode(Command):
         SetModeLoiter(),
         SetModeRTL(),
         SetModeLand(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,

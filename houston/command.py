@@ -1,6 +1,7 @@
 __all__ = ['Command', 'Parameter', 'CommandOutcome']
 
-from typing import List, Dict, Any, Optional, Type, Generic, TypeVar
+from typing import List, Dict, Any, Optional, Type, Generic, \
+    TypeVar, Iterator
 import random
 import logging
 
@@ -255,6 +256,9 @@ class Command(object, metaclass=CommandMeta):
                                               config):
                 return spec
         raise Exception("failed to resolve specification")
+
+    def __iter__(self) -> Iterator[Parameter]:
+        yield from self.__class__.parameters
 
 
 @attr.s(frozen=True)

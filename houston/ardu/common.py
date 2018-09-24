@@ -75,7 +75,7 @@ class ArmDisarm(Command):
     specifications = [
         ArmNormally(),
         DisarmNormally(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,

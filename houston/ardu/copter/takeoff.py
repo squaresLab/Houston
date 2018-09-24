@@ -16,6 +16,13 @@ from ...valueRange import ContinuousValueRange
 
 class TakeoffNormally(Specification):
     def __init__(self) -> None:
+        def timeout(a, s, e, c) -> float:
+            # FIXME add rate of ascent
+            delta_alt = abs(a['altitude'] - s.altitude)
+            t = delta_alt * c.time_per_metre_travelled
+            t += c.constant_timeout_offset
+            return t
+
         super().__init__("normal",
                          """
                 (and (= _armed true)
@@ -27,14 +34,8 @@ class TakeoffNormally(Specification):
                     (= _latitude __latitude)
                     (= __altitude $altitude)
                     (= __vz 0.0))
-                         """)
-
-    def timeout(self, a, s, e, c) -> float:
-        # FIXME add rate of ascent
-        delta_alt = abs(a['altitude'] - s.altitude)
-        t = delta_alt * c.time_per_metre_travelled
-        t += c.constant_timeout_offset
-        return t
+                         """,
+                         timeout)
 
 
 class Takeoff(Command):
@@ -44,7 +45,7 @@ class Takeoff(Command):
     ]
     specifications = [
         TakeoffNormally(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,
