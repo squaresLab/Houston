@@ -9,7 +9,7 @@ class State(BaseState):
     home_longitude = var(float, lambda c: 149.165085)  # TODO: fixed
     altitude = var(float,
                    lambda c: c.connection.location.global_relative_frame.alt,  # noqa: pycodestyle
-                   noise=1.0)
+                   noise=0.01)
     latitude = var(float,
                    lambda c: c.connection.location.global_relative_frame.lat,  # noqa: pycodestyle
                    noise=0.0005)

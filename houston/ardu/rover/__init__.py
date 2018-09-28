@@ -7,6 +7,7 @@ from .sandbox import Sandbox
 from .state import State
 from ..base import BaseSystem
 from ..configuration import Configuration
+from .goto import GoTo
 
 
 class ArduRover(BaseSystem):

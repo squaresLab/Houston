@@ -1,6 +1,7 @@
 __all__ = ['GoTo']
 
 import dronekit
+import geopy.distance
 
 from ...configuration import Configuration
 from ...state import State

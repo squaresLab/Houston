@@ -34,7 +34,8 @@ class SetModeLand(Specification):
                 (and (= __mode "LAND")
                     (= _longitude __longitude)
                     (= _latitude __latitude)
-                    (= __altitude 0.0))
+                    (= __altitude 0.0)
+                    (= __armed false))
                          """,
                          timeout)
 
