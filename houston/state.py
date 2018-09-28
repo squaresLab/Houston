@@ -19,6 +19,7 @@ K = TypeVar('K')
 class Variable(object):
     def __init__(self,
                  name: str,
+                 typ: Type,
                  getter,  # FIXME add annotation
                  noise: Optional[Union[int, float]] = None
                  ) -> None:
@@ -27,15 +28,20 @@ class Variable(object):
 
         Parameters:
             name: the name of this variable.
-            type: the type of this variable.
+            typ: the type of this variable.
             getter: a lambda function, used to obtain the value of this
                 variable.
             noise: the inherent level of noise when measuring this variable.
         """
         assert noise is None or noise >= 0
         self.__name = name
+        self.__typ = typ
         self.__getter = getter
         self.__noise = noise
+
+    @property
+    def typ(self) -> Type:
+        return self.__typ
 
     @property
     def is_noisy(self) -> bool:
