@@ -21,9 +21,6 @@ python:
 # https://askubuntu.com/questions/777803/apt-relocation-error-version-glibcxx-3-4-21-not-defined-in-file-libstdc-so-6/792471
 # inspired by: https://stackoverflow.com/questions/50038634/how-to-set-up-z3-solver-on-travis-ci-machine
 before_install:
-#- wget -nv http://security.ubuntu.com/ubuntu/pool/main/g/gcc-5/libstdc++6_5.4.0-6ubuntu1~16.04.10_amd64.deb
-#- sudo dpkg -i libstdc++6_5.4.0-6ubuntu1~16.04.10_amd64.deb
-#- rm libstdc++6_5.4.0-6ubuntu1~16.04.2_amd64.deb
 - mkdir -p /opt/z3
 - export Z3="z3-4.6.0-x64-ubuntu-14.04"
 - export Z3_URL="https://github.com/Z3Prover/bin/raw/master/releases/${Z3}.zip"
