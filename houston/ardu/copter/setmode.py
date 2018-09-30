@@ -8,6 +8,7 @@ import geopy
 
 from ...configuration import Configuration
 from ...state import State
+from ...specification import Specification
 from ...environment import Environment
 from ...command import Parameter, Command
 from ...specification import Specification, Idle
@@ -18,82 +19,80 @@ logger.setLevel(logging.DEBUG)
 
 
 class SetModeLand(Specification):
-    def __init__(self) -> None:
-        pre = lambda a, s, e, c: a['mode'] == 'LAND' and s.altitude > 0.3
-
-        def post(a, s0, s1, e, c) -> bool:
-            delta_lon = 0.1
-            delta_lat = 0.1
-            delta_alt = 1.0
-            sat_mode = s1.mode == 'LAND'
-            sat_lon = abs(s1.longitude - s0.longitude) < delta_lon
-            sat_lat = abs(s1.latitude - s0.latitude) < delta_lat
-            sat_alt = abs(s1.altitude - 0.3) < delta_alt
-            return sat_lon and sat_lat and sat_alt
-
+    def __init__(self):
         def timeout(a, s, e, c) -> float:
             timeout = s.altitude * c.time_per_metre_travelled
             timeout += c.constant_timeout_offset
             return timeout
 
-        super().__init__('land', pre, post, timeout)
+        super().__init__('land',
+                         """
+                (and (= $mode "LAND")
+                    (> _altitude 0.3))
+                         """,
+                         """
+                (and (= __mode "LAND")
+                    (= _longitude __longitude)
+                    (= _latitude __latitude)
+                    (= __altitude 0.0)
+                    (= __armed false))
+                         """,
+                         timeout)
 
 
 class SetModeGuided(Specification):
     def __init__(self) -> None:
-        pre = lambda a, s, e, c: a['mode'] == 'GUIDED'
-        post = lambda a, s0, s1, e, c: s1.mode == 'GUIDED'
-        timeout = lambda a, s, e, c: c.constant_timeout_offset
-        super().__init__('guided', pre, post, timeout)
+        super().__init__('guided',
+                         """
+                (= $mode "GUIDED")
+                         """,
+                         """
+                (= __mode "GUIDED")
+                         """)
 
 
 class SetModeLoiter(Specification):
     def __init__(self) -> None:
-        pre = lambda a, s, e, c: a['mode'] == 'LOITER'
-        post = lambda a, s0, s1, e, c: s1.mode == 'LOITER'
-        timeout = lambda a, s, e, c: c.constant_timeout_offset
-        super().__init__('loiter', pre, post, timeout)
+        super().__init__('loiter',
+                         """
+                (= $mode "LOITER")
+                         """,
+                         """
+                (= __mode "LOITER")
+                         """)
 
 
 class SetModeRTL(Specification):
-    def __init__(self) -> None:
-        pre = lambda a, s, e, c: a['mode'] == 'RTL'
-
-        def post(a, s0, s1, e, c) -> bool:
-            if s1.mode != 'RTL':
-                return False  # hmmm?
-
-            if s1.altitude < 0.3:
-                if s0.armed != s1.armed:
-                    return False
-            elif s0.armed:
-                return False
-
-            err_alt = 1.0
-            err_lat = 0.1
-            err_lon = 0.1
-
-            sat_alt = abs(s1.altitude) <= noise_alt
-            diff_lat = abs(s1.latitude - s0.home_latitude)
-            sat_lat = diff_lat <= noise_lat
-            diff_lon = abs(s1.longitude - s0.home_longitude)
-            sat_lon = diff_lon <= err_lon
-
-            return sat_alt and sat_lat and sat_lon
-
-        def timeout(a, s, e, c) -> float:
-            from_loc = (s.latitude, s.longitude)
-            to_loc = (s.home_latitude, s.home_longitude)
+    def __init__(self):
+        def timeout(a, s, e, c):
+            # compute distance
+            from_loc = (s['latitude'], s['longitude'])
+            to_loc = (s['home_latitude'], s['home_longitude'])
             dist = geopy.distance.great_circle(from_loc, to_loc).meters
 
+            # compute time taken to travel from A to B, and time taken to land
             time_goto_phase = dist * c.time_per_metre_travelled
-            time_land_phase = state.altitude * c.time_per_metre_travelled
+            time_land_phase = s['altitude'] * c.time_per_metre_travelled
 
+            # compute total timeout
             timeout = \
-                time_goto_phase + time_land_phase + c.constant_timeout_offset
+                time_goto_phase + time_land_phase + s.constant_timeout_offset
+
             return timeout
 
-        super().__init__('rtl', pre, post, timeout)
+        super().__init__('rtl',
+                         """
+                (= $mode "RTL")
+                         """,
+                         """
+                (and (= __mode "RTL")
+                    (ite (< _altitude 0.3) (= _armed __armed)
+                        (= _armed false))
+                    (= __longitude _home_longitude)
+                    (= __latitude _home_latitude)
+                    (= __altitude 0.0))
+                         """,
+                         timeout)
 
 
 class SetMode(Command):
@@ -107,7 +106,7 @@ class SetMode(Command):
         SetModeLoiter(),
         SetModeRTL(),
         SetModeLand(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,

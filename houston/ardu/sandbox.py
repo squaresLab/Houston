@@ -75,6 +75,7 @@ class Sandbox(BaseSandbox):
         execution_response = \
             bzc.command(self.container, cmd, stdout=True,
                         stderr=True, block=False)
+
         for line in execution_response.output:
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             print(line, flush=True)

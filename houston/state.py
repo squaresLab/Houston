@@ -1,7 +1,7 @@
 __all__ = ['State', 'var', 'Variable']
 
 from typing import Dict, Any, Optional, Union, TypeVar, Generic, Type, \
-    Callable, FrozenSet
+    Callable, FrozenSet, Iterator
 import logging
 import copy
 import json
@@ -261,3 +261,6 @@ class State(object, metaclass=StateMeta):
         s = '; '.join(["{}: {}".format(k, v) for (k, v) in fields.items()])
         s = "{}({})".format(self.__class__.__name__, s)
         return s
+
+    def __iter__(self) -> Iterator[Variable]:
+        yield from self.__class__.variables

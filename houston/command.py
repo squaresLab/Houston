@@ -1,6 +1,7 @@
 __all__ = ['Command', 'Parameter', 'CommandOutcome']
 
-from typing import List, Dict, Any, Optional, Type, Generic, TypeVar
+from typing import List, Dict, Any, Optional, Type, Generic, \
+    TypeVar, Iterator
 import random
 import logging
 
@@ -170,6 +171,13 @@ class Command(object, metaclass=CommandMeta):
             raise KeyError(msg)
         return getattr(self, param._field)
 
+    @property
+    def name(self) -> str:
+        """
+        Returns the name of the type of this command.
+        """
+        return self.__class__.__name__
+
     def to_json(self) -> Dict[str, Any]:
         fields = {}  # type: Dict[str, any]
         for param in self.__class__.parameters:
@@ -241,9 +249,16 @@ class Command(object, metaclass=CommandMeta):
         configuration.
         """
         for spec in self.__class__.specifications:
-            if spec.precondition(self, state, environment, config):
+            if spec.precondition.is_satisfied(self,
+                                              state,
+                                              None,
+                                              environment,
+                                              config):
                 return spec
         raise Exception("failed to resolve specification")
+
+    def __iter__(self) -> Iterator[Parameter]:
+        yield from self.__class__.parameters
 
 
 @attr.s(frozen=True)

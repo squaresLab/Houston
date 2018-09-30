@@ -59,7 +59,7 @@ class Mission(object):
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'configuration': self.configuration.to_json(),
+            'configuration': self.configuration.to_dict(),
             'environment': self.environment.to_json(),
             'initial_state': self.initial_state.to_json(),
             'commands': [c.to_json() for c in self.commands]}

@@ -13,7 +13,12 @@ from houston.generator.rand import RandomMissionGenerator
 from houston.generator.resources import ResourceLimits
 from houston.mission import Mission
 from houston.runner import MissionRunnerPool
+#from houston.ardu.common.goto import CircleBasedGotoGenerator
+from houston.root_cause.delta_debugging import DeltaDebugging
+from houston.root_cause.symex import SymbolicExecution 
+import copy
 from houston.ardu.copter.state import State as CopterState
+from houston.ardu.rover.state import State as RoverState
 from houston.ardu.configuration import Configuration as ArduConfig
 
 
@@ -108,6 +113,23 @@ def generate_and_run(sut, initial, environment, number_of_missions):
     print("DONE")
 
 
+### Generate and run missions with mutation operator
+def generate_and_run_mutation(sut, initial_state, environment, initial_mission, number_of_missions):
+    mission_generator = MutationBasedMissionGenerator(sut, initial, environment, initial_mission, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
+    resource_limits = ResourceLimits(number_of_missions*5, 1000, number_of_missions)
+    mission_generator.generate_and_run(100, resource_limits, with_coverage=True)
+    print("DONE")
+    with open("example/missions-mutation.json", "w") as f:
+        mission_descriptions = list(map(Mission.to_json, mission_generator.history))
+        print(str(mission_descriptions))
+        json.dump(mission_descriptions, f)
+        f.write("\n")
+        mission_descriptions = list(map(Mission.to_json, mission_generator.most_fit_missions))
+        print(str(mission_descriptions))
+        json.dump(mission_descriptions, f)
+
+
+
 ### Generate and run missions with fault localization
 def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
     mission_generator = RandomMissionGenerator(sut, initial, environment, max_num_actions=3, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
@@ -124,22 +146,27 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
 if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
-    snapshot = bz.bugs['ardubugs:1a207c91']
+    snapshot = bz.bugs['afrl:overflow']
+    #snapshot = bz.bugs['afrl:AIS-Scenario1']
+
     config = ArduConfig(
         speedup=1,
         time_per_metre_travelled=5.0,
         constant_timeout_offset=1.0,
         min_parachute_alt=10.0)
-    sut = houston.ardu.ArduCopter(snapshot, config)
+    sut = houston.ardu.ArduRover(snapshot, config)
 
     # mission description
     cmds = [
+        ArmDisarm(arm=False),
         ArmDisarm(arm=True),
+        SetMode(mode='GUIDED'),
         Takeoff(altitude=3.0),
         GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
         SetMode(mode='LAND'),
         ArmDisarm(arm=False)
     ]
+    
     environment = Environment({})
     initial = CopterState(
         home_latitude=-35.3632607,
@@ -149,7 +176,7 @@ if __name__ == "__main__":
         altitude=0.0,
         armed=False,
         armable=True,
-        mode="AUTO",
+        mode="GUIDED",
         ekf_ok=True,
         yaw=0.0,
         roll=0.0,
@@ -168,11 +195,29 @@ if __name__ == "__main__":
     # create a container for the mission execution
     sandbox = sut.provision(bz)
     try:
-        run_single_mission_with_coverage(sandbox, mission)
+        run_single_mission(sandbox, mission)
+        #run_single_mission_with_coverage(sandbox, mission)
+        #generate(sut, initial, environment, 100, 10)
+        #run_all_missions(sut, "example/missions.json", False)
+        #generate_and_run_mutation(sut, initial, environment, mission, 3)
+        #generate_and_run_with_fl(sut, initial, environment, 5)
+        #run_single_mission_with_coverage(sandbox, mission)
+
+        #d = DeltaDebugging(sut, initial, environment, config, [mission])
+        #d.find_root_cause()
+
+
         #generate(sut, initial, environment, 100, 10)
         # run_all_missions(sut, "example/missions.json", False)
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
+        #se = SymbolicExecution(sut, initial, environment, config)
+        #mm = se.execute_symbolically(mission)
+        #for m in mm:
+        #    print(m.to_dict())
+
+
     finally:
         sandbox.destroy()
+#        pass

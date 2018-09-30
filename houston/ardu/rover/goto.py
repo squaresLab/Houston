@@ -1,6 +1,7 @@
 __all__ = ['GoTo']
 
 import dronekit
+import geopy.distance
 
 from ...configuration import Configuration
 from ...state import State
@@ -19,15 +20,6 @@ class GotoNormally(Specification):
     information, refer to the system-specific subclasses of GotoNormally.
     """
     def __init__(self) -> None:
-        pre = lambda a, s, e, c: s.armed and s.mode != 'LOITER'
-
-        def post(a, s0, s1, e, c) -> bool:
-            err_lon = 0.1
-            err_lat = 0.1
-            sat_lon = abs(s1.longitude - a['longitude']) <= err_lon
-            sat_lat = abs(s1.latitude - a['latitude']) <= err_lat
-            return sat_lon and sat_lat
-
         def timeout(a, s, e, c) -> float:
             from_loc = (s.latitude, s.longitude)
             to_loc = (a['latitude'], a['longitude'])
@@ -36,7 +28,16 @@ class GotoNormally(Specification):
             timeout += c.constant_timeout_offset
             return timeout
 
-        super().__init__('normal', pre, post, timeout)
+        super().__init__('normal',
+                         """
+                (and (= _armed true)
+                    (not (= _mode "LOITER")))
+                         """,
+                         """
+                (and (= __longitude $longitude)
+                    (= __latitude $latitude))
+                         """,
+                         timeout)
 
 
 class GoTo(Command):
@@ -48,7 +49,7 @@ class GoTo(Command):
     specifications = [
         GotoNormally(),
         GotoLoiter(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,

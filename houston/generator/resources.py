@@ -24,12 +24,18 @@ class ResourceLimits(object):
     """
     @staticmethod
     def from_json(jsn):
+        num_missions_selected = jsn['num_missions_selected']
         return ResourceLimits(num_missions=jsn['num_missions'],
-                              running_time=jsn['running_time'])
+                              running_time=jsn['running_time'],
+                              num_missions_selected=num_missions_selected)
 
-    def __init__(self, num_missions=None, running_time=None):
+    def __init__(self,
+                 num_missions=None,
+                 running_time=None,
+                 num_missions_selected=None):
         self.__num_missions = num_missions
         self.__running_time = running_time
+        self.__num_missions_selected = num_missions_selected
 
     def reached(self, usage):
         """
@@ -41,6 +47,13 @@ class ResourceLimits(object):
         if self.reached_time_limit(usage.running_time):
             return True
         return False
+
+    @property
+    def num_missions_selected(self):
+        """
+        Number of missions that should be selected from all generated missions.
+        """
+        return self.__num_missions_selected
 
     @property
     def num_missions(self):
@@ -77,5 +90,8 @@ class ResourceLimits(object):
         """
         Returns a JSON description of these limits.
         """
-        return {'num_missions': self.__num_missions,
-                'running_time': self.__running_time}
+        return {
+            'num_missions': self.__num_missions,
+            'running_time': self.__running_time,
+            'num_missions_selected': self.__num_missions_selected
+        }

@@ -4,6 +4,7 @@ from pymavlink import mavutil
 
 from ...configuration import Configuration
 from ...state import State
+from ...specification import Specification
 from ...environment import Environment
 from ...command import Parameter, Command
 from ...specification import Specification, Idle
@@ -12,30 +13,24 @@ from ...valueRange import DiscreteValueRange
 
 class ParachuteNormally(Specification):
     def __init__(self):
-        def pre(a, s, e, c) -> bool:
-            # FIXME #82
-            sat_action = a['parachute_action'] == 2
-            noise_alt = 0.1
-            sat_armed = s.armed
-            sat_mode = s.mode == 'GUIDED'
-            sat_alt = s.alt > c.min_parachute_alt - noise_alt
-            return sat_action and sat_armed and sat_mode and sat_alt
-
-        def post(a, s0, s1, e, c) -> bool:
-            # FIXME #82
-            noise_alt = 0.1
-            noise_vz = 0.05
-            sat_armed = not s1.armed
-            sat_alt = s1.altitude < 0.3 + noise_alt
-            sat_vz = 0.0 <= s1.vz <= noise_vz
-            return sat_armed and sat_alt and sat_vz
-
         def timeout(a, s, e, c) -> float:
             timeout = s.altitude * c.time_per_metre_travelled
             timeout += c.constant_timeout_offset
             return timeout
 
-        super().__init__("normal", pre, post, timeout)
+        super().__init__('normal',
+                         """
+                (and (= $parachute_action 2)
+                    (= _armed true)
+                    (= _mode "GUIDED")
+                    (> _altitude 10.0))
+                         """,
+                         """
+                (and (= __armed false)
+                    (< __altitude 0.3)
+                    (= __vz 0.0))
+                         """,
+                         timeout)
 
 
 class Parachute(Command):
@@ -46,7 +41,7 @@ class Parachute(Command):
     ]
     specifications = [
         ParachuteNormally(),
-        Idle()
+        Idle
     ]
 
     def dispatch(self,
