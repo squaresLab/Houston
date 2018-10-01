@@ -34,6 +34,7 @@ class ParachuteNormally(Specification):
 
 
 class Parachute(Command):
+    uid = 'ardu:copter:parachute'
     name = 'parachute'
     parameters = [
         # 0=disable, 1=enable, 2=release

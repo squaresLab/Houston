@@ -96,6 +96,7 @@ class SetModeRTL(Specification):
 
 
 class SetMode(Command):
+    uid = 'ardu:copter:set-mode'
     name = 'set-mode'
     parameters = [
         Parameter('mode',

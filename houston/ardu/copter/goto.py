@@ -50,6 +50,7 @@ class GotoNormally(Specification):
 
 
 class GoTo(Command):
+    uid = 'ardu:copter:goto'
     name = 'goto'
     parameters = [
         Parameter('latitude', ContinuousValueRange(-90.0, 90.0, True)),

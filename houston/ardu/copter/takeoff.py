@@ -39,6 +39,7 @@ class TakeoffNormally(Specification):
 
 
 class Takeoff(Command):
+    uid = 'ardu:copter:takeoff'
     name = 'takeoff'
     parameters = [
         Parameter('altitude', ContinuousValueRange(0.3, 100.0))
