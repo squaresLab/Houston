@@ -76,12 +76,12 @@ def test_equiv():
     assert not S(foo=0, bar=1, time_offset=0.0).equiv(S(foo=1, bar=1, time_offset=0.0))
 
 
-def test_to_and_from_json():
+def test_to_and_from_dict():
     class S(State):
         foo = var(int, lambda c: 0)
         bar = var(int, lambda c: 0)
 
     state = S(foo=1, bar=2, time_offset=0.0)
-    jsn = {'foo': 1, 'bar': 2, 'time_offset': 0.0}
-    assert state.to_json() == jsn
-    assert S.from_json(jsn) == state
+    d = {'foo': 1, 'bar': 2, 'time_offset': 0.0}
+    assert state.to_dict() == d
+    assert S.from_dict(d) == state

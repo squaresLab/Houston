@@ -168,8 +168,8 @@ class State(object, metaclass=StateMeta):
         return cls.from_json(jsn)
 
     @classmethod
-    def from_json(cls: Type['State'], jsn: Dict[str, Any]) -> 'State':
-        return cls(**jsn)
+    def from_dict(cls: Type['State'], d: Dict[str, Any]) -> 'State':
+        return cls(**d)
 
     def __init__(self, *args, **kwargs) -> None:
         cls_name = self.__class__.__name__
@@ -243,7 +243,7 @@ class State(object, metaclass=StateMeta):
             raise KeyError(msg)
         return getattr(self, var._field)
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         fields = {}  # type: Dict[str, Any]
         fields['time_offset'] = self.__time_offset
         for var in self.__class__.variables:
