@@ -19,6 +19,9 @@ logger.setLevel(logging.DEBUG)
 
 T = TypeVar('T')
 
+# contains all command types, indexed by their unique identifiers
+_UID_TO_COMMAND_TYPE = {}  # type: Dict[str, Type[Command]]
+
 
 @attr.s(frozen=True)
 class Parameter(Generic[T]):
@@ -73,7 +76,7 @@ class CommandMeta(type):
             raise TypeError(tpl_err.format(msg))
 
         if name_command == '':
-            msg = "'name' field must not be an empty string."
+            msg = "'name' field must not be an empty string"
             raise TypeError(tpl_err.format(msg))
         logger.debug("obtained command name: %s", name_command)
 
@@ -125,6 +128,44 @@ class CommandMeta(type):
 
         return super().__new__(mcl, cls_name, bases, ns)
 
+    def __init__(cls, cls_name: str, bases, ns: Dict[str, Any]):
+        if bases == (object,):
+            return super().__init__(cls_name, bases, ns)
+
+        # build an exception message template
+        tpl_err = "failed to build definition for command [{}]: "
+        tpl_err = tpl_err.format(cls_name) + "{}"
+
+        # obtain or generate a unique identifier
+        if 'uid' in ns:
+            uid = ns['uid']
+            if not isinstance(uid, str):
+                t = type(uid)
+                msg = "expected 'uid' field to be str but was {}".format(t)
+                raise TypeError(tpl_err.format(msg))
+            logger.debug("using provided UID: %s", uid)
+        else:
+            uid = '{}.{}'.format(cls.__module__, cls.__qualname__)
+
+        # ensure uid is not an empty string
+        if uid == '':
+            msg = "'uid' field must not be an empty string"
+            raise TypeError(tpl_err.format(msg))
+
+        # convert uid to a read-only property
+        ns['uid'] = property(lambda u=uid: u)
+
+        # ensure that uid isn't already in use
+        if uid in _UID_TO_COMMAND_TYPE:
+            msg = "'uid' already in use [%s]".format(uid)
+            raise TypeError(tpl_error.format(msg))
+
+        logger.debug("registering command type [%s] with UID [%s]", cls, uid)
+        _UID_TO_COMMAND_TYPE[uid] = cls
+        logger.debug("registered command type [%s] with UID [%s]", cls, uid)
+
+        return super().__init__(cls_name, bases, ns)
+
 
 class Command(object, metaclass=CommandMeta):
     def __init__(self, *args, **kwargs) -> None:
@@ -172,16 +213,33 @@ class Command(object, metaclass=CommandMeta):
         return getattr(self, param._field)
 
     @property
+    def uid(self) -> str:
+        """
+        The UID of the type of this command.
+        """
+        return self.__class__.uid
+
+    @property
     def name(self) -> str:
         """
-        Returns the name of the type of this command.
+        The name of the type of this command.
         """
         return self.__class__.__name__
 
-    def to_json(self) -> Dict[str, Any]:
-        fields = {}  # type: Dict[str, any]
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Command':
+        name_typ = d['type']
+        typ = _UID_TO_COMMAND_TYPE[name_typ]  # type: Type[Command]
+        params = d['parameters']
+        return typ(**params)
+
+    def to_dict(self) -> Dict[str, Any]:
+        fields = {
+            'type': self.uid,
+            'parameters': {}
+        }  # type: Dict[str, Any]
         for param in self.__class__.parameters:
-            fields[param.name] = getattr(self, param._field)
+            fields['parameters'][param.name] = getattr(self, param._field)
         return fields
 
     def __repr__(self) -> str:
