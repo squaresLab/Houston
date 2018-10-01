@@ -201,6 +201,16 @@ class Command(object, metaclass=CommandMeta):
             msg = msg.format('; '.join(unexpected_arguments), cls_name)
             raise TypeError(msg)
 
+    def __eq__(self, other: 'Command') -> bool:
+        if type(self) != type(other):
+            msg = "illegal comparison of commands: [{}] vs. [{}]"
+            msg = msg.format(self.uid, other.uid)
+            raise Exception(msg)  # FIXME use HoustonException
+        for param in self.__class__.parameters:
+            if self[param.name] != other[param.name]:
+                return False
+        return True
+
     def __getitem__(self, name: str) -> Any:
         # FIXME use frozendict
         try:
