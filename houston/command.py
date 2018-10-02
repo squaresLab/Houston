@@ -82,8 +82,8 @@ class CommandMeta(type):
         logger.debug("obtained command name: %s", name_command)
 
         # ensure "to_message" is implemented
-        if 'to_command' not in ns:
-            msg = "missing 'to_command' method in Command definition"
+        if 'to_message' not in ns:
+            msg = "missing 'to_message' method in Command definition"
             raise TypeError(tpl_err.format(msg))
 
         # build parameters
