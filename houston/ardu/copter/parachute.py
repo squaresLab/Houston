@@ -13,26 +13,28 @@ from ...specification import Specification, Idle
 from ...valueRange import DiscreteValueRange
 
 
-class ParachuteNormally(Specification):
-    def __init__(self):
-        def timeout(a, s, e, c) -> float:
-            timeout = s.altitude * c.time_per_metre_travelled
-            timeout += c.constant_timeout_offset
-            return timeout
+def timeout_parachute_normally(a, s, e, c) -> float:
+    timeout = s.altitude * c.time_per_metre_travelled
+    timeout += c.constant_timeout_offset
+    return timeout
 
-        super().__init__('normal',
-                         """
-                (and (= $parachute_action 2)
-                    (= _armed true)
-                    (= _mode "GUIDED")
-                    (> _altitude 10.0))
-                         """,
-                         """
-                (and (= __armed false)
-                    (< __altitude 0.3)
-                    (= __vz 0.0))
-                         """,
-                         timeout)
+
+ParachuteNormally = Specification(
+    'normal',
+    """
+    (and
+        (= $parachute_action 2)
+        (= _armed true)
+        (= _mode "GUIDED")
+        (> _altitude 10.0))
+    """,
+    """
+    (and
+        (= __armed false)
+        (< __altitude 0.3)
+        (= __vz 0.0))
+    """,
+    timeout_parachute_normally)
 
 
 class Parachute(Command):
@@ -43,7 +45,7 @@ class Parachute(Command):
         Parameter('parachute_action', DiscreteValueRange([0, 1, 2]))
     ]
     specifications = [
-        ParachuteNormally(),
+        ParachuteNormally,
         Idle
     ]
 

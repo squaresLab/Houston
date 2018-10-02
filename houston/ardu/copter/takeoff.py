@@ -14,28 +14,30 @@ from ...specification import Specification, Idle
 from ...valueRange import ContinuousValueRange
 
 
-class TakeoffNormally(Specification):
-    def __init__(self) -> None:
-        def timeout(a, s, e, c) -> float:
-            # FIXME add rate of ascent
-            delta_alt = abs(a['altitude'] - s.altitude)
-            t = delta_alt * c.time_per_metre_travelled
-            t += c.constant_timeout_offset
-            return t
+def timeout(a, s, e, c) -> float:
+    # FIXME add rate of ascent
+    delta_alt = abs(a['altitude'] - s.altitude)
+    t = delta_alt * c.time_per_metre_travelled
+    t += c.constant_timeout_offset
+    return t
 
-        super().__init__("normal",
-                         """
-                (and (= _armed true)
-                    (= _mode "GUIDED")
-                    (< _altitude 0.3))
-                         """,
-                         """
-                (and(= _longitude __longitude)
-                    (= _latitude __latitude)
-                    (= __altitude $altitude)
-                    (= __vz 0.0))
-                         """,
-                         timeout)
+
+TakeoffNormally = Specification(
+    'normal',
+    """
+    (and
+        (= _armed true)
+        (= _mode "GUIDED")
+        (< _altitude 0.3))
+    """,
+    """
+    (and
+        (= _longitude __longitude)
+        (= _latitude __latitude)
+        (= __altitude $altitude)
+        (= __vz 0.0))
+    """,
+    timeout)
 
 
 class Takeoff(Command):
@@ -45,7 +47,7 @@ class Takeoff(Command):
         Parameter('altitude', ContinuousValueRange(0.3, 100.0))
     ]
     specifications = [
-        TakeoffNormally(),
+        TakeoffNormally,
         Idle
     ]
 
