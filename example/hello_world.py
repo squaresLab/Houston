@@ -143,6 +143,16 @@ def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
         f.write(str(mission_generator.report_fault_localization()))
 
 
+### Generate missions with symbolic execution
+def generate_with_se(sut, initial, environment, config, mission):
+    se = SymbolicExecution(sut, initial, environment, config)
+    missions = se.execute_symbolically(mission)
+    with open("example/missions.json", "w") as f:
+        mission_descriptions = list(map(Mission.to_dict, missions))
+        print(str(mission_descriptions))
+        json.dump(mission_descriptions, f)
+
+
 if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
@@ -154,15 +164,15 @@ if __name__ == "__main__":
         time_per_metre_travelled=5.0,
         constant_timeout_offset=1.0,
         min_parachute_alt=10.0)
-    sut = houston.ardu.ArduRover(snapshot, config)
+    sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
     cmds = [
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
-        SetMode(mode='GUIDED'),
+        #SetMode(mode='GUIDED'),
         Takeoff(altitude=3.0),
-        GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+        #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
         SetMode(mode='LAND'),
         ArmDisarm(arm=False)
     ]
@@ -193,9 +203,9 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    sandbox = sut.provision(bz)
+    #sandbox = sut.provision(bz)
     try:
-        run_single_mission(sandbox, mission)
+        #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -212,12 +222,8 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        #se = SymbolicExecution(sut, initial, environment, config)
-        #mm = se.execute_symbolically(mission)
-        #for m in mm:
-        #    print(m.to_dict())
-
+        generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-        sandbox.destroy()
-#        pass
+#        sandbox.destroy()
+        pass

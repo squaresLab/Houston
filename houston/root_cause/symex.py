@@ -63,8 +63,9 @@ class SymbolicExecution(object):
         for bp in all_paths:
             logger.info("BP: " + str(bp))
             logger.info("CMD: " + str(commands))
-            solver = z3.Solver()
+            solver = z3.Optimize()
             smts = []
+            soft_smts = []
             seq_id = 0
             mappings = {}
             for b in bp:
@@ -82,12 +83,17 @@ class SymbolicExecution(object):
                 logger.debug("SSS {}".format(smt))
                 mappings[seq_id] = decls
                 smts.extend(smt)
+                soft_smts.extend(Expression.values_to_smt("$",
+                                                          commands[seq_id],
+                                                          decls))
                 seq_id += 1
 
             smts.extend(self._connect_pre_and_post(seq_id - 1, mappings))
             logger.debug("Final " + str(smts))
 #            solver.from_string(smt)
             solver.add(smts)
+            for s in soft_smts:
+                solver.add_soft(s)
 
             if not solver.check() == z3.sat:
                 logger.info("UNSAT")
@@ -126,13 +132,13 @@ class SymbolicExecution(object):
                               ) -> List[z3.ExprRef]:
         assert(number >= 0)
         s = []
-        for n, v in self.initial_state.to_json().items():
+        for v in self.initial_state:
             for i in range(0, number):
-                m1 = mappings[i]['__{}'.format(n)]
-                m2 = mappings[i + 1]['_{}'.format(n)]
+                m1 = mappings[i]['__{}'.format(v.name)]
+                m2 = mappings[i + 1]['_{}'.format(v.name)]
                 s.append(m1 == m2)
         s.extend(Expression.values_to_smt('_',
-                                          self.initial_state.to_json(),
+                                          self.initial_state,
                                           mappings[0]))
         return s
 
@@ -140,11 +146,9 @@ class SymbolicExecution(object):
              commands: List[Command],
              start_index: int,
              path: List[Specification],
-             all_paths: List[List[Specification]] = None
+             all_paths: List[List[Specification]]
              ) -> None:
 
-        if not all_paths:
-            all_paths = []
         if start_index == len(commands):
             all_paths.append(path)
             return

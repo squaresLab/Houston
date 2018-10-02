@@ -137,7 +137,7 @@ class Expression(object):
 
         for v in state.variables:
             n = v.name
-            typ = type(state[v.name])
+            typ = v.typ
             name = '_{}'.format(n)
             declarations[name] = var(typ, '{}{}'.format(name, postfix))
             name = '__{}'.format(n)

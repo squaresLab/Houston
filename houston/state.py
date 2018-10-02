@@ -110,7 +110,7 @@ class VariableBuilder(Generic[K]):
     noise = attr.ib(type=Optional[Union[int, float]])
 
     def build(self, name: str) -> Variable:
-        return Variable(name, self.getter, self.noise)
+        return Variable(name, self.typ, self.getter, self.noise)
 
 
 def var(typ: Type,
