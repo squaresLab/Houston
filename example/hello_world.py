@@ -172,10 +172,10 @@ if __name__ == "__main__":
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
         #SetMode(mode='GUIDED'),
-        Takeoff(altitude=3.0),
+#        Takeoff(altitude=3.0),
         #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-        SetMode(mode='LAND'),
-        ArmDisarm(arm=False)
+#        SetMode(mode='LAND'),
+#        ArmDisarm(arm=False)
     ]
     
     environment = Environment({})
@@ -202,11 +202,14 @@ if __name__ == "__main__":
         vz=0.0,
         time_offset=0.0)
     mission = Mission(config, environment, initial, cmds)
+    d = mission.to_dict()
 
     # create a container for the mission execution
-    sandbox = Sandbox(sut, bz)
+    #sandbox = Sandbox(sut, bz)
     try:
-        run_single_mission(sandbox, mission)
+        m = Mission.from_dict(CopterState, ArduConfig, d)
+        print(m)
+        #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -226,5 +229,5 @@ if __name__ == "__main__":
         #generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-        sandbox.destroy()
-#        pass
+#        sandbox.destroy()
+        pass

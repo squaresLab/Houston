@@ -227,7 +227,7 @@ class Command(object, metaclass=CommandMeta):
         """
         The UID of the type of this command.
         """
-        return self.__class__.uid
+        return '{}.{}'.format(self.__class__.__module__, self.__class__.__qualname__)
 
     @property
     def name(self) -> str:

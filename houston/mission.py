@@ -23,11 +23,11 @@ class Mission(object):
     commands = attr.ib(type=List[Command])  # FIXME
 
     @staticmethod
-    def from_dict(jsn: Dict[str, Any]) -> 'Mission':
+    def from_dict(state_cls, config_cls, jsn: Dict[str, Any]) -> 'Mission':
         env = Environment.from_json(jsn['environment'])
-        config = Configuration.from_json(jsn['configuration'])
-        initial_state = State.from_json(jsn['initial_state'])
-        cmds = [Command.from_json(c) for c in jsn['commands']]
+        config = config_cls.from_dict(jsn['configuration'])
+        initial_state = state_cls.from_dict(jsn['initial_state'])
+        cmds = [Command.from_dict(c) for c in jsn['commands']]
         return Mission(config, env, initial_state, cmds)
 
     def is_empty(self) -> bool:
@@ -61,8 +61,8 @@ class Mission(object):
         return {
             'configuration': self.configuration.to_dict(),
             'environment': self.environment.to_json(),
-            'initial_state': self.initial_state.to_json(),
-            'commands': [c.to_json() for c in self.commands]}
+            'initial_state': self.initial_state.to_dict(),
+            'commands': [c.to_dict() for c in self.commands]}
 
 
 @attr.s(frozen=True)
