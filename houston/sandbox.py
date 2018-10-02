@@ -12,7 +12,7 @@ from bugzoo.core.bug import Bug as Snapshot
 from bugzoo.core.fileline import FileLineSet
 
 from .state import State
-from .mission import Mission, MissionOutcome
+from .test import Test, TestOutcome
 from .util import TimeoutError, printflush
 from .command import CommandOutcome
 
@@ -74,9 +74,9 @@ class Sandbox(object):
         # FIXME should also check that container is alive via BugZoo API
         return self.__container is not None
 
-    def _start(self, mission: Mission) -> None:
+    def _start(self, test: Test) -> None:
         """
-        Starts a new SITL instance inside this sandbox for a given mission.
+        Starts a new SITL instance inside this sandbox for a given test.
         """
         raise NotImplementedError
 
@@ -87,14 +87,14 @@ class Sandbox(object):
         raise NotImplementedError
 
     def run_with_coverage(self,
-                          mission: Mission,
-                          ) -> Tuple[MissionOutcome, FileLineSet]:
+                          test: Test,
+                          ) -> Tuple[TestOutcome, FileLineSet]:
         """
-        Executes a given mission and returns detailed coverage information.
+        Executes a given test and returns detailed coverage information.
 
         Returns:
             A tuple of the form `(outcome, coverage)`, where `outcome` provides
-            a concise description of the outcome of the mission execution, and
+            a concise description of the outcome of the test execution, and
             `coverage` specifies the lines that were covered during the
             execution for each source code file belonging to the system under
             test.
@@ -109,30 +109,30 @@ class Sandbox(object):
         cmd = "find . -name *.gcda | xargs rm"
         bz.containers.command(self.container, cmd,
                               stdout=False, stderr=False, block=True)
-        outcome = self.run(mission)
+        outcome = self.run(test)
         coverage = self.bugzoo.coverage.extract(self.container)
 
         return (outcome, coverage)
 
-    def run(self, mission: Mission) -> MissionOutcome:
+    def run(self, test: Test) -> TestOutcome:
         """
-        Executes a given mission and returns a description of the outcome.
+        Executes a given test and returns a description of the outcome.
         """
         assert self.alive
         config = self.system.configuration
         self.__lock.acquire()
         try:
             time_before_setup = timer()
-            logger.debug("preparing for mission")
-            self._start(mission)
+            logger.debug("preparing for test")
+            self._start(test)
             setup_time = timer() - time_before_setup
-            logger.debug("prepared for mission (took %.3f seconds)",
+            logger.debug("prepared for test (took %.3f seconds)",
                          setup_time)
 
-            env = mission.environment
+            env = test.environment
             outcomes = []
 
-            for cmd in mission:
+            for cmd in test:
                 logger.debug('performing command: %s', cmd)
 
                 # compute expected state
@@ -185,13 +185,13 @@ class Sandbox(object):
 
                 if not passed:
                     total_time = timer() - time_before_setup
-                    return MissionOutcome(False,
+                    return TestOutcome(False,
                                           outcomes,
                                           setup_time,
                                           total_time)
 
             total_time = timer() - time_before_setup
-            return MissionOutcome(True, outcomes, setup_time, total_time)
+            return TestOutcome(True, outcomes, setup_time, total_time)
 
         finally:
             self._stop()
@@ -215,4 +215,4 @@ class Sandbox(object):
         variables = self.system.variables
         values = {v.name: v.read(self) for v in variables}
         values['time_offset'] = running_time
-        return self.system.__class__.state.from_json(values)
+        return self.system.__class__.state.from_dict(values)

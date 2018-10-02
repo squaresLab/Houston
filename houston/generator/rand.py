@@ -1,8 +1,8 @@
-from .base import MissionGenerator
-from ..mission import Mission
+from .base import TestGenerator
+from ..test import Test
 
 
-class RandomMissionGenerator(MissionGenerator):
+class RandomTestGenerator(TestGenerator):
     def __init__(self,
                  system,
                  initial_state,
@@ -18,14 +18,14 @@ class RandomMissionGenerator(MissionGenerator):
     @property
     def initial_state(self):
         """
-        The initial state used by all missions produced by this generator.
+        The initial state used by all tests produced by this generator.
         """
         return self.__initial_state
 
     @property
     def env(self):
         """
-        The environment used by all missions produced by this generator.
+        The environment used by all tests produced by this generator.
         """
         return self.__env
 
@@ -36,10 +36,10 @@ class RandomMissionGenerator(MissionGenerator):
         g = generator.generate_action_without_state
         return g(self.system, self.__env, self.rng)
 
-    def generate_mission(self):
+    def generate_test(self):
         schemas = list(self.system.schemas.values())
         actions = []
         for _ in range(self.rng.randint(1, self.max_num_actions)):
             schema = self.rng.choice(schemas)
             actions.append(self.generate_action(schema))
-        return Mission(self.__env, self.__initial_state, actions)
+        return Test(self.__env, self.__initial_state, actions)

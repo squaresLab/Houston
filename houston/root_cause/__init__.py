@@ -1,1 +1,1 @@
-from .root_cause import RootCauseFinder, MissionDomain
+from .root_cause import RootCauseFinder, TestDomain

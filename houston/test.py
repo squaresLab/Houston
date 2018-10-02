@@ -1,5 +1,5 @@
-__all__ = ['Mission', 'MissionOutcome', 'CrashedMissionOutcome',
-           'MissionSuite']
+__all__ = ['Test', 'TestOutcome', 'CrashedTestOutcome',
+           'TestSuite']
 
 from typing import Dict, Any, List, Iterator
 
@@ -12,9 +12,9 @@ from .environment import Environment
 
 
 @attr.s(frozen=True)
-class Mission(object):
+class Test(object):
     """
-    A mission is represented as a sequence of commands that are carried out in
+    A test is represented as a sequence of commands that are carried out in
     a given environment and initial state.
     """
     configuration = attr.ib(type=Configuration)
@@ -23,39 +23,39 @@ class Mission(object):
     commands = attr.ib(type=List[Command])  # FIXME
 
     @staticmethod
-    def from_dict(jsn: Dict[str, Any]) -> 'Mission':
+    def from_dict(jsn: Dict[str, Any]) -> 'Test':
         env = Environment.from_json(jsn['environment'])
         config = Configuration.from_json(jsn['configuration'])
         initial_state = State.from_json(jsn['initial_state'])
         cmds = [Command.from_json(c) for c in jsn['commands']]
-        return Mission(config, env, initial_state, cmds)
+        return Test(config, env, initial_state, cmds)
 
     def is_empty(self) -> bool:
         """
-        Returns True if this mission contains no commands.
+        Returns True if this test contains no commands.
         """
         return self.commands == []
 
     def __iter__(self) -> Iterator[Command]:
         """
-        Returns an iterator over the commands contained in this mission.
+        Returns an iterator over the commands contained in this test.
         """
         yield from self.commands
 
     @property
     def size(self) -> int:
         """
-        The number of commands in this mission.
+        The number of commands in this test.
         """
         return len(self.commands)
 
-    def extended(self, cmd: Command) -> 'Mission':
+    def extended(self, cmd: Command) -> 'Test':
         """
-        Returns a variant of this mission with a given command added onto the
+        Returns a variant of this test with a given command added onto the
         end.
         """
         cmds = self.commands + [cmd]
-        return Mission(self.environment, self.initial_state, cmds)
+        return Test(self.environment, self.initial_state, cmds)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -66,10 +66,10 @@ class Mission(object):
 
 
 @attr.s(frozen=True)
-class MissionOutcome(object):
+class TestOutcome(object):
     """
-    Mission outcomes are used to summarise and record the outcome of performing
-    a mission.
+    Test outcomes are used to summarise and record the outcome of performing
+    a test.
     """
     passed = attr.ib(type=bool)
     outcomes = attr.ib(type=List[CommandOutcome])
@@ -79,7 +79,7 @@ class MissionOutcome(object):
     @staticmethod
     def from_dict(dkt: Dict[str, Any]) -> 'CommandOutcome':
         cmds = [CommandOutcome.from_json(a) for a in jsn['commands']]
-        return MissionOutcome(dkt['passed'],
+        return TestOutcome(dkt['passed'],
                               cmds,
                               dkt['time_setup'],
                               dkt['time_total'])
@@ -93,7 +93,7 @@ class MissionOutcome(object):
     # FIXME what is this for?
     def to_test_outcome_json(self, code: int) -> Dict[str, Any]:
         """
-        Returns a JSON description of mission outcome in the serialized
+        Returns a JSON description of test outcome in the serialized
         format of a TestOutcome object in BugZoo.
         """
         response = {
@@ -110,14 +110,14 @@ class MissionOutcome(object):
         s_time_total = "time_total={:.3f}".format(self.time_total)
         s_outcomes = "outcomes={}".format(repr(outcomes))
         s = '; '.join([s_passed, s_time_setup, s_time_total, s_outcomes])
-        s = "MissionOutcome({})".format(s)
+        s = "TestOutcome({})".format(s)
         return s
 
     @property
     def end_state(self) -> State:
         """
         A description of the state of the system immediately after the
-        execution of this mission.
+        execution of this test.
         """
         return self.outcomes[-1].end_state
 
@@ -125,12 +125,12 @@ class MissionOutcome(object):
     def start_state(self) -> State:
         """
         A description of the state of the system immediately before the
-        execution of this mission.
+        execution of this test.
         """
         return self.outcomes[0].start_state
 
 
-class CrashedMissionOutcome(MissionOutcome):
+class CrashedTestOutcome(TestOutcome):
     def __init__(self, total_time: float) -> None:
         super().__init__(False, [], 0.0, total_time)
 
@@ -140,13 +140,13 @@ class CrashedMissionOutcome(MissionOutcome):
         return dkt
 
 
-class MissionSuite(object):
+class TestSuite(object):
     @staticmethod
-    def from_dict(dkt: Dict[str, Any]) -> 'MissionSuite':
-        contents = [Mission.from_dict(m) for m in dkt['contents']]
-        return MissionSuite(contents)
+    def from_dict(dkt: Dict[str, Any]) -> 'TestSuite':
+        contents = [Test.from_dict(m) for m in dkt['contents']]
+        return TestSuite(contents)
 
-    def __init__(self, contents: List[Mission]) -> None:
+    def __init__(self, contents: List[Test]) -> None:
         self.__contents = contents
 
     @property

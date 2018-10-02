@@ -5,12 +5,12 @@ import time
 import signal
 
 from .util import TimeoutError, printflush
-from .mission import Mission
+from .test import Test
 
 
-class MissionRunner(threading.Thread):
+class TestRunner(threading.Thread):
     """
-    Mission runners are used to continually fetch pending tests from an
+    Test runners are used to continually fetch pending tests from an
     associated pool, and to execute those tests.
     """
     def __init__(self,
@@ -45,10 +45,10 @@ class MissionRunner(threading.Thread):
             self.__sandbox = None
 
 
-class MissionRunnerPool(object):
+class TestRunnerPool(object):
     """
-    Mission runner pools are used to distribute the execution of a stream
-    of missions across a given number of workers, each running on a separate
+    Test runner pools are used to distribute the execution of a stream
+    of tests across a given number of workers, each running on a separate
     thread.
     """
     def __init__(self,
@@ -71,7 +71,7 @@ class MissionRunnerPool(object):
 
         # provision desired number of runners
         self.__runners = \
-            [MissionRunner(self, with_coverage) for _ in range(size)]
+            [TestRunner(self, with_coverage) for _ in range(size)]
 
     def run(self) -> None:
         """
@@ -119,19 +119,19 @@ class MissionRunnerPool(object):
         """
         return self.__runners.length()
 
-    def report(self, mission, outcome, coverage=None) -> None:
+    def report(self, test, outcome, coverage=None) -> None:
         """
-        Used to report the outcome of a mission.
+        Used to report the outcome of a test.
 
         WARNING: It is the responsibility of the callback to guarantee
             thread safety (if necessary).
         """
-        self.__callback(mission, outcome, coverage)
+        self.__callback(test, outcome, coverage)
 
-    def fetch(self) -> Optional[Mission]:
+    def fetch(self) -> Optional[Test]:
         """
-        Returns the next mission from the (lazily-generated) queue, or None if
-        there are no missions left to run.
+        Returns the next test from the (lazily-generated) queue, or None if
+        there are no tests left to run.
 
         This method is considered to be thread safe (no concurrent reads from
         the source of the pool are allowed).

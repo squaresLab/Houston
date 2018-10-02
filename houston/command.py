@@ -253,7 +253,7 @@ class Command(object, metaclass=CommandMeta):
         return fields
 
     def __repr__(self) -> str:
-        fields = self.to_json()
+        fields = self.to_dict()
         for (name, val) in fields.items():
             if isinstance(val, float):
                 s = "{:.3f}".format(val)
@@ -343,15 +343,15 @@ class CommandOutcome(object):
 
     @staticmethod
     def from_json(jsn: Dict[str, Any]) -> 'CommandOutcome':
-        return CommandOutcome(Command.from_json(jsn['command']),
+        return CommandOutcome(Command.from_dict(jsn['command']),
                               jsn['successful'],
-                              State.from_json(jsn['start_state']),
-                              State.from_json(jsn['end_state']),
+                              State.from_dict(jsn['start_state']),
+                              State.from_dict(jsn['end_state']),
                               jsn['time_elapsed'])
 
     def to_json(self) -> Dict[str, Any]:
-        return {'command': self.__command.to_json(),
+        return {'command': self.__command.to_dict(),
                 'successful': self.__successful,
-                'start_state': self.start_state.to_json(),
-                'end_state': self.end_state.to_json(),
+                'start_state': self.start_state.to_dict(),
+                'end_state': self.end_state.to_dict(),
                 'time_elapsed': self.__time_elapsed}

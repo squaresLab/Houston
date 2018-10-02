@@ -20,7 +20,7 @@ class Environment(object):
 
     def __init__(self, values: Dict[str, Any]) -> None:
         """
-        Constructs a description of a mission environment.
+        Constructs a description of a test environment.
 
         Parameters:
             values: a dictionary of environment constant values, indexed by

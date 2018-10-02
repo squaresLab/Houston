@@ -1,17 +1,17 @@
 from typing import Set, Optional, Tuple, Dict, List
 from bugzoo import BugZoo
 
-from .root_cause import RootCauseFinder, MissionDomain
+from .root_cause import RootCauseFinder, TestDomain
 from ..system import System
 from ..state import State
 from ..environment import Environment
-from ..mission import Mission
+from ..test import Test
 from ..configuration import Configuration
 
 
 class DeltaDebugging(RootCauseFinder):
     """
-    Conducts delta debugging on a failing mission to narrow
+    Conducts delta debugging on a failing test to narrow
     it down to main problem.
     """
     def __init__(self,
@@ -19,30 +19,30 @@ class DeltaDebugging(RootCauseFinder):
                  initial_state: State,
                  environment: Environment,
                  config: Configuration,
-                 initial_failing_missions: List[Mission]
+                 initial_failing_tests: List[Test]
                  ) -> None:
-        self.__domain = MissionDomain.from_initial_mission(
-            initial_failing_missions[0], discrete_params=True)
+        self.__domain = TestDomain.from_initial_test(
+            initial_failing_tests[0], discrete_params=True)
 
         super(DeltaDebugging, self).__init__(system, initial_state,
                                              environment, config,
-                                             initial_failing_missions)
+                                             initial_failing_tests)
 
     @property
-    def domain(self) -> MissionDomain:
+    def domain(self) -> TestDomain:
         """
         The domain where the failure happens.
         """
         return self.__domain
 
-    def find_root_cause(self, time_limit: float = 0.0) -> MissionDomain:
-        empty_domain = MissionDomain()
+    def find_root_cause(self, time_limit: float = 0.0) -> TestDomain:
+        empty_domain = TestDomain()
         final_domain = self._dd2(self.domain, empty_domain)
         print("FINISHED: {}".format(str(final_domain)))
 
         return final_domain
 
-    def _dd2(self, c: MissionDomain, r: MissionDomain) -> MissionDomain:
+    def _dd2(self, c: TestDomain, r: TestDomain) -> TestDomain:
 
         print("****** C: {}\n****** R: {}".format(str(c), str(r)))
 
@@ -65,33 +65,33 @@ class DeltaDebugging(RootCauseFinder):
                                              self._dd2(c2, m1))
         return final_domain
 
-    def _run(self, mission_domain: MissionDomain) -> bool:
+    def _run(self, test_domain: TestDomain) -> bool:
         """
-        runs a mission using sandbox and returns whether the mission passed.
+        runs a test using sandbox and returns whether the test passed.
         """
-        mission = mission_domain.generate_mission(self.environment,
+        test = test_domain.generate_test(self.environment,
                                                   self.initial_state,
                                                   self.configuration,
                                                   self.rng)
         bz = BugZoo()
         sandbox = self.system.provision(bz)
-        res = sandbox.run(mission)
+        res = sandbox.run(test)
         sandbox.destroy()
 
         return res.passed
 
     @staticmethod
-    def _divide(c: MissionDomain) -> Tuple[MissionDomain, MissionDomain]:
+    def _divide(c: TestDomain) -> Tuple[TestDomain, TestDomain]:
         """
         Divides a domain into two almost equal domains.
         """
         mid = int(c.command_size / 2)
-        c1 = MissionDomain(c.domain[:mid])
-        c2 = MissionDomain(c.domain[mid:])
+        c1 = TestDomain(c.domain[:mid])
+        c2 = TestDomain(c.domain[mid:])
         return c1, c2
 
     @staticmethod
-    def _union(c1: MissionDomain, c2: MissionDomain) -> MissionDomain:
+    def _union(c1: TestDomain, c2: TestDomain) -> TestDomain:
         """
         Returns the union of two domains.
         """
@@ -105,5 +105,5 @@ class DeltaDebugging(RootCauseFinder):
             else:
                 command_list.append(c1.domain[i1])
                 i1 += 1
-        c = MissionDomain(command_list)
+        c = TestDomain(command_list)
         return c

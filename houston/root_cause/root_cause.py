@@ -4,7 +4,7 @@ import random
 from ..system import System
 from ..state import State
 from ..environment import Environment
-from ..mission import Mission, MissionOutcome
+from ..test import Test, TestOutcome
 from ..valueRange import DiscreteValueRange
 from ..command import Command, Parameter
 from ..configuration import Configuration
@@ -12,9 +12,9 @@ from ..configuration import Configuration
 Domain = List[Tuple[int, Any, List[Parameter]]]
 
 
-class MissionDomain(object):
+class TestDomain(object):
     """
-    Specification of a range of missions.
+    Specification of a range of tests.
     """
     def __init__(self, initial_domain: Domain = None) -> None:
         if not initial_domain:
@@ -33,16 +33,16 @@ class MissionDomain(object):
         return self.__domain
 
     @staticmethod
-    def from_initial_mission(mission: Mission,
+    def from_initial_test(test: Test,
                              discrete_params: bool = False)\
-            -> 'MissionDomain':
+            -> 'TestDomain':
         """
-        Create a mission domain by considering the initial sequence
-        of actions in mission and all possible values for parameters.
+        Create a test domain by considering the initial sequence
+        of actions in test and all possible values for parameters.
         """
         i = 0
         domain = []
-        for command in mission.commands:
+        for command in test.commands:
             if discrete_params:
                 parameters = [Parameter(p.name,
                                         DiscreteValueRange([command[p.name]]))
@@ -51,7 +51,7 @@ class MissionDomain(object):
                 parameters = command.parameters
             domain.append((i, command.__class__, parameters))
             i += 1
-        return MissionDomain(domain)
+        return TestDomain(domain)
 
     @property
     def command_size(self) -> int:
@@ -60,14 +60,14 @@ class MissionDomain(object):
         """
         return len(self.__domain)
 
-    def generate_mission(self,
+    def generate_test(self,
                          environment: Environment,
                          initial_state: State,
                          config: Configuration,
                          rng: random.Random
-                         ) -> Mission:
+                         ) -> Test:
         """
-        Return a mission in this domain.
+        Return a test in this domain.
         """
         cmds = []
         for _, cmd_class, params in self.domain:
@@ -75,31 +75,31 @@ class MissionDomain(object):
             for p in params:
                 parameters[p.name] = p.generate(rng)
             cmds.append(cmd_class(**parameters))
-        return Mission(config, environment, initial_state, cmds)
+        return Test(config, environment, initial_state, cmds)
 
 
 class RootCauseFinder(object):
     """
     RootCauseFinder is used to find minimum requirements that
-    results in mission failure the same way that initial failing
-    missions do.
+    results in test failure the same way that initial failing
+    tests do.
     """
     def __init__(self,
                  system: System,
                  initial_state: State,
                  environment: Environment,
                  config: Configuration,
-                 initial_failing_missions: List[Mission],
+                 initial_failing_tests: List[Test],
                  random_seed: int = 100
                  ) -> None:
 
-        assert(len(initial_failing_missions) > 0)
+        assert(len(initial_failing_tests) > 0)
 
         self.__system = system
         self.__initial_state = initial_state
         self.__environment = environment
         self.__rng = random.Random(random_seed)
-        self.__initial_failing_missions = initial_failing_missions
+        self.__initial_failing_tests = initial_failing_tests
         self.__configuration = config
 
     @property
@@ -112,23 +112,23 @@ class RootCauseFinder(object):
     @property
     def initial_state(self) -> State:
         """
-        the initial state used for running all missions.
+        the initial state used for running all tests.
         """
         return self.__initial_state
 
     @property
     def environment(self) -> Environment:
         """
-        the environment used for running all missions.
+        the environment used for running all tests.
         """
         return self.__environment
 
     @property
-    def initial_failing_missions(self) -> Mission:
+    def initial_failing_tests(self) -> Test:
         """
-        the failing missions provided by the user.
+        the failing tests provided by the user.
         """
-        return self.__initial_failing_missions
+        return self.__initial_failing_tests
 
     @property
     def configuration(self) -> Configuration:
@@ -138,7 +138,7 @@ class RootCauseFinder(object):
     def rng(self) -> random.Random:
         return self.__rng
 
-    def find_root_cause(self, time_limit: float = 0.0) -> MissionDomain:
+    def find_root_cause(self, time_limit: float = 0.0) -> TestDomain:
         """
         The main function that finds the root cause.
         """

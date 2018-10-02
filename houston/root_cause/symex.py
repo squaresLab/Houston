@@ -5,12 +5,12 @@ import z3
 import copy
 from typing import Set, Optional, Tuple, Dict, List, Any
 
-from .root_cause import MissionDomain
+from .root_cause import TestDomain
 from ..system import System
 from ..specification import Specification, Expression
 from ..state import State
 from ..environment import Environment
-from ..mission import Mission, MissionOutcome
+from ..test import Test, TestOutcome
 from ..configuration import Configuration
 from ..command import Command
 
@@ -47,17 +47,17 @@ class SymbolicExecution(object):
     def configuration(self) -> Configuration:
         return self.__configuration
 
-    def execute_symbolically(self, mission: Mission) -> List[Mission]:
+    def execute_symbolically(self, test: Test) -> List[Test]:
         """
-        Having the sequense of actions in `mission` this function
+        Having the sequense of actions in `test` this function
         will generate parameters for those actions in order to
         explore all possible action branches.
         """
 
         rng = random.Random(1000)
-        commands = mission.commands
+        commands = test.commands
         all_paths = []  # type List[List[Specification]]
-        all_missions = []
+        all_tests = []
         self._dfs(commands, 0, [], all_paths)
 
         for bp in all_paths:
@@ -119,12 +119,12 @@ class SymbolicExecution(object):
                 seq_id += 1
 
             logger.debug("Added: {}".format(commands_list))
-            all_missions.append(Mission(self.configuration,
+            all_tests.append(Test(self.configuration,
                                         self.environment,
                                         self.initial_state,
                                         commands_list))
 
-        return all_missions
+        return all_tests
 
     def _connect_pre_and_post(self,
                               number: int,

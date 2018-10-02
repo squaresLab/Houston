@@ -9,7 +9,7 @@ from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
 from ..sandbox import Sandbox as BaseSandbox
-from ..mission import Mission
+from ..test import Test
 
 
 class NoConnectionError(BaseException):
@@ -81,7 +81,7 @@ class Sandbox(BaseSandbox):
             print(line, flush=True)
 
     def _start(self,
-               mission: Mission,
+               test: Test,
                binary_name: str,
                model_name: str,
                param_file: str,
@@ -115,15 +115,15 @@ class Sandbox(BaseSandbox):
 
         # wait for longitude and latitude to match their expected values, and
         # for the system to match the expected `armable` state.
-        initial_lon = mission.initial_state['longitude']
-        initial_lat = mission.initial_state['latitude']
+        initial_lon = test.initial_state['longitude']
+        initial_lat = test.initial_state['latitude']
         v = self.system.variable
         while True:
             observed = self.observe(0.0)
             ready_lon = v('longitude').eq(initial_lon, observed['longitude'])
             ready_lat = v('latitude').eq(initial_lat, observed['latitude'])
             ready_armable = \
-                observed['armable'] == mission.initial_state['armable']
+                observed['armable'] == test.initial_state['armable']
             if ready_lon and ready_lat and ready_armable:
                 break
             time.sleep(0.05)

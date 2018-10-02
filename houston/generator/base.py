@@ -4,28 +4,28 @@ import timeit
 
 import bugzoo
 
-from ..runner import MissionRunnerPool
+from ..runner import TestRunnerPool
 from ..system import System
-from ..mission import Mission, MissionSuite
+from ..test import Test, TestSuite
 from .resources import ResourceUsage, ResourceLimits
-from .report import MissionGeneratorReport
+from .report import TestGeneratorReport
 
 
-class MissionGeneratorStream(object):
+class TestGeneratorStream(object):
     def __init__(self, generator):
         self.__lock = threading.Lock()
         self.__generator = generator
 
     def __iter__(self):
         """
-        Returns an iterator for lazily fetching missions from the generator
+        Returns an iterator for lazily fetching tests from the generator
         attached to this stream.
         """
         return self
 
     def __next__(self):
         """
-        Requests the next mission from the mission generator.
+        Requests the next test from the test generator.
         """
         g = self.__generator
         self.__lock.acquire()
@@ -33,17 +33,17 @@ class MissionGeneratorStream(object):
             g.tick()
             if g.exhausted():
                 raise StopIteration
-            mission = self.__generator.generate_mission()
+            test = self.__generator.generate_test()
             g.tick()
-            g.resource_usage.num_missions += 1
-            mission_num = g.resource_usage.num_missions
-            print('Generated mission: {}'.format(mission_num))  # FIXME
-            return mission
+            g.resource_usage.num_tests += 1
+            test_num = g.resource_usage.num_tests
+            print('Generated test: {}'.format(test_num))  # FIXME
+            return test
         finally:
             self.__lock.release()
 
 
-class MissionGenerator(object):
+class TestGenerator(object):
     def __init__(self,
                  system: System,
                  threads: int = 1,
@@ -90,7 +90,7 @@ class MissionGenerator(object):
     @property
     def max_num_actions(self):
         """
-        The maximum number of actions that may be present in a mission
+        The maximum number of actions that may be present in a test
         produced by this generator.
         """
         return self.__max_num_actions
@@ -143,25 +143,25 @@ class MissionGenerator(object):
         """
         return self.__resource_limits.reached(self.__resource_usage)
 
-    def outcome(self, mission):
+    def outcome(self, test):
         """
-        Returns the outcome for a previously-executed mission.
+        Returns the outcome for a previously-executed test.
         """
-        return self.__outcomes[mission]
+        return self.__outcomes[test]
 
-    def end_state(self, mission):
+    def end_state(self, test):
         """
-        Returns the end state after executing a given mission.
+        Returns the end state after executing a given test.
         """
-        assert isinstance(mission, Mission)
-        if mission.is_empty():
-            return mission.initial_state
-        outcome = self.__outcomes[mission]
+        assert isinstance(test, Test)
+        if test.is_empty():
+            return test.initial_state
+        outcome = self.__outcomes[test]
         return outcome.end_state
 
     def executed_path(self, m):
         """
-        Returns the path that was taken when a given mission was executed.
+        Returns the path that was taken when a given test was executed.
         """
         if m.is_empty():
             return BranchPath([])
@@ -175,51 +175,51 @@ class MissionGenerator(object):
         self.__resource_usage.running_time = \
             timeit.default_timer() - self.__start_time
 
-    def execute_mission(self, mission, container):
+    def execute_test(self, test, container):
         """
-        Executes a given mission using a provided container.
+        Executes a given test using a provided container.
         """
-        print("executing mission..."),
-        outcome = container.execute(mission)
-        self.record_outcome(mission, outcome)
+        print("executing test..."),
+        outcome = container.execute(test)
+        self.record_outcome(test, outcome)
         print("\t[DONE]")
         return outcome
 
-    def record_outcome(self, mission, outcome, coverage=None):
+    def record_outcome(self, test, outcome, coverage=None):
         """
-        Records the outcome of a given mission. The mission is logged to the
+        Records the outcome of a given test. The test is logged to the
         history, and its outcome is stored in the outcome dictionary. If the
-        mission failed, the mission is also added to the set of failed
-        missions.
+        test failed, the test is also added to the set of failed
+        tests.
         """
-        self.__history.append(mission)
-        self.__outcomes[mission] = outcome
+        self.__history.append(test)
+        self.__outcomes[test] = outcome
         if coverage:
-            self.__coverage[mission] = coverage
+            self.__coverage[test] = coverage
 
         if outcome.failed:
-            self.__failures.add(mission)
+            self.__failures.add(test)
 
     def generate(self, seed, resource_limits):
         """
-        Generate missions and return them
+        Generate tests and return them
         """
         assert isinstance(seed, int)
 
-        missions = []
+        tests = []
         self.prepare(seed, resource_limits)
-        stream = MissionGeneratorStream(self)
+        stream = TestGeneratorStream(self)
         try:
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
             self.tick()
             # TODO use threads
             while True:
-                mission = stream.__next__()
-                missions.append(mission)
+                test = stream.__next__()
+                tests.append(test)
         except StopIteration:
-            print("Done with generating missions")
-        return missions
+            print("Done with generating tests")
+        return tests
 
     def generate_and_run(self, seed, resource_limits, with_coverage=False):
         assert isinstance(seed, int)
@@ -227,8 +227,8 @@ class MissionGenerator(object):
 
         try:
             self.prepare(seed, resource_limits)
-            stream = MissionGeneratorStream(self)
-            self.__runner_pool = MissionRunnerPool(self.system,
+            stream = TestGeneratorStream(self)
+            self.__runner_pool = TestRunnerPool(self.system,
                                                    self.threads,
                                                    stream,
                                                    self.record_outcome,
@@ -238,12 +238,12 @@ class MissionGenerator(object):
             self.tick()
             self.__runner_pool.run()
 
-            # produce a mission suite that best fits the desired
+            # produce a test suite that best fits the desired
             # characteristics
             suite = self.reduce()
 
             # summarise the generation process
-            report = MissionGeneratorReport(self.system,
+            report = TestGeneratorReport(self.system,
                                             self.history,
                                             self.outcomes,
                                             self.failures,
@@ -262,7 +262,7 @@ class MissionGenerator(object):
         """
         """
         # TODO remove all failures from the history list
-        return MissionSuite(self.__history)
+        return TestSuite(self.__history)
 
     def prepare(self, seed, resource_limits):
         """
@@ -276,9 +276,9 @@ class MissionGenerator(object):
         self.__coverage = {}
         self.__rng = random.Random(seed)
 
-    def generate_mission(self):
+    def generate_test(self):
         """
-        Generates a single mission according to the generation strategy defined
+        Generates a single test according to the generation strategy defined
         by this generator.
         """
         raise NotImplementedError

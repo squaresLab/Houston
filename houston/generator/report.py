@@ -1,36 +1,36 @@
 import copy
 
 from ..system import System
-from ..mission import Mission, MissionOutcome, MissionSuite
+from ..test import Test, TestOutcome, TestSuite
 from .resources import ResourceUsage, ResourceLimits
 
 
-class MissionGeneratorReport(object):
+class TestGeneratorReport(object):
     """
-    Used to provide a summary of a mission generation trial.
+    Used to provide a summary of a test generation trial.
     """
     @staticmethod
     def from_json(jsn):
         assert isinstance(jsn, dict)
 
         jsn = jsn['report']
-        history = [Mission.from_json(h['mission']) for h in jsn['history']]
+        history = [Test.from_json(h['test']) for h in jsn['history']]
 
         outcomes = {}
         for h in jsn['history']:
-            mission = Mission.from_json(h['mission'])
-            outcome = MissionOutcome.from_json(h['outcome'])
-            outcomes[mission] = outcome
+            test = Test.from_json(h['test'])
+            outcome = TestOutcome.from_json(h['outcome'])
+            outcomes[test] = outcome
 
-        failed = [Mission.from_json(f['mission']) for f in jsn['failed']]
+        failed = [Test.from_json(f['test']) for f in jsn['failed']]
         # TODO read coverage
-        suite = MissionSuite.from_json(jsn['suite'])
+        suite = TestSuite.from_json(jsn['suite'])
 
         system = System.from_json(jsn['settings']['system'])
         resource_usage = ResourceUsage.from_json(jsn['resources']['used'])
         resource_limits = ResourceLimits.from_json(jsn['resources']['limits'])
 
-        return MissionGeneratorReport(system,
+        return TestGeneratorReport(system,
                                       history,
                                       outcomes,
                                       failed,
@@ -56,8 +56,8 @@ class MissionGeneratorReport(object):
         self.__suite = suite
         self.__coverage = coverage
 
-    def outcome(self, mission):
-        return self.__outcomes[mission]
+    def outcome(self, test):
+        return self.__outcomes[test]
 
     @property
     def system(self):
@@ -86,20 +86,20 @@ class MissionGeneratorReport(object):
     def to_json(self):
         history = []
         for m in self.__history:
-            jsn = {'mission': m.to_json(),
+            jsn = {'test': m.to_json(),
                    'outcome': self.outcomes(m).to_json()}
             history.append(jsn)
 
         failed = []
         for m in self.__failed:
-            jsn = {'mission': m.to_json(),
+            jsn = {'test': m.to_json(),
                    'outcome': self.outcomes(m).to_json()}
             failed.append(jsn)
 
         # TODO not a good way to report coverage
         coverage = []
         for (m, cov) in self.__coverage.items():
-            jsn = {'mission': m.to_json(),
+            jsn = {'test': m.to_json(),
                    'coverage': cov.to_dict()}
             coverage.append(jsn)
 
