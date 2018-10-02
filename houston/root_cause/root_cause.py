@@ -34,7 +34,7 @@ class TestDomain(object):
 
     @staticmethod
     def from_initial_test(test: Test,
-                             discrete_params: bool = False)\
+                          discrete_params: bool = False)\
             -> 'TestDomain':
         """
         Create a test domain by considering the initial sequence
@@ -61,11 +61,11 @@ class TestDomain(object):
         return len(self.__domain)
 
     def generate_test(self,
-                         environment: Environment,
-                         initial_state: State,
-                         config: Configuration,
-                         rng: random.Random
-                         ) -> Test:
+                      environment: Environment,
+                      initial_state: State,
+                      config: Configuration,
+                      rng: random.Random
+                      ) -> Test:
         """
         Return a test in this domain.
         """

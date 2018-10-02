@@ -120,9 +120,9 @@ class SymbolicExecution(object):
 
             logger.debug("Added: {}".format(commands_list))
             all_tests.append(Test(self.configuration,
-                                        self.environment,
-                                        self.initial_state,
-                                        commands_list))
+                                  self.environment,
+                                  self.initial_state,
+                                  commands_list))
 
         return all_tests
 

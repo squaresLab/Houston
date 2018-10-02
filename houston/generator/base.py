@@ -229,10 +229,10 @@ class TestGenerator(object):
             self.prepare(seed, resource_limits)
             stream = TestGeneratorStream(self)
             self.__runner_pool = TestRunnerPool(self.system,
-                                                   self.threads,
-                                                   stream,
-                                                   self.record_outcome,
-                                                   with_coverage)
+                                                self.threads,
+                                                stream,
+                                                self.record_outcome,
+                                                with_coverage)
             self.__resource_usage = ResourceUsage()
             self.__start_time = timeit.default_timer()
             self.tick()
@@ -244,13 +244,13 @@ class TestGenerator(object):
 
             # summarise the generation process
             report = TestGeneratorReport(self.system,
-                                            self.history,
-                                            self.outcomes,
-                                            self.failures,
-                                            self.resource_usage,
-                                            self.resource_limits,
-                                            self.coverage,
-                                            suite)
+                                         self.history,
+                                         self.outcomes,
+                                         self.failures,
+                                         self.resource_usage,
+                                         self.resource_limits,
+                                         self.coverage,
+                                         suite)
             return report
 
         finally:

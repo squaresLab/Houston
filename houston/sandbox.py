@@ -186,9 +186,9 @@ class Sandbox(object):
                 if not passed:
                     total_time = timer() - time_before_setup
                     return TestOutcome(False,
-                                          outcomes,
-                                          setup_time,
-                                          total_time)
+                                       outcomes,
+                                       setup_time,
+                                       total_time)
 
             total_time = timer() - time_before_setup
             return TestOutcome(True, outcomes, setup_time, total_time)

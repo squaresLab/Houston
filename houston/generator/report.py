@@ -31,12 +31,12 @@ class TestGeneratorReport(object):
         resource_limits = ResourceLimits.from_json(jsn['resources']['limits'])
 
         return TestGeneratorReport(system,
-                                      history,
-                                      outcomes,
-                                      failed,
-                                      resource_usage,
-                                      resource_limits,
-                                      suite)
+                                   history,
+                                   outcomes,
+                                   failed,
+                                   resource_usage,
+                                   resource_limits,
+                                   suite)
 
     def __init__(self,
                  system,

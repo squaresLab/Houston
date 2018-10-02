@@ -80,9 +80,9 @@ class TestOutcome(object):
     def from_dict(dkt: Dict[str, Any]) -> 'CommandOutcome':
         cmds = [CommandOutcome.from_json(a) for a in jsn['commands']]
         return TestOutcome(dkt['passed'],
-                              cmds,
-                              dkt['time_setup'],
-                              dkt['time_total'])
+                           cmds,
+                           dkt['time_setup'],
+                           dkt['time_total'])
 
     def to_dict(self) -> Dict[str, Any]:
         return {'passed': self.passed,

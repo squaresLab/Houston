@@ -70,9 +70,9 @@ class DeltaDebugging(RootCauseFinder):
         runs a test using sandbox and returns whether the test passed.
         """
         test = test_domain.generate_test(self.environment,
-                                                  self.initial_state,
-                                                  self.configuration,
-                                                  self.rng)
+                                         self.initial_state,
+                                         self.configuration,
+                                         self.rng)
         bz = BugZoo()
         sandbox = self.system.provision(bz)
         res = sandbox.run(test)
