@@ -3,7 +3,6 @@ __all__ = ['ArduRover']
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
-from .sandbox import Sandbox
 from .state import State
 from ..base import BaseSystem
 from ..configuration import Configuration
@@ -28,6 +27,3 @@ class ArduRover(BaseSystem):
             ArmDisarm
         ]
         super().__init__(snapshot, commands, configuration)
-
-    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
-        return Sandbox(self, client_bugzoo)

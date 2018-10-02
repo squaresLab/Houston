@@ -251,7 +251,7 @@ class State(object, metaclass=StateMeta):
         return fields
 
     def __repr__(self) -> str:
-        fields = self.to_json()
+        fields = self.to_dict()
         for (name, val) in fields.items():
             if isinstance(val, float):
                 s = "{:.3f}".format(val)

@@ -215,4 +215,4 @@ class Sandbox(object):
         variables = self.system.variables
         values = {v.name: v.read(self) for v in variables}
         values['time_offset'] = running_time
-        return self.system.__class__.state.from_json(values)
+        return self.system.__class__.state.from_dict(values)

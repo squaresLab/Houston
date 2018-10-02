@@ -9,7 +9,6 @@ from bugzoo.client import Client as BugZooClient
 from bugzoo.core.bug import Bug as Snapshot
 
 from .configuration import Configuration
-from .sandbox import Sandbox
 from .mission import Mission, MissionOutcome
 from .command import CommandOutcome, Command
 from .specification import Specification
@@ -81,12 +80,6 @@ class System(object, metaclass=SystemMeta):
         self.__configuration = config
         # FIXME this should be a class variable
         self.commands = {c.name: c for c in commands}
-
-    def provision(self, client_bugzoo: BugZooClient) -> Sandbox:
-        """
-        Constructs an interactive, ephemeral sandbox for this system.
-        """
-        raise NotImplementedError
 
     @property
     def configuration(self) -> Configuration:

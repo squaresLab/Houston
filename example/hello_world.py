@@ -17,6 +17,7 @@ from houston.runner import MissionRunnerPool
 from houston.root_cause.delta_debugging import DeltaDebugging
 from houston.root_cause.symex import SymbolicExecution 
 import copy
+from houston.ardu.copter.sandbox import Sandbox
 from houston.ardu.copter.state import State as CopterState
 from houston.ardu.rover.state import State as RoverState
 from houston.ardu.configuration import Configuration as ArduConfig
@@ -203,9 +204,9 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    #sandbox = sut.provision(bz)
+    sandbox = Sandbox(sut, bz)
     try:
-        #run_single_mission(sandbox, mission)
+        run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -222,8 +223,8 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        generate_with_se(sut, initial, environment, config, mission)
+        #generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-#        sandbox.destroy()
-        pass
+        sandbox.destroy()
+#        pass
