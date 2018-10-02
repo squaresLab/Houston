@@ -15,49 +15,33 @@ from ..command import Parameter, Command
 from ..specification import Specification, Idle
 
 
-class ArmNormally(Specification):
-    def __init__(self) -> None:
-        super().__init__('arm-normal',
-                         """
-                         (and (= $arm true)
-                            (= _armable true)
-                            (or (= _mode "GUIDED") (= _mode "LOITER")))
-                         """,
-                         """
-                         (= __armed true)
-                         """)
-
-
-class DisarmNormally(Specification):
-    def __init__(self) -> None:
-        super().__init__('disarm-normal',
-                         """
-                         (and (= $arm false)
-                            (= _armed true))
-                         """,
-                         """
-                         (= __armed false)
-                         """)
-
-
-class GotoLoiter(Specification):
+ArmNormally = Specification(
+    'arm-normal',
     """
-    If the robot is armed and in its `LOITER` mode, GoTo actions should have no
-    effect upon the robot. (Why isn't this covered by Idle?)
-    """
-    def __init__(self) -> None:
+    (and
+        (= $arm true)
+        (= _armable true)
+        (or (= _mode "GUIDED") (= _mode "LOITER")))
+    """,
+    '(= __armed true)')
 
-        super().__init__('loiter',
-                         """
-                         (and (= _armed true)
-                            (= _mode "LOITER"))
-                         """,
-                         """
-                         (and (= __longitude $longitude)
-                            (= __latitude $latitude)
-                            (= __altitude $altitude)
-                            (= __mode "LOITER"))
-                         """)
+
+DisarmNormally = Specification(
+    'disarm-normal',
+    '(and (= $arm false) (= _armed true))',
+    '(= __armed false)')
+
+
+GotoLoiter = Specification(
+    'loiter',
+    '(and (= _armed true) (= _mode "LOITER"))',
+    """
+    (and
+        (= __longitude $longitude)
+        (= __latitude $latitude)
+        (= __altitude $altitude)
+        (= __mode "LOITER"))
+    """)
 
 
 class ArmDisarm(Command):
@@ -73,8 +57,8 @@ class ArmDisarm(Command):
         Parameter('arm', DiscreteValueRange([True, False]))
     ]
     specifications = [
-        ArmNormally(),
-        DisarmNormally(),
+        ArmNormally,
+        DisarmNormally,
         Idle
     ]
 
