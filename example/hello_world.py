@@ -29,6 +29,8 @@ from houston.ardu.copter import Takeoff, GoTo, ArmDisarm, SetMode
 def setup_logging() -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(thread)d - %(asctime)s - %(message)s')
+    log_to_stdout.setFormatter(formatter)
     logging.getLogger('houston').addHandler(log_to_stdout)
 
 
@@ -45,10 +47,10 @@ def run_single_mission_with_coverage(sandbox, mission):
 def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
     if not missions:
         missions = []
-#    with open(mission_file, "r") as f:
-#        missions_json = json.load(f)
-#        missions.extend(list(map(lambda x: Mission.from_dict(CopterState, ArduConfig, x), missions_json)))
-#    assert isinstance(missions, list)
+    with open(mission_file, "r") as f:
+        missions_json = json.load(f)
+        missions.extend(list(map(lambda x: Mission.from_dict(CopterState, ArduConfig, x), missions_json)))
+    assert isinstance(missions, list)
 
 
     outcomes = {}
@@ -57,7 +59,7 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
         outcomes[mission] = outcome
         coverages[mission] = coverage
 
-    runner_pool = MissionRunnerPool(sut, 1, missions, record_outcome, bz, Sandbox, coverage)
+    runner_pool = MissionRunnerPool(sut, 2, missions, record_outcome, bz, Sandbox, coverage)
     print("Started running")
     runner_pool.run()
     print("Done running")
@@ -66,7 +68,7 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
     with open("example/failed.json", "w") as f:
         for m in outcomes:
             if not outcomes[m].passed:
-                f.write(str(m.to_json()))
+                f.write(str(m.to_dict()))
                 f.write("\n")
 
     if coverage:
@@ -158,7 +160,7 @@ def generate_with_se(sut, initial, environment, config, mission):
 if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
-    snapshot = bz.bugs['ardubugs:010665f9']
+    #snapshot = bz.bugs['ardubugs:010665f9']
     #snapshot = bz.bugs['afrl:AIS-Scenario1']
     snapshot = bz.bugs['ardubugs:742cdf6b']
 
@@ -171,13 +173,14 @@ if __name__ == "__main__":
 
     # mission description
     cmds = (
-        ArmDisarm(arm=False),
+        ArmDisarm(arm=True),
         ArmDisarm(arm=True),
         #SetMode(mode='GUIDED'),
-#        Takeoff(altitude=3.0),
+        Takeoff(altitude=3.0),
         #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-#        SetMode(mode='LAND'),
-#        ArmDisarm(arm=False)
+        SetMode(mode='LAND'),
+        SetMode(mode='GUIDED'),
+        ArmDisarm(arm=True)
     )
 
     environment = Environment({})

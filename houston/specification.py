@@ -76,16 +76,18 @@ class Expression(object):
         arguments, configuration and environment).
         """
         logger.debug("Checking for command: %s", command.name)  # FIXME
-        solver = z3.SolverFor("QF_NRA")
-        smt, decls = self._prepare_query(command, state_before, state_after)
+        ctx = z3.Context()
+        solver = z3.SolverFor("QF_NRA", ctx=ctx)
+        smt, decls = self._prepare_query(ctx, command, state_before, state_after)
         expr = self.get_expression(decls, state_before)
         smt.extend(expr)
-        logger.info("SMT: %s", smt)
+        logger.info("SMT: {}".format(smt))
         solver.add(smt)
-        logger.debug("Z3 result: %s", str(solver.check()))
+        logger.debug("Z3 result: {}".format(str(solver.check())))
         return solver.check() == z3.sat
 
     def _prepare_query(self,
+                       ctx: z3.Context,
                        command: 'Command',
                        state_before: State,
                        state_after: State = None
@@ -94,7 +96,7 @@ class Expression(object):
         Prepares the declarations and value assignment for a query
         given the command and states before and after.
         """
-        decls = self.get_declarations(command, state_before)
+        decls = self.get_declarations(ctx, command, state_before)
         smt = Expression.values_to_smt('$', command, decls)
         smt.extend(Expression.values_to_smt('_',
                                             state_before,
@@ -106,6 +108,7 @@ class Expression(object):
         return smt, decls
 
     def get_declarations(self,
+                         ctx: z3.Context,
                          command: 'Command',
                          state: State,
                          postfix: Optional[str] = None
@@ -125,7 +128,7 @@ class Expression(object):
             Z3 variable as value.
         """
         declarations = {}
-        var = Expression.create_z3_var
+        var = lambda x, y: Expression.create_z3_var(ctx, x, y)
 
         if not postfix:
             postfix = ''
@@ -146,7 +149,7 @@ class Expression(object):
         return declarations
 
     @staticmethod
-    def create_z3_var(type_py: Type, name: str):
+    def create_z3_var(ctx: z3.Context, type_py: Type, name: str):
         """
         Creates a named Z3 variable with a type corresponding to a given
         Python type.
@@ -167,7 +170,7 @@ class Expression(object):
             type_z3 = py_to_z3[type_py]
         except KeyError:
             raise UnsupportedVariableType(type_py)
-        var = type_z3(name)
+        var = type_z3(name, ctx=ctx)
         return var
 
     @staticmethod
@@ -194,7 +197,7 @@ class Expression(object):
             d = declarations['{}{}'.format(prefix, v.name)]
             val = values[v.name]
             if type(val) == str:
-                smt.append(d == z3.StringVal(val))
+                smt.append(d == z3.StringVal(val, ctx=d.ctx))
             else:
                 smt.append(d == val)
         return smt
@@ -218,8 +221,9 @@ class Expression(object):
         Returns:
             True if satisfiable, false if not.
         """
-        s = z3.SolverFor("QF_NRA")
-        decls = self.get_declarations(command, state)
+        ctx = z3.Context()
+        s = z3.SolverFor("QF_NRA", ctx=ctx)
+        decls = self.get_declarations(ctx, command, state)
         smt = Expression.values_to_smt('_', state, decls)
         smt.extend(self.get_expression(decls, state))
         s.add(smt)
@@ -234,8 +238,11 @@ class Expression(object):
         Constructs a Z3 expression from this expression for a particular
         state and set of declaration mappings.
         """
+        ctx = None
+        if decls:
+            ctx = list(decls.values())[0].ctx
         expr = z3.parse_smt2_string('(assert {})'
-                                    .format(self.expression), decls=decls)
+                                    .format(self.expression), decls=decls, ctx=ctx)
         variables = {}
         for v in state.variables:
             variables['_{}{}'.format(v.name, postfix)] = float(v.noise) \
@@ -255,9 +262,9 @@ class Expression(object):
             children = [recreate(c, variables) for c in expr.children()]
             # TODO find a better solution
             if str(d) == 'And':
-                return z3.And(*children)
+                return z3.And(*children, expr.ctx)
             elif str(d) == 'Or':
-                return z3.Or(*children)
+                return z3.Or(*children, expr.ctx)
             return d(*children)
         lhs, rhs = expr.children()[0], expr.children()[1]
         if not isinstance(lhs, z3.ArithRef) or \
@@ -265,7 +272,7 @@ class Expression(object):
             return d(lhs, rhs)
 
         def absolute(x):
-            return z3.If(x > 0, x, -x)
+            return z3.If(x > 0, x, -x, ctx=expr.ctx)
         return absolute(lhs - rhs) <= Expression.get_noise(expr, variables)
 
     @staticmethod
@@ -327,11 +334,12 @@ class Specification(object):
         return self.__timeout(command, state, environment, config)
 
     def get_constraint(self,
+                       ctx: z3.Context,
                        command: 'Command',
                        state: State,
                        postfix: str = ''
                        ) -> Tuple[List[z3.ExprRef], Dict[str, Any]]:
-        decls = self.precondition.get_declarations(command, state, postfix)
+        decls = self.precondition.get_declarations(ctx, command, state, postfix)
         smt = self.precondition.get_expression(decls, state, postfix)
         smt.extend(self.postcondition.get_expression(decls, state, postfix))
 
