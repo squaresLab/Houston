@@ -34,5 +34,13 @@ class Environment(object):
         """
         return self.__values[name]
 
+    def __eq__(self, other: 'Environment') -> bool:
+        return self.to_json() == other.to_json()
+
+    def __hash__(self) -> int:
+        l = list(self.__values.copy().items())
+        sl = sorted(l, key=lambda x: x[0])
+        return hash(tuple(sl))
+
     def to_json(self) -> Dict[str, Any]:
         return {'constants': self.__values.copy()}
