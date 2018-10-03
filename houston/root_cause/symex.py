@@ -63,13 +63,15 @@ class SymbolicExecution(object):
         for bp in all_paths:
             logger.info("BP: " + str(bp))
             logger.info("CMD: " + str(commands))
-            solver = z3.Optimize()
+            ctx = z3.Context()
+            solver = z3.Optimize(ctx=ctx)
             smts = []
             soft_smts = []
             seq_id = 0
             mappings = {}
             for b in bp:
-                smt, decls = b.get_constraint(commands[seq_id],
+                smt, decls = b.get_constraint(ctx,
+                                              commands[seq_id],
                                               self.initial_state,
                                               "__{}".format(seq_id))
 
@@ -122,7 +124,7 @@ class SymbolicExecution(object):
             all_missions.append(Mission(self.configuration,
                                         self.environment,
                                         self.initial_state,
-                                        commands_list))
+                                        tuple(commands_list)))
 
         return all_missions
 
