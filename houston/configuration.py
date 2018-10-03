@@ -113,6 +113,9 @@ class Configuration(object, metaclass=ConfigurationMeta):
             raise KeyError(msg)
         return getattr(self, var._field)
 
+    def __hash__(self) -> int:
+        return hash(self[opt.name] for opt in options)
+
     def __eq__(self, other: 'Configuration') -> bool:
         if type(self) != type(other):
             msg = "illegal comparison of configurations: [{}] vs. [{}]"
