@@ -222,6 +222,11 @@ class Command(object, metaclass=CommandMeta):
             raise KeyError(msg)
         return getattr(self, param._field)
 
+    def __hash__(self) -> int:
+        all_params = [self[p.name] for p in self.__class__.parameters]
+        all_params.insert(0, self.uid)
+        return hash(tuple(all_params))
+
     @property
     def uid(self) -> str:
         """
