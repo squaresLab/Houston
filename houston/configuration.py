@@ -114,7 +114,7 @@ class Configuration(object, metaclass=ConfigurationMeta):
         return getattr(self, var._field)
 
     def __hash__(self) -> int:
-        return hash(self[opt.name] for opt in options)
+        return hash(self[opt.name] for opt in self.__class__.options)
 
     def __eq__(self, other: 'Configuration') -> bool:
         if type(self) != type(other):
