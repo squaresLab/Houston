@@ -35,6 +35,8 @@ def test_constructor():
 def test_hash():
     class X(Configuration):
         foo = option(int)
+    class Y(Configuration):
+        foo = option(int)
 
     c1 = X(foo=0)
     c2 = X(foo=1)
@@ -43,6 +45,10 @@ def test_hash():
 
     s = {c1, c2, c3, c4}
     assert s == {X(foo=0), X(foo=1)}
+
+    c5 = Y(foo=0)
+    assert len({c1, c5}) == 2
+
 
 
 def test_is_frozen():
