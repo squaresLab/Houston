@@ -119,7 +119,8 @@ class Sandbox(object):
         Executes a given mission and returns a description of the outcome.
         """
         assert self.alive
-        config = self.system.configuration
+        env = self.environment
+        config = self.configuration
         self.__lock.acquire()
         try:
             time_before_setup = timer()
@@ -129,7 +130,6 @@ class Sandbox(object):
             logger.debug("prepared for mission (took %.3f seconds)",
                          setup_time)
 
-            env = mission.environment
             outcomes = []
 
             for cmd in mission:
