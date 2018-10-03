@@ -15,12 +15,13 @@ class MissionRunner(threading.Thread):
     """
     def __init__(self,
                  pool,
+                 sandbox,
                  with_coverage: bool = False
                  ) -> None:
         super().__init__()
         self.daemon = True
         self.__pool = pool
-        self.__sandbox = pool.system.provision()
+        self.__sandbox = sandbox
         self.__with_coverage = with_coverage
 
     def run(self) -> None:
@@ -56,6 +57,8 @@ class MissionRunnerPool(object):
                  size: int,
                  source,  # FIXME
                  callback,  # FIXMe
+                 bz,
+                 sandbox_type,
                  with_coverage=False):
         assert callable(callback)
         assert size > 0
@@ -71,7 +74,7 @@ class MissionRunnerPool(object):
 
         # provision desired number of runners
         self.__runners = \
-            [MissionRunner(self, with_coverage) for _ in range(size)]
+            [MissionRunner(self, sandbox_type(system, bz), with_coverage) for _ in range(size)]
 
     def run(self) -> None:
         """

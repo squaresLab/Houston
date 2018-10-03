@@ -13,7 +13,7 @@ class Sandbox(ArduSandbox):
         fn_param = os.path.join(self.snapshot.source_dir,
                                 'Tools/autotest/default_params/copter.parm')
         super()._start(mission,
-                       binary_name='arducopter',
+                       binary_name='arducopter-quad',
                        model_name='quad',
                        param_file=fn_param)
 

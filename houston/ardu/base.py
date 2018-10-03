@@ -4,7 +4,6 @@ from typing import List, Type
 
 from bugzoo.core.bug import Bug as Snapshot
 
-from .sandbox import Sandbox
 from ..configuration import Configuration
 from ..system import System
 from ..util import printflush
@@ -24,6 +23,3 @@ class BaseSystem(System):
                  config: Configuration
                  ) -> None:
         super().__init__(commands, snapshot, config)
-
-    def provision(self) -> Sandbox:
-        return Sandbox(self)
