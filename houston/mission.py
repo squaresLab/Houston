@@ -1,9 +1,10 @@
 __all__ = ['Mission', 'MissionOutcome', 'CrashedMissionOutcome',
            'MissionSuite']
 
-from typing import Dict, Any, List, Iterator
+from typing import Dict, Any, List, Iterator, Tuple
 
 import attr
+import json
 
 from .configuration import Configuration
 from .command import Command, CommandOutcome
@@ -20,21 +21,21 @@ class Mission(object):
     configuration = attr.ib(type=Configuration)
     environment = attr.ib(type=Environment)
     initial_state = attr.ib(type=State)
-    commands = attr.ib(type=List[Command])  # FIXME
+    commands = attr.ib(type=Tuple[Command])  # FIXME
 
     @staticmethod
     def from_dict(state_cls, config_cls, jsn: Dict[str, Any]) -> 'Mission':
         env = Environment.from_json(jsn['environment'])
         config = config_cls.from_dict(jsn['configuration'])
         initial_state = state_cls.from_dict(jsn['initial_state'])
-        cmds = [Command.from_dict(c) for c in jsn['commands']]
+        cmds = tuple(Command.from_dict(c) for c in jsn['commands'])
         return Mission(config, env, initial_state, cmds)
 
     def is_empty(self) -> bool:
         """
         Returns True if this mission contains no commands.
         """
-        return self.commands == []
+        return self.commands == ()
 
     def __iter__(self) -> Iterator[Command]:
         """
@@ -54,7 +55,7 @@ class Mission(object):
         Returns a variant of this mission with a given command added onto the
         end.
         """
-        cmds = self.commands + [cmd]
+        cmds = self.commands + (cmd,)
         return Mission(self.environment, self.initial_state, cmds)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -72,13 +73,13 @@ class MissionOutcome(object):
     a mission.
     """
     passed = attr.ib(type=bool)
-    outcomes = attr.ib(type=List[CommandOutcome])
+    outcomes = attr.ib(type=Tuple[CommandOutcome])
     time_setup = attr.ib(type=float)
     time_total = attr.ib(type=float)
 
     @staticmethod
     def from_dict(dkt: Dict[str, Any]) -> 'CommandOutcome':
-        cmds = [CommandOutcome.from_json(a) for a in jsn['commands']]
+        cmds = tuple(CommandOutcome.from_json(a) for a in jsn['commands'])
         return MissionOutcome(dkt['passed'],
                               cmds,
                               dkt['time_setup'],
@@ -99,7 +100,7 @@ class MissionOutcome(object):
         response = {
             'code': code,
             'duration': self.time_total,
-            'output': json.dump([o.to_json() for o in self.outcomes])}
+            'output': json.dumps([o.to_json() for o in self.outcomes])}
         return {'passed': self.passed,
                 'response': response}
 
@@ -132,7 +133,7 @@ class MissionOutcome(object):
 
 class CrashedMissionOutcome(MissionOutcome):
     def __init__(self, total_time: float) -> None:
-        super().__init__(False, [], 0.0, total_time)
+        super().__init__(False, (), 0.0, total_time)
 
     def to_dict(self):
         dkt = super().to_dict()

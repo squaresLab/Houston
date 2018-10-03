@@ -75,7 +75,7 @@ class MissionDomain(object):
             for p in params:
                 parameters[p.name] = p.generate(rng)
             cmds.append(cmd_class(**parameters))
-        return Mission(config, environment, initial_state, cmds)
+        return Mission(config, environment, initial_state, tuple(cmds))
 
 
 class RootCauseFinder(object):

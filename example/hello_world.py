@@ -45,10 +45,10 @@ def run_single_mission_with_coverage(sandbox, mission):
 def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
     if not missions:
         missions = []
-    with open(mission_file, "r") as f:
-        missions_json = json.load(f)
-        missions.extend(list(map(lambda x: Mission.from_dict(CopterState, ArduConfig, x), missions_json)))
-    assert isinstance(missions, list)
+#    with open(mission_file, "r") as f:
+#        missions_json = json.load(f)
+#        missions.extend(list(map(lambda x: Mission.from_dict(CopterState, ArduConfig, x), missions_json)))
+#    assert isinstance(missions, list)
 
 
     outcomes = {}
@@ -170,15 +170,15 @@ if __name__ == "__main__":
     sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
-    cmds = [
+    cmds = (
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
         #SetMode(mode='GUIDED'),
-        Takeoff(altitude=3.0),
+#        Takeoff(altitude=3.0),
         #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-        SetMode(mode='LAND'),
-        ArmDisarm(arm=False)
-    ]
+#        SetMode(mode='LAND'),
+#        ArmDisarm(arm=False)
+    )
 
     environment = Environment({})
     initial = CopterState(

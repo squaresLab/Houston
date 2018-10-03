@@ -186,12 +186,12 @@ class Sandbox(object):
                 if not passed:
                     total_time = timer() - time_before_setup
                     return MissionOutcome(False,
-                                          outcomes,
+                                          tuple(outcomes),
                                           setup_time,
                                           total_time)
 
             total_time = timer() - time_before_setup
-            return MissionOutcome(True, outcomes, setup_time, total_time)
+            return MissionOutcome(True, tuple(outcomes), setup_time, total_time)
 
         finally:
             self._stop()

@@ -355,8 +355,8 @@ class CommandOutcome(object):
                               jsn['time_elapsed'])
 
     def to_json(self) -> Dict[str, Any]:
-        return {'command': self.__command.to_json(),
-                'successful': self.__successful,
-                'start_state': self.start_state.to_json(),
-                'end_state': self.end_state.to_json(),
-                'time_elapsed': self.__time_elapsed}
+        return {'command': self.command.to_dict(),
+                'successful': self.successful,
+                'start_state': self.start_state.to_dict(),
+                'end_state': self.end_state.to_dict(),
+                'time_elapsed': self.time_elapsed}

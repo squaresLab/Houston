@@ -122,7 +122,7 @@ class SymbolicExecution(object):
             all_missions.append(Mission(self.configuration,
                                         self.environment,
                                         self.initial_state,
-                                        commands_list))
+                                        tuple(commands_list)))
 
         return all_missions
 
