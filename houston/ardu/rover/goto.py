@@ -12,32 +12,20 @@ from ...valueRange import ContinuousValueRange, DiscreteValueRange
 from ..common import GotoLoiter
 
 
-class GotoNormally(Specification):
-    """
-    If the robot is armed and not in its `LOITER` mode, GoTo actions should
-    cause the robot to move to the desired location. For certain Ardu systems,
-    the precondition on this normal behaviour is stronger; for more
-    information, refer to the system-specific subclasses of GotoNormally.
-    """
-    def __init__(self) -> None:
-        def timeout(a, s, e, c) -> float:
-            from_loc = (s.latitude, s.longitude)
-            to_loc = (a['latitude'], a['longitude'])
-            dist = geopy.distance.great_circle(from_loc, to_loc).meters
-            timeout = dist * c.time_per_metre_travelled
-            timeout += c.constant_timeout_offset
-            return timeout
+def timeout(a, s, e, c) -> float:
+    from_loc = (s.latitude, s.longitude)
+    to_loc = (a['latitude'], a['longitude'])
+    dist = geopy.distance.great_circle(from_loc, to_loc).meters
+    timeout = dist * c.time_per_metre_travelled
+    timeout += c.constant_timeout_offset
+    return timeout
 
-        super().__init__('normal',
-                         """
-                (and (= _armed true)
-                    (not (= _mode "LOITER")))
-                         """,
-                         """
-                (and (= __longitude $longitude)
-                    (= __latitude $latitude))
-                         """,
-                         timeout)
+
+GotoNormally = Specification(
+    'normal',
+    '(and (= _armed true) (not (= _mode "LOITER")))',
+    '(and (= __longitude $longitude) (= __latitude $latitude))',
+    timeout)
 
 
 class GoTo(Command):
@@ -48,8 +36,8 @@ class GoTo(Command):
         Parameter('longitude', ContinuousValueRange(-180.0, 180.0, True))
     ]
     specifications = [
-        GotoNormally(),
-        GotoLoiter(),
+        GotoNormally,
+        GotoLoiter,
         Idle
     ]
 

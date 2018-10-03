@@ -10,6 +10,7 @@ from .goto import GoTo
 
 
 class ArduRover(BaseSystem):
+    name = 'ardurover'
     state = State
     schemas = []
 

@@ -14,6 +14,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class ArduCopter(BaseSystem):
+    name = 'arducopter'
     state = State
     schemas = []
 

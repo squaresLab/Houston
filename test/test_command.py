@@ -27,6 +27,21 @@ def test_eq():
     assert x == a
     assert y == b
 
+def test_hash():
+    class C(Command):
+        name = 'c1'
+        parameters = [
+            Parameter('foo', DiscreteValueRange([0, 1]))
+        ]
+        specifications = [Idle]
+
+    c1 = C(foo=0)
+    c2 = C(foo=1)
+    c3 = C(foo=0)
+    c4 = C(foo=1)
+
+    assert {c1, c2, c3, c4} == {C(foo=0), C(foo=1)}
+
 
 def test_to_and_from_dict():
     class Boop(Command):

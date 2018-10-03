@@ -23,11 +23,11 @@ setup(
         'bugzoo>=2.1.16',
         'dronekit',
         'attrs',
-        'sexpdata',
-        'z3'
+        'sexpdata'
     ],
     packages = [
         'houston',
+        'houston.root_cause',
         'houston.generator',
         'houston.ardu',
         'houston.ardu.copter',
