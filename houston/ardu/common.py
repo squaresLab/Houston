@@ -15,6 +15,12 @@ from ..command import Parameter, Command
 from ..specification import Specification, Idle
 
 
+def disarm_timeout(a, s, e, c) -> float:
+    if s['altitude'] > 0:
+        return 10.0
+    return 3.0
+
+
 ArmNormally = Specification(
     'arm-normal',
     """
@@ -29,7 +35,8 @@ ArmNormally = Specification(
 DisarmNormally = Specification(
     'disarm-normal',
     '(and (= $arm false) (= _armed true) (= _altitude 0.0))',
-    '(= __armed false)')
+    '(= __armed false)',
+    disarm_timeout)
 
 
 GotoLoiter = Specification(
