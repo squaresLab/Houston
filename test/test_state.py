@@ -6,7 +6,7 @@ from houston.state import State, var
 def test_variable_construction():
     class S(State):
         foo = var(float, lambda c: 0.1)
-    assert set(v.name for v in S.variables) == {'foo'}
+    assert set(n for n in S.variables) == {'foo'}
 
 
 def test_constructor():

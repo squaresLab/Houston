@@ -156,8 +156,9 @@ def generate_with_se(sut, initial, environment, config, mission):
 if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
-    snapshot = bz.bugs['ardubugs:010665f9']
+    snapshot = bz.bugs['ardubugs:742cdf6b']
     #snapshot = bz.bugs['afrl:AIS-Scenario1']
+    container = bz.containers.provision(snapshot)
 
     config = ArduConfig(
         speedup=1,
@@ -203,9 +204,14 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    #sandbox = sut.provision(bz)
+    sandbox = sut.sandbox.launch(bz,
+                                 container,
+                                 initial,
+                                 environment,
+                                 config)
+
     try:
-        #run_single_mission(sandbox, mission)
+        run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
         #run_all_missions(sut, "example/missions.json", False)
@@ -222,7 +228,7 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        generate_with_se(sut, initial, environment, config, mission)
+        #generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-        pass
+        del bz.containers[container.id]
