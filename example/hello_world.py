@@ -68,7 +68,17 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
     print("Started running")
     runner_pool.run()
     print("Done running")
+    runner_pool.shutdown()
     print(outcomes)
+
+    failed = [m for m in outcomes if not outcomes[m].passed]
+    runner_pool = MissionRunnerPool(sut, 8, failed, record_outcome, bz, Sandbox, coverage)
+    print("Started rerunning failed one")
+    runner_pool.run()
+    print("Done rerunning")
+    runner_pool.shutdown()
+    print(outcomes)
+
 
     with open("example/failed.json", "w") as f:
         for m in outcomes:
@@ -188,12 +198,12 @@ if __name__ == "__main__":
 #        ArmDisarm(arm=True)
 #    )
     cmds = (
-        ArmDisarm(arm=False),
         ArmDisarm(arm=True),
-        Takeoff(altitude=1.5),
-        SetMode(mode='LAND'),
-        SetMode(mode='LAND'),
-        ArmDisarm(arm=True)
+        ArmDisarm(arm=True),
+        Takeoff(altitude=3),
+        SetMode(mode='LOITER'),
+        SetMode(mode='RTL'),
+        ArmDisarm(arm=False)
     )
 
     environment = Environment({})
@@ -222,12 +232,12 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    sandbox = Sandbox(sut, bz)
+    #sandbox = Sandbox(sut, bz)
     try:
-        run_single_mission(sandbox, mission)
+        #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
-        #run_all_missions(sut, bz, "example/missions.json", True, [mission])
+        run_all_missions(sut, bz, "example/missions.json", True, [mission])
         #generate_and_run_mutation(sut, initial, environment, mission, 3)
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
@@ -244,5 +254,5 @@ if __name__ == "__main__":
         #generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-        sandbox.destroy()
-        #pass
+        #sandbox.destroy()
+        pass

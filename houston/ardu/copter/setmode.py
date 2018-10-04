@@ -46,7 +46,8 @@ SetModeLand = Specification(
     """
     (and
         (= $mode "LAND")
-        (> _altitude 0.3))
+        (> _altitude 0.3)
+        (= _armed true))
     """,
     """
     (and
