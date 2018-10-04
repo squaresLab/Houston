@@ -233,6 +233,11 @@ class State(object, metaclass=StateMeta):
 
     __eq__ = exact
 
+    def __hash__(self) -> int:
+        all_vars = (self.time_offset,)
+        all_vars += tuple(self[v.name] for v in self.__class__.variables)
+        return hash(all_vars)
+
     def __getitem__(self, name: str) -> Any:
         try:
             var = self.__class__.variables[name]

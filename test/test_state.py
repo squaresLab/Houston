@@ -49,6 +49,18 @@ def test_is_frozen():
         state.foo = 10
 
 
+def test_hash():
+    class S(State):
+        foo = var(int, lambda c: 0)
+
+    s1 = S(foo=0, time_offset=0.0)
+    s2 = S(foo=1, time_offset=0.0)
+    s3 = S(foo=0, time_offset=0.0)
+    s4 = S(foo=1, time_offset=0.0)
+
+    assert {s1, s2, s3, s4} == {S(foo=0, time_offset=0.0), S(foo=1, time_offset=0.0)}
+
+
 def test_eq():
     class S(State):
         foo = var(int, lambda c: 0)
