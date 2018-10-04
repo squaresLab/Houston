@@ -72,7 +72,7 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
     print(outcomes)
 
     failed = [m for m in outcomes if not outcomes[m].passed]
-    runner_pool = MissionRunnerPool(sut, 8, failed, record_outcome, bz, Sandbox, coverage)
+    runner_pool = MissionRunnerPool(sut, 1, failed, record_outcome, bz, Sandbox, coverage)
     print("Started rerunning failed one")
     runner_pool.run()
     print("Done rerunning")
@@ -201,9 +201,9 @@ if __name__ == "__main__":
         ArmDisarm(arm=True),
         ArmDisarm(arm=True),
         Takeoff(altitude=3),
-        SetMode(mode='LOITER'),
-        SetMode(mode='RTL'),
-        ArmDisarm(arm=False)
+        SetMode(mode='LAND'),
+        SetMode(mode='GUIDED'),
+        ArmDisarm(arm=True)
     )
 
     environment = Environment({})

@@ -38,7 +38,7 @@ def timeout_rtl(a, s, e, c) -> float:
     timeout = \
         time_goto_phase + time_land_phase + c.constant_timeout_offset
 
-    return timeout + 3.0
+    return timeout + 10
 
 
 SetModeLand = Specification(
