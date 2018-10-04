@@ -189,6 +189,11 @@ class Command(object, metaclass=CommandMeta):
                 msg = msg.format(p.name, cls_name)
                 raise TypeError(msg)
 
+            if not p.values.is_valid(val):
+                msg = "value [{}] is not valid for parameter [{}]"
+                msg = msg.format(val, p.name)
+                raise Exception(msg)
+
             # TODO perform run-time type checking?
             setattr(self, p._field, val)
 

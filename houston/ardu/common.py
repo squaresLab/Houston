@@ -28,7 +28,7 @@ ArmNormally = Specification(
 
 DisarmNormally = Specification(
     'disarm-normal',
-    '(and (= $arm false) (= _armed true))',
+    '(and (= $arm false) (= _armed true) (= _altitude 0.0))',
     '(= __armed false)')
 
 

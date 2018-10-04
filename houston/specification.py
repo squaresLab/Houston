@@ -307,7 +307,7 @@ class Specification(object):
                  name: str,
                  precondition: str,
                  postcondition: str,
-                 timeout: Timeout = lambda c, s, e, o: 1.0) -> None:
+                 timeout: Timeout = lambda c, s, e, o: 3.0) -> None:
         self.__name = name
         self.__precondition = Expression(precondition)
         self.__postcondition = Expression(postcondition)

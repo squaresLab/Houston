@@ -19,6 +19,12 @@ class ValueRange(object):
         """
         raise NotImplementedError
 
+    def is_valid(self, value) -> bool:
+        """
+        Checks whether the value is valid according to this ValueRange
+        """
+        raise NotImplementedError
+
 
 class DiscreteValueRange(ValueRange):
     """
@@ -58,6 +64,9 @@ class DiscreteValueRange(ValueRange):
     def type(self):
         return self.__typ
 
+    def is_valid(self, value) -> bool:
+        return value in self.__values
+
 
 class ContinuousValueRange(ValueRange):
     def __init__(self, min_value, max_value, inclusive=False):
@@ -84,3 +93,6 @@ class ContinuousValueRange(ValueRange):
     @property
     def type(self):
         return float
+
+    def is_valid(self, value: float) -> bool:
+        return self.__min_value <= value <= self.__max_value 

@@ -36,9 +36,9 @@ def timeout_rtl(a, s, e, c) -> float:
 
     # compute total timeout
     timeout = \
-        time_goto_phase + time_land_phase + s.constant_timeout_offset
+        time_goto_phase + time_land_phase + c.constant_timeout_offset
 
-    return timeout
+    return timeout + 3.0
 
 
 SetModeLand = Specification(
@@ -68,7 +68,14 @@ SetModeGuided = Specification(
 SetModeLoiter = Specification(
     'loiter',
     '(= $mode "LOITER")',
-    '(= __mode "LOITER")')
+    """
+    (and
+        (= __mode "LOITER")
+        (= _latitude __latitude)
+        (= _longitude __longitude)
+        (= __vz 0.0))
+    """,
+    lambda a, s, e, c: 5.0)
 
 
 SetModeRTL = Specification(
@@ -77,8 +84,8 @@ SetModeRTL = Specification(
     """
     (and
         (= __mode "RTL")
-        (ite (< _altitude 0.3) (= _armed __armed)
-        (= _armed false))
+        ;(ite (< _altitude 0.3) (= _armed __armed)
+        ;(= _armed false))
         (= __longitude _home_longitude)
         (= __latitude _home_latitude)
         (= __altitude 0.0))
@@ -108,3 +115,4 @@ class SetMode(Command):
                  config: Configuration
                  ) -> None:
         sandbox.connection.mode = dronekit.VehicleMode(self.mode)
+        logger.debug("Sat mode {}".format(self.mode))

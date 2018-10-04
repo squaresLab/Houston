@@ -49,7 +49,12 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
         missions = []
     with open(mission_file, "r") as f:
         missions_json = json.load(f)
-        missions.extend(list(map(lambda x: Mission.from_dict(CopterState, ArduConfig, x), missions_json)))
+        for m in missions_json:
+            try:
+                missions.append(Mission.from_dict(CopterState, ArduConfig, m))
+            except Exception as e:
+                print(str(e))
+                continue
     assert isinstance(missions, list)
 
 
@@ -59,7 +64,7 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
         outcomes[mission] = outcome
         coverages[mission] = coverage
 
-    runner_pool = MissionRunnerPool(sut, 2, missions, record_outcome, bz, Sandbox, coverage)
+    runner_pool = MissionRunnerPool(sut, 8, missions, record_outcome, bz, Sandbox, coverage)
     print("Started running")
     runner_pool.run()
     print("Done running")
@@ -172,14 +177,22 @@ if __name__ == "__main__":
     sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
+#    cmds = (
+#        ArmDisarm(arm=True),
+#        ArmDisarm(arm=True),
+#        #SetMode(mode='GUIDED'),
+#        Takeoff(altitude=3.0),
+#        #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+#        SetMode(mode='LAND'),
+#        SetMode(mode='GUIDED'),
+#        ArmDisarm(arm=True)
+#    )
     cmds = (
+        ArmDisarm(arm=False),
         ArmDisarm(arm=True),
-        ArmDisarm(arm=True),
-        #SetMode(mode='GUIDED'),
-        Takeoff(altitude=3.0),
-        #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+        Takeoff(altitude=1.5),
         SetMode(mode='LAND'),
-        SetMode(mode='GUIDED'),
+        SetMode(mode='LAND'),
         ArmDisarm(arm=True)
     )
 
@@ -209,12 +222,12 @@ if __name__ == "__main__":
     mission = Mission(config, environment, initial, cmds)
 
     # create a container for the mission execution
-    #sandbox = Sandbox(sut, bz)
+    sandbox = Sandbox(sut, bz)
     try:
-        #run_single_mission(sandbox, mission)
+        run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
-        run_all_missions(sut, bz, "example/missions.json", True, [mission])
+        #run_all_missions(sut, bz, "example/missions.json", True, [mission])
         #generate_and_run_mutation(sut, initial, environment, mission, 3)
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
@@ -231,5 +244,5 @@ if __name__ == "__main__":
         #generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-        #sandbox.destroy()
-        pass
+        sandbox.destroy()
+        #pass

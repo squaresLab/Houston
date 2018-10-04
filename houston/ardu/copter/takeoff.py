@@ -18,7 +18,7 @@ def timeout(a, s, e, c) -> float:
     # FIXME add rate of ascent
     delta_alt = abs(a['altitude'] - s.altitude)
     t = delta_alt * c.time_per_metre_travelled
-    t += c.constant_timeout_offset
+    t += c.constant_timeout_offset + 2.0
     return t
 
 
@@ -28,7 +28,9 @@ TakeoffNormally = Specification(
     (and
         (= _armed true)
         (= _mode "GUIDED")
-        (< _altitude 0.3))
+        (< _altitude 0.3)
+        (> $altitude _altitude)
+        (> $altitude 1.0))
     """,
     """
     (and
@@ -44,7 +46,7 @@ class Takeoff(Command):
     uid = 'ardu:copter:takeoff'
     name = 'takeoff'
     parameters = [
-        Parameter('altitude', ContinuousValueRange(0.3, 100.0))
+        Parameter('altitude', ContinuousValueRange(1.0, 100.0))
     ]
     specifications = [
         TakeoffNormally,
