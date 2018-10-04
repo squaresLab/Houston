@@ -191,7 +191,10 @@ class Sandbox(object):
                                           total_time)
 
             total_time = timer() - time_before_setup
-            return MissionOutcome(True, outcomes, setup_time, total_time)
+            return MissionOutcome(True,
+                                  outcomes,
+                                  setup_time,
+                                  total_time)
 
         finally:
             self._stop()

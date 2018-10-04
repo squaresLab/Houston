@@ -167,7 +167,7 @@ if __name__ == "__main__":
     sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
-    cmds = [
+    cmds = (
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
         #SetMode(mode='GUIDED'),
@@ -175,7 +175,7 @@ if __name__ == "__main__":
         #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
         SetMode(mode='LAND'),
         ArmDisarm(arm=False)
-    ]
+    )
 
     environment = Environment({})
     initial = CopterState(
