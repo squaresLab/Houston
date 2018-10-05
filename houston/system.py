@@ -84,15 +84,15 @@ class SystemMeta(type):
             # TODO convert to a frozen dictionary
             ns['commands'] = {c.name: c for c in ns['commands']}
 
-            # if 'configuration' not in ns:
-            #     msg = "System class definition is missing 'configuration' property"  # noqa: pycodestyle
-            #     raise TypeError(msg)
-            # if not issubclass(ns['configuration'], Configuration):
-            #     msg = "was {} but should be a subclass of Configuration"
-            #     msg = msg.format(ns['configuration'].__name__)
-            #     tpl = "Unexpected class for 'configuration' property: {}"
-            #     msg = tpl.format(msg)
-            #     raise TypeError(msg)
+            if 'configuration' not in ns:
+                msg = "System class definition is missing 'configuration' property"  # noqa: pycodestyle
+                raise TypeError(msg)
+            if not issubclass(ns['configuration'], Configuration):
+                msg = "was {} but should be a subclass of Configuration"
+                msg = msg.format(ns['configuration'].__name__)
+                tpl = "Unexpected class for 'configuration' property: {}"
+                msg = tpl.format(msg)
+                raise TypeError(msg)
 
         return super().__new__(mcl, cls_name, bases, ns)
 

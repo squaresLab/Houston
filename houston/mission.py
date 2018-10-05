@@ -1,14 +1,19 @@
 __all__ = ['Mission', 'MissionOutcome', 'CrashedMissionOutcome',
            'MissionSuite']
 
-from typing import Dict, Any, List, Iterator, Tuple
+from typing import Dict, Any, List, Iterator, Tuple,\
+    Type, Union
 
 import attr
+
+from bugzoo.client import Client as BugZooClient
+from bugzoo import Bug as Snapshot
 
 from .configuration import Configuration
 from .command import Command, CommandOutcome
 from .state import State
 from .environment import Environment
+from .system import System
 
 
 @attr.s(frozen=True)
@@ -21,14 +26,16 @@ class Mission(object):
     environment = attr.ib(type=Environment)
     initial_state = attr.ib(type=State)
     commands = attr.ib(type=Tuple[Command], converter=tuple)
+    system = attr.ib(type=Type[System])
 
     @staticmethod
     def from_dict(jsn: Dict[str, Any]) -> 'Mission':
+        system = System.get_by_name(jsn['system'])()
         env = Environment.from_json(jsn['environment'])
-        config = Configuration.from_json(jsn['configuration'])
-        initial_state = State.from_json(jsn['initial_state'])
+        config = system.configuration.from_json(jsn['configuration'])
+        initial_state = system.state.from_json(jsn['initial_state'])
         cmds = tuple(Command.from_json(c) for c in jsn['commands'])
-        return Mission(config, env, initial_state, cmds)
+        return Mission(config, env, initial_state, cmds, system)
 
     def is_empty(self) -> bool:
         """
@@ -55,14 +62,30 @@ class Mission(object):
         end.
         """
         cmds = self.commands + (cmd,)
-        return Mission(self.environment, self.initial_state, cmds)
+        return Mission(self.environment, self.initial_state, cmds, self.system)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'configuration': self.configuration.to_dict(),
             'environment': self.environment.to_json(),
             'initial_state': self.initial_state.to_json(),
-            'commands': [c.to_json() for c in self.commands]}
+            'commands': [c.to_json() for c in self.commands],
+            'system': self.system.name}
+
+    def run(self,
+            bz: BugZooClient,
+            snapshot_or_name: Union[str, Snapshot]
+            ) -> 'MissionOutcome':
+        """
+        Creates a sandbox and runs the commands and returns the outcome.
+        """
+        with self.system.sandbox.for_snapshot(bz,
+                                              snapshot,
+                                              self.initial_state,
+                                              self.environment,
+                                              self.configuration) as sandbox:
+            outcome = sandbox.run(self.commands)
+            return outcome
 
 
 @attr.s(frozen=True)

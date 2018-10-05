@@ -7,6 +7,7 @@ from houston.ardu.configuration import Configuration
 from houston.ardu.copter import ArmDisarm, Takeoff, SetMode
 from houston.ardu.copter.state import State
 from houston.ardu.copter.sandbox import Sandbox
+from houston.ardu.copter.copter import ArduCopter
 
 
 def main():
@@ -19,7 +20,7 @@ def main():
 
     # construct a test
     environment = Environment({})
-    configuration = Configuration(
+    configuration = ArduCopter.configuration(
         speedup=1,
         time_per_metre_travelled=5.0,
         constant_timeout_offset=1.0,
@@ -31,7 +32,7 @@ def main():
         SetMode(mode='LAND'),
         ArmDisarm(arm=False)
     ]
-    state_initial = State(
+    state_initial = ArduCopter.state(
         home_latitude=-35.3632607,
         home_longitude=149.1652351,
         latitude=-35.3632607,
@@ -56,12 +57,14 @@ def main():
     mission = Mission(configuration,
                       environment,
                       state_initial,
-                      commands)
+                      commands,
+                      ArduCopter)
 
     # the Docker image that provides the SUT
-    snapshot = 'ardubugs:1a207c91'
-    with Sandbox.for_snapshot(bz, snapshot, state_initial, environment, configuration) as sandbox:  # noqa: pycodestyle
-        outcome = sandbox.run(commands)
+    snapshot = 'ardubugs:742cdf6b'
+    #with Sandbox.for_snapshot(bz, snapshot, state_initial, environment, configuration) as sandbox:  # noqa: pycodestyle
+    #    outcome = sandbox.run(commands)
+    outcome = mission.run(bz, snapshot)
 
     print(outcome)
 

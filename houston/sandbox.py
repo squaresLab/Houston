@@ -16,7 +16,6 @@ from bugzoo.core.fileline import FileLineSet
 from .environment import Environment
 from .configuration import Configuration
 from .state import State
-from .mission import MissionOutcome
 from .command import Command, CommandOutcome
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -213,11 +212,12 @@ class Sandbox(object):
                                  time_elapsed)
         return outcome
 
-    def run(self, commands: Sequence[Command]) -> MissionOutcome:
+    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
         """
+        from .mission import MissionOutcome
         config = self.configuration
         env = self.environment
         time_start = timer()
