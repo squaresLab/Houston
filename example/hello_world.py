@@ -44,9 +44,10 @@ def run_single_mission_with_coverage(sandbox, mission):
     print(coverage)
 
 ### Run all missions stored to a json file
-def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
-    if not missions:
-        missions = []
+def run_all_missions(sut, bz, mission_file, coverage=False, missions_failed=None):
+    if not missions_failed:
+        missions_failed = []
+    missions = missions_failed.copy()
     with open(mission_file, "r") as f:
         missions_json = json.load(f)
         for m in missions_json:
@@ -61,6 +62,8 @@ def run_all_missions(sut, bz, mission_file, coverage=False, missions=None):
     outcomes = {}
     coverages = {}
     def record_outcome(mission, outcome, coverage=None):
+        if not outcome.passed and mission not in missions_failed:
+            return
         outcomes[mission] = outcome
         coverages[mission] = coverage
 
@@ -187,22 +190,22 @@ if __name__ == "__main__":
     sut = houston.ardu.ArduCopter(snapshot, config)
 
     # mission description
-#    cmds = (
-#        ArmDisarm(arm=True),
-#        ArmDisarm(arm=True),
-#        #SetMode(mode='GUIDED'),
-#        Takeoff(altitude=3.0),
-#        #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-#        SetMode(mode='LAND'),
-#        SetMode(mode='GUIDED'),
-#        ArmDisarm(arm=True)
-#    )
-    cmds = (
+    cmds1 = (
+        ArmDisarm(arm=True),
+        ArmDisarm(arm=True),
+        #SetMode(mode='GUIDED'),
+        Takeoff(altitude=3.0),
+        #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
+        SetMode(mode='LAND'),
+        SetMode(mode='GUIDED'),
+        ArmDisarm(arm=True)
+    )
+    cmds2 = (
         ArmDisarm(arm=True),
         ArmDisarm(arm=True),
         Takeoff(altitude=3),
         SetMode(mode='LAND'),
-        SetMode(mode='GUIDED'),
+        SetMode(mode='LOITER'),
         ArmDisarm(arm=True)
     )
 
@@ -229,7 +232,8 @@ if __name__ == "__main__":
         vy=0.0,
         vz=0.0,
         time_offset=0.0)
-    mission = Mission(config, environment, initial, cmds)
+    mission1 = Mission(config, environment, initial, cmds1)
+    mission2 = Mission(config, environment, initial, cmds2)
 
     # create a container for the mission execution
     #sandbox = Sandbox(sut, bz)
@@ -237,7 +241,7 @@ if __name__ == "__main__":
         #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
         #generate(sut, initial, environment, 100, 10)
-        run_all_missions(sut, bz, "example/missions.json", True, [mission])
+        run_all_missions(sut, bz, "example/missions.json", True, [mission1, mission2])
         #generate_and_run_mutation(sut, initial, environment, mission, 3)
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
