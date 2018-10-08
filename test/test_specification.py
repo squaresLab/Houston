@@ -1,4 +1,5 @@
 import pytest
+import z3
 
 from houston.specification import Specification, Expression, \
     InvalidExpression, UnsupportedVariableType
@@ -12,14 +13,17 @@ def test_expression():
     with pytest.raises(InvalidExpression, message="expected InvalidExpression"):
         assert Expression("((= a true)")
 
-    var = Expression.create_z3_var(int, 'var')
-    assert var.sort() == z3.IntSort()
+    ctx = z3.Context()
+    var = Expression.create_z3_var(ctx, int, 'var')
+    assert var.sort() == z3.IntSort(ctx=ctx)
     assert str(var) == 'var'
-    assert Expression.create_z3_var(bool, 'var').sort() == z3.BoolSort()
-    assert Expression.create_z3_var(str, 'var').sort() == z3.StringSort()
-    assert Expression.create_z3_var(float, 'var').sort() == z3.RealSort()
+    assert var.ctx == ctx
+    assert var.ctx != z3.main_ctx
+    assert Expression.create_z3_var(None, bool, 'var').sort() == z3.BoolSort()
+    assert Expression.create_z3_var(None, str, 'var').sort() == z3.StringSort()
+    assert Expression.create_z3_var(None, float, 'var').sort() == z3.RealSort()
     with pytest.raises(UnsupportedVariableType, message="expected UnsupportedVariableType"):
-        assert Expression.create_z3_var(list, 'var')
+        assert Expression.create_z3_var(None, list, 'var')
 
 def test_specification():
     spec = Specification("s1", "(= a true)",

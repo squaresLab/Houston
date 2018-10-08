@@ -1,14 +1,19 @@
 __all__ = ['Mission', 'MissionOutcome', 'CrashedMissionOutcome',
            'MissionSuite']
 
-from typing import Dict, Any, List, Iterator
+from typing import Dict, Any, List, Iterator, Tuple,\
+    Type, Union
 
 import attr
+
+from bugzoo.client import Client as BugZooClient
+from bugzoo import Bug as Snapshot
 
 from .configuration import Configuration
 from .command import Command, CommandOutcome
 from .state import State
 from .environment import Environment
+from .system import System
 
 
 @attr.s(frozen=True)
@@ -20,21 +25,23 @@ class Mission(object):
     configuration = attr.ib(type=Configuration)
     environment = attr.ib(type=Environment)
     initial_state = attr.ib(type=State)
-    commands = attr.ib(type=List[Command])  # FIXME
+    commands = attr.ib(type=Tuple[Command], converter=tuple)
+    system = attr.ib(type=Type[System])
 
     @staticmethod
     def from_dict(jsn: Dict[str, Any]) -> 'Mission':
+        system = System.get_by_name(jsn['system'])()
         env = Environment.from_json(jsn['environment'])
-        config = Configuration.from_json(jsn['configuration'])
-        initial_state = State.from_json(jsn['initial_state'])
-        cmds = [Command.from_json(c) for c in jsn['commands']]
-        return Mission(config, env, initial_state, cmds)
+        config = system.configuration.from_json(jsn['configuration'])
+        initial_state = system.state.from_json(jsn['initial_state'])
+        cmds = tuple(Command.from_json(c) for c in jsn['commands'])
+        return Mission(config, env, initial_state, cmds, system)
 
     def is_empty(self) -> bool:
         """
         Returns True if this mission contains no commands.
         """
-        return self.commands == []
+        return self.commands == ()
 
     def __iter__(self) -> Iterator[Command]:
         """
@@ -54,15 +61,31 @@ class Mission(object):
         Returns a variant of this mission with a given command added onto the
         end.
         """
-        cmds = self.commands + [cmd]
-        return Mission(self.environment, self.initial_state, cmds)
+        cmds = self.commands + (cmd,)
+        return Mission(self.environment, self.initial_state, cmds, self.system)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'configuration': self.configuration.to_dict(),
             'environment': self.environment.to_json(),
             'initial_state': self.initial_state.to_json(),
-            'commands': [c.to_json() for c in self.commands]}
+            'commands': [c.to_json() for c in self.commands],
+            'system': self.system.name}
+
+    def run(self,
+            bz: BugZooClient,
+            snapshot_or_name: Union[str, Snapshot]
+            ) -> 'MissionOutcome':
+        """
+        Creates a sandbox and runs the commands and returns the outcome.
+        """
+        with self.system.sandbox.for_snapshot(bz,
+                                              snapshot,
+                                              self.initial_state,
+                                              self.environment,
+                                              self.configuration) as sandbox:
+            outcome = sandbox.run(self.commands)
+            return outcome
 
 
 @attr.s(frozen=True)
@@ -72,22 +95,19 @@ class MissionOutcome(object):
     a mission.
     """
     passed = attr.ib(type=bool)
-    outcomes = attr.ib(type=List[CommandOutcome])
-    time_setup = attr.ib(type=float)
+    outcomes = attr.ib(type=Tuple[CommandOutcome], converter=tuple)
     time_total = attr.ib(type=float)
 
     @staticmethod
     def from_dict(dkt: Dict[str, Any]) -> 'CommandOutcome':
-        cmds = [CommandOutcome.from_json(a) for a in jsn['commands']]
+        cmds = tuple(CommandOutcome.from_json(a) for a in jsn['commands'])
         return MissionOutcome(dkt['passed'],
                               cmds,
-                              dkt['time_setup'],
                               dkt['time_total'])
 
     def to_dict(self) -> Dict[str, Any]:
         return {'passed': self.passed,
                 'commands': [o.to_json() for o in self.outcomes],
-                'time_setup': self.time_setup,
                 'time_total': self.time_total}
 
     # FIXME what is this for?
@@ -106,7 +126,6 @@ class MissionOutcome(object):
     def __repr__(self) -> str:
         outcomes = [repr(o) for o in self.outcomes]  # type: List[str]
         s_passed = "passed={}".format(repr(self.passed))
-        s_time_setup = "time_setup={:.3f}".format(self.time_setup)
         s_time_total = "time_total={:.3f}".format(self.time_total)
         s_outcomes = "outcomes={}".format(repr(outcomes))
         s = '; '.join([s_passed, s_time_setup, s_time_total, s_outcomes])
@@ -132,7 +151,7 @@ class MissionOutcome(object):
 
 class CrashedMissionOutcome(MissionOutcome):
     def __init__(self, total_time: float) -> None:
-        super().__init__(False, [], 0.0, total_time)
+        super().__init__(False, (), 0.0, total_time)
 
     def to_dict(self):
         dkt = super().to_dict()

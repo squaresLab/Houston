@@ -228,6 +228,11 @@ class Command(object, metaclass=CommandMeta):
             raise KeyError(msg)
         return getattr(self, param._field)
 
+    def __hash__(self) -> int:
+        params = (self.uid,)
+        params += tuple(self[p.name] for p in self.__class__.parameters)
+        return hash(params)
+
     @property
     def uid(self) -> str:
         """
@@ -259,7 +264,7 @@ class Command(object, metaclass=CommandMeta):
         return fields
 
     def __repr__(self) -> str:
-        fields = self.to_json()
+        fields = self.to_dict()['parameters']
         for (name, val) in fields.items():
             if isinstance(val, float):
                 s = "{:.3f}".format(val)
