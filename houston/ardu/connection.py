@@ -1,5 +1,6 @@
 __all__ = ['MAVLinkMessage', 'CommandLong', 'MAVLinkConnection']
 
+from typing import Any, List, Callable
 import pymavlink
 from pymavlink import mavutil
 import attr
@@ -8,14 +9,14 @@ import dronekit
 from ..connection import Message, Connection
 
 
-class MAVLinkMessage(Message):
+class MAVLinkGeneralMessage(Message):
     """
     Base class used by all MAVLink messages.
     """
 
 
 @attr.s(frozen=True)
-class CommandLong(MAVLinkMessage):
+class CommandLong(MAVLinkGeneralMessage):
     target_system = attr.ib(type=int)
     target_component = attr.ib(type=int)
     cmd_id = attr.ib(type=int)
@@ -46,22 +47,30 @@ class CommandLong(MAVLinkMessage):
         return cmd
 
 
+@attr.s(frozen=True)
+class MAVLinkMessage(MAVLinkGeneralMessage):
+    name = attr.ib(type=str)
+    message = attr.ib(type=Any) # FIXME MAVLink message type
 
-class MAVLinkConnection(Connection[MAVLinkMessage]):
+
+class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
     """
     Uses the MAVLink protocol to provide a connection to a system under test.
     """
-    def __init__(self, url: str) -> None:
-        super().__init__(url)
+    def __init__(self, url: str, hooks: List[Callable[[MAVLinkGeneralMessage], None]] = None) -> None:
+        super().__init__(hooks)
         self.__conn = dronekit.connect(url, wait_ready=True)
         self.__conn.wait_ready('autopilot_version')
-        self.__conn.message_hooks = [self.receive]
+        def recv(s, name, message):
+            m = MAVLinkMessage(name, message)
+            self.receive(m)
+        self.__conn.add_message_listener('*', recv)
 
     @property
     def conn(self):
         return self.__conn
 
-    def send(self, message: MAVLinkMessage) -> None:
+    def send(self, message: MAVLinkGeneralMessage) -> None:
         mav = self.__conn.message_factory
         if isinstance(message, CommandLong):
             mav.command_long_send(message.target_system,
@@ -79,3 +88,4 @@ class MAVLinkConnection(Connection[MAVLinkMessage]):
     def close(self):
         if self.conn:
             self.conn.close()
+

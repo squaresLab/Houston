@@ -44,3 +44,6 @@ class Connection(Generic[T]):
         Closes the connection if open.
         """
         raise NotImplementedError
+
+    def add_hooks(self, hooks: List[Callable[[T], None]]) -> None:
+        self.__hooks.extend(hooks)

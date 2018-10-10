@@ -200,8 +200,10 @@ class Sandbox(BaseSandbox):
 
             mm = []
             last_wp = -1
-            def reached(s, name, message):
+            def reached(m):
                 #logger.debug(name)
+                name = m.name
+                message = m.message
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: {}".format(message.seq))
                     mylock.acquire()
@@ -209,12 +211,12 @@ class Sandbox(BaseSandbox):
                     event.set()
                     mylock.release()
                 elif name == 'MISSION_CURRENT':
-                    logger.debug("**MISSION_CURRENT: {}".format(message.seq))
+                    logger.debug("**MISSION_CURRENT: {}".format(type(message)))
                     self.observe()
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
-            self.vehicle.add_message_listener('*', reached)
+            self.connection.add_hooks([reached,])
             self.vehicle.armed = True
             while not self.vehicle.armed:
                 print("waiting for the rover to be armed...")
