@@ -26,11 +26,11 @@ def main():
         constant_timeout_offset=1.0,
         min_parachute_alt=10.0)
     commands = [
-        ArmDisarm(arm=False),
         ArmDisarm(arm=True),
-        Takeoff(altitude=3.0),
-        SetMode(mode='LAND'),
-        ArmDisarm(arm=False)
+        ArmDisarm(arm=False),
+#        Takeoff(altitude=3.0),
+#        SetMode(mode='LAND'),
+#        ArmDisarm(arm=False)
     ]
     state_initial = ArduCopter.state(
         home_latitude=-35.3632607,

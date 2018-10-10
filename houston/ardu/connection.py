@@ -14,8 +14,8 @@ class MAVLinkMessage(Message):
 
 @attr.s(frozen=True)
 class CommandLong(MAVLinkMessage):
-    target_system = attr.ib(type=int, default=0)
-    target_component = attr.ib(type=int, default=0)
+    target_system = attr.ib(type=int)
+    target_component = attr.ib(type=int)
     cmd_id = attr.ib(type=int)
     confirmation = attr.ib(type=int, default=0)
     param_1 = attr.ib(type=float, default=0.0)
