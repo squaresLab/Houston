@@ -38,3 +38,9 @@ class Connection(Generic[T]):
         Attempts to send a given message to the system under test.
         """
         raise NotImplementedError
+
+    def close(self) -> None:
+        """
+        Closes the connection if open.
+        """
+        raise NotImplementedError

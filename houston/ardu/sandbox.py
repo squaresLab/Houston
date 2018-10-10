@@ -9,6 +9,7 @@ import dronekit
 from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
+from .connection import CommandLong, MAVLinkConnection
 from ..sandbox import Sandbox as BaseSandbox
 from ..command import Command
 
@@ -45,6 +46,15 @@ class Sandbox(BaseSandbox):
         if self.__connection is None and raise_exception:
             raise NoConnectionError()
         return self.__connection
+
+    @property
+    def vehicle(self,
+                raise_exception: bool = True
+                ) -> Optional[dronekit.Vehicle]:
+        if not self.connection and raise_exception:
+            raise NoConnectionError()
+        return self.connection.conn
+
 
     def _launch_sitl(self,
                      name_bin: str = 'ardurover',
@@ -111,10 +121,7 @@ class Sandbox(BaseSandbox):
         time.sleep(10)
         dummy_connection.close()
         time.sleep(5)
-        self.__connection = dronekit.connect(url, wait_ready=True)
-
-        # wait until vehicle is ready to test
-        self.__connection.wait_ready('autopilot_version')
+        self.__connection = MAVLinkConnection(url)
 
         # FIXME add timeout
         # wait for longitude and latitude to match their expected values, and
@@ -138,8 +145,8 @@ class Sandbox(BaseSandbox):
         # wait until the vehicle is in GUIDED mode
         # TODO: add timeout
         guided_mode = dronekit.VehicleMode('GUIDED')
-        self.__connection.mode = guided_mode
-        while self.__connection.mode != guided_mode:
+        self.vehicle.mode = guided_mode
+        while self.vehicle.mode != guided_mode:
             time.sleep(0.05)
 
     def stop(self) -> None:
@@ -181,7 +188,7 @@ class Sandbox(BaseSandbox):
                 cmds.append(cmd.to_message().to_dronekit_command())
                 cmds.append(delay)
 
-            vcmds = self.connection.commands
+            vcmds = self.vehicle.commands
             vcmds.clear()
             for cmd in cmds:
                 vcmds.add(cmd)
@@ -207,17 +214,17 @@ class Sandbox(BaseSandbox):
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
-            self.connection.add_message_listener('*', reached)
-            self.connection.armed = True
-            while not self.connection.armed:
+            self.vehicle.add_message_listener('*', reached)
+            self.vehicle.armed = True
+            while not self.vehicle.armed:
                 print("waiting for the rover to be armed...")
                 time.sleep(0.1)
-                self.connection.armed = True
+                self.vehicle.armed = True
 
-            self.connection.mode = dronekit.VehicleMode("AUTO")
-            message = self.connection.message_factory.command_long_encode(
+            self.vehicle.mode = dronekit.VehicleMode("AUTO")
+            message = CommandLong(
                         0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
-            self.connection.send_mavlink(message)
+            self.connection.send(message)
             logger.debug("sent mission start message to vehicle")
             while len(mm) != len(cmds) - 1:
                 event.wait()

@@ -52,12 +52,17 @@ class MAVLinkConnection(Connection[MAVLinkMessage]):
     Uses the MAVLink protocol to provide a connection to a system under test.
     """
     def __init__(self, url: str) -> None:
-        super().__init__()
-        self.__conn = pymavlink.mavutil.mavudp(url)
+        super().__init__(url)
+        self.__conn = dronekit.connect(url, wait_ready=True)
+        self.__conn.wait_ready('autopilot_version')
         self.__conn.message_hooks = [self.receive]
 
+    @property
+    def conn(self):
+        return self.__conn
+
     def send(self, message: MAVLinkMessage) -> None:
-        mav = self.__conn.mav
+        mav = self.__conn.message_factory
         if isinstance(message, CommandLong):
             mav.command_long_send(message.target_system,
                                   message.target_component,
@@ -70,3 +75,7 @@ class MAVLinkConnection(Connection[MAVLinkMessage]):
                                   message.param_5,
                                   message.param_6,
                                   message.param_7)
+
+    def close(self):
+        if self.conn:
+            self.conn.close()
