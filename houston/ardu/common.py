@@ -81,5 +81,5 @@ class ArmDisarm(Command):
         msg = CommandLong(
             0, 0,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0, arm_flag, 0, 0, 0, 0, 0, 0)
+            0, 1 if self.arm else 0, 0, 0, 0, 0, 0, 0)
         return msg

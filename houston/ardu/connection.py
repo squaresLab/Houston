@@ -1,7 +1,9 @@
 __all__ = ['MAVLinkMessage', 'CommandLong', 'MAVLinkConnection']
 
 import pymavlink
+from pymavlink import mavutil
 import attr
+import dronekit
 
 from ..connection import Message, Connection
 
@@ -25,6 +27,24 @@ class CommandLong(MAVLinkMessage):
     param_5 = attr.ib(type=float, default=0.0)
     param_6 = attr.ib(type=float, default=0.0)
     param_7 = attr.ib(type=float, default=0.0)
+
+    def to_dronekit_command(self) -> dronekit.Command:
+        cmd = dronekit.Command(self.target_system,
+                            self.target_component,
+                            0, # Sequence number automatically saved
+                            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                            self.cmd_id,
+                            0, # current (not supported)
+                            0, # autocontinue (not supported)
+                            self.param_1,
+                            self.param_2,
+                            self.param_3,
+                            self.param_4,
+                            self.param_5,
+                            self.param_6,
+                            self.param_7)
+        return cmd
+
 
 
 class MAVLinkConnection(Connection[MAVLinkMessage]):

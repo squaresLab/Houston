@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Sequence
 import time
 import os
 import sys
@@ -10,6 +10,7 @@ from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
 from ..sandbox import Sandbox as BaseSandbox
+from ..command import Command
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -154,3 +155,77 @@ class Sandbox(BaseSandbox):
         Called immediately after a connection to the vehicle is established.
         """
         return True
+
+    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
+        """
+        Executes a mission, represented as a sequence of commands, and
+        returns a description of the outcome.
+        """
+        config = self.configuration
+        env = self.environment
+        with self.__lock:
+            outcomes = []  # type: List[CommandOutcome]
+            passed = True
+            initial = dronekit.Command(0, 0, 0,
+                                    0, 16, 0, 0,
+                                    0.0, 0.0, 0.0, 0.0,
+                                    -35.3632607, 149.1652351, 584)
+            delay = dronekit.Command(0, 0, 0,
+                                    3, 93, 0, 0,
+                                    10, -1, -1, -1,
+                                    0, 0, 0)
+
+
+            cmds = [initial,]
+            for cmd in commands:
+                cmds.append(cmd.to_message().to_dronekit_command())
+                cmds.append(delay)
+
+            vcmds = self.connection.commands
+            vcmds.clear()
+            for cmd in cmds:
+                vcmds.add(cmd)
+            vcmds.upload()
+            logger.debug("Mission uploaded")
+            vcmds.wait_ready()
+            mylock = threading.Lock()
+            event = threading.Event()
+
+            mm = []
+            last_wp = -1
+            def reached(s, name, message):
+                #logger.debug(name)
+                if name == 'MISSION_ITEM_REACHED':
+                    logger.debug("**MISSION_ITEM_REACHED: {}".format(message.seq))
+                    mylock.acquire()
+                    last_wp = message.seq
+                    event.set()
+                    mylock.release()
+                elif name == 'MISSION_CURRENT':
+                    logger.debug("**MISSION_CURRENT: {}".format(message.seq))
+                    self.observe()
+                    logger.debug("STATE: {}".format(self.state))
+                elif name == 'MISSION_ACK':
+                    logger.debug("**MISSION_ACK: {}".format(message.type))
+            self.connection.add_message_listener('*', reached)
+            self.connection.armed = True
+            while not self.connection.armed:
+                print("waiting for the rover to be armed...")
+                time.sleep(0.1)
+                self.connection.armed = True
+
+            self.connection.mode = dronekit.VehicleMode("AUTO")
+            message = self.connection.message_factory.command_long_encode(
+                        0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
+            self.connection.send_mavlink(message)
+            logger.debug("sent mission start message to vehicle")
+            while len(mm) != len(cmds) - 1:
+                event.wait()
+                mylock.acquire()
+                self.observe()
+                logger.debug("STATE: {}".format(self.state))
+                mm.append((last_wp, self.state))
+                event.clear()
+                mylock.release()
+
+            return None

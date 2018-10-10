@@ -4,7 +4,7 @@ import houston
 import bugzoo
 from houston import Environment, Mission
 from houston.ardu.configuration import Configuration
-from houston.ardu.copter import ArmDisarm, Takeoff, SetMode
+from houston.ardu.copter import ArmDisarm, Takeoff, SetMode, GoTo
 from houston.ardu.copter.state import State
 from houston.ardu.copter.sandbox import Sandbox
 from houston.ardu.copter.copter import ArduCopter
@@ -26,9 +26,10 @@ def main():
         constant_timeout_offset=1.0,
         min_parachute_alt=10.0)
     commands = [
-        ArmDisarm(arm=True),
-        ArmDisarm(arm=False),
-#        Takeoff(altitude=3.0),
+#        ArmDisarm(arm=True),
+#        ArmDisarm(arm=False),
+        Takeoff(altitude=3.0),
+        GoTo(latitude=-35.3632607, longitude=149.1662351, altitude=3.4)
 #        SetMode(mode='LAND'),
 #        ArmDisarm(arm=False)
     ]
