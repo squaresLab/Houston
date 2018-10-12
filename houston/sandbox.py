@@ -89,6 +89,7 @@ class Sandbox(object):
                  configuration: Configuration
                  ) -> None:
         self.__lock = threading.Lock()
+        self.__state_lock = threading.Lock()
         self._bugzoo = client_bugzoo
         self.__container = container
         self.__state = state_initial
@@ -243,4 +244,5 @@ class Sandbox(object):
         values = {name: v.read(self) for (name, v) in variables.items()}
         values['time_offset'] = self.running_time
         state_new = state_class(**values)
-        self.__state = state_new
+        with self.__state_lock:
+            self.__state = state_new

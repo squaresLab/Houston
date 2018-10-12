@@ -1,5 +1,6 @@
 from typing import Optional, Sequence
 import time
+from timeit import default_timer as timer
 import os
 import sys
 import threading
@@ -11,7 +12,7 @@ from pymavlink import mavutil
 
 from .connection import CommandLong, MAVLinkConnection
 from ..sandbox import Sandbox as BaseSandbox
-from ..command import Command
+from ..command import Command, CommandOutcome
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -168,6 +169,7 @@ class Sandbox(BaseSandbox):
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
         """
+        from ..mission import MissionOutcome
         config = self.configuration
         env = self.environment
         with self.__lock:
@@ -182,7 +184,6 @@ class Sandbox(BaseSandbox):
                                     10, -1, -1, -1,
                                     0, 0, 0)
 
-
             cmds = [initial,]
             for cmd in commands:
                 cmds.append(cmd.to_message().to_dronekit_command())
@@ -195,11 +196,12 @@ class Sandbox(BaseSandbox):
             vcmds.upload()
             logger.debug("Mission uploaded")
             vcmds.wait_ready()
+
             mylock = threading.Lock()
             event = threading.Event()
 
-            mm = []
-            last_wp = -1
+            wp_state = {}
+            last_wp = [-1]
             def reached(m):
                 #logger.debug(name)
                 name = m.name
@@ -207,11 +209,11 @@ class Sandbox(BaseSandbox):
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: {}".format(message.seq))
                     mylock.acquire()
-                    last_wp = message.seq
+                    last_wp[0] = int(message.seq)
                     event.set()
                     mylock.release()
                 elif name == 'MISSION_CURRENT':
-                    logger.debug("**MISSION_CURRENT: {}".format(type(message)))
+                    logger.debug("**MISSION_CURRENT: {}".format(message.seq))
                     self.observe()
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
@@ -224,17 +226,52 @@ class Sandbox(BaseSandbox):
                 self.vehicle.armed = True
 
             self.vehicle.mode = dronekit.VehicleMode("AUTO")
+            self.observe()
+            initial_state = self.state
             message = CommandLong(
                         0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
             self.connection.send(message)
             logger.debug("sent mission start message to vehicle")
-            while len(mm) != len(cmds) - 1:
+            time_start = timer()
+
+            while last_wp[0] < len(cmds) - 1:
                 event.wait()
                 mylock.acquire()
                 self.observe()
                 logger.debug("STATE: {}".format(self.state))
-                mm.append((last_wp, self.state))
+                current_time = timer()
+                wp_state[last_wp[0]] = (self.state, current_time - time_start)
+                time_start = current_time
                 event.clear()
                 mylock.release()
 
-            return None
+            outcomes = []
+            state_before = initial_state
+            mission_passed = True
+            mission_time = 0.0
+            for i in range(len(commands)):
+                cmd_index = 1 + i * 2
+                time_elapsed = wp_state[cmd_index][1] # FIXME this whole time elapsed thing is wrong
+                state_after = wp_state[cmd_index+1][0]
+                command = commands[i]
+		# determine which spec the system should observe
+                spec = command.resolve(state_before, env, config)
+                postcondition = spec.postcondition
+                passed = postcondition.is_satisfied(command,
+                                                    state_before,
+                                                    state_after,
+                                                    env,
+                                                    config)
+                mission_passed = mission_passed and passed
+                outcome = CommandOutcome(command,
+                                         passed,
+                                         state_before,
+                                         state_after,
+                                         time_elapsed)
+                outcomes.append(outcome)
+                state_before = state_after
+                mission_time += time_elapsed
+
+            return MissionOutcome(mission_passed, outcomes, mission_time)
+
+
