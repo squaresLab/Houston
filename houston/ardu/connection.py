@@ -2,7 +2,7 @@ __all__ = ['MAVLinkMessage', 'CommandLong', 'MAVLinkConnection']
 
 from typing import Any, List, Callable
 import pymavlink
-from pymavlink import mavutil
+from pymavlink.mavutil import mavlink
 import attr
 import dronekit
 
@@ -29,38 +29,44 @@ class CommandLong(MAVLinkGeneralMessage):
     param_6 = attr.ib(type=float, default=0.0)
     param_7 = attr.ib(type=float, default=0.0)
 
-    def to_dronekit_command(self) -> dronekit.Command:
+    def to_dronekit_command(self,
+                            frame: int = mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT
+                            ) -> dronekit.Command:
         cmd = dronekit.Command(self.target_system,
-                            self.target_component,
-                            0, # Sequence number automatically saved
-                            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                            self.cmd_id,
-                            0, # current (not supported)
-                            0, # autocontinue (not supported)
-                            self.param_1,
-                            self.param_2,
-                            self.param_3,
-                            self.param_4,
-                            self.param_5,
-                            self.param_6,
-                            self.param_7)
+                               self.target_component,
+                               0,  # Sequence number automatically saved
+                               frame,
+                               self.cmd_id,
+                               0,  # current (not supported)
+                               0,  # autocontinue (not supported)
+                               self.param_1,
+                               self.param_2,
+                               self.param_3,
+                               self.param_4,
+                               self.param_5,
+                               self.param_6,
+                               self.param_7)
         return cmd
 
 
 @attr.s(frozen=True)
 class MAVLinkMessage(MAVLinkGeneralMessage):
     name = attr.ib(type=str)
-    message = attr.ib(type=Any) # FIXME MAVLink message type
+    message = attr.ib(type=Any)  # FIXME MAVLink message type
 
 
 class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
     """
     Uses the MAVLink protocol to provide a connection to a system under test.
     """
-    def __init__(self, url: str, hooks: List[Callable[[MAVLinkGeneralMessage], None]] = None) -> None:
+    def __init__(self,
+                 url: str,
+                 hooks: List[Callable[[MAVLinkGeneralMessage], None]] = None
+                 ) -> None:
         super().__init__(hooks)
         self.__conn = dronekit.connect(url, wait_ready=True)
         self.__conn.wait_ready('autopilot_version')
+
         def recv(s, name, message):
             m = MAVLinkMessage(name, message)
             self.receive(m)
@@ -88,4 +94,3 @@ class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
     def close(self):
         if self.conn:
             self.conn.close()
-

@@ -56,7 +56,6 @@ class Sandbox(BaseSandbox):
             raise NoConnectionError()
         return self.connection.conn
 
-
     def _launch_sitl(self,
                      name_bin: str = 'ardurover',
                      name_model: str = 'rover',
@@ -175,16 +174,17 @@ class Sandbox(BaseSandbox):
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
+            # FIXME The initial command should be based on initial state
             initial = dronekit.Command(0, 0, 0,
-                                    0, 16, 0, 0,
-                                    0.0, 0.0, 0.0, 0.0,
-                                    -35.3632607, 149.1652351, 584)
+                                       0, 16, 0, 0,
+                                       0.0, 0.0, 0.0, 0.0,
+                                       -35.3632607, 149.1652351, 584)
             delay = dronekit.Command(0, 0, 0,
-                                    3, 93, 0, 0,
-                                    10, -1, -1, -1,
-                                    0, 0, 0)
+                                     3, 93, 0, 0,
+                                     10, -1, -1, -1,
+                                     0, 0, 0)
 
-            cmds = [initial,]
+            cmds = [initial]
             for cmd in commands:
                 cmds.append(cmd.to_message().to_dronekit_command())
                 cmds.append(delay)
@@ -202,12 +202,12 @@ class Sandbox(BaseSandbox):
 
             wp_state = {}
             last_wp = [-1]
+
             def reached(m):
-                #logger.debug(name)
                 name = m.name
                 message = m.message
                 if name == 'MISSION_ITEM_REACHED':
-                    logger.debug("**MISSION_ITEM_REACHED: {}".format(message.seq))
+                    logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
                     mylock.acquire()
                     last_wp[0] = int(message.seq)
                     event.set()
@@ -218,7 +218,7 @@ class Sandbox(BaseSandbox):
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
-            self.connection.add_hooks([reached,])
+            self.connection.add_hooks([reached])
             self.vehicle.armed = True
             while not self.vehicle.armed:
                 print("waiting for the rover to be armed...")
@@ -229,7 +229,7 @@ class Sandbox(BaseSandbox):
             self.observe()
             initial_state = self.state
             message = CommandLong(
-                        0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
+                0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
             self.connection.send(message)
             logger.debug("sent mission start message to vehicle")
             time_start = timer()
@@ -251,10 +251,11 @@ class Sandbox(BaseSandbox):
             mission_time = 0.0
             for i in range(len(commands)):
                 cmd_index = 1 + i * 2
-                time_elapsed = wp_state[cmd_index][1] # FIXME this whole time elapsed thing is wrong
-                state_after = wp_state[cmd_index+1][0]
+                time_elapsed = wp_state[cmd_index][1]
+                # FIXME this whole time elapsed thing is wrong
+                state_after = wp_state[cmd_index + 1][0]
                 command = commands[i]
-		# determine which spec the system should observe
+                # determine which spec the system should observe
                 spec = command.resolve(state_before, env, config)
                 postcondition = spec.postcondition
                 passed = postcondition.is_satisfied(command,
@@ -273,5 +274,3 @@ class Sandbox(BaseSandbox):
                 mission_time += time_elapsed
 
             return MissionOutcome(mission_passed, outcomes, mission_time)
-
-
