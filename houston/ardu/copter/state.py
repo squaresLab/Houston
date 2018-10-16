@@ -49,7 +49,8 @@ class State(BaseState):
                time_offset: float,
                connection: MAVLinkConnection
                ) -> 'State':
-        values = {name: v.read(connection) for (name, v) in self.variables.items()}
+        values = {name: v.read(connection)
+                  for (name, v) in self.variables.items()}
         values['time_offset'] = time_offset
         state_new = self.__class__(**values)
         return state_new

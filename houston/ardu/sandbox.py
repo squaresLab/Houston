@@ -126,7 +126,8 @@ class Sandbox(BaseSandbox):
         event = threading.Event()
 
         def stdout(v, name, message):
-            if name == "STATUSTEXT" and "EKF2 IMU0 Origin set to GPS" in str(message.text):
+            if name == "STATUSTEXT" and \
+                    "EKF2 IMU0 Origin set to GPS" in str(message.text):
                 logger.debug("Vehicle is ready")
                 event.set()
 
@@ -290,5 +291,7 @@ class Sandbox(BaseSandbox):
     def update(self, message: Message) -> None:
         logger.debug("UPDATE")
         with self.__state_lock:
-            self.__state = self.__state.evolve(message, self.running_time, self.connection)
+            self.__state = self.__state.evolve(message,
+                                               self.running_time,
+                                               self.connection)
             logger.debug("S: {}".format(self.state))
