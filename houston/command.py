@@ -7,6 +7,7 @@ import logging
 
 import attr
 
+from .connection import Message
 from .specification import Specification
 from .configuration import Configuration
 from .state import State
@@ -79,6 +80,11 @@ class CommandMeta(type):
             msg = "'name' field must not be an empty string"
             raise TypeError(tpl_err.format(msg))
         logger.debug("obtained command name: %s", name_command)
+
+        # ensure "to_message" is implemented
+        if 'to_message' not in ns:
+            msg = "missing 'to_message' method in Command definition"
+            raise TypeError(tpl_err.format(msg))
 
         # build parameters
         logger.debug("building command parameters")
@@ -329,6 +335,13 @@ class Command(object, metaclass=CommandMeta):
                                               config):
                 return spec
         raise Exception("failed to resolve specification")
+
+    def to_message(self) -> Message:
+        """
+        Transforms this command into a message that can be sent to the system
+        under test.
+        """
+        raise NotImplementedError
 
     def __iter__(self) -> Iterator[Parameter]:
         yield from self.__class__.parameters

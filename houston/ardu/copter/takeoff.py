@@ -5,6 +5,7 @@ import math
 
 from pymavlink import mavutil
 
+from ..connection import CommandLong
 from ...configuration import Configuration
 from ...state import State
 from ...specification import Specification
@@ -63,3 +64,11 @@ class Takeoff(Command):
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             0, 1, 0, 0, 0, 0, 0, self.altitude)
         vehicle.send_mavlink(msg)
+
+    def to_message(self) -> CommandLong:
+        msg = CommandLong(
+            0, 0,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            param_1=0,
+            param_7=self.altitude)
+        return msg

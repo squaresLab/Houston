@@ -9,6 +9,8 @@ import math
 
 import attr
 
+from .connection import Message
+
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
@@ -268,3 +270,10 @@ class State(object, metaclass=StateMeta):
 
     def __iter__(self) -> Iterator[Variable]:
         yield from self.__class__.variables.values()
+
+    def evolve(self, message: Message, time_offset: float) -> 'State':
+        """
+        Create a new state object evloved from this state based on the
+        received message.
+        """
+        raise NotImplementedError
