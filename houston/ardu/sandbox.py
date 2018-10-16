@@ -10,7 +10,7 @@ import dronekit
 from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
-from .connection import CommandLong, MAVLinkConnection
+from .connection import CommandLong, MAVLinkConnection, MAVLinkMessage
 from ..sandbox import Sandbox as BaseSandbox
 from ..command import Command, CommandOutcome
 from ..connection import Message
@@ -122,18 +122,20 @@ class Sandbox(BaseSandbox):
         time.sleep(10)
         dummy_connection.close()
         time.sleep(5)
-        self.__connection = MAVLinkConnection(url, [self.update])
         event = threading.Event()
 
-        def stdout(v, name, message):
+        def stdout(m: MAVLinkMessage):
+            name = m.name
+            message = m.message
             if name == "STATUSTEXT" and \
                     "EKF2 IMU0 Origin set to GPS" in str(message.text):
                 logger.debug("Vehicle is ready")
                 event.set()
 
-        self.vehicle.add_message_listener("STATUSTEXT", stdout)
+        self.__connection = MAVLinkConnection(url, {'update': self.update,
+                                                    'std': stdout})
         event.wait(10)
-        self.vehicle.remove_message_listener("STATUSTEXT", stdout)
+        self.__connection.remove_hook('std')
 
         # FIXME add timeout
         # wait for longitude and latitude to match their expected values, and
@@ -192,6 +194,7 @@ class Sandbox(BaseSandbox):
                                        0, 16, 0, 0,
                                        0.0, 0.0, 0.0, 0.0,
                                        -35.3632607, 149.1652351, 584)
+            # 10 seconds delay to allow the robot to reach its stable state
             delay = dronekit.Command(0, 0, 0,
                                      3, 93, 0, 0,
                                      10, -1, -1, -1,
@@ -231,7 +234,7 @@ class Sandbox(BaseSandbox):
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
-            self.connection.add_hooks([reached])
+            self.connection.add_hooks({'reached': reached})
             self.vehicle.armed = True
             while not self.vehicle.armed:
                 print("waiting for the rover to be armed...")
@@ -258,6 +261,7 @@ class Sandbox(BaseSandbox):
                 event.clear()
                 mylock.release()
 
+            self.connection.remove_hook('reached')
             outcomes = []
             state_before = initial_state
             mission_passed = True

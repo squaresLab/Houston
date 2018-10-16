@@ -1,6 +1,6 @@
 __all__ = ['MAVLinkMessage', 'CommandLong', 'MAVLinkConnection']
 
-from typing import Any, List, Callable
+from typing import Any, List, Callable, Dict
 import pymavlink
 from pymavlink.mavutil import mavlink
 import attr
@@ -55,13 +55,16 @@ class MAVLinkMessage(MAVLinkGeneralMessage):
     message = attr.ib(type=Any)  # FIXME MAVLink message type
 
 
+HOOK_TYPE = Dict[str, Callable[[MAVLinkGeneralMessage], None]]
+
+
 class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
     """
     Uses the MAVLink protocol to provide a connection to a system under test.
     """
     def __init__(self,
                  url: str,
-                 hooks: List[Callable[[MAVLinkGeneralMessage], None]] = None
+                 hooks: HOOK_TYPE = None
                  ) -> None:
         super().__init__(hooks)
         self.__conn = dronekit.connect(url, wait_ready=True)
