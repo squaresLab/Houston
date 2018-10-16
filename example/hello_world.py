@@ -15,7 +15,7 @@ from houston.mission import Mission
 from houston.runner import MissionRunnerPool
 #from houston.ardu.common.goto import CircleBasedGotoGenerator
 from houston.root_cause.delta_debugging import DeltaDebugging
-from houston.root_cause.symex import SymbolicExecution 
+from houston.root_cause.symex import SymbolicExecution
 import copy
 from houston.ardu.copter.state import State as CopterState
 from houston.ardu.rover.state import State as RoverState
@@ -156,7 +156,7 @@ def generate_with_se(sut, initial, environment, config, mission):
 if __name__ == "__main__":
     setup_logging()
     bz = BugZoo()
-    snapshot = bz.bugs['afrl:overflow']
+    snapshot = 'ardubugs:742cdf6b'
     #snapshot = bz.bugs['afrl:AIS-Scenario1']
 
     config = ArduConfig(
@@ -164,19 +164,20 @@ if __name__ == "__main__":
         time_per_metre_travelled=5.0,
         constant_timeout_offset=1.0,
         min_parachute_alt=10.0)
-    sut = houston.ardu.ArduCopter(snapshot, config)
+
+    sut = houston.ardu.copter.copter.ArduCopter
 
     # mission description
-    cmds = [
+    cmds = (
         ArmDisarm(arm=False),
         ArmDisarm(arm=True),
         #SetMode(mode='GUIDED'),
-        Takeoff(altitude=3.0),
+        #Takeoff(altitude=3.0),
         #GoTo(latitude=-35.361354, longitude=149.165218, altitude=5.0),
-        SetMode(mode='LAND'),
-        ArmDisarm(arm=False)
-    ]
-    
+        #SetMode(mode='LAND'),
+        #ArmDisarm(arm=False)
+    )
+
     environment = Environment({})
     initial = CopterState(
         home_latitude=-35.3632607,
@@ -200,10 +201,15 @@ if __name__ == "__main__":
         vy=0.0,
         vz=0.0,
         time_offset=0.0)
-    mission = Mission(config, environment, initial, cmds)
+    mission = Mission(config, environment, initial, cmds, sut)
 
     # create a container for the mission execution
-    #sandbox = sut.provision(bz)
+    #sandbox = sut.sandbox.launch(bz,
+    #                             container,
+    #                             initial,
+    #                             environment,
+    #                             config)
+
     try:
         #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
@@ -213,8 +219,8 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        #d = DeltaDebugging(sut, initial, environment, config, [mission])
-        #d.find_root_cause()
+        d = DeltaDebugging(sut, initial, environment, config, [mission], bz, snapshot)
+        d.find_root_cause()
 
 
         #generate(sut, initial, environment, 100, 10)
@@ -222,8 +228,8 @@ if __name__ == "__main__":
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        generate_with_se(sut, initial, environment, config, mission)
+        #generate_with_se(sut, initial, environment, config, mission)
 
     finally:
-#        sandbox.destroy()
+        #del bz.containers[container.id]
         pass
