@@ -13,6 +13,7 @@ from pymavlink import mavutil
 from .connection import CommandLong, MAVLinkConnection
 from ..sandbox import Sandbox as BaseSandbox
 from ..command import Command, CommandOutcome
+from ..connection import Message
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -121,7 +122,17 @@ class Sandbox(BaseSandbox):
         time.sleep(10)
         dummy_connection.close()
         time.sleep(5)
-        self.__connection = MAVLinkConnection(url)
+        self.__connection = MAVLinkConnection(url, [self.update])
+        event = threading.Event()
+
+        def stdout(v, name, message):
+            if name == "STATUSTEXT" and "EKF2 IMU0 Origin set to GPS" in str(message.text):
+                logger.debug("Vehicle is ready")
+                event.set()
+
+        self.vehicle.add_message_listener("STATUSTEXT", stdout)
+        event.wait(10)
+        self.vehicle.remove_message_listener("STATUSTEXT", stdout)
 
         # FIXME add timeout
         # wait for longitude and latitude to match their expected values, and
@@ -131,7 +142,7 @@ class Sandbox(BaseSandbox):
         initial_armable = self.state_initial['armable']
         v = self.state_initial.__class__.variables
         while True:
-            self.observe()
+            # self.observe()
             ready_lon = v['longitude'].eq(initial_lon, self.state['longitude'])
             ready_lat = v['latitude'].eq(initial_lat, self.state['latitude'])
             ready_armable = self.state['armable'] == initial_armable
@@ -148,6 +159,7 @@ class Sandbox(BaseSandbox):
         self.vehicle.mode = guided_mode
         while self.vehicle.mode != guided_mode:
             time.sleep(0.05)
+        logger.debug("Mode done")
 
     def stop(self) -> None:
         bzc = self._bugzoo.containers
@@ -214,7 +226,7 @@ class Sandbox(BaseSandbox):
                     mylock.release()
                 elif name == 'MISSION_CURRENT':
                     logger.debug("**MISSION_CURRENT: {}".format(message.seq))
-                    self.observe()
+                    # self.observe()
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
@@ -226,7 +238,7 @@ class Sandbox(BaseSandbox):
                 self.vehicle.armed = True
 
             self.vehicle.mode = dronekit.VehicleMode("AUTO")
-            self.observe()
+            # self.observe()
             initial_state = self.state
             message = CommandLong(
                 0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
@@ -237,7 +249,7 @@ class Sandbox(BaseSandbox):
             while last_wp[0] < len(cmds) - 1:
                 event.wait()
                 mylock.acquire()
-                self.observe()
+                # self.observe()
                 logger.debug("STATE: {}".format(self.state))
                 current_time = timer()
                 wp_state[last_wp[0]] = (self.state, current_time - time_start)
@@ -274,3 +286,9 @@ class Sandbox(BaseSandbox):
                 mission_time += time_elapsed
 
             return MissionOutcome(mission_passed, outcomes, mission_time)
+
+    def update(self, message: Message) -> None:
+        logger.debug("UPDATE")
+        with self.__state_lock:
+            self.__state = self.__state.evolve(message, self.running_time, self.connection)
+            logger.debug("S: {}".format(self.state))

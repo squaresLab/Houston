@@ -13,6 +13,7 @@ from bugzoo.client import Client as BugZooClient
 from bugzoo.core.container import Container
 from bugzoo.core.fileline import FileLineSet
 
+from .connection import Message
 from .environment import Environment
 from .configuration import Configuration
 from .state import State
@@ -246,3 +247,7 @@ class Sandbox(object):
         state_new = state_class(**values)
         with self.__state_lock:
             self.__state = state_new
+
+    def update(self, message: Message) -> None:
+        with self.__state_lock:
+            self.__state = self.__state.evolve(message, self.running_time)
