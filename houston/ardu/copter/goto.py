@@ -62,11 +62,12 @@ class GoTo(Command):
     ]
 
     def to_message(self) -> Message:
-        return CommandLong(cmd_id=mavutil.MAV_CMD_NAV_WAYPOINT,
-                           param1=2,  # FIXME frame?
-                           param5=self.latitude,
-                           param6=self.longitude,
-                           param7=self.altitude)
+        return CommandLong(target_system=0,
+                           target_component=0,
+                           cmd_id=mavlink.MAV_CMD_NAV_WAYPOINT,
+                           param_5=self.latitude,
+                           param_6=self.longitude,
+                           param_7=self.altitude)
 
     def dispatch(self,
                  sandbox: 'Sandbox',
