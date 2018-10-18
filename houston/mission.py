@@ -80,7 +80,7 @@ class Mission(object):
         Creates a sandbox and runs the commands and returns the outcome.
         """
         with self.system.sandbox.for_snapshot(bz,
-                                              snapshot,
+                                              snapshot_or_name,
                                               self.initial_state,
                                               self.environment,
                                               self.configuration) as sandbox:

@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, Sequence
 import time
+from timeit import default_timer as timer
 import os
 import sys
 import threading
@@ -9,7 +10,11 @@ import dronekit
 from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
+from .connection import CommandLong, MAVLinkConnection, MAVLinkMessage
 from ..sandbox import Sandbox as BaseSandbox
+from ..command import Command, CommandOutcome
+from ..connection import Message
+from ..mission import MissionOutcome
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -44,6 +49,14 @@ class Sandbox(BaseSandbox):
         if self.__connection is None and raise_exception:
             raise NoConnectionError()
         return self.__connection
+
+    @property
+    def vehicle(self,
+                raise_exception: bool = True
+                ) -> Optional[dronekit.Vehicle]:
+        if not self.connection and raise_exception:
+            raise NoConnectionError()
+        return self.connection.conn
 
     def _launch_sitl(self,
                      name_bin: str = 'ardurover',
@@ -110,10 +123,20 @@ class Sandbox(BaseSandbox):
         time.sleep(10)
         dummy_connection.close()
         time.sleep(5)
-        self.__connection = dronekit.connect(url, wait_ready=True)
+        event = threading.Event()
 
-        # wait until vehicle is ready to test
-        self.__connection.wait_ready('autopilot_version')
+        def stdout(m: MAVLinkMessage):
+            name = m.name
+            message = m.message
+            if name == "STATUSTEXT" and \
+                    "EKF2 IMU0 Origin set to GPS" in str(message.text):
+                logger.debug("Vehicle is ready")
+                event.set()
+
+        self.__connection = MAVLinkConnection(url, {'update': self.update,
+                                                    'std': stdout})
+        event.wait(10)
+        self.__connection.remove_hook('std')
 
         # FIXME add timeout
         # wait for longitude and latitude to match their expected values, and
@@ -123,7 +146,7 @@ class Sandbox(BaseSandbox):
         initial_armable = self.state_initial['armable']
         v = self.state_initial.__class__.variables
         while True:
-            self.observe()
+            # self.observe()
             ready_lon = v['longitude'].eq(initial_lon, self.state['longitude'])
             ready_lat = v['latitude'].eq(initial_lat, self.state['latitude'])
             ready_armable = self.state['armable'] == initial_armable
@@ -137,9 +160,10 @@ class Sandbox(BaseSandbox):
         # wait until the vehicle is in GUIDED mode
         # TODO: add timeout
         guided_mode = dronekit.VehicleMode('GUIDED')
-        self.__connection.mode = guided_mode
-        while self.__connection.mode != guided_mode:
+        self.vehicle.mode = guided_mode
+        while self.vehicle.mode != guided_mode:
             time.sleep(0.05)
+        logger.debug("Mode done")
 
     def stop(self) -> None:
         bzc = self._bugzoo.containers
@@ -154,3 +178,121 @@ class Sandbox(BaseSandbox):
         Called immediately after a connection to the vehicle is established.
         """
         return True
+
+    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
+        """
+        Executes a mission, represented as a sequence of commands, and
+        returns a description of the outcome.
+        """
+        config = self.configuration
+        env = self.environment
+        with self.__lock:
+            outcomes = []  # type: List[CommandOutcome]
+            passed = True
+            # FIXME The initial command should be based on initial state
+            initial = dronekit.Command(0, 0, 0,
+                                       0, 16, 0, 0,
+                                       0.0, 0.0, 0.0, 0.0,
+                                       -35.3632607, 149.1652351, 584)
+            # 10 seconds delay to allow the robot to reach its stable state
+            delay = dronekit.Command(0, 0, 0,
+                                     3, 93, 0, 0,
+                                     10, -1, -1, -1,
+                                     0, 0, 0)
+
+            cmds = [initial]
+            for cmd in commands:
+                cmds.append(cmd.to_message().to_dronekit_command())
+                cmds.append(delay)
+
+            vcmds = self.vehicle.commands
+            vcmds.clear()
+            for cmd in cmds:
+                vcmds.add(cmd)
+            vcmds.upload()
+            logger.debug("Mission uploaded")
+            vcmds.wait_ready()
+
+            mylock = threading.Lock()
+            event = threading.Event()
+
+            wp_state = {}
+            last_wp = [-1]
+
+            def reached(m):
+                name = m.name
+                message = m.message
+                if name == 'MISSION_ITEM_REACHED':
+                    logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
+                    with mylock:
+                        last_wp[0] = int(message.seq)
+                        event.set()
+                elif name == 'MISSION_CURRENT':
+                    logger.debug("**MISSION_CURRENT: {}".format(message.seq))
+                    logger.debug("STATE: {}".format(self.state))
+                elif name == 'MISSION_ACK':
+                    logger.debug("**MISSION_ACK: {}".format(message.type))
+            self.connection.add_hooks({'reached': reached})
+            self.vehicle.armed = True
+            while not self.vehicle.armed:
+                logger.info("waiting for the rover to be armed...")
+                time.sleep(0.1)
+                self.vehicle.armed = True
+
+            self.vehicle.mode = dronekit.VehicleMode("AUTO")
+            initial_state = self.state
+            message = CommandLong(
+                0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
+            self.connection.send(message)
+            logger.debug("sent mission start message to vehicle")
+            time_start = timer()
+
+            while last_wp[0] < len(cmds) - 1:
+                event.wait()
+                with mylock:
+                    # self.observe()
+                    logger.debug("STATE: {}".format(self.state))
+                    current_time = timer()
+                    time_passed = current_time - time_start
+                    wp_state[last_wp[0]] = (self.state, time_passed)
+                    time_start = current_time
+                    event.clear()
+
+            self.connection.remove_hook('reached')
+            outcomes = []
+            state_before = initial_state
+            mission_passed = True
+            mission_time = 0.0
+            for i in range(len(commands)):
+                cmd_index = 1 + i * 2
+                time_elapsed = wp_state[cmd_index][1]
+                # FIXME this whole time elapsed thing is wrong
+                state_after = wp_state[cmd_index + 1][0]
+                command = commands[i]
+                # determine which spec the system should observe
+                spec = command.resolve(state_before, env, config)
+                postcondition = spec.postcondition
+                passed = postcondition.is_satisfied(command,
+                                                    state_before,
+                                                    state_after,
+                                                    env,
+                                                    config)
+                mission_passed = mission_passed and passed
+                outcome = CommandOutcome(command,
+                                         passed,
+                                         state_before,
+                                         state_after,
+                                         time_elapsed)
+                outcomes.append(outcome)
+                state_before = state_after
+                mission_time += time_elapsed
+
+            return MissionOutcome(mission_passed, outcomes, mission_time)
+
+    def update(self, message: Message) -> None:
+        logger.debug("UPDATE")
+        with self.__state_lock:
+            self.__state = self.__state.evolve(message,
+                                               self.running_time,
+                                               self.connection)
+            logger.debug("S: %s", self.state)
