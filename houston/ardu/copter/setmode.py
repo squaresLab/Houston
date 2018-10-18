@@ -111,4 +111,4 @@ class SetMode(Command):
         sandbox.connection.mode = dronekit.VehicleMode(self.mode)
 
     def to_message(self) -> CommandLong:
-        return None  # FIXME
+        raise NotImplementedError

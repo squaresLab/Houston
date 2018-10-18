@@ -67,8 +67,9 @@ class Takeoff(Command):
 
     def to_message(self) -> CommandLong:
         msg = CommandLong(
-            0, 0,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            target_system=0,
+            target_component=0,
+            cmd_id=mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             param_1=0,
             param_7=self.altitude)
         return msg

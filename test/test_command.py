@@ -5,6 +5,7 @@ from houston.connection import Message
 from houston.command import Command, Parameter
 from houston.valueRange import DiscreteValueRange
 from houston.specification import Idle
+from houston.connection import Message
 
 
 def test_eq():
@@ -43,6 +44,9 @@ def test_hash():
             Parameter('foo', DiscreteValueRange([0, 1]))
         ]
         specifications = [Idle]
+
+        def to_message(self) -> Message:
+            raise NotImplementedError
 
     c1 = C(foo=0)
     c2 = C(foo=1)

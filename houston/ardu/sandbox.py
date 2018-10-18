@@ -14,6 +14,7 @@ from .connection import CommandLong, MAVLinkConnection, MAVLinkMessage
 from ..sandbox import Sandbox as BaseSandbox
 from ..command import Command, CommandOutcome
 from ..connection import Message
+from ..mission import MissionOutcome
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -183,7 +184,6 @@ class Sandbox(BaseSandbox):
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
         """
-        from ..mission import MissionOutcome
         config = self.configuration
         env = self.environment
         with self.__lock:
@@ -224,25 +224,22 @@ class Sandbox(BaseSandbox):
                 message = m.message
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
-                    mylock.acquire()
-                    last_wp[0] = int(message.seq)
-                    event.set()
-                    mylock.release()
+                    with mylock:
+                        last_wp[0] = int(message.seq)
+                        event.set()
                 elif name == 'MISSION_CURRENT':
                     logger.debug("**MISSION_CURRENT: {}".format(message.seq))
-                    # self.observe()
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
             self.connection.add_hooks({'reached': reached})
             self.vehicle.armed = True
             while not self.vehicle.armed:
-                print("waiting for the rover to be armed...")
+                logger.info("waiting for the rover to be armed...")
                 time.sleep(0.1)
                 self.vehicle.armed = True
 
             self.vehicle.mode = dronekit.VehicleMode("AUTO")
-            # self.observe()
             initial_state = self.state
             message = CommandLong(
                 0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
@@ -252,14 +249,14 @@ class Sandbox(BaseSandbox):
 
             while last_wp[0] < len(cmds) - 1:
                 event.wait()
-                mylock.acquire()
-                # self.observe()
-                logger.debug("STATE: {}".format(self.state))
-                current_time = timer()
-                wp_state[last_wp[0]] = (self.state, current_time - time_start)
-                time_start = current_time
-                event.clear()
-                mylock.release()
+                with mylock:
+                    # self.observe()
+                    logger.debug("STATE: {}".format(self.state))
+                    current_time = timer()
+                    time_passed = current_time - time_start
+                    wp_state[last_wp[0]] = (self.state, time_passed)
+                    time_start = current_time
+                    event.clear()
 
             self.connection.remove_hook('reached')
             outcomes = []
@@ -298,4 +295,4 @@ class Sandbox(BaseSandbox):
             self.__state = self.__state.evolve(message,
                                                self.running_time,
                                                self.connection)
-            logger.debug("S: {}".format(self.state))
+            logger.debug("S: %s", self.state)

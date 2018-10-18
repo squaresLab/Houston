@@ -62,8 +62,8 @@ class GoTo(Command):
     ]
 
     def to_message(self) -> Message:
-        return CommandLong(0,
-                           0,
+        return CommandLong(target_system=0,
+                           target_component=0,
                            cmd_id=mavlink.MAV_CMD_NAV_WAYPOINT,
                            param_5=self.latitude,
                            param_6=self.longitude,
