@@ -89,13 +89,13 @@ def run_all_missions(sut, mission_file, coverage=False):
             f.write(str(l))
 
 ### Generate missions
-def generate(sut, initial, environment, number_of_missions, max_num_actions=3):
-    mission_generator = RandomMissionGenerator(sut, initial, environment, max_num_actions=max_num_actions, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
+def generate(sut, initial, environment, config, number_of_missions, max_num_commands=3):
+    mission_generator = RandomMissionGenerator(sut, initial, environment, config, max_num_commands=max_num_commands) #action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
     resource_limits = ResourceLimits(number_of_missions, 1000)
     missions = mission_generator.generate(100, resource_limits)
     print("### {}".format(missions))
     with open("example/missions.json", "w") as f:
-        mission_descriptions = list(map(Mission.to_json, missions))
+        mission_descriptions = list(map(Mission.to_dict, missions))
         print(str(mission_descriptions))
         json.dump(mission_descriptions, f)
 
@@ -132,7 +132,7 @@ def generate_and_run_mutation(sut, initial_state, environment, initial_mission, 
 
 ### Generate and run missions with fault localization
 def generate_and_run_with_fl(sut, initial, environment, number_of_missions):
-    mission_generator = RandomMissionGenerator(sut, initial, environment, max_num_actions=3, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
+    mission_generator = RandomMissionGenerator(sut, initial, environment, max_num_commands=3, action_generators=[CircleBasedGotoGenerator((-35.3632607, 149.1652351), 2.0)])
     resource_limits = ResourceLimits(number_of_missions, 1000)
     report = mission_generator.generate_and_run(100, resource_limits, with_coverage=True)
     print("DONE")
@@ -213,14 +213,14 @@ if __name__ == "__main__":
     try:
         #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
-        #generate(sut, initial, environment, 100, 10)
+        generate(sut, initial, environment, config, 10, 10)
         #run_all_missions(sut, "example/missions.json", False)
         #generate_and_run_mutation(sut, initial, environment, mission, 3)
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)
 
-        d = DeltaDebugging(sut, initial, environment, config, [mission], bz, snapshot)
-        d.find_root_cause()
+        #d = DeltaDebugging(sut, initial, environment, config, [mission], bz, snapshot)
+        #d.find_root_cause()
 
 
         #generate(sut, initial, environment, 100, 10)

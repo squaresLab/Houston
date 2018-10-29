@@ -1,6 +1,7 @@
 commands:
   - name: MAV_CMD_NAV_WAYPOINT
     id: 16
+    generator: circle_based_generator
     p1:
         name: delay
         value:
@@ -35,6 +36,7 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_LOITER_UNLIM
     id: 17
+    generator: circle_based_generator
     p5:
         name: lat
         value:
@@ -55,6 +57,7 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_LOITER_TURNS
     id: 18
+    generator: circle_based_generator
     p5:
         name: lat
         value:
@@ -75,6 +78,7 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_LOITER_TIME
     id: 19
+    generator: circle_based_generator
     p1:
         name: time
         value:
@@ -103,6 +107,7 @@ commands:
     id: 20
   - name: MAV_CMD_NAV_LAND
     id: 21
+    generator: circle_based_generator
     p5:
         name: lat
         value:
@@ -117,6 +122,7 @@ commands:
             max: 180.0
   - name: MAV_CMD_NAV_SPLINE_WAYPOINT
     id: 82
+    generator: circle_based_generator
     p1:
         name: delay
         value:
@@ -179,6 +185,7 @@ commands:
             max: 3.0
   - name: MAV_CMD_DO_SET_HOME
     id: 179
+    generator: circle_based_generator
     p1:
         name: current
         value:

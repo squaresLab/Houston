@@ -3,6 +3,7 @@ from typing import Optional
 import threading
 import time
 import signal
+from bugzoo.client import Client as BugZooClient
 
 from .util import TimeoutError, printflush
 from .mission import Mission
@@ -15,13 +16,16 @@ class MissionRunner(threading.Thread):
     """
     def __init__(self,
                  pool,
+                 bz: BugZooClient,
+                 snapshot_name: str,
                  with_coverage: bool = False
                  ) -> None:
         super().__init__()
         self.daemon = True
         self.__pool = pool
-        self.__sandbox = pool.system.provision()
         self.__with_coverage = with_coverage
+        self.__bz = bz
+        self.__snapshot_name = snapshot_name
 
     def run(self) -> None:
         """
@@ -33,9 +37,10 @@ class MissionRunner(threading.Thread):
                 return
 
             if self.__with_coverage:
-                (outcome, coverage) = self.__sandbox.run_with_coverage(m)
+                # FIXME
+                raise NotImplementedError
             else:
-                outcome = self.__sandbox.run(m)
+                outcome = m.run(self.__bz, self.__snapshot_name)
                 coverage = None
             self.__pool.report(m, outcome, coverage)
 
@@ -52,6 +57,8 @@ class MissionRunnerPool(object):
     thread.
     """
     def __init__(self,
+                 bz: BugZooClient,
+                 snapshot_name: str,
                  system: 'System',
                  size: int,
                  source,  # FIXME
@@ -71,7 +78,8 @@ class MissionRunnerPool(object):
 
         # provision desired number of runners
         self.__runners = \
-            [MissionRunner(self, with_coverage) for _ in range(size)]
+            [MissionRunner(self, bz, snapshot_name, with_coverage)
+                for _ in range(size)]
 
     def run(self) -> None:
         """

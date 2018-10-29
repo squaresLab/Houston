@@ -52,7 +52,7 @@ class SystemMeta(type):
             if sys_name == '':
                 msg = "System name must be a non-empty string."
                 raise TypeError(msg)
-            ns['name'] = property(lambda self, n=sys_name: n)
+            ns['name'] = sys_name
 
             if 'state' not in ns:
                 msg = "System class definition is missing 'state' property"

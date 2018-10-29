@@ -1,14 +1,20 @@
 import random
 import threading
 import timeit
+from bugzoo.client import Client as BugZooClient
 
-import bugzoo
+import logging
+from typing import Dict, Callable, List, Type, Optional
 
 from ..runner import MissionRunnerPool
 from ..system import System
-from ..mission import Mission, MissionSuite
+from ..mission import Mission, MissionSuite, MissionOutcome
+from ..command import Command
 from .resources import ResourceUsage, ResourceLimits
 from .report import MissionGeneratorReport
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class MissionGeneratorStream(object):
@@ -28,8 +34,7 @@ class MissionGeneratorStream(object):
         Requests the next mission from the mission generator.
         """
         g = self.__generator
-        self.__lock.acquire()
-        try:
+        with self.__lock:
             g.tick()
             if g.exhausted():
                 raise StopIteration
@@ -37,40 +42,34 @@ class MissionGeneratorStream(object):
             g.tick()
             g.resource_usage.num_missions += 1
             mission_num = g.resource_usage.num_missions
-            print('Generated mission: {}'.format(mission_num))  # FIXME
+            logger.debug('Generated mission: %d', mission_num)
             return mission
-        finally:
-            self.__lock.release()
 
 
 class MissionGenerator(object):
     def __init__(self,
-                 system: System,
+                 system: Type[System],
                  threads: int = 1,
-                 action_generators=None,
-                 max_num_actions: int = 10
+                 command_generators: Optional[Dict[str, Callable]] = None,
+                 max_num_commands: int = 10
                  ) -> None:
-        assert isinstance(system, System)
+        assert issubclass(system, System)
         assert isinstance(threads, int)
-        assert isinstance(max_num_actions, int)
+        assert isinstance(max_num_commands, int)
         assert threads > 0
-        assert max_num_actions > 0
+        assert max_num_commands > 0
 
-        if not action_generators:
-            action_generators = []
+        if not command_generators:
+            command_generators = {}
 
         self.__system = system
         self.__threads = threads
-        self.__max_num_actions = max_num_actions
+        self.__max_num_commands = max_num_commands
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
         self.__threads = threads
-        self.__action_generators = {}
-        for g in action_generators:
-            name = g.schema_name
-            assert name not in self.__action_generators
-            self.__action_generators[name] = g
+        self.__command_generators = command_generators
 
     @property
     def resource_limits(self):
@@ -88,12 +87,12 @@ class MissionGenerator(object):
         return self.__system
 
     @property
-    def max_num_actions(self):
+    def max_num_commands(self):
         """
-        The maximum number of actions that may be present in a mission
+        The maximum number of commands that may be present in a mission
         produced by this generator.
         """
-        return self.__max_num_actions
+        return self.__max_num_commands
 
     @property
     def history(self):
@@ -125,15 +124,15 @@ class MissionGenerator(object):
         """
         return self.__rng
 
-    def action_generator(self, schema):
+    def command_generator(self, command: Type[Command]):
         """
-        Retrieves any action generator that has been associated with a given
+        Retrieves any command generator that has been associated with a given
         schema, or None if no action generator has been provided for the
         given schema.
         """
-        name = schema.name
-        if name in self.__action_generators:
-            return self.__action_generators[name]
+        name = command.name
+        if name in self.__command_generators:
+            return self.__command_generators[name]
         return None
 
     def exhausted(self):
@@ -175,14 +174,18 @@ class MissionGenerator(object):
         self.__resource_usage.running_time = \
             timeit.default_timer() - self.__start_time
 
-    def execute_mission(self, mission, container):
+    def execute_mission(self,
+                        bz: BugZooClient,
+                        snapshot_name: str,
+                        mission: Mission
+                        ) -> MissionOutcome:
         """
         Executes a given mission using a provided container.
         """
-        print("executing mission..."),
-        outcome = container.execute(mission)
+        logger.info("executing mission..."),
+        outcome = mission.run(self.bz, snapshot_name)
         self.record_outcome(mission, outcome)
-        print("\t[DONE]")
+        logger.ingo("\t[DONE]")
         return outcome
 
     def record_outcome(self, mission, outcome, coverage=None):
@@ -200,12 +203,13 @@ class MissionGenerator(object):
         if outcome.failed:
             self.__failures.add(mission)
 
-    def generate(self, seed, resource_limits):
+    def generate(self,
+                 seed: int,
+                 resource_limits: ResourceLimits
+                 ) -> List[Mission]:
         """
         Generate missions and return them
         """
-        assert isinstance(seed, int)
-
         missions = []
         self.prepare(seed, resource_limits)
         stream = MissionGeneratorStream(self)
@@ -218,17 +222,24 @@ class MissionGenerator(object):
                 mission = stream.__next__()
                 missions.append(mission)
         except StopIteration:
-            print("Done with generating missions")
+            logger.info("Done with generating missions")
         return missions
 
-    def generate_and_run(self, seed, resource_limits, with_coverage=False):
-        assert isinstance(seed, int)
+    def generate_and_run(self,
+                         seed: int,
+                         resource_limits: ResourceLimits,
+                         bz: BugZooClient,
+                         snapshot: str,
+                         with_coverage: bool = False
+                         ) -> MissionGeneratorReport:
         self.__runner_pool = None
 
         try:
             self.prepare(seed, resource_limits)
             stream = MissionGeneratorStream(self)
-            self.__runner_pool = MissionRunnerPool(self.system,
+            self.__runner_pool = MissionRunnerPool(bz,
+                                                   snapshot,
+                                                   self.system,
                                                    self.threads,
                                                    stream,
                                                    self.record_outcome,
