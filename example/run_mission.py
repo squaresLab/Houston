@@ -61,13 +61,16 @@ def main():
                       commands,
                       ArduCopter)
 
+    for c in ArduCopter.commands:
+        print(c)
+
     # the Docker image that provides the SUT
     snapshot = 'ardubugs:742cdf6b'
     #with Sandbox.for_snapshot(bz, snapshot, state_initial, environment, configuration) as sandbox:  # noqa: pycodestyle
     #    outcome = sandbox.run(commands)
-    outcome = mission.run(bz, snapshot)
+    #outcome = mission.run(bz, snapshot)
 
-    print(outcome)
+    #print(outcome)
 
 
 if __name__ == '__main__':

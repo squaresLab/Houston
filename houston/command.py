@@ -346,6 +346,12 @@ class Command(object, metaclass=CommandMeta):
     def __iter__(self) -> Iterator[Parameter]:
         yield from self.__class__.parameters
 
+    @classmethod
+    def generate(cls, rng: random.Random) -> 'Command':
+        params = {p.name: p.generate(rng) for p in cls.parameters}
+        command = cls(**params)
+        return command
+
 
 @attr.s(frozen=True)
 class CommandOutcome(object):

@@ -1,8 +1,9 @@
+import random
+import geopy
 import os
 import logging
-from typing import Dict, Any, Type, List
-
 import yaml
+from typing import Dict, Any, Type, List
 
 from .connection import CommandLong
 from ..valueRange import ContinuousValueRange, DiscreteValueRange
@@ -11,6 +12,24 @@ from ..specification import Idle
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
+
+
+def circle_based_generator(cls: Type[Command],
+                           rng: random.Random
+                           ) -> Command:
+    (lat, lon) = (-35.3632607, 149.1652351)  # FIXME
+    heading = rng.uniform(0.0, 360.0)
+    dist = rng.uniform(0.0, 2.0)  # FIXME
+    params = {p.name: p.generate(rng) for p in cls.parameters}
+
+    origin = geopy.Point(latitude=lat, longitude=lon)
+    dist = geopy.distance.distance(meters=dist)
+    destination = dist.destination(origin, heading)
+    params['lat'] = destination.latitude
+    params['lon'] = destination.longitude
+
+    command = cls(**params)
+    return command
 
 
 def create_command(command: Dict[str, Any]) -> Type[Command]:
@@ -27,6 +46,7 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
     except KeyError:
         msg = "missing 'id' field of Command"
         raise TypeError(msg)
+    generator = command.get('generator')
     parameters = {}  # type: Dict[str, Union[int, Tuple[str, Parameter]]]
     for i in range(1, 8):
         p = 'p{}'.format(i)
@@ -74,6 +94,9 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
           'specifications': [Idle]}
 
     C = CommandMeta(name, (Command,), ns)
+
+    if generator == 'circle_based_generator':
+        setattr(C, 'generate', classmethod(circle_based_generator))
 
     logger.info("Command class generated: %s", C)
     return C

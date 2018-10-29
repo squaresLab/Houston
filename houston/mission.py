@@ -33,8 +33,8 @@ class Mission(object):
         system = System.get_by_name(jsn['system'])()
         env = Environment.from_json(jsn['environment'])
         config = system.configuration.from_json(jsn['configuration'])
-        initial_state = system.state.from_json(jsn['initial_state'])
-        cmds = tuple(Command.from_json(c) for c in jsn['commands'])
+        initial_state = system.state.from_dict(jsn['initial_state'])
+        cmds = tuple(Command.from_dict(c) for c in jsn['commands'])
         return Mission(config, env, initial_state, cmds, system)
 
     def is_empty(self) -> bool:
@@ -68,8 +68,8 @@ class Mission(object):
         return {
             'configuration': self.configuration.to_dict(),
             'environment': self.environment.to_json(),
-            'initial_state': self.initial_state.to_json(),
-            'commands': [c.to_json() for c in self.commands],
+            'initial_state': self.initial_state.to_dict(),
+            'commands': [c.to_dict() for c in self.commands],
             'system': self.system.name}
 
     def run(self,

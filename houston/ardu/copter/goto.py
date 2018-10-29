@@ -1,7 +1,8 @@
 __all__ = ['GoTo']
 
+import random
 import dronekit
-import geopy.distance
+import geopy
 from pymavlink.mavutil import mavlink
 
 from ..connection import CommandLong
@@ -60,6 +61,23 @@ class GoTo(Command):
         GotoLoiter,
         Idle
     ]
+
+    @classmethod
+    def generate(cls, rng: random.Random) -> 'GoTo':
+        (lat, lon) = (-35.3632607, 149.1652351)  # FIXME
+        heading = rng.uniform(0.0, 360.0)
+        dist = rng.uniform(0.0, 2.0)  # FIXME
+        params = {}
+
+        origin = geopy.Point(latitude=lat, longitude=lon)
+        dist = geopy.distance.distance(meters=dist)
+        destination = dist.destination(origin, heading)
+        params['latitude'] = destination.latitude
+        params['longitude'] = destination.longitude
+        params['altitude'] = 5.0  # FIXME
+
+        command = cls(**params)
+        return command
 
     def to_message(self) -> Message:
         return CommandLong(target_system=0,
