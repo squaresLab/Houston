@@ -14,7 +14,10 @@ def main():
     # setup logging
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG)
+    FORMAT = '%(asctime)-15s %(message)s'
+    logging.basicConfig(format=FORMAT)
     logging.getLogger('houston').addHandler(log_to_stdout)
+    logging.getLogger('bugzoo').addHandler(log_to_stdout)
 
     bz = bugzoo.BugZoo()
 
@@ -68,9 +71,9 @@ def main():
     snapshot = 'ardubugs:742cdf6b'
     #with Sandbox.for_snapshot(bz, snapshot, state_initial, environment, configuration) as sandbox:  # noqa: pycodestyle
     #    outcome = sandbox.run(commands)
-    #outcome = mission.run(bz, snapshot)
+    outcome = mission.run(bz, snapshot, "example/temp.jsn")
 
-    #print(outcome)
+    print(outcome)
 
 
 if __name__ == '__main__':

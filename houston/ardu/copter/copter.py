@@ -31,5 +31,5 @@ class ArduCopter(BaseSystem):
 #        ArmDisarm,
 #        SetMode,
 #        Parachute
-#        ]
+#    ]
     commands = read_commands_yml(os.path.join(dirname, 'commands.yml'))

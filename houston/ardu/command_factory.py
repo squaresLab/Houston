@@ -91,7 +91,8 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
     ns = {'name': name,
           'to_message': to_message,
           'parameters': [p for p in parameters.values() if p],
-          'specifications': [Idle]}
+          'specifications': [Idle],
+          'uid': 'factory.{}'.format(name)}
 
     C = CommandMeta(name, (Command,), ns)
 

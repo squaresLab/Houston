@@ -40,12 +40,12 @@ def run_single_mission_with_coverage(sandbox, mission):
     print("Done")
     print(coverage)
 
-### Run all missions stored to a json file
-def run_all_missions(sut, mission_file, coverage=False):
+### Run all missions stored in a JSON file
+def run_all_missions(bz, snapshot_name, sut, mission_file, coverage=False, record=True):
     missions = []
     with open(mission_file, "r") as f:
         missions_json = json.load(f)
-        missions = list(map(Mission.from_json, missions_json))
+        missions = list(map(Mission.from_dict, missions_json))
     assert isinstance(missions, list)
 
 
@@ -55,7 +55,7 @@ def run_all_missions(sut, mission_file, coverage=False):
         outcomes[mission] = outcome
         coverages[mission] = coverage
 
-    runner_pool = MissionRunnerPool(sut, 4, missions, record_outcome, coverage)
+    runner_pool = MissionRunnerPool(bz, snapshot_name, sut, 4, missions, record_outcome, coverage, record)
     print("Started running")
     runner_pool.run()
     print("Done running")
@@ -64,7 +64,7 @@ def run_all_missions(sut, mission_file, coverage=False):
     with open("example/failed.json", "w") as f:
         for m in outcomes:
             if not outcomes[m].passed:
-                f.write(str(m.to_json()))
+                f.write(str(m.to_dict()))
                 f.write("\n")
 
     if coverage:
@@ -213,8 +213,8 @@ if __name__ == "__main__":
     try:
         #run_single_mission(sandbox, mission)
         #run_single_mission_with_coverage(sandbox, mission)
-        generate(sut, initial, environment, config, 10, 10)
-        #run_all_missions(sut, "example/missions.json", False)
+        #generate(sut, initial, environment, config, 50, 5)
+        run_all_missions(bz, snapshot, sut, "example/missions.json", False)
         #generate_and_run_mutation(sut, initial, environment, mission, 3)
         #generate_and_run_with_fl(sut, initial, environment, 5)
         #run_single_mission_with_coverage(sandbox, mission)

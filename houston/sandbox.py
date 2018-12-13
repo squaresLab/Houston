@@ -18,6 +18,7 @@ from .environment import Environment
 from .configuration import Configuration
 from .state import State
 from .command import Command, CommandOutcome
+from .recorder import Recorder
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -98,6 +99,7 @@ class Sandbox(object):
         self.__environment = environment
         self.__configuration = configuration
         self.__time_start = timer()
+        self.__recorder = None
 
     @property
     def running_time(self) -> float:
@@ -141,6 +143,26 @@ class Sandbox(object):
         The BugZoo container underlying this sandbox.
         """
         return self.__container
+
+    @property
+    def recorder(self) -> Recorder:
+        """
+        The recorder object to record states during execution.
+        """
+        return self.__recorder
+
+    def set_recorder(self, filename: str = '') -> Recorder:
+        """
+        Set the recorder.
+        """
+        self.__recorder = Recorder(filename=filename)
+        return self.__recorder
+
+    def unset_recorder(self) -> None:
+        """
+        Unset the recorder.
+        """
+        self.__recorder = None
 
     def start(self) -> None:
         """
@@ -214,7 +236,10 @@ class Sandbox(object):
                                  time_elapsed)
         return outcome
 
-    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
+    def run(self,
+            commands: Sequence[Command],
+            recorder_filename: Optional[str] = None
+            ) -> 'MissionOutcome':
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
@@ -224,16 +249,23 @@ class Sandbox(object):
         env = self.environment
         time_start = timer()
         time_elapsed = 0.0
+        if recorder_filename:
+            self.set_recorder(recorder_filename)
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
             for cmd in commands:
+                if recorder_filename:
+                    self.recorder.write("C: {}".format(cmd.to_dict()))
                 outcome = self.run_command(cmd)
+                if recorder_filename:
+                    self.recorder.write_and_flush()
                 outcomes.append(outcome)
                 if not outcome.successful:
                     passed = False
                     break
             time_elapsed = timer() - time_start
+            self.unset_recorder()
             return MissionOutcome(passed, outcomes, time_elapsed)
 
     def observe(self) -> None:
@@ -251,3 +283,5 @@ class Sandbox(object):
     def update(self, message: Message) -> None:
         with self.__state_lock:
             self.__state = self.__state.evolve(message, self.running_time)
+            if self.recorder:
+                self.recorder.add(self.__state)

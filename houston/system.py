@@ -38,7 +38,7 @@ class SystemMeta(type):
             is_abstract = False
 
         # construct an immutable "is_abstract" property
-        ns['is_abstract'] = property(lambda self, v=is_abstract: v)
+        ns['is_abstract'] = is_abstract
 
         if not is_abstract:
             if 'name' not in ns:
@@ -126,4 +126,4 @@ class System(object, metaclass=SystemMeta):
         Raises:
             KeyError: if no system type is registered under the given name.
         """
-        return __NAME_TO_SYSTEM_TYPE[name]
+        return _NAME_TO_SYSTEM_TYPE[name]
