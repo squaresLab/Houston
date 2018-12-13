@@ -1,8 +1,8 @@
 import pytest
 import z3
 
-from houston.specification import Specification, Expression, \
-    InvalidExpression, UnsupportedVariableType
+from houston.exceptions import InvalidExpression, UnsupportedVariableType
+from houston.specification import Specification, Expression
 
 import z3
 

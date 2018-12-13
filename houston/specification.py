@@ -10,6 +10,7 @@ import attr
 import sexpdata
 import z3
 
+from . import exceptions
 from .configuration import Configuration
 from .state import State
 from .environment import Environment
@@ -21,29 +22,10 @@ Timeout = \
     Callable[['Command', State, Environment, Configuration], float]
 
 
-class InvalidExpression(Exception):
-    """
-    The s-expression does not have a valid format.
-    """
-    def __init__(self) -> None:
-        msg = "The s-expression does not have a valid format."
-        super().__init__(msg)
-
-
-class UnsupportedVariableType(Exception):
-    """
-    Houston and/or Z3 do not support variables of a given Python type.
-    """
-    def __init__(self, type_py: Type) -> None:
-        msg = "Houston and/or Z3 does not support variable type: {}"
-        msg = msg.format(type_py.__name__)
-        super().__init__(msg)
-
-
 class Expression(object):
     def __init__(self, s_expression: str) -> None:
         if not Expression.is_valid(s_expression):
-            raise InvalidExpression
+            raise exceptions.InvalidExpression
 
         self.__expression = s_expression
 
@@ -176,7 +158,7 @@ class Expression(object):
         try:
             type_z3 = py_to_z3[type_py]
         except KeyError:
-            raise UnsupportedVariableType(type_py)
+            raise exceptions.UnsupportedVariableType(type_py)
         var = type_z3(name, ctx=ctx)
         logger.debug("created Z3 variable for [%s]: %s", name, var)
         return var

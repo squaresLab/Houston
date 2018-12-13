@@ -1,27 +1,18 @@
-__all__ = ['Recorder', 'NoFileSetError']
+__all__ = ['Recorder']
 
 from typing import Type, FrozenSet, Dict, Any, List, Optional
-import attr
-import logging
-
 import json
 import threading
 
+import attr
+import logging
+
+from . import exceptions
 from .state import State
 from .command import Command
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
-
-
-# TODO Exception to Houston Exception (#147)
-class NoFileSetError(Exception):
-    """
-    Thrown when writing to file is requested but filename is not
-    set.
-    """
-    def __init__(self):
-        super().__init__("No file is set for the recorder.")
 
 
 class Recorder(object):
@@ -55,7 +46,7 @@ class Recorder(object):
                         index: int
                         ) -> List[Dict[str, Any]]:
         if not self.filename:
-            raise NoFileSetError()
+            raise exceptions.NoFileSetError()
         with self.__lock:
             states = list(map(State.to_dict, self.__states))
             self.__states = []
@@ -76,7 +67,7 @@ class Recorder(object):
 
     def write(self, string: str) -> bool:
         if not self.filename:
-            raise NoFileSetError()
+            raise exceptions.NoFileSetError()
         with self.__file_lock:
             with open(self.filename, 'a') as f:
                 f.write(string)
