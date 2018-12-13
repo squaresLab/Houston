@@ -48,8 +48,15 @@ class RandomMissionGenerator(MissionGenerator):
 
     def generate_mission(self):
         command_classes = list(self.system.commands.values())
-        commands = []
-        for _ in range(self.rng.randint(1, self.max_num_commands)):
+        takeoff = None
+        for c in command_classes:
+            if "MAV_CMD_NAV_TAKEOFF" in c.uid:
+                takeoff = c
+                break
+        if not takeoff:
+            raise Exception("No TAKEOFF command found")
+        commands = [self.generate_command(takeoff)]
+        for _ in range(self.rng.randint(1, self.max_num_commands - 1)):
             command_class = self.rng.choice(command_classes)
             commands.append(self.generate_command(command_class))
         return Mission(self.__configuration,

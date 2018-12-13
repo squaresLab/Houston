@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Tuple
+import logging
 
 import threading
 import time
@@ -7,6 +8,9 @@ from bugzoo.client import Client as BugZooClient
 
 from .util import TimeoutError, printflush
 from .mission import Mission
+
+logger = logging.getLogger(__name__)   # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class MissionRunner(threading.Thread):
@@ -18,7 +22,8 @@ class MissionRunner(threading.Thread):
                  pool,
                  bz: BugZooClient,
                  snapshot_name: str,
-                 with_coverage: bool = False
+                 with_coverage: bool = False,
+                 record: bool = False
                  ) -> None:
         super().__init__()
         self.daemon = True
@@ -26,28 +31,42 @@ class MissionRunner(threading.Thread):
         self.__with_coverage = with_coverage
         self.__bz = bz
         self.__snapshot_name = snapshot_name
+        self.__record = record
 
     def run(self) -> None:
         """
         Continues to process jobs.
         """
         while True:
-            m = self.__pool.fetch()
-            if m is None:
+            index, mission = self.__pool.fetch()
+            if mission is None:
                 return
 
             if self.__with_coverage:
                 # FIXME
                 raise NotImplementedError
             else:
-                outcome = m.run(self.__bz, self.__snapshot_name)
+                if self.__record:
+                    # FIXME
+                    recorder_filename = "record/mission#{}.jsn"
+                    recorder_filename = recorder_filename.format(index)
+                else:
+                    recorder_filename = None
+                logger.info("Running mission #%d", index)
+                start_time = time.time()
+                outcome = mission.run(self.__bz,
+                                      self.__snapshot_name,
+                                      recorder_filename)
+                logger.info("Finished running mission %d in %f seconds."
+                            " Passed: %s",
+                            index,
+                            time.time() - start_time,
+                            outcome.passed)
                 coverage = None
-            self.__pool.report(m, outcome, coverage)
+            self.__pool.report(mission, outcome, coverage)
 
     def shutdown(self):
-        if self.__sandbox is not None:
-            self.__sandbox.destroy()
-            self.__sandbox = None
+        return
 
 
 class MissionRunnerPool(object):
@@ -63,7 +82,8 @@ class MissionRunnerPool(object):
                  size: int,
                  source,  # FIXME
                  callback,  # FIXMe
-                 with_coverage=False):
+                 with_coverage=False,
+                 record=False):
         assert callable(callback)
         assert size > 0
 
@@ -74,11 +94,12 @@ class MissionRunnerPool(object):
         self.__system = system
         self.__source = source
         self.__callback = callback
+        self.__index = -1
         self._lock = threading.Lock()
 
         # provision desired number of runners
         self.__runners = \
-            [MissionRunner(self, bz, snapshot_name, with_coverage)
+            [MissionRunner(self, bz, snapshot_name, with_coverage, record)
                 for _ in range(size)]
 
     def run(self) -> None:
@@ -136,7 +157,7 @@ class MissionRunnerPool(object):
         """
         self.__callback(mission, outcome, coverage)
 
-    def fetch(self) -> Optional[Mission]:
+    def fetch(self) -> Tuple[int, Optional[Mission]]:
         """
         Returns the next mission from the (lazily-generated) queue, or None if
         there are no missions left to run.
@@ -147,10 +168,11 @@ class MissionRunnerPool(object):
         # acquire fetch lock
         self._lock.acquire()
         try:
-            return self.__source.__next__()
+            self.__index += 1
+            return self.__index, self.__source.__next__()
 
         except StopIteration:
-            return None
+            return self.__index, None
 
         finally:
             self._lock.release()
