@@ -18,7 +18,7 @@ from .environment import Environment
 from .configuration import Configuration
 from .state import State
 from .command import Command, CommandOutcome
-from .recorder import Recorder
+from .trace import MissionTrace, CommandTrace, TraceRecorder
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -100,6 +100,7 @@ class Sandbox(object):
         self.__configuration = configuration
         self.__time_start = timer()
         self.__recorder = None
+        self.__lock_recorder = threading.Lock()
 
     @property
     def running_time(self) -> float:
@@ -145,24 +146,11 @@ class Sandbox(object):
         return self.__container
 
     @property
-    def recorder(self) -> Recorder:
+    def recorder(self) -> TraceRecorder:
         """
         The recorder object to record states during execution.
         """
         return self.__recorder
-
-    def set_recorder(self, filename: str = '') -> Recorder:
-        """
-        Set the recorder.
-        """
-        self.__recorder = Recorder(filename=filename)
-        return self.__recorder
-
-    def unset_recorder(self) -> None:
-        """
-        Unset the recorder.
-        """
-        self.__recorder = None
 
     def start(self) -> None:
         """
@@ -236,36 +224,47 @@ class Sandbox(object):
                                  time_elapsed)
         return outcome
 
-    def run(self,
-            commands: Sequence[Command],
-            recorder_filename: Optional[str] = None
-            ) -> 'MissionOutcome':
+    @contextmanager
+    def record(self) -> Iterator[TraceRecorder]:
+        """
+        Attaches a recorder to this sandbox.
+        """
+        with self.__lock_recorder:
+            self.__recorder = TraceRecorder()
+            yield self.__recorder
+            self.__recorder = None
+
+    def run_and_trace(self, commands: Sequence[Command]) -> MissionTrace:
+        """
+        Runs a given sequence of commands and records its execution trace.
+        """
+        traces = []  # type: List[CommandTrace]
+        with self.record() as recorder:
+            for cmd in commands:
+                outcome = self.run_command(cmd)
+                # TODO fetch coverage
+                states, messages = recorder.flush()
+                traces.append(CommandTrace(cmd, states))
+        return MissionTrace(tuple(command_traces))
+
+    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
         """
         from .mission import MissionOutcome
-        config = self.configuration
-        env = self.environment
         time_start = timer()
         time_elapsed = 0.0
-        if recorder_filename:
-            self.set_recorder(recorder_filename)
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
             for cmd in commands:
-                if recorder_filename:
-                    self.recorder.write("C: {}".format(cmd.to_dict()))
                 outcome = self.run_command(cmd)
-                if recorder_filename:
-                    self.recorder.write_and_flush()
                 outcomes.append(outcome)
                 if not outcome.successful:
                     passed = False
                     break
             time_elapsed = timer() - time_start
-            self.unset_recorder()
             return MissionOutcome(passed, outcomes, time_elapsed)
 
     def observe(self) -> None:
@@ -282,6 +281,8 @@ class Sandbox(object):
 
     def update(self, message: Message) -> None:
         with self.__state_lock:
-            self.__state = self.__state.evolve(message, self.running_time)
-            if self.recorder:
-                self.recorder.add(self.__state)
+            state = self.__state.evolve(message, self.running_time)
+            self.__state = state
+            if self.__recorder:
+                self.__recorder.record_state(state)
+                self.__recorder.record_message(message)
