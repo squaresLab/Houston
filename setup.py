@@ -15,6 +15,7 @@ setup(
     url='https://github.com/squaresLab/Houston',
     license='mit',
     python_requires='>=3.5',
+    include_package_data=True,
     install_requires = [
         'flask',
         'pytest',
