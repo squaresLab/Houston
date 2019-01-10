@@ -20,8 +20,6 @@ import settings
 logger = logging.getLogger('houston')  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
-DIR_TRACES = "traces"
-SNAPSHOT_NAME = "ardubugs:742cdf6b"
 DESCRIPTION = "Builds trace files for a given set of missions."
 
 
@@ -34,8 +32,11 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args():
     p = argparse.ArgumentParser(description=DESCRIPTION)
+    p.add_argument('snapshot', help='the name of the BugZoo snapshot')
     p.add_argument('missions', type=str,
                    help='path to a mission files.')
+    p.add_argument('output', type=str,
+                   help='the directory to which the traces should be written.')
     p.add_argument('--verbose', action='store_true',
                    help='increases logging verbosity')
     p.add_argument('--threads', type=int, default=1,
@@ -46,13 +47,14 @@ def parse_args():
 def trace(client_bugzoo: bugzoo.Client,
           container: bugzoo.Container,
           index: int,
-          mission: houston.mission.Mission
+          mission: houston.mission.Mission,
+          dir_output: str
           ) -> None:
     # generate a (very-likely-to-be) "unique" ID for the mission
     uid = hex(abs(hash(mission)))[2:][:8]
     logger.info("generating trace for mission %d: %s", index, uid)
     filename = "{}.json".format(uid)
-    filename = os.path.join(DIR_TRACES, filename)
+    filename = os.path.join(dir_output, filename)
     if os.path.exists(filename):
         logger.info("skipping trace: %d ('%s' already exists)", index, filename)
         return
@@ -77,7 +79,8 @@ def trace(client_bugzoo: bugzoo.Client,
 def build_traces(client_bugzoo: bugzoo.Client,
                  snapshot: bugzoo.Bug,
                  missions: List[houston.Mission],
-                 num_threads: int
+                 num_threads: int,
+                 dir_output: str
                  ) -> None:
     containers = []
     futures = []
@@ -93,7 +96,7 @@ def build_traces(client_bugzoo: bugzoo.Client,
             for i, mission in enumerate(missions):
                 logger.debug("submitting mission %d", i)
                 container = containers[i % num_threads]
-                future = e.submit(trace, client_bugzoo, container, i, mission)
+                future = e.submit(trace, client_bugzoo, container, i, mission, dir_output)
                 futures.append(future)
         logger.debug("submitted all missions")
         logger.debug("waiting for missions to complete")
@@ -112,7 +115,7 @@ if __name__ == '__main__':
 
     assert num_threads > 0
 
-    os.makedirs(DIR_TRACES, exist_ok=True)
+    os.makedirs(args.output, exist_ok=True)
 
     with open(fn_missions, 'r') as f:
         jsn = json.load(f)
@@ -121,7 +124,7 @@ if __name__ == '__main__':
     # FIXME use an ephemeral server! (bugzoo.server.ephemeral())
     client_bugzoo = bugzoo.BugZoo()
     try:
-        snapshot = client_bugzoo.bugs[SNAPSHOT_NAME]
-        build_traces(client_bugzoo, snapshot, missions, num_threads)
+        snapshot = client_bugzoo.bugs[args.snapshot]
+        build_traces(client_bugzoo, snapshot, missions, num_threads, args.output)
     finally:
         client_bugzoo.shutdown()
