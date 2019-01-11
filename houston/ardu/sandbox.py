@@ -391,7 +391,8 @@ class Sandbox(BaseSandbox):
 
         bzc.command(self.container, rm_cmd, block=True)
         bzc.command(self.container, cp_cmd, block=True)
-        coverage = self._bugzoo.coverage.extract(self.container)
+        coverage = bzc.read_coverage(self.container)
+        # coverage = self._bugzoo.coverage.extract(self.container)
         bzc.command(self.container, rm_cmd, block=True)
         return coverage
 
