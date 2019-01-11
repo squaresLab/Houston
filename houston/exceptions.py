@@ -7,6 +7,31 @@ class HoustonException(Exception):
     """
 
 
+class NoConnectionError(HoustonException):
+    """
+    Thrown when there is no connection to the vehicle running inside a sandbox.
+    """
+    def __init__(self) -> None:
+        super().__init__("No connection to vehicle inside sandbox.")
+
+
+class ConnectionLostError(HoustonException):
+    """
+    Thrown when the connection to the vehicle has been lost.
+    """
+    def __init__(self) -> None:
+        super().__init__("Connection to vehicle has been lost.")
+
+
+class PostConnectionSetupFailed(HoustonException):
+    """
+    Thrown when the post-connection setup phase fails.
+    """
+    def __init__(self) -> None:
+        m = "An unexpected error occurred during post-connection setup."
+        super().__init__(m)
+
+
 class NoFileSetError(HoustonException):
     """
     Thrown when writing to mission trace file has been requested, but no

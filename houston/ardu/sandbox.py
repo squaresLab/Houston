@@ -16,17 +16,28 @@ from ..command import Command, CommandOutcome
 from ..connection import Message
 from ..mission import MissionOutcome
 from ..trace import MissionTrace, CommandTrace, TraceRecorder
+from ..exceptions import NoConnectionError, \
+    ConnectionLostError, \
+    PostConnectionSetupFailed
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+TIME_LOST_CONNECTION = 5.0
 
-class NoConnectionError(BaseException):
+
+def detect_lost_connection(f):
     """
-    Thrown when there is no connection to the vehicle running inside a sandbox.
+    Decorates a given function such that any dronekit APIExceptions
+    encountered during the execution of that function will be caught and thrown
+    as ConnectionLostError exceptions.
     """
-    def __init__(self):
-        super().__init__("No connection to vehicle inside sandbox.")
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except dronekit.APIException:
+            raise ConnectionLostError
+    return wrapped
 
 
 class Sandbox(BaseSandbox):
@@ -60,7 +71,6 @@ class Sandbox(BaseSandbox):
         return self.connection.conn
 
     def update(self, message: Message) -> None:
-        # logger.debug("UPDATE")
         with self.__state_lock:
             state = self.__state.evolve(message,
                                         self.running_time,
@@ -106,6 +116,7 @@ class Sandbox(BaseSandbox):
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             logger.debug(line)
 
+    @detect_lost_connection
     def start(self,
               binary_name: str,
               model_name: str,
@@ -116,6 +127,13 @@ class Sandbox(BaseSandbox):
         Launches the SITL inside this sandbox, and establishes a connection to
         the vehicle running inside the simulation. Blocks until SITL is
         launched and a connection is established.
+
+        Raises:
+            NoConnectionError: if a connection cannot be established.
+            ConnectionLostError: if the connecton is lost before the vehicle
+                is ready to receive commands.
+            PostConnectionSetupFailed: if the post-connection setup phase
+                failed.
         """
         # # TODO make it optional to compile with coverage (#146)
         # self._bugzoo.coverage.instrument(self.container)
@@ -170,7 +188,7 @@ class Sandbox(BaseSandbox):
             time.sleep(0.05)
 
         if not self._on_connected():
-            raise Exception("post-connection setup failed.")  # FIXME better exception  # noqa: pycodestyle
+            raise PostConnectionSetupFailed
 
         # wait until the vehicle is in GUIDED mode
         # TODO: add timeout
@@ -212,6 +230,7 @@ class Sandbox(BaseSandbox):
         """
         return True
 
+    @detect_lost_connection
     def run_and_trace(self,
                       commands: Sequence[Command]
                       ) -> 'MissionTrace':
@@ -228,6 +247,8 @@ class Sandbox(BaseSandbox):
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
+            connection_lost = threading.Event()
+
             # FIXME The initial command should be based on initial state
             initial = dronekit.Command(0, 0, 0,
                                        0, 16, 0, 0,
@@ -261,6 +282,14 @@ class Sandbox(BaseSandbox):
             wp_lock = threading.Lock()
             # is set whenever a command in mission is done
             wp_event = threading.Event()
+
+            # NOTE dronekit connection must not use its own heartbeat checking
+            def heartbeat_listener(_, __, value):
+                if value > TIME_LOST_CONNECTION:
+                    connection_lost.set()
+                    wp_event.set()
+            self.vehicle.add_attribute_listener('last_heartbeat',
+                                                heartbeat_listener)
 
             def check_for_reached(m):
                 name = m.name
@@ -312,6 +341,9 @@ class Sandbox(BaseSandbox):
                     if not not_reached_timeout:
                         logger.error("Timeout occured %d", last_wp[0])
                         break
+                    if connection_lost:
+                        logger.error("Connection to vehicle was lost.")
+                        raise ConnectionLostError
                     with wp_lock:
                         # self.observe()
                         logger.info("last_wp: %s len: %d",
