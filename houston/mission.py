@@ -74,8 +74,7 @@ class Mission(object):
 
     def run(self,
             bz: BugZooClient,
-            snapshot_or_name: Union[str, Snapshot],
-            recorder_filename: Optional[str] = None
+            snapshot_or_name: Union[str, Snapshot]
             ) -> 'MissionOutcome':
         """
         Creates a sandbox and runs the commands and returns the outcome.
@@ -85,7 +84,7 @@ class Mission(object):
                                               self.initial_state,
                                               self.environment,
                                               self.configuration) as sandbox:
-            outcome = sandbox.run(self.commands, recorder_filename)
+            outcome = sandbox.run(self.commands)
             return outcome
 
 

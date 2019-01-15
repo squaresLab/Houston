@@ -4,6 +4,8 @@ from typing import Type, FrozenSet, Dict, Any
 import attr
 import logging
 
+from . import exceptions
+
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
@@ -122,7 +124,7 @@ class Configuration(object, metaclass=ConfigurationMeta):
         if type(self) != type(other):
             msg = "illegal comparison of configurations: [{}] vs. [{}]"
             msg = msg.format(self.__class__.__name__, other.__class__.__name__)
-            raise Exception(msg)  # FIXME use HoustonException
+            raise exceptions.HoustonException(msg)
         return self.__dict__ == other.__dict__
 
     def to_dict(self) -> Dict[str, Any]:

@@ -15,17 +15,29 @@ from ..sandbox import Sandbox as BaseSandbox
 from ..command import Command, CommandOutcome
 from ..connection import Message
 from ..mission import MissionOutcome
+from ..trace import MissionTrace, CommandTrace, TraceRecorder
+from ..exceptions import NoConnectionError, \
+    ConnectionLostError, \
+    PostConnectionSetupFailed
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+TIME_LOST_CONNECTION = 5.0
 
-class NoConnectionError(BaseException):
+
+def detect_lost_connection(f):
     """
-    Thrown when there is no connection to the vehicle running inside a sandbox.
+    Decorates a given function such that any dronekit APIExceptions
+    encountered during the execution of that function will be caught and thrown
+    as ConnectionLostError exceptions.
     """
-    def __init__(self):
-        super().__init__("No connection to vehicle inside sandbox.")
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except dronekit.APIException:
+            raise ConnectionLostError
+    return wrapped
 
 
 class Sandbox(BaseSandbox):
@@ -57,6 +69,16 @@ class Sandbox(BaseSandbox):
         if not self.connection and raise_exception:
             raise NoConnectionError()
         return self.connection.conn
+
+    def update(self, message: Message) -> None:
+        with self.__state_lock:
+            state = self.__state.evolve(message,
+                                        self.running_time,
+                                        self.connection)
+            self.__state = state
+            if self.recorder:
+                self.recorder.record_state(state)
+                self.recorder.record_message(message)
 
     def _launch_sitl(self,
                      name_bin: str = 'ardurover',
@@ -94,6 +116,7 @@ class Sandbox(BaseSandbox):
             line = line.decode(sys.stdout.encoding).rstrip('\n')
             logger.debug(line)
 
+    @detect_lost_connection
     def start(self,
               binary_name: str,
               model_name: str,
@@ -104,9 +127,16 @@ class Sandbox(BaseSandbox):
         Launches the SITL inside this sandbox, and establishes a connection to
         the vehicle running inside the simulation. Blocks until SITL is
         launched and a connection is established.
+
+        Raises:
+            NoConnectionError: if a connection cannot be established.
+            ConnectionLostError: if the connecton is lost before the vehicle
+                is ready to receive commands.
+            PostConnectionSetupFailed: if the post-connection setup phase
+                failed.
         """
-        # TODO make it optional to compile with coverage (#146)
-        self._bugzoo.coverage.instrument(self.container)
+        # # TODO make it optional to compile with coverage (#146)
+        # self._bugzoo.coverage.instrument(self.container)
 
         bzc = self._bugzoo.containers
         args = (binary_name, model_name, param_file, verbose)
@@ -158,7 +188,7 @@ class Sandbox(BaseSandbox):
             time.sleep(0.05)
 
         if not self._on_connected():
-            raise Exception("post-connection setup failed.")  # FIXME better exception  # noqa: pycodestyle
+            raise PostConnectionSetupFailed
 
         # wait until the vehicle is in GUIDED mode
         # TODO: add timeout
@@ -169,12 +199,30 @@ class Sandbox(BaseSandbox):
         logger.debug("Mode done")
 
     def stop(self) -> None:
+        logger.debug("Stopping SITL")
         bzc = self._bugzoo.containers
         if self.connection:
             self.connection.close()
-        cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2\'"\'"\'} | xargs kill -2'  # noqa: pycodestyle
-        bzc.command(self.container, cmd, stdout=False, stderr=False,
-                    block=True)
+        ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
+
+        out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
+        all_processes = out.output.splitlines()
+        logger.debug("checking list of processes: %s", str(all_processes))
+        for p in all_processes:
+            if not p:
+                continue
+            pid, cmd = p.split(' ')
+            if cmd.startswith('/opt/ardupilot'):
+                bzc.command(self.container,
+                            "kill -2 {}".format(pid),
+                            block=True)
+                break
+        logger.debug("Killed it")
+        self.__sitl_thread.join()
+        logger.debug("Joined")
+#       cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2\'"\'"\'} | xargs kill -2'  # noqa: pycodestyle
+#       bzc.command(self.container, cmd, stdout=False, stderr=False,
+#                   block=True)
 
     def _on_connected(self) -> bool:
         """
@@ -182,10 +230,10 @@ class Sandbox(BaseSandbox):
         """
         return True
 
-    def run(self,
-            commands: Sequence[Command],
-            recorder_filename: Optional[str] = None
-            ) -> 'MissionOutcome':
+    @detect_lost_connection
+    def run_and_trace(self,
+                      commands: Sequence[Command]
+                      ) -> 'MissionTrace':
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
@@ -193,18 +241,14 @@ class Sandbox(BaseSandbox):
         Parameters:
             commands: the list of commands to be sent to the robot as
                 a mission.
-            recorder_filename: the path and filename of the file that
-                the status of the robot while executing each command
-                is recorded to. If set to None, states will not be
-                recorded. Example: "/tmp/recorder/mission#1"
         """
-        logger.debug("Recorder filename: %s, Mission: %s",
-                     recorder_filename, str(commands))
         config = self.configuration
         env = self.environment
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
+            connection_lost = threading.Event()
+
             # FIXME The initial command should be based on initial state
             initial = dronekit.Command(0, 0, 0,
                                        0, 16, 0, 0,
@@ -239,6 +283,14 @@ class Sandbox(BaseSandbox):
             # is set whenever a command in mission is done
             wp_event = threading.Event()
 
+            # NOTE dronekit connection must not use its own heartbeat checking
+            def heartbeat_listener(_, __, value):
+                if value > TIME_LOST_CONNECTION:
+                    connection_lost.set()
+                    wp_event.set()
+            self.vehicle.add_attribute_listener('last_heartbeat',
+                                                heartbeat_listener)
+
             def check_for_reached(m):
                 name = m.name
                 message = m.message
@@ -269,10 +321,6 @@ class Sandbox(BaseSandbox):
                 time.sleep(0.1)
                 self.vehicle.armed = True
 
-            threads = []
-            if recorder_filename:
-                self.set_recorder(recorder_filename)
-
             # starting the mission
             self.vehicle.mode = dronekit.VehicleMode("AUTO")
             initial_state = self.state
@@ -282,102 +330,54 @@ class Sandbox(BaseSandbox):
             logger.debug("sent mission start message to vehicle")
             time_start = timer()
 
-            not_reached_timeout = True
-            while last_wp[0] <= len(cmds) - 1:
-                # allow a single command to run for 5 minutes
-                not_reached_timeout = wp_event.wait(300)
-                if not not_reached_timeout:
-                    logger.error("Timeout occured %d", last_wp[0])
-                    break
-                with wp_lock:
-                    # self.observe()
-                    logger.info("last_wp: %s len: %d",
-                                str(last_wp),
-                                len(cmds))
-                    logger.debug("STATE: {}".format(self.state))
-                    current_time = timer()
-                    time_passed = current_time - time_start
-                    wp_to_state[last_wp[0]] = (self.state, time_passed)
-                    time_start = current_time
-                    if recorder_filename:
+            wp_to_traces = {}
+            traces = []
+            with self.record() as recorder:
+                while last_wp[0] <= len(cmds) - 1:
+                    # allow a single command to run for 5 minutes
+                    logger.debug("waiting for command")
+                    not_reached_timeout = wp_event.wait(300)
+                    logger.debug("Event set %s", last_wp)
+                    if not not_reached_timeout:
+                        logger.error("Timeout occured %d", last_wp[0])
+                        break
+                    if connection_lost.is_set():
+                        logger.error("Connection to vehicle was lost.")
+                        raise ConnectionLostError
+                    with wp_lock:
+                        # self.observe()
+                        logger.info("last_wp: %s len: %d",
+                                    str(last_wp),
+                                    len(cmds))
+                        logger.debug("STATE: {}".format(self.state))
+                        current_time = timer()
+                        time_passed = current_time - time_start
+                        wp_to_state[last_wp[0]] = (self.state, time_passed)
+                        time_start = current_time
+                        states, messages = recorder.flush()
+                        cmd = commands[last_wp[0] - 1]
+                        trace = CommandTrace(cmd, states)
+                        wp_to_traces[last_wp[0]] = trace
+                        traces.append(trace)
+
                         cm_directory = "command{}".format(last_wp[0])
                         self.__copy_coverage_files(cm_directory)
-                        args = (commands[last_wp[0] - 1], last_wp[0])
-                        t = threading.Thread(
-                            target=self.recorder.write_and_flush,
-                            args=args)
-                        threads.append(t)
-                        t.start()
-                    last_wp[0] = last_wp[1]
-                    wp_event.clear()
+                        last_wp[0] = last_wp[1]
+                        wp_event.clear()
 
             self.connection.remove_hook('check_for_reached')
-            self.unset_recorder()
             logger.debug("Removed hook")
-            # TODO make sure deadlocks are not possible here
-            for t in threads:
-                t.join()
 
-            outcomes = []
             wp_to_state[0] = (initial_state, 0.0)
-            # consider mission passed if it doesn't hit timeout
-            mission_passed = not_reached_timeout
-            mission_time = 0.0
             for i in range(len(commands)):
                 command = commands[i]
                 cmd_index = 1 + i
-                state_before = None
-                for j in range(cmd_index - 1, -1, -1):
-                    if j in wp_to_state:
-                        state_before = wp_to_state[j][0]
-                        break
-                if cmd_index in wp_to_state:
-                    state_after = wp_to_state[cmd_index][0]
-                    time_elapsed = \
-                        wp_to_state[cmd_index][1] - wp_to_state[j][1]
-                    if recorder_filename:
-                        directory = 'command{}'.format(cmd_index)
-                        coverage = self.__get_coverage(directory=directory)
-                        m = recorder_filename + '.cov'
-                        with open(m, 'a') as f:
-                            cm_line = 'Command #{}: {}\n'
-                            cm_line = cm_line.format(cmd_index, command)
-                            f.write(cm_line)
-                            f.write('{}\n'.format(str(coverage)))
-                else:
-                    state_after = state_before
-                    time_elapsed = 0.0
+                if cmd_index in wp_to_traces:
+                    directory = 'command{}'.format(cmd_index)
+                    coverage = self.__get_coverage(directory=directory)
+                    wp_to_traces[cmd_index].add_coverage(coverage)
 
-#                determine which spec the system should observe
-#                spec = command.resolve(state_before, env, config)
-#                postcondition = spec.postcondition
-#                passed = postcondition.is_satisfied(command,
-#                                                    state_before,
-#                                                    state_after,
-#                                                    env,
-#                                                    config)
-#                mission_passed = mission_passed and passed
-                passed = True
-                outcome = CommandOutcome(command,
-                                         passed,
-                                         state_before,
-                                         state_after,
-                                         time_elapsed)
-                outcomes.append(outcome)
-#                state_before = state_after
-                mission_time += time_elapsed
-
-            return MissionOutcome(mission_passed, outcomes, mission_time)
-
-    def update(self, message: Message) -> None:
-        # logger.debug("UPDATE")
-        with self.__state_lock:
-            self.__state = self.__state.evolve(message,
-                                               self.running_time,
-                                               self.connection)
-            # logger.debug("S: %s", self.state)
-            if self.recorder:
-                self.recorder.add(self.__state)
+            return MissionTrace(tuple(traces))
 
     def __get_coverage(self, directory: str) -> "FileLineSet":
         """
@@ -391,7 +391,8 @@ class Sandbox(BaseSandbox):
 
         bzc.command(self.container, rm_cmd, block=True)
         bzc.command(self.container, cp_cmd, block=True)
-        coverage = self._bugzoo.coverage.extract(self.container)
+        coverage = bzc.read_coverage(self.container)
+        # coverage = self._bugzoo.coverage.extract(self.container)
         bzc.command(self.container, rm_cmd, block=True)
         return coverage
 

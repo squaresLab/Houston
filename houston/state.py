@@ -9,6 +9,7 @@ import math
 
 import attr
 
+from . import exceptions
 from .connection import Message
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -224,7 +225,7 @@ class State(object, metaclass=StateMeta):
         if type(self) != type(other):
             msg = "illegal comparison of states: [{}] vs. [{}]"
             msg = msg.format(self.__class__.__name__, state.__class__.__name__)
-            raise Exception(msg)  # FIXME use HoustonException
+            raise exceptions.HoustonException(msg)
         for n, v in self.__class__.variables.items():
             if self.__dict__[v._field] != other.__dict__[v._field]:
                 return False

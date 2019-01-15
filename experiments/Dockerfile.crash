@@ -1,0 +1,4 @@
+FROM arducopter:3.6.4
+COPY crash.diff .
+RUN git apply crash.diff \
+ && ./waf build

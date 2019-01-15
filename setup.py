@@ -15,12 +15,13 @@ setup(
     url='https://github.com/squaresLab/Houston',
     license='mit',
     python_requires='>=3.5',
+    include_package_data=True,
     install_requires = [
         'flask',
         'pytest',
         'pexpect',
         'geopy',
-        'bugzoo>=2.1.16',
+        'bugzoo>=2.1.20',
         'dronekit',
         'attrs',
         'sexpdata'
