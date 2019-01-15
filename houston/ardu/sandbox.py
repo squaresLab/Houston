@@ -341,7 +341,7 @@ class Sandbox(BaseSandbox):
                     if not not_reached_timeout:
                         logger.error("Timeout occured %d", last_wp[0])
                         break
-                    if connection_lost:
+                    if connection_lost.is_set():
                         logger.error("Connection to vehicle was lost.")
                         raise ConnectionLostError
                     with wp_lock:
