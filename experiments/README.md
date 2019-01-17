@@ -69,3 +69,12 @@
    ```
    julia learn.jl <path-to-data-dir> <fuzzy-or-normal> <max-depth> [path-to-output-dir]
    ```
+7. This step involves collecting the test data. It will be filled later by Chris.
+8. When the test data is ready in the form of a `json` file, you can check it against learned models from step 6:
+   ```
+   python experiments/verify_test_data.py <test_data> <models_dir> <GBDTs_path> [--threshold THRESHOLD] [--ignore_cat] [--output_file OUTPUT_FILE]
+   ```
+   Example:
+   ```
+   python experiments/verify_test_data.py test.json models/ /home/USERNAME/GBDTs.jl/ --ignore_cat --output_file result.json
+   ```
