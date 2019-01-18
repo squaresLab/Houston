@@ -8,6 +8,8 @@ option_list = list(
               help="desired command."),
   make_option("--output_dir", type="character", default="", 
               help="path to the output directory."),
+  make_option("--list_of_vars", type="character", default=NULL,
+              help="comma separated list of variables to consider for clustering"),
   make_option(c("-n", "--dp_num"), type="integer", default=-1,
               help="number of datapoints per trace."),
   make_option(c("-k", "--clusters"), type="integer", default=3, 
@@ -24,6 +26,11 @@ if(is.null(opt$data_dir) || is.null(opt$command)) {
   stop("Required arguments missing!")
 }
 
+varlist = NULL
+if(!is.null(opt$list_of_vars)){
+  varlist = unlist(strsplit(opt$list_of_vars, split=","))
+}
+
 allfiles <- list.files(path=opt$data_dir, pattern=paste("factory.", opt$command, ".+.csv", sep=""), full.names=TRUE, recursive=FALSE)
 
 myData <- list()
@@ -33,6 +40,10 @@ n <- opt$dp_num
 for (f in allfiles) {
   m <- read.csv(f, header=TRUE)
   m <- as.matrix(m)
+  if (is.null(varlist)){
+    varlist = colnames(m)
+  }
+  m <- m[,varlist]
   if (n != -1) {
     l <- floor(length(m[, 1]) / n)
     if (l == 0) {
