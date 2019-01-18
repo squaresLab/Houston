@@ -20,11 +20,11 @@
 
 3. After all traces are collected you can start building the model. First, you need to preprocess data to prepare it for clustering:
    ```
-   python experiments/preprocess_data.py <traces> [--ignore-cat] [--output-dir OUTPUT_DIR]
+   python experiments/preprocess_data.py <traces> [--ignore-cat] [--output-dir OUTPUT_DIR] [--separate-params]
    ```
    Example:
    ```
-   python experiments/preprocess_data.py traces/ --ignore-cat --output-dir out/
+   python experiments/preprocess_data.py traces/ --ignore-cat --output-dir out/ --separate-params
    ```
    This script will create a `.csv` file for each command in traces and the name of the file specifies which command and which trace it belongs to.
 
@@ -54,7 +54,7 @@
    ```
    Example:
    ```
-   python experiments/postprocess_data clusters/MAV_CMD_NAV_TAKEOFF_files.txt --output-dir GBDT-out/
+   python experiments/postprocess_data.py clusters/MAV_CMD_NAV_TAKEOFF_files.txt --output-dir GBDT-out/
    ```
    This script will create two files:
    1. `data.csv.gz`: the csv of all traces of a command concatenated.
