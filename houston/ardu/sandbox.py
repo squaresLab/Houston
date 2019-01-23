@@ -369,10 +369,11 @@ class Sandbox(BaseSandbox):
                         wp_to_state[last_wp[0]] = (self.state, time_passed)
                         time_start = current_time
                         states, messages = recorder.flush()
-                        cmd = commands[last_wp[0] - 1]
-                        trace = CommandTrace(cmd, states)
-                        wp_to_traces[last_wp[0]] = trace
-                        traces.append(trace)
+                        if last_wp[0] > 0:
+                            cmd = commands[last_wp[0] - 1]
+                            trace = CommandTrace(cmd, states)
+                            wp_to_traces[last_wp[0]] = trace
+                            traces.append(trace)
 
                         # if appropriate, store coverage files
                         if collect_coverage:
