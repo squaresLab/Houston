@@ -16,7 +16,7 @@ from houston.exceptions import HoustonException
 from houston import Mission, MissionTrace, State
 from houston.state import Variable
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger = logging.getLogger("houston")  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 DESCRIPTION = """
@@ -97,13 +97,17 @@ def matches_ground_truth(
     if not truth:
         raise HoustonException("ground truth set must not be empty.")
 
+    assert truth[0].commands, "ground truth execution must perform at least one command."
+
     # determine the sets of categorical and continuous variables
-    state_cls = candidate.commands[0].states[0].__class__
+    state_cls = truth[0].commands[0].states[0].__class__
     categorical, continuous = obtain_var_names(state_cls)
 
     # ensure that all traces within the ground truth set execute an identical
     # sequence of commands
     if not traces_contain_same_commands(truth):
+        for i, trace in enumerate(truth):
+            logger.debug("trace %d: #%d commands", i, len(trace.commands))
         raise HoustonException("ground truth traces have inconsistent structure")
 
     # TODO implement SimpleTrace class

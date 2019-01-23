@@ -329,6 +329,7 @@ class Sandbox(BaseSandbox):
 
             stopwatch = Stopwatch()
             stopwatch.start()
+            self.vehicle.armed = True
             while not self.vehicle.armed:
                 if stopwatch.duration >= timeout_arm:
                     raise VehicleNotReadyError
