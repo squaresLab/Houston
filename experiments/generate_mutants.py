@@ -5,11 +5,13 @@ in a ground truth evaluation.
 from typing import List, Iterator, Tuple, Set, Optional
 import contextlib
 import logging
-import json
 import argparse
 import random
 import functools
 
+from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import PreservedScalarString
+import yaml
 import bugzoo
 import boggart
 import rooibos
@@ -90,6 +92,9 @@ ground truth evaluation.
 def setup_logging() -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG)
+    logging.getLogger('bugzoo').addHandler(log_to_stdout)
+    logging.getLogger('boggart').addHandler(log_to_stdout)
+    logging.getLogger('rooibos').addHandler(log_to_stdout)
     logging.getLogger('houston').addHandler(log_to_stdout)
     logging.getLogger(__name__).addHandler(log_to_stdout)
 
@@ -100,7 +105,7 @@ def get_args():
                         help="the desired number of acceptable mutants to generate.")
     parser.add_argument('--snapshot', type=str, default='arducopter:3.6.4',
                         help='the name of the BugZoo snapshot that should be mutated.')
-    parser.add_argument('--output', type=str, default='mutants.json',
+    parser.add_argument('--output', type=str, default='mutants.yml',
                         help="the file to which the mutants should be written.")
     return parser.parse_args()
 
@@ -187,16 +192,17 @@ def main():
         candidates = all_mutations(client_bugzoo, client_boggart, snapshot)
         random.shuffle(candidates)
 
-        acceptable = []  # type: List[boggart.Mutation]
+        acceptable = []  # type: List[str]
         for mutation in candidates:
             if len(acceptable) == num_requested:
                 break
             if is_acceptable(mutation):
-                acceptable.append(mutation)
+                diff = str(client_boggart.mutations_to_diff(snapshot, [mutation]))
+                acceptable.append(diff)
 
+        yml = [{'diff': PreservedScalarString(d)} for d in acceptable]
         with open(fn_output, 'w') as f:
-            json.dump([m.to_dict() for m in acceptable], f,
-                      indent=2)
+            YAML().dump(yml, f)
 
 
 if __name__ == '__main__':

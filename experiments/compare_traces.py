@@ -25,6 +25,8 @@ whether there is a significant difference between them (i.e., does the robot
 appear to behave differently?).
 """.strip()
 
+SYSTEM = System.get_by_name('arducopter')
+
 
 def traces_contain_same_commands(traces: List[MissionTrace]) -> bool:
     """
@@ -135,24 +137,25 @@ def matches_ground_truth(
     # each continuous variable after the completion of each command
     num_commands = len(truth[0].commands)
     size_truth = len(truth)
+    all_vars = SYSTEM.state.variables
     for i in range(num_commands):
         for var in continuous:
             vals = np.array([float(simple_truth[j][i][var])
                              for j in range(size_truth)])
             actual = simple_candidate[i][var]
             mid = max(vals) - ((max(vals) - min(vals)) / 2)
-            tolerance = (max(vals) - min(vals)) / 2
-            tolerance *= tolerance_factor
+#            tolerance = (max(vals) - min(vals)) / 2
+#            tolerance *= tolerance_factor
+            tolerance = all_vars[var].noise or 0.0
             diff = abs(mid - actual)
             is_nearly_eq = np.isclose(mid, actual,
                                       rtol=1e-05, atol=tolerance, equal_nan=False)
-
             # logger.debug("%d:%s (%.9f +/-%.9f)", i, var, mid, tolerance)
             logger.debug("parameter [%s]: |%f - %f| = %f",
                          var, mid, actual, diff)
             if not is_nearly_eq:
                 logger.debug("difference for parameter [%s] exceeds threshold (+/-%f)",
-                             var, tolerance)
+                             var, all_vars[var].noise)
                 return False
 
     return True
@@ -181,7 +184,7 @@ def load_file(fn: str) -> Tuple[Mission, List[MissionTrace]]:
         with open(fn, 'r') as f:
             jsn = json.load(f)
             mission = Mission.from_dict(jsn['mission'])
-            traces = [MissionTrace.from_dict(t, system) for t in jsn['traces']]
+            traces = [MissionTrace.from_dict(t, SYSTEM) for t in jsn['traces']]
         return (mission, traces)
     except FileNotFoundError:
         logger.error("failed to load trace file [%s]: file not found",

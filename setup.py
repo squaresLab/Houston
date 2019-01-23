@@ -24,6 +24,7 @@ setup(
         'bugzoo>=2.1.20',
         'dronekit',
         'attrs',
+        'ruamel.yaml>=0.15.86',
         'sexpdata',
         'numpy'
     ],
