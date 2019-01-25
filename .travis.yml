@@ -33,6 +33,7 @@ before_install:
 - export PYTHONPATH="/opt/z3/bin/python:${PYTHONPATH}"
 - z3 --version
 install:
+- pip install git+https://github.com/dronekit/dronekit-python@e51de97
 - pip install coveralls
 - pip install pycodestyle
 - pip install --upgrade .

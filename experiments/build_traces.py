@@ -27,6 +27,8 @@ DESCRIPTION = "Builds trace files for a given set of missions."
 def setup_logging(verbose: bool = False) -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG if verbose else logging.INFO)
+    formatter = logging.Formatter('%(threadName)s - %(message)s')
+    log_to_stdout.setFormatter(formatter)
     logging.getLogger('houston').addHandler(log_to_stdout)
     logging.getLogger('experiment').addHandler(log_to_stdout)
 

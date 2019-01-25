@@ -160,15 +160,10 @@ class Sandbox(BaseSandbox):
         self.__sitl_thread.start()
 
         # establish connection
-        # TODO fix connection issue
         protocol = 'tcp'
         port = 5760
         ip = str(bzc.ip_address(self.container))
         url = "{}:{}:{}".format(protocol, ip, port)
-        dummy_connection = mavutil.mavlink_connection(url)
-        time.sleep(10)
-        dummy_connection.close()
-        time.sleep(5)
         try:
             self.__connection = MAVLinkConnection(url,
                                                   {'update': self.update},
