@@ -65,13 +65,19 @@ class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
     """
     def __init__(self,
                  url: str,
-                 hooks: HOOK_TYPE = None
+                 hooks: HOOK_TYPE = None,
+                 timeout: int = 30
                  ) -> None:
         super().__init__(hooks)
         self.__conn = dronekit.connect(url,
-                                       wait_ready=True,
+                                       wait_ready=False,
                                        heartbeat_timeout=0)
-        self.__conn.wait_ready('autopilot_version')
+        self.__conn.wait_ready(True,
+                               timeout=timeout,
+                               raise_exception=True)
+        self.__conn.wait_ready('autopilot_version',
+                               timeout=timeout,
+                               raise_exception=True)
 
         def recv(s, name: str, message):  # FIXME external types
             m = MAVLinkMessage(name, message)

@@ -64,11 +64,18 @@ class Sandbox(BaseSandbox):
             raise NoConnectionError()
         return self.__connection
 
+    def has_connection(self) -> bool:
+        """
+        Checks whether a connection to the system running inside this
+        sandbox exists.
+        """
+        return self.__connection is not None
+
     @property
     def vehicle(self,
                 raise_exception: bool = True
                 ) -> Optional[dronekit.Vehicle]:
-        if not self.connection and raise_exception:
+        if not self.has_connection() and raise_exception:
             raise NoConnectionError()
         return self.connection.conn
 
@@ -162,8 +169,12 @@ class Sandbox(BaseSandbox):
         time.sleep(10)
         dummy_connection.close()
         time.sleep(5)
-        self.__connection = MAVLinkConnection(url, {'update': self.update})
-
+        try:
+            self.__connection = MAVLinkConnection(url,
+                                                  {'update': self.update},
+                                                  timeout=30)
+        except dronekit.APIException:
+            raise NoConnectionError
         # wait for longitude and latitude to match their expected values, and
         # for the system to match the expected `armable` state.
         initial_lon = self.state_initial['longitude']
@@ -202,7 +213,7 @@ class Sandbox(BaseSandbox):
     def stop(self) -> None:
         logger.debug("Stopping SITL")
         bzc = self._bugzoo.containers
-        if self.connection:
+        if self.has_connection():
             self.connection.close()
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
 
