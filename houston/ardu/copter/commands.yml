@@ -2,6 +2,9 @@ commands:
   - name: MAV_CMD_NAV_WAYPOINT
     id: 16
     generator: circle_based_generator
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p1:
         name: delay
         value:
@@ -28,6 +31,10 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_TAKEOFF
     id: 22
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
+
     p7:
         name: alt
         value:
@@ -37,6 +44,9 @@ commands:
   - name: MAV_CMD_NAV_LOITER_UNLIM
     id: 17
     generator: circle_based_generator
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p5:
         name: lat
         value:
@@ -58,6 +68,9 @@ commands:
   - name: MAV_CMD_NAV_LOITER_TURNS
     id: 18
     generator: circle_based_generator
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p5:
         name: lat
         value:
@@ -79,6 +92,9 @@ commands:
   - name: MAV_CMD_NAV_LOITER_TIME
     id: 19
     generator: circle_based_generator
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p1:
         name: time
         value:
@@ -105,9 +121,11 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_RETURN_TO_LAUNCH
     id: 20
+    next-allowed: []
   - name: MAV_CMD_NAV_LAND
     id: 21
     generator: circle_based_generator
+    next-allowed: []
     p5:
         name: lat
         value:
@@ -123,6 +141,9 @@ commands:
   - name: MAV_CMD_NAV_SPLINE_WAYPOINT
     id: 82
     generator: circle_based_generator
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p1:
         name: delay
         value:
@@ -149,6 +170,9 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_GUIDED_ENABLE
     id: 92
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p1:
         name: on_off
         value:
@@ -159,6 +183,7 @@ commands:
 #  - name: MAV_CMD_DO_JUMP
   - name: MAV_CMD_DO_SET_MODE
     id: 176
+    next-allowed: []
     p1:
         name: mode
         value:
@@ -177,6 +202,9 @@ commands:
               - 194  # MAV_MODE_TEST_ARMED
   - name: MAV_CMD_DO_CHANGE_SPEED
     id: 178
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p2:
         name: speed
         value:
@@ -186,6 +214,9 @@ commands:
   - name: MAV_CMD_DO_SET_HOME
     id: 179
     generator: circle_based_generator
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p1:
         name: current
         value:
@@ -213,6 +244,7 @@ commands:
             max: 15.0
   - name: MAV_CMD_DO_PARACHUTE
     id: 208
+    next-allowed: []
     p1:
         name: action
         value:
@@ -223,6 +255,9 @@ commands:
               - 2  # release
   - name: MAV_CMD_DO_GUIDED_LIMITS
     id: 222
+    next-allowed:
+      - "*"
+      - MAV_CMD_NAV_TAKEOFF
     p1:
         name: timeout
         value:

@@ -99,6 +99,16 @@ class CommandMeta(type):
 
         logger.debug("built command parameters")
 
+        # build next_allowed
+        logger.debug("building command next_allowed")
+        try:
+            na = ns['next_allowed']  # type: List[Parameter]
+        except KeyError:
+            na = ['*']
+
+        # FIXME
+        ns['next_allowed'] = na
+
         # build specifications
         logger.debug("building specifications")
         try:
@@ -206,6 +216,16 @@ class Command(object, metaclass=CommandMeta):
             msg = "unexpected keyword arguments [{}] supplied to constructor [{}]"  # noqa: pycodestyle
             msg = msg.format('; '.join(unexpected_arguments), cls_name)
             raise TypeError(msg)
+
+    @classmethod
+    def get_next_allowed(cls, system: Type['System']) -> List[Type['Command']]:
+        if not cls.next_allowed:
+            return []
+        if cls.next_allowed[0] == '*':  # all allowed
+            return [v for k, v in system.commands.items()
+                    if k not in cls.next_allowed[1:]]
+        allowed = [system.commands[n] for n in cls.next_allowed]
+        return allowed
 
     def __eq__(self, other: 'Command') -> bool:
         if type(self) != type(other):

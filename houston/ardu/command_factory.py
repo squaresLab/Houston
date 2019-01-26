@@ -46,6 +46,9 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
     except KeyError:
         msg = "missing 'id' field of Command"
         raise TypeError(msg)
+    next_allowed = command.get('next-allowed')
+    if next_allowed is None:
+        next_allowed = ['*']
     generator = command.get('generator')
     parameters = {}  # type: Dict[str, Union[int, Tuple[str, Parameter]]]
     for i in range(1, 8):
@@ -92,7 +95,8 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
           'to_message': to_message,
           'parameters': [p for p in parameters.values() if p],
           'specifications': [Idle],
-          'uid': 'factory.{}'.format(name)}
+          'uid': 'factory.{}'.format(name),
+          'next_allowed': next_allowed}
 
     C = CommandMeta(name, (Command,), ns)
 
