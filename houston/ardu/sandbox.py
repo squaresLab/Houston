@@ -6,6 +6,7 @@ import sys
 import threading
 import logging
 
+import docker
 import dronekit
 from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
@@ -47,6 +48,7 @@ class Sandbox(BaseSandbox):
         super().__init__(*args, **kwargs)
         self.__connection = None
         self.__sitl_thread = None
+        self.__fn_log = None  # type: Optional[str]
 
     @property
     def connection(self,
@@ -79,6 +81,13 @@ class Sandbox(BaseSandbox):
             raise NoConnectionError()
         return self.connection.conn
 
+    def read_logs(self) -> str:
+        """
+        Reads the contents of the log file for this sandbox.
+        """
+        assert self.__fn_log, "no log file created for sandbox."
+        return self._bugzoo.files.read(self.container, self.__fn_log)
+
     def update(self, message: Message) -> None:
         with self.__state_lock:
             state = self.__state.evolve(message,
@@ -101,6 +110,10 @@ class Sandbox(BaseSandbox):
         """
         bzc = self._bugzoo.containers
 
+        # generate a temporary log file for the SITL
+        self.__fn_log = bzc.mktemp(self.container)
+        logger.debug("writing SITL output to: %s", self.__fn_log)
+
         # FIXME #47
         home = "-35.362938,149.165085,584,270"
         name_bin = os.path.join("/opt/ardupilot/build/sitl/bin",  # FIXME
@@ -108,22 +121,28 @@ class Sandbox(BaseSandbox):
         speedup = self.configuration.speedup
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, speedup, home, fn_param)
+        cmd = '{} >& "{}"'.format(cmd, self.__fn_log)
         logger.debug("launching SITL via: %s", cmd)
 
-        if not verbose:
-            bzc.command(self.container, cmd, block=False,
-                        stdout=False, stderr=False)
-            return
+        # FIXME add non-blocking execution to BugZoo client API
+        cmd = 'source /.environment && {}'.format(cmd)
+        cmd = "/bin/bash -c '{}'".format(cmd)
+        logger.debug("wrapped command: %s", cmd)
 
-        # FIXME this will only work if we have direct access to the BugZoo
-        #   daemon (i.e., this code won't work if we execute it remotely).
-        execution_response = \
-            bzc.command(self.container, cmd, stdout=True,
-                        stderr=True, block=False)
-
-        for line in execution_response.output:
-            line = line.decode(sys.stdout.encoding).rstrip('\n')
-            logger.debug(line)
+        docker_client = docker.from_env()  # FIXME
+        docker_api = docker_client.api
+        resp = docker_api.exec_create(self.container.id,
+                                      cmd,
+                                      tty=True,
+                                      stdout=True,
+                                      stderr=True)
+        output = docker_api.exec_start(resp['Id'], stream=verbose)
+        logger.debug("started SITL")
+        if verbose:
+            for line in output:
+                line = line.decode(sys.stdout.encoding).rstrip('\n')
+                logger.getChild('SITL').debug(line)
+            logger.debug("SITL finished")
 
     @detect_lost_connection
     def start(self,
@@ -164,6 +183,7 @@ class Sandbox(BaseSandbox):
         port = 5760
         ip = str(bzc.ip_address(self.container))
         url = "{}:{}:{}".format(protocol, ip, port)
+        logger.debug("connecting to SITL at %s", url)
         try:
             self.__connection = MAVLinkConnection(url,
                                                   {'update': self.update},
@@ -212,7 +232,7 @@ class Sandbox(BaseSandbox):
             self.connection.close()
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
 
-        out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
+        out = bzc.command(self.container, ps_cmd)
         all_processes = out.output.splitlines()
         logger.debug("checking list of processes: %s", str(all_processes))
         for p in all_processes:
@@ -220,16 +240,13 @@ class Sandbox(BaseSandbox):
                 continue
             pid, cmd = p.split(' ')
             if cmd.startswith('/opt/ardupilot'):
-                bzc.command(self.container,
-                            "kill -2 {}".format(pid),
-                            block=True)
+                bzc.command(self.container, "kill -2 {}".format(pid))
                 break
         logger.debug("Killed it")
         self.__sitl_thread.join()
         logger.debug("Joined")
 #       cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2\'"\'"\'} | xargs kill -2'  # noqa: pycodestyle
-#       bzc.command(self.container, cmd, stdout=False, stderr=False,
-#                   block=True)
+#       bzc.command(self.container, cmd, stdout=False, stderr=False)
 
     def _on_connected(self) -> bool:
         """
@@ -415,11 +432,11 @@ class Sandbox(BaseSandbox):
         cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'  # noqa: pycodestyle
         cp_cmd = cp_cmd.format(directory)
 
-        bzc.command(self.container, rm_cmd, block=True)
-        bzc.command(self.container, cp_cmd, block=True)
+        bzc.command(self.container, rm_cmd)
+        bzc.command(self.container, cp_cmd)
         coverage = bzc.read_coverage(self.container)
         # coverage = self._bugzoo.coverage.extract(self.container)
-        bzc.command(self.container, rm_cmd, block=True)
+        bzc.command(self.container, rm_cmd)
         return coverage
 
     def __copy_coverage_files(self, directory: str) -> None:
@@ -434,7 +451,7 @@ class Sandbox(BaseSandbox):
         mv_cmd = mv_cmd.format(directory)
         rm_cmd = 'find . -name *.gcda | xargs rm'
 
-        out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
+        out = bzc.command(self.container, ps_cmd)
         all_processes = out.output.splitlines()
         logger.debug("checking list of processes: %s", str(all_processes))
         for p in all_processes:
@@ -442,13 +459,9 @@ class Sandbox(BaseSandbox):
                 continue
             pid, cmd = p.split(' ')
             if cmd.startswith('/opt/ardupilot'):
-                bzc.command(self.container,
-                            "kill -10 {}".format(pid),
-                            block=True)
+                bzc.command(self.container, "kill -10 {}".format(pid))
                 break
         # coverage = self._bugzoo.coverage.extract(self.container)
-        bzc.command(self.container,
-                    "mkdir /tmp/{}".format(directory),
-                    block=True)
-        bzc.command(self.container, mv_cmd, block=True)
-        bzc.command(self.container, rm_cmd, block=True)
+        bzc.command(self.container, "mkdir /tmp/{}".format(directory))
+        bzc.command(self.container, mv_cmd)
+        bzc.command(self.container, rm_cmd)

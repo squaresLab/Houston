@@ -107,7 +107,8 @@ def build_sandbox(client_bugzoo: bugzoo.Client,
                                        mission.configuration) as sandbox:
             yield sandbox
     finally:
-        del client_bugzoo.containers[container.uid]
+        if container:
+            del client_bugzoo.containers[container.uid]
 
 
 def build_traces(client_bugzoo: bugzoo.Client,
@@ -151,9 +152,9 @@ if __name__ == '__main__':
         jsn = json.load(f)
     missions = [houston.Mission.from_dict(d) for d in jsn]
 
-    client_bugzoo = bugzoo.BugZoo()
-    try:
+    # client_bugzoo = bugzoo.BugZoo()
+    with bugzoo.server.ephemeral() as client_bugzoo:
         snapshot = client_bugzoo.bugs[args.snapshot]
         build_traces(client_bugzoo, snapshot, missions, num_threads, num_repeats, args.output, collect_coverage)
-    finally:
-        client_bugzoo.shutdown()
+    # finally:
+    #     client_bugzoo.shutdown()
