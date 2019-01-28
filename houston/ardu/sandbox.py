@@ -167,9 +167,10 @@ class Sandbox(BaseSandbox):
         """
         stopwatch = Stopwatch()
         speedup = self.configuration.speedup
-        timeout_set_mode = 15 / speedup + 2
-        timeout_3d_fix = 10 / speedup + 2
-        timeout_state = 90 / speedup + 2
+        timeout_set_mode = (15 / speedup + 2) + 30
+        timeout_3d_fix = (10 / speedup + 2) + 30
+        timeout_state = (90 / speedup + 2) + 30
+        timeout_mavlink = 60
 
         bzc = self._bugzoo.containers
         args = (binary_name, model_name, param_file, verbose)
@@ -187,7 +188,7 @@ class Sandbox(BaseSandbox):
         try:
             self.__connection = MAVLinkConnection(url,
                                                   {'update': self.update},
-                                                  timeout=30)
+                                                  timeout=timeout_mavlink)
         except dronekit.APIException:
             raise NoConnectionError
         # wait for longitude and latitude to match their expected values, and

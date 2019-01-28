@@ -3,7 +3,7 @@
 This script is used to record execution traces for each mission within a
 provided mission suite file.
 """
-from typing import List, Iterator, Callable
+from typing import List, Iterator, Callable, Dict, Any
 import os
 import argparse
 import concurrent.futures
@@ -30,7 +30,7 @@ SandboxFactory = Callable[[bugzoo.BugZoo, bugzoo.Bug, houston.Mission], Iterator
 def setup_logging(verbose: bool = False) -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG if verbose else logging.INFO)
-    formatter = logging.Formatter('%(threadName)s - %(message)s')
+    formatter = logging.Formatter('%(processName)s - %(message)s')
     log_to_stdout.setFormatter(formatter)
     logging.getLogger('houston').addHandler(log_to_stdout)
     logging.getLogger('experiment').addHandler(log_to_stdout)
@@ -56,11 +56,13 @@ def parse_args():
 
 def trace(index: int,
           sandbox_factory: SandboxFactory,
-          mission: houston.mission.Mission,
+          jsn_mission: Dict[str, Any],
           num_repeats: int,
           dir_output: str,
           collect_coverage: bool
           ) -> None:
+    mission = houston.Mission.from_dict(json.loads(jsn_mission))
+
     # generate a (very-likely-to-be) "unique" ID for the mission
     uid = hex(abs(hash(mission)))[2:][:8]
     logger.info("generating trace for mission %d: %s", index, uid)
@@ -94,8 +96,9 @@ def trace(index: int,
 @contextlib.contextmanager
 def build_sandbox(client_bugzoo: bugzoo.Client,
                   snapshot: bugzoo.Bug,
-                  mission: houston.Mission
+                  jsn_mission: str
                   ) -> Iterator[houston.Sandbox]:
+    mission = houston.Mission.from_dict(json.loads(jsn_mission))
     container = None  # type: Optional[bugzoo.Container]
     try:
         container = client_bugzoo.containers.provision(snapshot)
@@ -113,26 +116,44 @@ def build_sandbox(client_bugzoo: bugzoo.Client,
 
 def build_traces(client_bugzoo: bugzoo.Client,
                  snapshot: bugzoo.Bug,
-                 missions: List[houston.Mission],
+                 jsn_missions: List[str],
                  num_threads: int,
                  num_repeats: int,
                  dir_output: str,
                  collect_coverage: bool
                  ) -> None:
     futures = []
-    with concurrent.futures.ThreadPoolExecutor(num_threads) as e:
-        for i, mission in enumerate(missions):
-            logger.debug("submitting mission %d", i)
-            sandbox_factory = functools.partial(build_sandbox,
-                                                client_bugzoo,
-                                                snapshot,
-                                                mission)
-            future = e.submit(trace, i, sandbox_factory, mission, num_repeats, dir_output, collect_coverage)
-            futures.append(future)
-    logger.debug("submitted all missions")
-    logger.debug("waiting for missions to complete")
-    concurrent.futures.wait(futures)
-    logger.debug("finished executing all missions")
+    with concurrent.futures.ProcessPoolExecutor(num_threads) as e:
+        try:
+            for i, jsn_mission in enumerate(jsn_missions):
+                logger.debug("submitting mission %d", i)
+                sandbox_factory = functools.partial(build_sandbox,
+                                                    client_bugzoo,
+                                                    snapshot,
+                                                    jsn_mission)
+                future = e.submit(trace,
+                                  i,
+                                  sandbox_factory,
+                                  jsn_mission,
+                                  num_repeats,
+                                  dir_output,
+                                  collect_coverage)
+                futures.append(future)
+
+            logger.debug("submitted all missions")
+            logger.debug("waiting for missions to complete")
+            concurrent.futures.wait(futures)
+            logger.debug("finished executing all missions")
+        except KeyboardInterrupt:
+            logger.info("Received keyboard interrupt. Shutting down...")
+            for fut in futures:
+                logger.debug("Cancelling: %s", fut)
+                fut.cancel()
+                logger.debug("Cancelled: %s", fut)
+            logger.info("Waiting for running jobs to complete.")
+            logger.info("DO NOT EXIT!")
+            e.shutdown(wait=True)
+            logger.info("Cancelled all jobs and shutdown executor.")
 
 
 if __name__ == '__main__':
@@ -150,11 +171,8 @@ if __name__ == '__main__':
 
     with open(fn_missions, 'r') as f:
         jsn = json.load(f)
-    missions = [houston.Mission.from_dict(d) for d in jsn]
+    jsn_missions = [json.dumps(m) for m in jsn]
 
-    # client_bugzoo = bugzoo.BugZoo()
     with bugzoo.server.ephemeral() as client_bugzoo:
         snapshot = client_bugzoo.bugs[args.snapshot]
-        build_traces(client_bugzoo, snapshot, missions, num_threads, num_repeats, args.output, collect_coverage)
-    # finally:
-    #     client_bugzoo.shutdown()
+        build_traces(client_bugzoo, snapshot, jsn_missions, num_threads, num_repeats, args.output, collect_coverage)

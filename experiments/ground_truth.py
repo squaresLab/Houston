@@ -161,20 +161,24 @@ def main():
         [fn for fn in os.listdir(dir_oracle) if fn.endswith('.json')]
     trace_filenames = [os.path.join(dir_oracle, fn) for fn in trace_filenames]
 
-    # launch the BugZoo daemon
-    daemon_bugzoo = bugzoo.BugZoo()
-
-    # build the database
     db_entries = []  # type: List[DatabaseEntry]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        snapshot = daemon_bugzoo.bugs[name_snapshot]
-        process = functools.partial(process_mutation,
-                                    system,
-                                    daemon_bugzoo,
-                                    snapshot,
-                                    trace_filenames,
-                                    dir_output)
-        db_entries = [e for e in executor.map(process, diffs) if e]
+    futures = []
+    with bugzoo.server.ephemeral() as client_bugzoo:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_threads) as executor:
+            snapshot = client_bugzoo.bugs[name_snapshot]
+            process = functools.partial(process_mutation,
+                                        system,
+                                        client_bugzoo,
+                                        snapshot,
+                                        trace_filenames,
+                                        dir_output)
+            for diff in diffs:
+                future = executor.submit(process, diff)
+                futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
+            entry = future.result()
+            db_entries.append(entry)
 
     # save to disk
     logger.info("finished constructing evaluation dataset.")
@@ -182,7 +186,7 @@ def main():
     jsn = {
         'oracle-directory': dir_oracle,
         'snapshot': name_snapshot,
-        'entries': [e.to_dict() for e in db_entries]
+        'entries': [e.to_dict() for e in db_entries if e]
     }
     with open(fn_output_database, 'w') as f:
         YAML().dump(jsn, f)
