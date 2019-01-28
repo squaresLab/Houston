@@ -9,6 +9,8 @@ import json
 import sys
 import os
 
+from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import PreservedScalarString
 import yaml
 import bugzoo
 import boggart
@@ -33,14 +35,12 @@ DESCRIPTION = "Builds a ground truth dataset."
 class DatabaseEntry(object):
     diff = attr.ib(type=str)
     fn_oracle = attr.ib(type=str)
-    mission = attr.ib(type=Mission)
-    trace_mutant = attr.ib(type=MissionTrace)
+    fn_trace = attr.ib(type=str)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {'diff': self.diff,
-                'mission': self.mission.to_dict(),
+        return {'diff': PreservedScalarString(self.diff),
                 'oracle': self.fn_oracle,
-                'trace': self.trace_mutant.to_dict()}
+                'trace': self.fn_trace}
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -68,6 +68,7 @@ def process_mutation(system: Type[System],
                      daemon_bugzoo: BugZooDaemon,
                      snapshot: bugzoo.Bug,
                      trace_filenames: List[str],
+                     dir_mutant_traces: str,
                      diff: str
                      ) -> Optional[DatabaseEntry]:
     patch = bugzoo.Patch.from_unidiff(diff)
@@ -95,9 +96,19 @@ def process_mutation(system: Type[System],
             mission, oracle_traces = load_traces_file(fn_trace)
             trace_mutant = obtain_trace(mission)
 
-            entry = DatabaseEntry(diff, fn_trace, mission, trace_mutant)
             if not matches_ground_truth(trace_mutant, oracle_traces):
                 logger.info("found an acceptable mutant!")
+
+                # write mutant trace to file
+                identifier = abs(hash((hash(diff), hash(mission))))
+                fn_trace_mut_rel = "{}.json".format(identifier)
+                fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
+                jsn = {'mission': mission.to_dict(),
+                       'traces': [trace_mutant.to_dict()]}
+                with open(fn_trace_mut, 'w') as f:
+                    json.dump(jsn, f)
+
+                entry = DatabaseEntry(diff, fn_trace, fn_trace_mut)
                 return entry
             else:
                 logger.debug("mutant is not sufficiently different for given mission.")
@@ -118,12 +129,16 @@ def main():
     setup_logging(verbose=args.verbose)
     name_snapshot = args.snapshot
     fn_mutants = args.mutants
+    dir_output = args.output
     dir_oracle = args.oracle
-    fn_output = args.output
+    fn_output_database = os.path.join(dir_output, 'database.yml')
     num_threads = args.threads
     system = ArduCopter
 
     assert num_threads >= 1
+
+    # ensure that the output directory exists
+    os.makedirs(args.output, exist_ok=True)
 
     if not os.path.exists(dir_oracle):
         logger.error("oracle directory not found: %s", dir_oracle)
@@ -157,7 +172,8 @@ def main():
                                     system,
                                     daemon_bugzoo,
                                     snapshot,
-                                    trace_filenames)
+                                    trace_filenames,
+                                    dir_output)
         db_entries = [e for e in executor.map(process, diffs) if e]
 
     # save to disk
@@ -168,8 +184,8 @@ def main():
         'snapshot': name_snapshot,
         'entries': [e.to_dict() for e in db_entries]
     }
-    with open(fn_output, 'w') as f:
-        json.dump(jsn, f, indent=2)
+    with open(fn_output_database, 'w') as f:
+        YAML().dump(jsn, f)
     logger.info("saved evaluation dataset to disk")
 
 
