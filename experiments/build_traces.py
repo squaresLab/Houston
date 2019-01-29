@@ -11,6 +11,7 @@ import json
 import logging
 import contextlib
 import functools
+import signal, psutil
 
 import bugzoo
 import bugzoo.server
@@ -25,6 +26,19 @@ logger.setLevel(logging.DEBUG)
 DESCRIPTION = "Builds trace files for a given set of missions."
 
 SandboxFactory = Callable[[bugzoo.BugZoo, bugzoo.Bug, houston.Mission], Iterator[houston.Sandbox]]
+
+
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        return
+    children = parent.children(recursive=True)
+    for process in children:
+        if process.name() != "python":
+            continue
+        logger.debug("killing process %d", process.pid)
+        process.send_signal(sig)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -88,6 +102,7 @@ def trace(index: int,
     except (ConnectionLostError, NoConnectionError):
         logger.error("SITL crashed during trace %d: %s", index, uid)
     except (KeyboardInterrupt, SystemExit):
+        logger.exception("received keyboard interrupt")
         raise
     except:
         logger.exception("failed to build trace %d: %s", index, uid)
@@ -149,11 +164,13 @@ def build_traces(client_bugzoo: bugzoo.Client,
             for fut in futures:
                 logger.debug("Cancelling: %s", fut)
                 fut.cancel()
-                logger.debug("Cancelled: %s", fut)
-            logger.info("Waiting for running jobs to complete.")
-            logger.info("DO NOT EXIT!")
-            e.shutdown(wait=True)
+                logger.debug("Cancelled: %s", fut.cancelled())
+            logger.info("Shutting down the process pool")
+            e.shutdown(wait=False)
+            kill_child_processes(os.getpid())
             logger.info("Cancelled all jobs and shutdown executor.")
+            client_bugzoo.containers.clear()
+            logger.info("Killed all containers")
 
 
 if __name__ == '__main__':
