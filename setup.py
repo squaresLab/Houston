@@ -21,7 +21,7 @@ setup(
         'pytest',
         'pexpect',
         'geopy',
-        'bugzoo>=2.1.23',
+        'bugzoo>=2.1.24',
         'dronekit>=2.9.1',
         'pymavlink>=2.3.4',
         'attrs',

@@ -1,4 +1,5 @@
 from typing import Iterator, Tuple, Set, List, Dict, Any, Optional, Type
+from uuid import UUID, uuid4
 import concurrent.futures
 import argparse
 import functools
@@ -13,9 +14,8 @@ from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import PreservedScalarString
 import yaml
 import bugzoo
-import boggart
-import rooibos
 import houston
+from bugzoo import Client as BugZooClient
 from bugzoo import BugZoo as BugZooDaemon
 from houston import System
 from houston.mission import Mission
@@ -24,11 +24,19 @@ from houston.ardu.copter import ArduCopter
 
 from compare_traces import load_file as load_traces_file
 from compare_traces import matches_ground_truth
+from build_traces import build_sandbox
 
 logger = logging.getLogger('houston')  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 DESCRIPTION = "Builds a ground truth dataset."
+
+
+class FailedToCreateMutantSnapshot(houston.exceptions.HoustonException):
+    """
+    Thrown when this script fails to create a BugZoo snapshot for a
+    mutant.
+    """
 
 
 @attr.s
@@ -64,64 +72,112 @@ def parse_args():
     return p.parse_args()
 
 
+@contextlib.contextmanager
+def build_mutant_snapshot(bz: BugZooClient,
+                          snapshot: bugzoo.Bug,
+                          diff: str
+                          ) -> Iterator[bugzoo.Bug]:
+    # generate a name for the snapshot and image
+    uuid = uuid4().hex[:64]
+    name_image = "houston-mutant:{}".format(uuid)
+
+    # create a description of the mutant snapshot
+    mutant = bugzoo.Bug(name=name_image,
+                        image=name_image,
+                        dataset='houston-mutants',
+                        program=snapshot.program,
+                        source=None,
+                        source_dir=snapshot.source_dir,
+                        languages=snapshot.languages,
+                        tests=snapshot.tests,
+                        compiler=snapshot.compiler,
+                        instructions_coverage=snapshot.instructions_coverage)
+
+    try:
+
+        # create and store the Docker image
+        patch = bugzoo.Patch.from_unidiff(diff)
+        container = None
+        try:
+            container = bz.containers.provision(snapshot)
+            if not bz.containers.patch(container, patch):
+                m = "failed to patch using diff: {}".format(diff)
+                raise FailedToCreateMutantSnapshot(m)
+
+            build_attempt = bz.containers.build(container)
+            if not build_attempt.successful:
+                logger.error("build failure:\n%s",
+                             build_attempt.response.output)
+                m = "failed to build mutant: {}".format(diff)
+                raise FailedToCreateMutantSnapshot(m)
+            bz.containers.persist(container, name_image)
+        finally:
+            if container:
+                del bz.containers[container.uid]
+
+        # register the snapshot
+        bz.bugs.register(mutant)
+
+        yield mutant
+
+    # ensure that all resources are freed
+    finally:
+        if mutant.name in bz.bugs:
+            del bz.bugs[mutant.name]
+        if bz.docker.has_image(name_image):
+            bz.docker.delete_image(name_image)
+
+
 def process_mutation(system: Type[System],
-                     daemon_bugzoo: BugZooDaemon,
-                     snapshot: bugzoo.Bug,
+                     client_bugzoo: BugZooClient,
+                     snapshot_orig: bugzoo.Bug,
                      trace_filenames: List[str],
                      dir_mutant_traces: str,
                      diff: str
                      ) -> Optional[DatabaseEntry]:
-    patch = bugzoo.Patch.from_unidiff(diff)
-    bz = daemon_bugzoo
+    bz = client_bugzoo
     sandbox_cls = system.sandbox
-    container = None  # type: Optional[bugzoo.Container]
+
+    # build an ephemeral image for the mutant
     try:
-        container = bz.containers.provision(snapshot)
-        logger.debug("built container")
-        if not bz.containers.patch(container, patch):
-            logger.error("failed to patch using diff: %s", diff)
-            return None
-        if not bz.containers.build(container).successful:
-            logger.error("failed to build mutant: %s", diff)
-            return None
+        with build_mutant_snapshot(client_bugzoo, snapshot_orig, diff) as snapshot:
+            def obtain_trace(mission: houston.Mission) -> MissionTrace:
+                jsn_mission = json.dumps(mission.to_dict())  # FIXME hack
+                with build_sandbox(client_bugzoo, snapshot, jsn_mission) as sandbox:
+                    return sandbox.run_and_trace(mission.commands)
 
-        def obtain_trace(mission: houston.Mission) -> MissionTrace:
-            args = [bz, container, mission.initial_state,
-                    mission.environment, mission.configuration]
-            with sandbox_cls.for_container(*args) as sandbox:
-                return sandbox.run_and_trace(mission.commands)
+            for fn_trace in trace_filenames:
+                logger.debug("evaluating oracle trace: %s", fn_trace)
+                mission, oracle_traces = load_traces_file(fn_trace)
+                trace_mutant = obtain_trace(mission)
 
-        for fn_trace in trace_filenames:
-            logger.debug("evaluating oracle trace: %s", fn_trace)
-            mission, oracle_traces = load_traces_file(fn_trace)
-            trace_mutant = obtain_trace(mission)
+                if not matches_ground_truth(trace_mutant, oracle_traces):
+                    logger.info("found an acceptable mutant!")
 
-            if not matches_ground_truth(trace_mutant, oracle_traces):
-                logger.info("found an acceptable mutant!")
+                    # write mutant trace to file
+                    identifier = abs(hash((hash(diff), hash(mission))))
+                    fn_trace_mut_rel = "{}.json".format(identifier)
+                    fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
+                    jsn = {'mission': mission.to_dict(),
+                           'traces': [trace_mutant.to_dict()]}
+                    with open(fn_trace_mut, 'w') as f:
+                        json.dump(jsn, f)
 
-                # write mutant trace to file
-                identifier = abs(hash((hash(diff), hash(mission))))
-                fn_trace_mut_rel = "{}.json".format(identifier)
-                fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
-                jsn = {'mission': mission.to_dict(),
-                       'traces': [trace_mutant.to_dict()]}
-                with open(fn_trace_mut, 'w') as f:
-                    json.dump(jsn, f)
+                    entry = DatabaseEntry(diff, fn_trace, fn_trace_mut)
+                    return entry
+                else:
+                    logger.debug("mutant is not sufficiently different for given mission.")
+                    return None
 
-                entry = DatabaseEntry(diff, fn_trace, fn_trace_mut)
-                return entry
-            else:
-                logger.debug("mutant is not sufficiently different for given mission.")
-
+    except FailedToCreateMutantSnapshot:
+        logger.error("failed to build snapshot for mutant: %s", diff)
+        return None
     except Exception:
         logger.exception("failed to obtain data for mutant: %s", diff)
         return None
     except (houston.exceptions.NoConnectionError, houston.exceptions.ConnectionLostError):
         logger.error("mutant resulted in crash")
         return None
-    finally:
-        del bz.containers[container.id]
-    return None
 
 
 def main():
