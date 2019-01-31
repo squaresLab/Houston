@@ -18,6 +18,8 @@ def setup_arg_parser():
 
 
 def transform_data(files_filename, output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     data_filename = os.path.join(output_dir, 'data.csv.gz')
     meta_filename = os.path.join(output_dir, '_meta.txt')
     files = []
@@ -40,6 +42,11 @@ def transform_data(files_filename, output_dir):
     assert len(heads) == len(files)
     with open(meta_filename, 'w') as f:
         f.write(",".join(heads))
+
+    #TODO remove this
+    labels_file = os.path.basename(files_filename)[:-1*len("files.txt")] + "labels.txt"
+    labels_file = os.path.join(os.path.dirname(files_filename), labels_file)
+    os.system("cp {} {}".format(labels_file, os.path.join(output_dir, "labels.txt")))
 
 if __name__=="__main__":
     args = setup_arg_parser()

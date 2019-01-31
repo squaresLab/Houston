@@ -39,7 +39,7 @@ i <- 1
 n <- opt$dp_num
 for (f in allfiles) {
   m <- read.csv(f, header=TRUE)
-  m <- as.matrix(m)
+#  m <- as.matrix(m)
   if (is.null(varlist)){
     varlist = colnames(m)
   }
@@ -51,7 +51,7 @@ for (f in allfiles) {
     }
     m <- m[seq(0, n-1) * l + 1 , ]
   }
-  myData[[i]] <- m
+  myData[[i]] <- as.matrix(m)
   files[i] <- f
   i <- i+1
 }
@@ -72,4 +72,5 @@ dev.off()
 write(paste("Int64", toString(mvc@cluster), sep = "\n"), file=paste(opt$output_dir, opt$command, "_labels.txt", sep=""))
 save.image(file=paste(opt$output_dir, opt$command, ".RData", sep=""))
 
+print(mvc@clusinfo)
 
