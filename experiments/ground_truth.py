@@ -9,6 +9,8 @@ import logging
 import json
 import sys
 import os
+import signal
+import psutil
 
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import PreservedScalarString
@@ -42,18 +44,36 @@ class FailedToCreateMutantSnapshot(houston.exceptions.HoustonException):
 @attr.s
 class DatabaseEntry(object):
     diff = attr.ib(type=str)
-    fn_oracle = attr.ib(type=str)
-    fn_trace = attr.ib(type=str)
+    fn_inconsistent_traces = attr.ib(type=Tuple[Tuple[str, str], ...])
+    fn_consistent_traces = attr.ib(type=Tuple[Tuple[str, str], ...])
 
     def to_dict(self) -> Dict[str, Any]:
         return {'diff': PreservedScalarString(self.diff),
-                'oracle': self.fn_oracle,
-                'trace': self.fn_trace}
+                'inconsistent':  [{'oracle': o,
+                                   'trace': t} for o, t in self.fn_inconsistents],
+                'consistent':  [{'oracle': o,
+                                 'trace': t} for o, t in self.fn_consistents]
+                }
+
+
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        return
+    children = parent.children(recursive=True)
+    for process in children:
+        if process.name() != "python":
+            continue
+        logger.debug("killing process %d", process.pid)
+        process.send_signal(sig)
 
 
 def setup_logging(verbose: bool = False) -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG if verbose else logging.INFO)
+    formatter = logging.Formatter('%(processName)s - %(message)s')
+    log_to_stdout.setFormatter(formatter)
     logging.getLogger('houston').addHandler(log_to_stdout)
     logging.getLogger('experiment').addHandler(log_to_stdout)
 
@@ -104,6 +124,7 @@ def build_mutant_snapshot(bz: BugZooClient,
                 m = "failed to patch using diff: {}".format(diff)
                 raise FailedToCreateMutantSnapshot(m)
 
+            logger.debug("patched using diff: %s", diff)
             build_attempt = bz.containers.build(container)
             if not build_attempt.successful:
                 logger.error("build failure:\n%s",
@@ -138,6 +159,9 @@ def process_mutation(system: Type[System],
     bz = client_bugzoo
     sandbox_cls = system.sandbox
 
+    inconsistent_results = []
+    consistent_results = []
+
     # build an ephemeral image for the mutant
     try:
         with build_mutant_snapshot(client_bugzoo, snapshot_orig, diff) as snapshot:
@@ -149,35 +173,44 @@ def process_mutation(system: Type[System],
             for fn_trace in trace_filenames:
                 logger.debug("evaluating oracle trace: %s", fn_trace)
                 mission, oracle_traces = load_traces_file(fn_trace)
-                trace_mutant = obtain_trace(mission)
+                try:
+                    trace_mutant = obtain_trace(mission)
+                except:
+                    logger.exception("failed to build trace %s for mutant: %s", fn_trace, diff)
+                    continue
 
-                if not matches_ground_truth(trace_mutant, oracle_traces):
-                    logger.info("found an acceptable mutant!")
+                # write mutant trace to file
+                identifier = abs(hash((hash(diff), hash(mission))))
+                fn_trace_mut_rel = "{}.json".format(identifier)
+                fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
+                jsn = {'mission': mission.to_dict(),
+                       'traces': [trace_mutant.to_dict()]}
+                with open(fn_trace_mut, 'w') as f:
+                    json.dump(jsn, f)
 
-                    # write mutant trace to file
-                    identifier = abs(hash((hash(diff), hash(mission))))
-                    fn_trace_mut_rel = "{}.json".format(identifier)
-                    fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
-                    jsn = {'mission': mission.to_dict(),
-                           'traces': [trace_mutant.to_dict()]}
-                    with open(fn_trace_mut, 'w') as f:
-                        json.dump(jsn, f)
-
-                    entry = DatabaseEntry(diff, fn_trace, fn_trace_mut)
-                    return entry
-                else:
-                    logger.debug("mutant is not sufficiently different for given mission.")
-                    return None
+                try:
+                    if not matches_ground_truth(trace_mutant, oracle_traces):
+                        logger.info("found an acceptable mutant!")
+                        inconsistent_results.append((fn_trace, fn_trace_mut))
+                    else:
+                        logger.debug("mutant is not sufficiently different for given mission.")
+                        consistent_results.append((fn_trace, fn_trace_mut))
+                except houston.exceptions.HoustonException as e:
+                    logger.exception("failed to check matching of traces %s", e)
+                    continue
 
     except FailedToCreateMutantSnapshot:
         logger.error("failed to build snapshot for mutant: %s", diff)
-        return None
     except Exception:
         logger.exception("failed to obtain data for mutant: %s", diff)
-        return None
     except (houston.exceptions.NoConnectionError, houston.exceptions.ConnectionLostError):
         logger.error("mutant resulted in crash")
-        return None
+    finally:
+        if inconsistent_results or consistent_results:
+            return DatabaseEntry(diff, tuple(inconsistent_results), tuple(consistent_results))
+        else:
+            return None
+
 
 
 def main():
@@ -221,20 +254,44 @@ def main():
     futures = []
     with bugzoo.server.ephemeral() as client_bugzoo:
         with concurrent.futures.ProcessPoolExecutor(max_workers=num_threads) as executor:
-            snapshot = client_bugzoo.bugs[name_snapshot]
-            process = functools.partial(process_mutation,
-                                        system,
-                                        client_bugzoo,
-                                        snapshot,
-                                        trace_filenames,
-                                        dir_output)
-            for diff in diffs:
-                future = executor.submit(process, diff)
-                futures.append(future)
+            try:
+                snapshot = client_bugzoo.bugs[name_snapshot]
+                process = functools.partial(process_mutation,
+                                            system,
+                                            client_bugzoo,
+                                            snapshot,
+                                            trace_filenames,
+                                            dir_output)
+                for diff in diffs:
+                    future = executor.submit(process, diff)
+                    futures.append(future)
 
-        for future in concurrent.futures.as_completed(futures):
-            entry = future.result()
-            db_entries.append(entry)
+                for future in concurrent.futures.as_completed(futures):
+                    entry = future.result()
+                    if entry:
+                        db_entries.append(entry)
+            except (KeyboardInterrupt, SystemExit):
+                logger.info("Received keyboard interrupt. Shutting down...")
+                for fut in futures:
+                    logger.debug("Cancelling: %s", fut)
+                    fut.cancel()
+                    logger.debug("Cancelled: %s", fut.cancelled())
+                logger.info("Shutting down the process pool")
+                executor.shutdown(wait=False)
+                kill_child_processes(os.getpid())
+                logger.info("Cancelled all jobs and shutdown executor.")
+                client_bugzoo.containers.clear()
+                logger.info("Killed all containers")
+                logger.info("Removing all images")
+                bug_names = [b for b in client_bugzoo.bugs if 'houston-mutant' in b]
+                for b in bug_names:
+                    logger.debug("Removing image %s", b)
+                    del client_bugzoo.bugs[b]
+                    if client_bugzoo.docker.has_image(b):
+                        client_bugzoo.docker.delete_image(b)
+
+                logger.debug("Removed all images")
+
 
     # save to disk
     logger.info("finished constructing evaluation dataset.")
@@ -242,7 +299,7 @@ def main():
     jsn = {
         'oracle-directory': dir_oracle,
         'snapshot': name_snapshot,
-        'entries': [e.to_dict() for e in db_entries if e]
+        'entries': [e.to_dict() for e in db_entries]
     }
     with open(fn_output_database, 'w') as f:
         YAML().dump(jsn, f)

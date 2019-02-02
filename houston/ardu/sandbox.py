@@ -280,6 +280,7 @@ class Sandbox(BaseSandbox):
         speedup = config.speedup
         timeout_command = 300 / speedup + 5
         timeout_arm = 10 / speedup + 5
+        timeout_mission_upload = 20
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
@@ -306,7 +307,7 @@ class Sandbox(BaseSandbox):
             vcmds.clear()
             for cmd in cmds:
                 vcmds.add(cmd)
-            vcmds.upload()
+            vcmds.upload(timeout=timeout_mission_upload)
             logger.debug("Mission uploaded")
             vcmds.wait_ready()
 
