@@ -3,6 +3,10 @@ import json
 import csv
 
 import argparse
+from ruamel.yaml import YAML
+
+from filter_truth import filter_truth_traces, VALID_LIST_OUTPUT
+
 
 def setup_arg_parser():
     parser = argparse.ArgumentParser(description='Preprocess traces')
@@ -21,16 +25,19 @@ def setup_arg_parser():
     return args
 
 
-def transform_data(data_dir, output_dir, ignore_cat, separate_params):
-    for name in os.listdir(data_dir):
-        if not name.endswith('json'):
-            continue
+def transform_data(trace_filenames, data_dir, output_dir, ignore_cat, separate_params):
+    for name in trace_filenames:
         m_hash = name[:-len('.json')]
         filename = os.path.join(data_dir, name)
         with open(filename, 'r') as f:
             j = json.load(f)
         index = 0
-        for c in j['traces'][0]['commands']:  # TODO handle the case with multiple traces
+        trace_commands = None
+        for t in j['traces']:
+            if t['commands']:
+                trace_commands = t['commands']
+                break
+        for c in trace_commands:  # TODO handle the case with multiple traces
             new_filename_temp = "{}_{}_{}.csv".format(c['command']['type'], m_hash, index)
             new_filename = os.path.join(output_dir, new_filename_temp)
             states = c['states']
@@ -77,4 +84,17 @@ def transform_data(data_dir, output_dir, ignore_cat, separate_params):
 
 if __name__=="__main__":
     args = setup_arg_parser()
-    transform_data(args.traces, args.output_dir, args.ignore_cat, args.separate_params)
+    data_dir = args.traces
+
+    # obtain a list of oracle traces
+    filtered_traces_fn = os.path.join(data_dir, VALID_LIST_OUTPUT)
+    if os.path.exists(filtered_traces_fn):
+        with open(filtered_traces_fn, 'r') as f:
+            trace_filenames = YAML().load(f)
+    else:
+        trace_filenames = filter_truth_traces(data_dir)
+        with open(filtered_traces_fn, 'w') as f:
+            YAML().dump(trace_filenames, f)
+    logger.info("Total number of %d valid truth", len(trace_filenames))
+
+    transform_data(trace_filenames, data_dir, args.output_dir, args.ignore_cat, args.separate_params)

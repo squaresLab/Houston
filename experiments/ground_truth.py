@@ -11,6 +11,8 @@ import sys
 import os
 import signal
 import psutil
+import time
+import hashlib
 
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import PreservedScalarString
@@ -27,6 +29,7 @@ from houston.ardu.copter import ArduCopter
 from compare_traces import load_file as load_traces_file
 from compare_traces import matches_ground_truth
 from build_traces import build_sandbox
+from filter_truth import filter_truth_traces, VALID_LIST_OUTPUT
 
 logger = logging.getLogger('houston')  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -50,9 +53,9 @@ class DatabaseEntry(object):
     def to_dict(self) -> Dict[str, Any]:
         return {'diff': PreservedScalarString(self.diff),
                 'inconsistent':  [{'oracle': o,
-                                   'trace': t} for o, t in self.fn_inconsistents],
+                                   'trace': t} for o, t in self.fn_inconsistent_traces],
                 'consistent':  [{'oracle': o,
-                                 'trace': t} for o, t in self.fn_consistents]
+                                 'trace': t} for o, t in self.fn_consistent_traces]
                 }
 
 
@@ -173,21 +176,29 @@ def process_mutation(system: Type[System],
             for fn_trace in trace_filenames:
                 logger.debug("evaluating oracle trace: %s", fn_trace)
                 mission, oracle_traces = load_traces_file(fn_trace)
+
+                # write mutant trace to file
+                h = hashlib.sha256()
+                h.update(diff.encode())
+                h.update(fn_trace.encode())
+                identifier = h.hexdigest()
+                logger.debug("id %s", identifier)
+                fn_trace_mut_rel = "{}.json".format(identifier)
+                fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
+ 
                 try:
-                    trace_mutant = obtain_trace(mission)
+                    if os.path.exists(fn_trace_mut):
+                        logger.info("Already evaluated! %s", fn_trace_mut_rel)
+                        _, trace_mutant = load_traces_file(fn_trace_mut)
+                    else:
+                        trace_mutant = obtain_trace(mission)
+                        jsn = {'mission': mission.to_dict(),
+                               'traces': [trace_mutant.to_dict()]}
+                        with open(fn_trace_mut, 'w') as f:
+                            json.dump(jsn, f)
                 except:
                     logger.exception("failed to build trace %s for mutant: %s", fn_trace, diff)
                     continue
-
-                # write mutant trace to file
-                identifier = abs(hash((hash(diff), hash(mission))))
-                fn_trace_mut_rel = "{}.json".format(identifier)
-                fn_trace_mut = os.path.join(dir_mutant_traces, fn_trace_mut_rel)
-                jsn = {'mission': mission.to_dict(),
-                       'traces': [trace_mutant.to_dict()]}
-                with open(fn_trace_mut, 'w') as f:
-                    json.dump(jsn, f)
-
                 try:
                     if not matches_ground_truth(trace_mutant, oracle_traces):
                         logger.info("found an acceptable mutant!")
@@ -210,7 +221,6 @@ def process_mutation(system: Type[System],
             return DatabaseEntry(diff, tuple(inconsistent_results), tuple(consistent_results))
         else:
             return None
-
 
 
 def main():
@@ -246,9 +256,16 @@ def main():
         sys.exit(1)
 
     # obtain a list of oracle traces
-    trace_filenames = \
-        [fn for fn in os.listdir(dir_oracle) if fn.endswith('.json')]
+    filtered_traces_fn = os.path.join(dir_oracle, VALID_LIST_OUTPUT)
+    if os.path.exists(filtered_traces_fn):
+        with open(filtered_traces_fn, 'r') as f:
+            trace_filenames = YAML().load(f)
+    else:
+        trace_filenames = filter_truth_traces(dir_oracle)
+        with open(filtered_traces_fn, 'w') as f:
+            YAML().dump(trace_filenames, f)
     trace_filenames = [os.path.join(dir_oracle, fn) for fn in trace_filenames]
+    logger.info("Total number of %d valid truth", len(trace_filenames))
 
     db_entries = []  # type: List[DatabaseEntry]
     futures = []
@@ -280,6 +297,7 @@ def main():
                 executor.shutdown(wait=False)
                 kill_child_processes(os.getpid())
                 logger.info("Cancelled all jobs and shutdown executor.")
+                time.sleep(5)
                 client_bugzoo.containers.clear()
                 logger.info("Killed all containers")
                 logger.info("Removing all images")
