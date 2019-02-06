@@ -121,11 +121,13 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_RETURN_TO_LAUNCH
     id: 20
-    next-allowed: []
+    next-allowed:
+      - MAV_CMD_NAV_TAKEOFF
   - name: MAV_CMD_NAV_LAND
     id: 21
     generator: circle_based_generator
-    next-allowed: []
+    next-allowed:
+      - MAV_CMD_NAV_TAKEOFF
     p5:
         name: lat
         value:
@@ -181,25 +183,25 @@ commands:
               - 0
               - 1
 #  - name: MAV_CMD_DO_JUMP
-  - name: MAV_CMD_DO_SET_MODE
-    id: 176
-    next-allowed: []
-    p1:
-        name: mode
-        value:
-            type: discrete
-            vals:
-              - 0  # MAV_MODE_PREFLIGHT
-              - 80  # MAV_MODE_STABILIZE_DISARMED
-              - 208  # MAV_MODE_STABILIZE_ARMED
-              - 64  # MAV_MODE_MANUAL_DISARMED
-              - 192  # MAV_MODE_MANUAL_ARMED
-              - 88  # MAV_MODE_GUIDED_DISARMED
-              - 216  # MAV_MODE_GUIDED_ARMED
-              - 92  # MAV_MODE_AUTO_DISARMED
-              - 220  # MAV_MODE_AUTO_ARMED
-              - 66  # MAV_MODE_TEST_DISARMED
-              - 194  # MAV_MODE_TEST_ARMED
+#  - name: MAV_CMD_DO_SET_MODE
+#    id: 176
+#    next-allowed: []
+#    p1:
+#        name: mode
+#        value:
+#            type: discrete
+#            vals:
+#              - 0  # MAV_MODE_PREFLIGHT
+#              - 80  # MAV_MODE_STABILIZE_DISARMED
+#              - 208  # MAV_MODE_STABILIZE_ARMED
+#              - 64  # MAV_MODE_MANUAL_DISARMED
+#              - 192  # MAV_MODE_MANUAL_ARMED
+#              - 88  # MAV_MODE_GUIDED_DISARMED
+#              - 216  # MAV_MODE_GUIDED_ARMED
+#              - 92  # MAV_MODE_AUTO_DISARMED
+#              - 220  # MAV_MODE_AUTO_ARMED
+#              - 66  # MAV_MODE_TEST_DISARMED
+#              - 194  # MAV_MODE_TEST_ARMED
   - name: MAV_CMD_DO_CHANGE_SPEED
     id: 178
     next-allowed:
@@ -240,8 +242,8 @@ commands:
         name: alt
         value:
             type: continuous
-            min: 0.0
-            max: 15.0
+            min: 583.0
+            max: 585.0
   - name: MAV_CMD_DO_PARACHUTE
     id: 208
     next-allowed: []
@@ -250,35 +252,35 @@ commands:
         value:
             type: discrete
             vals:
-              - 0  # disable
-              - 1  # enable
+#              - 0  # disable
+#              - 1  # enable
               - 2  # release
-  - name: MAV_CMD_DO_GUIDED_LIMITS
-    id: 222
-    next-allowed:
-      - "*"
-      - MAV_CMD_NAV_TAKEOFF
-    p1:
-        name: timeout
-        value:
-            type: continuous
-            min: 0.0
-            max: 1000.0
-    p2:
-        name: min_alt
-        value:
-            type: continuous
-            min: 0.0
-            max: 15.0
-    p3:
-        name: max_alt
-        value:
-            type: continuous
-            min: 0.0
-            max: 15.0
-    p4:
-        name: max_dist
-        value:
-            type: continuous
-            min: 0.0
-            max: 30.0
+#  - name: MAV_CMD_DO_GUIDED_LIMITS
+#    id: 222
+#    next-allowed:
+#      - "*"
+#      - MAV_CMD_NAV_TAKEOFF
+#    p1:
+#        name: timeout
+#        value:
+#            type: continuous
+#            min: 0.0
+#            max: 1000.0
+#    p2:
+#        name: min_alt
+#        value:
+#            type: continuous
+#            min: 0.0
+#            max: 15.0
+#    p3:
+#        name: max_alt
+#        value:
+#            type: continuous
+#            min: 0.0
+#            max: 15.0
+#    p4:
+#        name: max_dist
+#        value:
+#            type: continuous
+#            min: 0.0
+#            max: 30.0

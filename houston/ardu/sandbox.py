@@ -281,6 +281,8 @@ class Sandbox(BaseSandbox):
         timeout_command = 300 / speedup + 5
         timeout_arm = 10 / speedup + 5
         timeout_mission_upload = 20
+        # the number of seconds for the delay added after DO commands
+        do_delay = max(4, int(20 / speedup))
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
@@ -291,16 +293,25 @@ class Sandbox(BaseSandbox):
                                        0, 16, 0, 0,
                                        0.0, 0.0, 0.0, 0.0,
                                        -35.3632607, 149.1652351, 584)
-            # 10 seconds delay to allow the robot to reach its stable state
-            # delay = dronekit.Command(0, 0, 0,
-            #                         3, 93, 0, 0,
-            #                         10, -1, -1, -1,
-            #                         0, 0, 0)
+            # delay to allow the robot to reach its stable state
+            delay = dronekit.Command(0, 0, 0,
+                                     3, 93, 0, 0,
+                                     do_delay, -1, -1, -1,
+                                     0, 0, 0)
 
-            # convertin from Houston commands to dronekit commands
-            cmds = [cmd.to_message().to_dronekit_command()
-                    for cmd in commands]
-            cmds.insert(0, initial)
+            # converting from Houston commands to dronekit commands
+            dronekitcmd_to_cmd_mapping = {}
+            cmds = [initial]
+            for i, cmd in enumerate(commands):
+                dronekitcmd_to_cmd_mapping[len(cmds)] = i
+                cmds.append(cmd.to_message().to_dronekit_command())
+                # DO commands trigger some action and return.
+                # we add a delay after them to see how they affect the state.
+                if 'MAV_CMD_DO_' in cmd.__class__.uid:
+                    dronekitcmd_to_cmd_mapping[len(cmds)] = i
+                    cmds.append(delay)
+            logger.debug("Final mission commands len: %d, mapping: %s",
+                         len(cmds), dronekitcmd_to_cmd_mapping)
 
             # uploading the mission to the vehicle
             vcmds = self.vehicle.commands
@@ -372,7 +383,6 @@ class Sandbox(BaseSandbox):
             time_start = timer()
 
             wp_to_traces = {}
-            traces = []
             with self.record() as recorder:
                 while last_wp[0] <= len(cmds) - 1:
                     logger.debug("waiting for command")
@@ -392,19 +402,19 @@ class Sandbox(BaseSandbox):
                         logger.debug("STATE: {}".format(self.state))
                         current_time = timer()
                         time_passed = current_time - time_start
-                        wp_to_state[last_wp[0]] = (self.state, time_passed)
                         time_start = current_time
                         states, messages = recorder.flush()
                         if last_wp[0] > 0:
-                            cmd = commands[last_wp[0] - 1]
+                            cmd_index = dronekitcmd_to_cmd_mapping[last_wp[0]]
+                            wp_to_state[cmd_index] = (self.state, time_passed)
+                            cmd = commands[cmd_index]
                             trace = CommandTrace(cmd, states)
-                            wp_to_traces[last_wp[0]] = trace
-                            traces.append(trace)
+                            wp_to_traces[cmd_index] = trace
 
-                        # if appropriate, store coverage files
-                        if collect_coverage:
-                            cm_directory = "command{}".format(last_wp[0])
-                            self.__copy_coverage_files(cm_directory)
+                            # if appropriate, store coverage files
+                            if collect_coverage:
+                                cm_directory = "command{}".format(cmd_index)
+                                self.__copy_coverage_files(cm_directory)
 
                         last_wp[0] = last_wp[1]
                         wp_event.clear()
@@ -413,15 +423,13 @@ class Sandbox(BaseSandbox):
             logger.debug("Removed hook")
 
             if collect_coverage:
-                wp_to_state[0] = (initial_state, 0.0)
-                for i in range(len(commands)):
-                    command = commands[i]
-                    cmd_index = 1 + i
+                for cmd_index, command in enumerate(commands):
                     if cmd_index in wp_to_traces:
                         directory = 'command{}'.format(cmd_index)
                         coverage = self.__get_coverage(directory=directory)
                         wp_to_traces[cmd_index].add_coverage(coverage)
 
+            traces = [wp_to_traces[k] for k in sorted(wp_to_traces.keys())]
             return MissionTrace(tuple(traces))
 
     def __get_coverage(self, directory: str) -> "FileLineSet":

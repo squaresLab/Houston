@@ -78,7 +78,10 @@ class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
         self.__conn.wait_ready(True,
                                timeout=timeout,
                                raise_exception=True)
+        # wait for the dronekit to properly set home_location
+        # and autopilot_version
         self.__conn.wait_ready('autopilot_version',
+                               'home_location',
                                timeout=timeout,
                                raise_exception=True)
 

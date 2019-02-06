@@ -17,8 +17,12 @@ IMPORTANT_MESSAGE_NAMES = [
 
 
 class State(BaseState):
-    home_latitude = var(float, lambda c: -35.362938)  # TODO: fixed
-    home_longitude = var(float, lambda c: 149.165085)  # TODO: fixed
+    home_latitude = var(float,
+                        lambda c: c.conn.home_location.lat,
+                        noise=0.0005)
+    home_longitude = var(float,
+                         lambda c: c.conn.home_location.lon,
+                         noise=0.0005)
     altitude = var(float,
                    lambda c: c.conn.location.global_relative_frame.alt,  # noqa: pycodestyle
                    noise=0.5)
