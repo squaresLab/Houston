@@ -30,6 +30,7 @@ from compare_traces import load_file as load_traces_file
 from compare_traces import matches_ground_truth
 from build_traces import build_sandbox
 from filter_truth import filter_truth_traces, VALID_LIST_OUTPUT
+from hash_mutants import mutation_to_uid
 
 logger = logging.getLogger('houston')  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -52,10 +53,11 @@ class DatabaseEntry(object):
 
     def to_dict(self) -> Dict[str, Any]:
         return {'diff': PreservedScalarString(self.diff),
-                'inconsistent':  [{'oracle': o,
-                                   'trace': t} for o, t in self.fn_inconsistent_traces],
-                'consistent':  [{'oracle': o,
-                                 'trace': t} for o, t in self.fn_consistent_traces]
+                'uid': mutation_to_uid(self.diff),
+                'inconsistent': [{'oracle': o,
+                                  'trace': t} for o, t in self.fn_inconsistent_traces],
+                'consistent': [{'oracle': o,
+                                'trace': t} for o, t in self.fn_consistent_traces]
                 }
 
 

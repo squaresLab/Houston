@@ -16,6 +16,8 @@ import bugzoo
 import boggart
 import rooibos
 
+from hash_mutants import mutation_to_uid
+
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
@@ -151,7 +153,12 @@ def main():
                 diff = str(client_boggart.mutations_to_diff(snapshot, [mutation]))
                 acceptable.append(diff)
 
-        yml = [{'diff': PreservedScalarString(d)} for d in acceptable]
+        yml = []
+        for diff in acceptable:
+            entry = {'diff': PreservedScalarString(diff),
+                     'uid': mutation_to_uid(diff)}
+            yml.append(entry)
+
         with open(fn_output, 'w') as f:
             YAML().dump(yml, f)
 
