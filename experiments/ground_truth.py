@@ -60,6 +60,15 @@ class DatabaseEntry(object):
                                 'trace': t} for o, t in self.fn_consistent_traces]
                 }
 
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'DatabaseEntry':
+        inconsistent_traces = [(i['oracle'], i['trace']) for i in d['inconsistent']]
+        consistent_traces = [(i['oracle'], i['trace']) for i in d['consistent']]
+
+        return DatabaseEntry(d['diff'],
+                             inconsistent_traces,
+                             consistent_traces)
+
 
 def kill_child_processes(parent_pid, sig=signal.SIGTERM):
     try:

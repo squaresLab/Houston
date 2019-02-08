@@ -39,6 +39,7 @@ def traces_contain_same_commands(traces: List[MissionTrace]) -> bool:
     for t in traces[1:]:
         actual = [ct.command for ct in t.commands]
         if actual != expected:
+            logger.debug("expected: %s, actual: %s", expected, actual)
             return False
 
     return True
@@ -187,6 +188,7 @@ def matches_ground_truth(
     # check if the candidate trace executes a different sequence of commands
     # to the ground truth
     if not traces_contain_same_commands([candidate, truth[0]]):
+        logger.debug("candidate trace doesn't have same commands as the truth")
         return False
 
     # use the ground truth to build a distribution of expected values for
@@ -202,7 +204,7 @@ def matches_ground_truth(
             mid = max(vals) - ((max(vals) - min(vals)) / 2)
 #            tolerance = (max(vals) - min(vals)) / 2
 #            tolerance *= tolerance_factor
-            tolerance = all_vars[var].noise or 0.0
+            tolerance = (all_vars[var].noise or 0.0) * tolerance_factor
             diff = abs(mid - actual)
             is_nearly_eq = np.isclose(mid, actual,
                                       rtol=1e-05, atol=tolerance, equal_nan=False)

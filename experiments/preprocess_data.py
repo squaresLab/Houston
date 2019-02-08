@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import csv
@@ -6,6 +7,15 @@ import argparse
 from ruamel.yaml import YAML
 
 from filter_truth import filter_truth_traces, VALID_LIST_OUTPUT
+
+logger = logging.getLogger('houston')  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
+
+def setup_logging(verbose: bool = False) -> None:
+    log_to_stdout = logging.StreamHandler()
+    log_to_stdout.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logging.getLogger('houston').addHandler(log_to_stdout)
+    logging.getLogger('experiment').addHandler(log_to_stdout)
 
 
 def setup_arg_parser():
@@ -21,6 +31,9 @@ def setup_arg_parser():
     parser.add_argument('--output-dir', action='store', type=str,
                         default='out/',
                         help='the directory where the results will be stored')
+    parser.add_argument('--verbose', action='store_true',
+                        default=False,
+                        help='run in verbose mode')
     args = parser.parse_args()
     return args
 
@@ -84,6 +97,7 @@ def transform_data(trace_filenames, data_dir, output_dir, ignore_cat, separate_p
 
 if __name__=="__main__":
     args = setup_arg_parser()
+    setup_logging(args.verbose)
     data_dir = args.traces
 
     # obtain a list of oracle traces

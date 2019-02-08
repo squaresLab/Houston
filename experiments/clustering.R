@@ -15,7 +15,9 @@ option_list = list(
   make_option(c("-k", "--clusters"), type="integer", default=3, 
               help="number of clusters (k)."),
   make_option("--fuzzy", action="store_true", default=FALSE, 
-              help="run the clustering in fuzzy mode.")
+              help="run the clustering in fuzzy mode."),
+  make_option("--select_best_k", action="store_true", default=FALSE,
+              help="select best k out of k, k-1 and k+1")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
@@ -61,16 +63,45 @@ write(files, file=paste(opt$output_dir, opt$command, "_files.txt", sep=""))
 #myData2 <- zscore(myData)
 #m <- read.csv(files[1], header=TRUE)
 
+total_dist <- function(mvc) {
+    return(sum(mvc@clusinfo$av_dist * mvc@clusinfo$size))
+}
+
 if (!opt$fuzzy) {
     mvc <- tsclust(myData, k = opt$clusters, distance = "dtw", seed = 390L)
 } else {
     mvc <- tsclust(myData, k = opt$clusters, type = "fuzzy", seed = 390L)
 }
+
+if (opt$select_best_k) {
+    if (!opt$fuzzy) {
+        mvc1 <- tsclust(myData, k = opt$clusters + 1, distance = "dtw", seed = 390L)
+        mvc_1 <- tsclust(myData, k = opt$clusters - 1, distance = "dtw", seed = 390L)
+    } else {
+        mvc1 <- tsclust(myData, k = opt$clusters + 1, type = "fuzzy", seed = 390L)
+        mvc_1 <- tsclust(myData, k = opt$clusters - 1, distance = "fuzzy", seed = 390L)
+    }
+    distances <- c(total_dist(mvc), total_dist(mvc1), total_dist(mvc_1))
+    i <- which(max(distances)==distances)
+    print("Best k is ")
+    if (i==1) {
+        print(opt$clusters)
+        final_mvc <- mvc
+    } else if (i==2) {
+        print(opt$clusters+1)
+        final_mvc <- mvc1
+    } else if (i==3) {
+        print(opt$clusters-1)
+        final_mvc <- mvc_1
+    }
+} else {
+    final_mvc <- mvc
+}
 pdf(paste(opt$output_dir, opt$command, ".pdf", sep=""))
-plot(mvc)
+plot(final_mvc)
 dev.off()
-write(paste("Int64", toString(mvc@cluster), sep = "\n"), file=paste(opt$output_dir, opt$command, "_labels.txt", sep=""))
+write(paste("Int64", toString(final_mvc@cluster), sep = "\n"), file=paste(opt$output_dir, opt$command, "_labels.txt", sep=""))
 save.image(file=paste(opt$output_dir, opt$command, ".RData", sep=""))
 
-print(mvc@clusinfo)
+print(final_mvc@clusinfo)
 
