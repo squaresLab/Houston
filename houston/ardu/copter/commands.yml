@@ -41,43 +41,42 @@ commands:
             type: continuous
             min: 0.3
             max: 15.0
-  - name: MAV_CMD_NAV_LOITER_UNLIM
-    id: 17
-    generator: circle_based_generator
-    next-allowed:
-      - "*"
-      - MAV_CMD_NAV_TAKEOFF
-    p5:
-        name: lat
-        value:
-            type: continuous
-            min: -90.0
-            max: 90.0
-    p6:
-        name: lon
-        value:
-            type: continuous
-            min: -180.0
-            max: 180.0
-    p7:
-        name: alt
-        value:
-            type: continuous
-            min: 0.0
-            max: 15.0
+#  - name: MAV_CMD_NAV_LOITER_UNLIM
+#    id: 17
+#    generator: circle_based_generator
+#    next-allowed:
+#      - "*"
+#      - MAV_CMD_NAV_TAKEOFF
+#    p5:
+#        name: lat
+#        value:
+#            type: continuous
+#            min: -90.0
+#            max: 90.0
+#    p6:
+#        name: lon
+#        value:
+#            type: continuous
+#            min: -180.0
+#            max: 180.0
+#    p7:
+#        name: alt
+#        value:
+#            type: continuous
+#            min: 0.0
+#            max: 15.0
   - name: MAV_CMD_NAV_LOITER_TURNS
     id: 18
     generator: circle_based_generator
     next-allowed:
       - "*"
       - MAV_CMD_NAV_TAKEOFF
-# FIXME
-#    p1:
-#        name: turns
-#        value:
-#            type: continuous
-#            min: 0.25
-#            max: 2.0
+    p1:
+        name: turns
+        value:
+            type: continuous
+            min: 0.25
+            max: 2.0
     p5:
         name: lat
         value:
@@ -177,18 +176,18 @@ commands:
             type: continuous
             min: 0.0
             max: 15.0
-  - name: MAV_CMD_NAV_GUIDED_ENABLE
-    id: 92
-    next-allowed:
-      - "*"
-      - MAV_CMD_NAV_TAKEOFF
-    p1:
-        name: on_off
-        value:
-            type: discrete
-            vals:
-              - 0
-              - 1
+#  - name: MAV_CMD_NAV_GUIDED_ENABLE
+#    id: 92
+#    next-allowed:
+#      - "*"
+#      - MAV_CMD_NAV_TAKEOFF
+#    p1:
+#        name: on_off
+#        value:
+#            type: discrete
+#            vals:
+#              - 0
+#              - 1
 #  - name: MAV_CMD_DO_JUMP
 #  - name: MAV_CMD_DO_SET_MODE
 #    id: 176
