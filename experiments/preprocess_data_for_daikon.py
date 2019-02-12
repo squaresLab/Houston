@@ -88,14 +88,14 @@ state_vars = [
             'type': 'boolean',
             'flags': ''
             },
-        {'name': 'throttle_channel',
-            'type': 'float',
-            'flags': ''
-            },
-        {'name': 'roll_channel',
-            'type': 'float',
-            'flags': ''
-            }
+#        {'name': 'throttle_channel',
+#            'type': 'float',
+#            'flags': ''
+#            },
+#        {'name': 'roll_channel',
+#            'type': 'float',
+#            'flags': ''
+#            }
 ]
 
 def setup_logging(verbose: bool = False) -> None:

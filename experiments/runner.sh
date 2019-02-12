@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMMANDS=("MAV_CMD_NAV_WAYPOINT"  "MAV_CMD_NAV_TAKEOFF"  "MAV_CMD_NAV_LOITER_UNLIM"  "MAV_CMD_NAV_LOITER_TURNS"  "MAV_CMD_NAV_LOITER_TIME"  "MAV_CMD_NAV_RETURN_TO_LAUNCH"  "MAV_CMD_NAV_LAND" "MAV_CMD_NAV_SPLINE_WAYPOINT" "MAV_CMD_NAV_GUIDED_ENABLE" "MAV_CMD_DO_CHANGE_SPEED" "MAV_CMD_DO_SET_HOME" "MAV_CMD_DO_PARACHUTE")
+COMMANDS=("MAV_CMD_NAV_WAYPOINT"  "MAV_CMD_NAV_TAKEOFF"  "MAV_CMD_NAV_LOITER_UNLIM"  "MAV_CMD_NAV_LOITER_TURNS"  "MAV_CMD_NAV_LOITER_TIME"  "MAV_CMD_NAV_RETURN_TO_LAUNCH"  "MAV_CMD_NAV_LAND" "MAV_CMD_NAV_SPLINE_WAYPOINT" "MAV_CMD_DO_CHANGE_SPEED" "MAV_CMD_DO_SET_HOME" "MAV_CMD_DO_PARACHUTE")
 DIRECTORY=$1
 TRAIN_TRACES="$1/train-traces/"
 PREPROCESS_DIR="$1/preprocessed/"
@@ -32,7 +32,7 @@ cluster () {
     mkdir $CLUSTERS_DIR
     for cmd in ${COMMANDS[*]}; do
         echo "Clustering for command $cmd"
-        Rscript --vanilla experiments/clustering.R --data_dir $PREPROCESS_DIR -c $cmd --output_dir $CLUSTERS_DIR -n 20 -k 3 --select_best_k --list_of_vars time_offset,home_latitude,home_longitude,altitude,latitude,longitude,armable,armed,mode,vx,vy,vz,pitch,yaw,roll,heading,airspeed,groundspeed,ekf_ok,throttle_channel,roll_channel & 
+        Rscript --vanilla experiments/clustering.R --data_dir $PREPROCESS_DIR -c $cmd --output_dir $CLUSTERS_DIR -n 20 -k 3 --select_best_k --list_of_vars time_offset,home_latitude,home_longitude,altitude,latitude,longitude,armable,armed,mode,vx,vy,vz,pitch,yaw,roll,heading,airspeed,groundspeed,ekf_ok &
     done
     wait
 }
