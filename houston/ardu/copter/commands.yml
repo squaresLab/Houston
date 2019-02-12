@@ -71,6 +71,13 @@ commands:
     next-allowed:
       - "*"
       - MAV_CMD_NAV_TAKEOFF
+# FIXME
+#    p1:
+#        name: turns
+#        value:
+#            type: continuous
+#            min: 0.25
+#            max: 2.0
     p5:
         name: lat
         value:

@@ -28,6 +28,7 @@ if(is.null(opt$data_dir) || is.null(opt$command)) {
   stop("Required arguments missing!")
 }
 
+dist <- "dtw"
 varlist = NULL
 if(!is.null(opt$list_of_vars)){
   varlist = unlist(strsplit(opt$list_of_vars, split=","))
@@ -64,39 +65,43 @@ write(files, file=paste(opt$output_dir, opt$command, "_files.txt", sep=""))
 #m <- read.csv(files[1], header=TRUE)
 
 total_dist <- function(mvc) {
-    return(sum(mvc@clusinfo$av_dist * mvc@clusinfo$size))
+    s <- sum(mvc@clusinfo$av_dist * mvc@clusinfo$size)
+    return(s + (s/8) * length(mvc@clusinfo$size))
+}
+select_best_mvc <- function(mvc) {
+    if (length(mvc) == 1) {
+        return(mvc)
+    }
+    best_mvc = NULL
+    best_dist = 1000000000000
+    for (m in mvc) {
+        t = total_dist(m)
+        if (t < best_dist){
+            best_mvc = m
+            best_dist = t
+        }
+    }
+    print("Best k is")
+    print(length(best_mvc@clusinfo$size))
+    return(best_mvc)
+}
+
+
+if(opt$select_best_k) {
+    k <- c(opt$clusters - 1, opt$clusters, opt$clusters + 1)
+} else {
+    k <- c(opt$clusters)
 }
 
 if (!opt$fuzzy) {
-    mvc <- tsclust(myData, k = opt$clusters, distance = "dtw", seed = 390L)
+    mvc <- tsclust(myData, k = k, distance = dist, seed = 390L)
 } else {
-    mvc <- tsclust(myData, k = opt$clusters, type = "fuzzy", seed = 390L)
+    mvc <- tsclust(myData, k = k, type = "fuzzy", seed = 390L)
 }
 
-if (opt$select_best_k) {
-    if (!opt$fuzzy) {
-        mvc1 <- tsclust(myData, k = opt$clusters + 1, distance = "dtw", seed = 390L)
-        mvc_1 <- tsclust(myData, k = opt$clusters - 1, distance = "dtw", seed = 390L)
-    } else {
-        mvc1 <- tsclust(myData, k = opt$clusters + 1, type = "fuzzy", seed = 390L)
-        mvc_1 <- tsclust(myData, k = opt$clusters - 1, distance = "fuzzy", seed = 390L)
-    }
-    distances <- c(total_dist(mvc), total_dist(mvc1), total_dist(mvc_1))
-    i <- which(max(distances)==distances)
-    print("Best k is ")
-    if (i==1) {
-        print(opt$clusters)
-        final_mvc <- mvc
-    } else if (i==2) {
-        print(opt$clusters+1)
-        final_mvc <- mvc1
-    } else if (i==3) {
-        print(opt$clusters-1)
-        final_mvc <- mvc_1
-    }
-} else {
-    final_mvc <- mvc
-}
+print(mvc)
+final_mvc <- select_best_mvc(mvc)
+
 pdf(paste(opt$output_dir, opt$command, ".pdf", sep=""))
 plot(final_mvc)
 dev.off()

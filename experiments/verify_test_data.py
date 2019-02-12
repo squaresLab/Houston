@@ -9,6 +9,7 @@ import csv
 import attr
 import functools
 import time
+import math
 
 import argparse
 import concurrent.futures
@@ -236,29 +237,19 @@ def compute_score(entries: List[NewDatabaseEntry]) -> None:
     tp, fp, tn, fn = 0, 0, 0, 0
     for e in entries:
         for o, t in e.fn_inconsistent_traces:
-            vals = set(o.verified)
-            if len(vals) > 1:
+            if Status.REJECTED in o.verified:
                 fp += 1
             else:
-                v = vals.pop()
-                if v != Status.ACCEPTED:
-                    fp += 1
-                else:
-                    tn += 1
-            vals = set(t.verified)
-            if len(vals) > 1:
+                tn += 1
+            if Status.REJECTED in t.verified:
                 tp += 1
             else:
-                v = vals.pop()
-                if v != Status.ACCEPTED:
-                    tp += 1
-                else:
-                    fn += 1
+                fn += 1
 
     logger.info("TP: %d, TN: %d, FP: %d, FN: %d", tp, tn, fp, fn)
-    precision = float(tp)/float(tp + fp)
-    recall = float(tp)/float(tp + tn)
-    f_score = 2 * precision * recall / (precision + recall)
+    precision = float(tp)/float(tp + fp) if tp+fp != 0 else float('nan')
+    recall = float(tp)/float(tp + tn) if tp+tn != 0 else float('nan')
+    f_score = 2 * precision * recall / (precision + recall) if not (math.isnan(precision) or math.isnan(recall)) else float('nan')
     logger.info("Precision: %f\nRecall: %f\nF-score: %f",
                 precision, recall, f_score)
 
