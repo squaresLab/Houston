@@ -25,8 +25,10 @@ def circle_based_generator(cls: Type[Command],
     origin = geopy.Point(latitude=lat, longitude=lon)
     dist = geopy.distance.distance(meters=dist)
     destination = dist.destination(origin, heading)
-    params['lat'] = destination.latitude
-    params['lon'] = destination.longitude
+
+    prob_zero = 0.1  # the probability of generating 0.0 as the parameter value
+    params['lat'] = destination.latitude if rng.random() >= prob_zero else 0.0
+    params['lon'] = destination.longitude if rng.random() >= prob_zero else 0.0
 
     command = cls(**params)
     return command
