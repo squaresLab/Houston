@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMMANDS=("MAV_CMD_NAV_WAYPOINT"  "MAV_CMD_NAV_TAKEOFF"  "MAV_CMD_NAV_LOITER_UNLIM"  "MAV_CMD_NAV_LOITER_TURNS"  "MAV_CMD_NAV_LOITER_TIME"  "MAV_CMD_NAV_RETURN_TO_LAUNCH"  "MAV_CMD_NAV_LAND" "MAV_CMD_NAV_SPLINE_WAYPOINT" "MAV_CMD_DO_CHANGE_SPEED" "MAV_CMD_DO_SET_HOME" "MAV_CMD_DO_PARACHUTE")
+COMMANDS=("MAV_CMD_NAV_WAYPOINT"  "MAV_CMD_NAV_TAKEOFF"  "MAV_CMD_NAV_LOITER_TURNS"  "MAV_CMD_NAV_LOITER_TIME"  "MAV_CMD_NAV_RETURN_TO_LAUNCH"  "MAV_CMD_NAV_LAND"  "MAV_CMD_NAV_SPLINE_WAYPOINT"  "MAV_CMD_DO_CHANGE_SPEED"  "MAV_CMD_DO_SET_HOME"  "MAV_CMD_DO_PARACHUTE")
 DIRECTORY=$1
 NUMBER_OF_SEEDS=$2
 TRAIN_TRACES="$1/train-traces/"
@@ -19,7 +19,9 @@ preprocess () {
         rm -r $PREPROCESS_DIR
     fi
     mkdir $PREPROCESS_DIR
-    python experiments/preprocess_data.py $TRAIN_TRACES --output-dir $PREPROCESS_DIR
+    echo "start preprocess"
+    python experiments/preprocess_data.py $TRAIN_TRACES --output-dir $PREPROCESS_DIR --threads 40
+    echo "preprocess done"
 }
 
 cluster () {
@@ -27,10 +29,11 @@ cluster () {
         echo "Preprocess data before clustering"
         exit 1
     fi
-    if [ ! -d $CLUSTERS_DIR]; then
+    if [ ! -d $CLUSTERS_DIR ]; then
         mkdir $CLUSTERS_DIR
     fi
-    for i in $(seq 0 ${NUMBER_OF_SEEDS}-1); do
+    echo "start cluster"
+    for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
         CL="${CLUSTERS_DIR}seed_$i/"
         if [ -d $CL ]; then
             rm -r $CL
@@ -42,6 +45,7 @@ cluster () {
         done
     done
     wait
+    echo "cluster done"
 }
 
 postprocess () {
@@ -56,7 +60,8 @@ postprocess () {
     if [ ! -d $GBDTSDATA_DIR ]; then
         mkdir $GBDTSDATA_DIR
     fi
-    for i in $(seq 0 ${NUMBER_OF_SEEDS}-1); do
+    echo "start postprocess"
+    for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
         GB="${GBDTSDATA_DIR}seed_$i/"
         if [ -d $GB ]; then
             rm -r $GB
@@ -70,10 +75,11 @@ postprocess () {
         done
     done
     wait
+    echo "postprocess done"
 }
 
 learn () {
-    depth=$1
+    depth=10
     if [ ! -d $GBDTSDATA_DIR ]; then
         echo "GBDTs data is required"
         exit 1
@@ -81,7 +87,8 @@ learn () {
     if [ ! -d $MODELS_DIR ]; then
         mkdir $MODELS_DIR
     fi
-    for i in $(seq 0 ${NUMBER_OF_SEEDS}-1); do
+    echo "start learn"
+    for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
         MD="${MODELS_DIR}seed_$i/"
         if [ -d $MD ]; then
             rm -r $MD
@@ -94,16 +101,20 @@ learn () {
         done
     done
     wait
+    echo "learn done"
 }
 
 testing () {
-    echo "$1 $2"
+    echo "Testing $TRAIN_TRACES $NUMBER_OF_SEEDS"
 }
 
-#"${@:3}"
+for var in "${@:3}"
+do
+    "$var"
+done
 
-preprocess
-cluster
-postprocess
-learn 10
+#preprocess
+#cluster
+#postprocess
+#learn 10
 

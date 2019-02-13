@@ -63,6 +63,11 @@ for (f in allfiles) {
 
 write(files, file=paste(opt$output_dir, opt$command, "_files.txt", sep=""))
 
+if (length(myData) == 0) {
+    cat("The data is empty for command", opt$command)
+    quit()
+}
+
 #myData2 <- zscore(myData)
 #m <- read.csv(files[1], header=TRUE)
 
