@@ -82,6 +82,9 @@ def setup_arg_parser():
                          help='number of threads')
     parser.add_argument('--verbose', action='store_true',
                          help='increases logging verbosity.')
+    parser.add_argument('--compute-score', action='store',
+                        default='',
+                        help='path to a csv file to add the accuracy results')
 
     args = parser.parse_args()
     return args
@@ -233,7 +236,9 @@ def verify_entry(entry: DatabaseEntry,
     return NewDatabaseEntry(entry.diff, tuple(pairs))
 
 
-def compute_score(entries: List[NewDatabaseEntry]) -> None:
+def compute_score(entries: List[NewDatabaseEntry],
+                  score_file: str = '',
+                  model_dir: str = '') -> None:
     tp, fp, tn, fn = 0, 0, 0, 0
     for e in entries:
         for o, t in e.fn_inconsistent_traces:
@@ -252,6 +257,12 @@ def compute_score(entries: List[NewDatabaseEntry]) -> None:
     f_score = 2 * precision * recall / (precision + recall) if not (math.isnan(precision) or math.isnan(recall)) else float('nan')
     logger.info("Precision: %f\nRecall: %f\nF-score: %f",
                 precision, recall, f_score)
+    if not score_file:
+        return
+    with open(score_file, 'a') as f:
+        f.write(', '.join([models_dir, str(tp), str(tn), str(fp), str(fn),
+                           str(precision), str(recall), str(f_score)]))
+        f.write('\n')
 
 
 if __name__=="__main__":
@@ -295,4 +306,9 @@ if __name__=="__main__":
         YAML().dump(jsn, f)
     logger.info("wrote results to file")
 
-    compute_score(validated_results)
+    if args.compute_score:
+        compute_score(validated_results,
+                      args.compute_score,
+                      models_dir)
+    else:
+        compute_score(validated_results)
