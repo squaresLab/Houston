@@ -238,7 +238,8 @@ def verify_entry(entry: DatabaseEntry,
 
 def compute_score(entries: List[NewDatabaseEntry],
                   score_file: str = '',
-                  model_dir: str = '') -> None:
+                  models_dir: str = '',
+                  threshold: float = 0.4) -> None:
     tp, fp, tn, fn = 0, 0, 0, 0
     for e in entries:
         for o, t in e.fn_inconsistent_traces:
@@ -253,14 +254,18 @@ def compute_score(entries: List[NewDatabaseEntry],
 
     logger.info("TP: %d, TN: %d, FP: %d, FN: %d", tp, tn, fp, fn)
     precision = float(tp)/float(tp + fp) if tp+fp != 0 else float('nan')
-    recall = float(tp)/float(tp + tn) if tp+tn != 0 else float('nan')
-    f_score = 2 * precision * recall / (precision + recall) if not (math.isnan(precision) or math.isnan(recall)) else float('nan')
+    recall = float(tp)/float(tp + fn) if tp+fn != 0 else float('nan')
+    f_score = (2 * tp) / (2 * tp + fp + fn) if not tp + fp + fn == 0 else float('nan')
     logger.info("Precision: %f\nRecall: %f\nF-score: %f",
                 precision, recall, f_score)
     if not score_file:
         return
+    typ = os.path.basename(models_dir)
+    seed = os.path.basename(os.path.dirname(os.path.dirname(models_dir)))
+#    seed = os.path.basename(os.path.dirname(models_dir))
+    data_amount = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(models_dir))))
     with open(score_file, 'a') as f:
-        f.write(', '.join([models_dir, str(tp), str(tn), str(fp), str(fn),
+        f.write(', '.join([data_amount, seed, typ, str(threshold), str(tp), str(tn), str(fp), str(fn),
                            str(precision), str(recall), str(f_score)]))
         f.write('\n')
 
@@ -309,6 +314,7 @@ if __name__=="__main__":
     if args.compute_score:
         compute_score(validated_results,
                       args.compute_score,
-                      models_dir)
+                      args.models_dir,
+                      args.threshold)
     else:
         compute_score(validated_results)

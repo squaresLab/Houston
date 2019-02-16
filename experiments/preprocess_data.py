@@ -3,6 +3,7 @@ import os
 import json
 import csv
 import concurrent.futures
+import random
 
 import argparse
 from ruamel.yaml import YAML
@@ -37,6 +38,10 @@ def setup_arg_parser():
                         help='run in verbose mode')
     parser.add_argument('--threads', type=int, default=1,
                     help='number of threads')
+    parser.add_argument('--seed', type=int, default=1,
+                    help='random seed used to select data randomly')
+    parser.add_argument('--percentage', type=float, default=1.0,
+                    help='the percentage of data to consider')
     args = parser.parse_args()
     return args
 
@@ -101,6 +106,7 @@ if __name__=="__main__":
     args = setup_arg_parser()
     setup_logging(args.verbose)
     data_dir = args.traces
+    random.seed(args.seed)
 
     # obtain a list of oracle traces
     filtered_traces_fn = os.path.join(data_dir, VALID_LIST_OUTPUT)
@@ -112,6 +118,11 @@ if __name__=="__main__":
         with open(filtered_traces_fn, 'w') as f:
             YAML().dump(trace_filenames, f)
     logger.info("Total number of %d valid truth", len(trace_filenames))
+
+    if args.percentage < 1.0:
+        num = int(args.percentage*len(trace_filenames))
+        trace_filenames = random.sample(trace_filenames, num)
+        logger.info("selected %d samples", num)
 
     futures = []
     with concurrent.futures.ProcessPoolExecutor(args.threads) as e:
