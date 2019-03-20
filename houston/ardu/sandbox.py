@@ -211,6 +211,12 @@ class Sandbox(BaseSandbox):
             if ready_lon and ready_lat and ready_armable:
                 break
             if stopwatch.duration > timeout_state:
+                logger.error("latitude should be [%f] but was [%f]",
+                             initial_lat, self.state['latitude'])
+                logger.error("longitude should be [%f] but was [%f]",
+                             initial_lon, self.state['longitude'])
+                logger.error("armable should be [%s] but was [%s]",
+                             initial_armable, self.state['armable'])
                 raise VehicleNotReadyError
             time.sleep(0.05)
 
@@ -224,6 +230,7 @@ class Sandbox(BaseSandbox):
         stopwatch.start()
         while self.vehicle.mode != guided_mode:
             if stopwatch.duration > timeout_set_mode:
+                logger.error('vehicle is not in guided mode')
                 raise VehicleNotReadyError
             time.sleep(0.05)
 
