@@ -21,13 +21,14 @@ setup(
         'pytest',
         'pexpect',
         'geopy',
-        'bugzoo>=2.1.24',
+        'bugzoo>=2.1.26',
         'dronekit>=2.9.1',
         'pymavlink>=2.3.4',
         'attrs',
         'ruamel.yaml>=0.15.86',
         'sexpdata',
-        'numpy'
+        'numpy',
+        'z3-solver>=4.8.0.0.post1'
     ],
     packages = [
         'houston',
