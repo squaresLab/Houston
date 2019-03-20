@@ -127,7 +127,7 @@ class Sandbox(BaseSandbox):
 
         # FIXME add non-blocking execution to BugZoo client API
         cmd = 'source /.environment && {}'.format(cmd)
-        cmd = "/bin/bash -c {}".format(cmd)
+        cmd = "/bin/bash -c {}".format(shlex.quote(cmd))
         logger.debug("wrapped command: %s", cmd)
 
         docker_client = docker.from_env()  # FIXME
