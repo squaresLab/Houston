@@ -1,5 +1,6 @@
 from typing import Optional, Sequence
 import time
+import shlex
 from timeit import default_timer as timer
 import os
 import sys
@@ -121,12 +122,12 @@ class Sandbox(BaseSandbox):
         speedup = self.configuration.speedup
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, speedup, home, fn_param)
-        cmd = '{} >& "{}"'.format(cmd, self.__fn_log)
+        cmd = '{} >& {}'.format(cmd, shlex.quote(self.__fn_log))
         logger.debug("launching SITL via: %s", cmd)
 
         # FIXME add non-blocking execution to BugZoo client API
         cmd = 'source /.environment && {}'.format(cmd)
-        cmd = "/bin/bash -c '{}'".format(cmd)
+        cmd = "/bin/bash -c {}".format(cmd)
         logger.debug("wrapped command: %s", cmd)
 
         docker_client = docker.from_env()  # FIXME
