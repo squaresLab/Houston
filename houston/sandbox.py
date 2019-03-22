@@ -66,7 +66,9 @@ class Sandbox(object):
                       container: Container,
                       state_initial: State,
                       environment: Environment,
-                      configuration: Configuration
+                      configuration: Configuration,
+                      *,
+                      prefix: str = ''
                       ) -> Iterator['Sandbox']:
         """
         Launches an interactive sandbox instance within a given Docker
@@ -77,7 +79,8 @@ class Sandbox(object):
                       container,
                       state_initial,
                       environment,
-                      configuration)
+                      configuration,
+                      prefix=prefix)
         try:
             sandbox.start()
             yield sandbox
@@ -94,7 +97,9 @@ class Sandbox(object):
                  container: Container,
                  state_initial: State,
                  environment: Environment,
-                 configuration: Configuration
+                 configuration: Configuration,
+                 *,
+                 prefix: str = ''
                  ) -> None:
         self.__lock = threading.Lock()
         self.__state_lock = threading.Lock()
@@ -107,9 +112,14 @@ class Sandbox(object):
         self.__time_start = timer()
         self.__recorder = None
         self.__lock_recorder = threading.Lock()
+        self.__prefix = prefix
 
     def read_logs(self) -> str:
         raise NotImplementedError
+
+    @property
+    def prefix(self) -> str:
+        return self.__prefix
 
     @property
     def running_time(self) -> float:

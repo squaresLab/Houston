@@ -123,6 +123,10 @@ class Sandbox(BaseSandbox):
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, speedup, home, fn_param)
         cmd = '{} >& {}'.format(cmd, shlex.quote(self.__fn_log))
+
+        # add SITL prefix
+        cmd = '{} {}'.format(self.prefix, cmd)
+
         logger.debug("launching SITL via: %s", cmd)
 
         # FIXME add non-blocking execution to BugZoo client API
@@ -248,10 +252,17 @@ class Sandbox(BaseSandbox):
             if not p:
                 continue
             pid, cmd = p.split(' ')
-            if cmd.startswith('/opt/ardupilot'):
+
+            is_sitl = cmd.startswith('/opt/ardupilot')
+            if not is_sitl and self.prefix:
+                is_sitl = cmd.startswith(self.prefix.split(' ')[0])
+            logger.debug("cmd [%s]: %s", is_sitl, cmd)
+            if is_sitl:
                 bzc.command(self.container, "kill -2 {}".format(pid))
+                logger.debug("killed process: %s", pid)
                 break
         logger.debug("Killed it")
+        logger.debug("Joining thread")
         self.__sitl_thread.join()
         logger.debug("Joined")
 #       cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2\'"\'"\'} | xargs kill -2'  # noqa: pycodestyle
