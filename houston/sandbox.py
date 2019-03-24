@@ -68,7 +68,8 @@ class Sandbox(object):
                       environment: Environment,
                       configuration: Configuration,
                       *,
-                      prefix: str = ''
+                      prefix: str = '',
+                      **kwargs
                       ) -> Iterator['Sandbox']:
         """
         Launches an interactive sandbox instance within a given Docker
@@ -80,7 +81,8 @@ class Sandbox(object):
                       state_initial,
                       environment,
                       configuration,
-                      prefix=prefix)
+                      prefix=prefix,
+                      **kwargs)
         try:
             sandbox.start()
             yield sandbox

@@ -12,6 +12,7 @@ import dronekit
 from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
 
+from .home import HomeLocation
 from .connection import CommandLong, MAVLinkConnection, MAVLinkMessage
 from ..util import Stopwatch
 from ..sandbox import Sandbox as BaseSandbox
@@ -45,11 +46,26 @@ def detect_lost_connection(f):
 
 
 class Sandbox(BaseSandbox):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self,
+                 *args,
+                 home: HomeLocation = Optional[None],
+                 **kwargs
+                 ) -> None:
         super().__init__(*args, **kwargs)
         self.__connection = None
         self.__sitl_thread = None
         self.__fn_log = None  # type: Optional[str]
+        if home:
+            self.__home = home
+        else:
+            self.__home = HomeLocation(latitude=-35.362938,
+                                       longitude=149.165085,
+                                       altitude=584,
+                                       heading=270)
+
+    @property
+    def home(self) -> HomeLocation:
+        return self.__home
 
     @property
     def connection(self,
@@ -115,11 +131,10 @@ class Sandbox(BaseSandbox):
         self.__fn_log = bzc.mktemp(self.container)
         logger.debug("writing SITL output to: %s", self.__fn_log)
 
-        # FIXME #47
-        home = "-35.362938,149.165085,584,270"
         name_bin = os.path.join("/opt/ardupilot/build/sitl/bin",  # FIXME
                                 name_bin)
         speedup = self.configuration.speedup
+        home = str(self.home)
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, speedup, home, fn_param)
         cmd = '{} >& {}'.format(cmd, shlex.quote(self.__fn_log))
