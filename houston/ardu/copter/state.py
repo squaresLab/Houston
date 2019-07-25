@@ -17,32 +17,36 @@ IMPORTANT_MESSAGE_NAMES = [
 
 
 class State(BaseState):
-    home_latitude = var(float, lambda c: -35.362938)  # TODO: fixed
-    home_longitude = var(float, lambda c: 149.165085)  # TODO: fixed
+    home_latitude = var(float,
+                        lambda c: c.conn.home_location.lat,
+                        noise=0.0005)
+    home_longitude = var(float,
+                         lambda c: c.conn.home_location.lon,
+                         noise=0.0005)
     altitude = var(float,
                    lambda c: c.conn.location.global_relative_frame.alt,  # noqa: pycodestyle
                    noise=0.5)
     latitude = var(float,
                    lambda c: c.conn.location.global_relative_frame.lat,  # noqa: pycodestyle
-                   noise=0.0001)
+                   noise=0.0005)
     longitude = var(float,
                     lambda c: c.conn.location.global_relative_frame.lon,  # noqa: pycodestyle
-                    noise=0.0001)
+                    noise=0.0005)
     armable = var(bool, lambda c: c.conn.is_armable)
     armed = var(bool, lambda c: c.conn.armed)
     mode = var(str, lambda c: c.conn.mode.name)
-    vx = var(float, lambda c: c.conn.velocity[0], noise=0.1)
-    vy = var(float, lambda c: c.conn.velocity[1], noise=0.1)
-    vz = var(float, lambda c: c.conn.velocity[2], noise=0.1)
-    pitch = var(float, lambda c: c.conn.attitude.pitch, noise=0.05)
-    yaw = var(float, lambda c: c.conn.attitude.yaw, noise=0.05)
-    roll = var(float, lambda c: c.conn.attitude.roll, noise=0.05)
-    heading = var(float, lambda c: c.conn.heading, noise=2)
-    airspeed = var(float, lambda c: c.conn.airspeed, noise=0.1)
-    groundspeed = var(float, lambda c: c.conn.groundspeed, noise=0.1)
+    vx = var(float, lambda c: c.conn.velocity[0], noise=0.3)
+    vy = var(float, lambda c: c.conn.velocity[1], noise=0.3)
+    vz = var(float, lambda c: c.conn.velocity[2], noise=0.3)
+    pitch = var(float, lambda c: c.conn.attitude.pitch, noise=0.2)
+    yaw = var(float, lambda c: c.conn.attitude.yaw, noise=0.2)
+    roll = var(float, lambda c: c.conn.attitude.roll, noise=0.2)
+    heading = var(float, lambda c: c.conn.heading, noise=15)  # FIXME high?
+    airspeed = var(float, lambda c: c.conn.airspeed, noise=1.0)
+    groundspeed = var(float, lambda c: c.conn.groundspeed, noise=1.0)
     ekf_ok = var(bool, lambda c: c.conn.ekf_ok)
-    throttle_channel = var(float, lambda c: c.conn.channels['3'])
-    roll_channel = var(float, lambda c: c.conn.channels['1'])
+#    throttle_channel = var(float, lambda c: c.conn.channels['3'])
+#    roll_channel = var(float, lambda c: c.conn.channels['1'])
 
     def evolve(self,
                message: MAVLinkMessage,

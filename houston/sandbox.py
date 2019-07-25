@@ -7,6 +7,7 @@ import threading
 import signal
 import logging
 
+import docker
 import bugzoo
 from bugzoo import Bug as Snapshot
 from bugzoo.client import Client as BugZooClient
@@ -80,6 +81,11 @@ class Sandbox(object):
         try:
             sandbox.start()
             yield sandbox
+        except Exception:
+            # FIXME
+            logger.exception("failed to launch sandbox:\n%s",
+                             sandbox.read_logs())
+            raise
         finally:
             sandbox.stop()
 
@@ -101,6 +107,9 @@ class Sandbox(object):
         self.__time_start = timer()
         self.__recorder = None
         self.__lock_recorder = threading.Lock()
+
+    def read_logs(self) -> str:
+        raise NotImplementedError
 
     @property
     def running_time(self) -> float:

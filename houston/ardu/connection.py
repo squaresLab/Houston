@@ -1,6 +1,6 @@
 __all__ = ['MAVLinkMessage', 'CommandLong', 'MAVLinkConnection']
 
-
+import logging
 from typing import Any, List, Callable, Dict
 import pymavlink
 from pymavlink.mavutil import mavlink
@@ -8,6 +8,9 @@ import attr
 import dronekit
 
 from ..connection import Message, Connection
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class MAVLinkGeneralMessage(Message):
@@ -65,17 +68,27 @@ class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
     """
     def __init__(self,
                  url: str,
-                 hooks: HOOK_TYPE = None
+                 hooks: HOOK_TYPE = None,
+                 timeout: int = 30
                  ) -> None:
         super().__init__(hooks)
         self.__conn = dronekit.connect(url,
-                                       wait_ready=True,
+                                       wait_ready=False,
                                        heartbeat_timeout=0)
-        self.__conn.wait_ready('autopilot_version')
+        self.__conn.wait_ready(True,
+                               timeout=timeout,
+                               raise_exception=True)
+        # wait for the dronekit to properly set home_location
+        # and autopilot_version
+        self.__conn.wait_ready('autopilot_version',
+                               'home_location',
+                               timeout=timeout,
+                               raise_exception=True)
 
-        def recv(s, name: str, message):  # FIXME external types
+        def recv(vehicle, name: str, message):  # FIXME external types
             m = MAVLinkMessage(name, message)
             self.receive(m)
+
         self.__conn.add_message_listener('*', recv)
 
     @property

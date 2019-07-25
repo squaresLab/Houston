@@ -1,6 +1,7 @@
 __all__ = ['Message', 'Connection']
 
 from typing import Generic, TypeVar, List, Callable, Dict
+import threading
 
 T = TypeVar('T')
 
@@ -24,6 +25,7 @@ class Connection(Generic[T]):
                 that should be callednupon receiving a message via this
                 connection.
         """
+        self.__lock = threading.Lock()
         self.__hooks = hooks if hooks else {}
 
     def receive(self, message: T) -> None:
@@ -31,8 +33,9 @@ class Connection(Generic[T]):
         Forwards any received messages using the hooks attached to this
         connection.
         """
-        for hook in self.__hooks.values():
-            hook(message)
+        with self.__lock:
+            for hook in self.__hooks.values():
+                hook(message)
 
     def send(self, message: T) -> None:
         """
@@ -51,11 +54,13 @@ class Connection(Generic[T]):
         Adds a dictionary of hooks to the set of hooks to be called
         when messages are received.
         """
-        self.__hooks.update(hooks)
+        with self.__lock:
+            self.__hooks.update(hooks)
 
     def remove_hook(self, hook_name: str) -> None:
         """
         Removes a hook from hooks based on its name.
         """
-        if hook_name in self.__hooks:
-            self.__hooks.pop(hook_name)
+        with self.__lock:
+            if hook_name in self.__hooks:
+                self.__hooks.pop(hook_name)

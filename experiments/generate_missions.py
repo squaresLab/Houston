@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('--seed', action='store', type=int,
                         default=1000,
                         help='random seed to be used by random generator.')
-    parser.add_argument('--output_file', action='store', type=str,
+    parser.add_argument('--output', action='store', type=str,
                         default='missions.json',
                         help='the file where the results will be stored')
     return parser.parse_args()
@@ -57,5 +57,5 @@ if __name__ == "__main__":
     generate(num_missions=args.number_of_mission,
              max_num_commands=args.max_num_commands,
              seed=args.seed,
-             output_file=args.output_file,
+             output_file=args.output,
              speedup=args.speedup)

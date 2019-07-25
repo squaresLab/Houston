@@ -16,71 +16,24 @@ import bugzoo
 import boggart
 import rooibos
 
+from hash_mutants import mutation_to_uid
+
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 MUTABLE_FILES = [
-    'ArduCopter/AP_Arming.cpp',
-    'ArduCopter/AP_Rally.cpp',
-    'ArduCopter/AP_State.cpp',
-    'ArduCopter/ArduCopter.cpp',
-    'ArduCopter/Attitude.cpp',
-    'ArduCopter/Copter.cpp',
-    'ArduCopter/GCS_Mavlink.cpp',
-    'ArduCopter/autoyaw.cpp',
-    'ArduCopter/avoidance_adsb.cpp',
-    'ArduCopter/baro_ground_effect.cpp',
-    'ArduCopter/capabilities.cpp',
-    'ArduCopter/commands.cpp',
-    'ArduCopter/compassmot.cpp',
-    'ArduCopter/crash_check.cpp',
-    'ArduCopter/ekf_check.cpp',
-    'ArduCopter/esc_calibration.cpp',
-    'ArduCopter/failsafe.cpp',
-    'ArduCopter/fence.cpp',
-    'ArduCopter/heli.cpp',
-    'ArduCopter/inertia.cpp',
-#    'ArduCopter/land_detector.cpp',
-    'ArduCopter/landing_gear.cpp',
-    'ArduCopter/leds.cpp',
     'ArduCopter/mode.cpp',
-    'ArduCopter/mode_acro.cpp',
-    'ArduCopter/mode_acro_heli.cpp',
-    'ArduCopter/mode_althold.cpp',
     'ArduCopter/mode_auto.cpp',
-    'ArduCopter/mode_autotune.cpp',
-    'ArduCopter/mode_avoid_adsb.cpp',
-    'ArduCopter/mode_brake.cpp',
-    'ArduCopter/mode_circle.cpp',
-    'ArduCopter/mode_drift.cpp',
-    'ArduCopter/mode_flip.cpp',
-    'ArduCopter/mode_flowhold.cpp',
-    'ArduCopter/mode_follow.cpp',
-    'ArduCopter/mode_guided.cpp',
-    'ArduCopter/mode_guided_nogps.cpp',
-    'ArduCopter/mode_land.cpp',
-    'ArduCopter/mode_loiter.cpp',
-#    'ArduCopter/mode_poshold.cpp ',
-    'ArduCopter/mode_rtl.cpp',
-    'ArduCopter/mode_smart_rtl.cpp',
-    'ArduCopter/mode_sport.cpp',
-    'ArduCopter/mode_stabilize.cpp',
-    'ArduCopter/mode_stabilize_heli.cpp',
-    'ArduCopter/mode_throw.cpp',
-#    'ArduCopter/mode_zigzag.cpp',
-    'ArduCopter/motor_test.cpp',
+    'libraries/AP_Common/Location.cpp',
+    'libraries/AP_Mission/AP_Mission.cpp',
+    'ArduCopter/ArduCopter.cpp',
+    'ArduCopter/AP_State.cpp',
+    'ArduCopter/Attitude.cpp',
+    'ArduCopter/commands.cpp',
+    'ArduCopter/crash_check.cpp',
     'ArduCopter/motors.cpp',
-    'ArduCopter/navigation.cpp',
-    'ArduCopter/position_vector.cpp',
-    'ArduCopter/precision_landing.cpp',
-    'ArduCopter/radio.cpp',
     'ArduCopter/sensors.cpp',
-    'ArduCopter/setup.cpp',
-    'ArduCopter/system.cpp',
-    'ArduCopter/takeoff.cpp',
-    'ArduCopter/terrain.cpp',
-#    'ArduCopter/toy_mode.cpp',
-    'ArduCopter/tuning.cpp'
+    'libraries/AP_Parachute/AP_Parachute.cpp'
 ]
 
 DESCRIPTION = \
@@ -200,7 +153,12 @@ def main():
                 diff = str(client_boggart.mutations_to_diff(snapshot, [mutation]))
                 acceptable.append(diff)
 
-        yml = [{'diff': PreservedScalarString(d)} for d in acceptable]
+        yml = []
+        for diff in acceptable:
+            entry = {'diff': PreservedScalarString(diff),
+                     'uid': mutation_to_uid(diff)}
+            yml.append(entry)
+
         with open(fn_output, 'w') as f:
             YAML().dump(yml, f)
 

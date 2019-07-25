@@ -3,13 +3,15 @@
 This script is used to record execution traces for each mission within a
 provided mission suite file.
 """
-from typing import List
+from typing import List, Iterator, Callable, Dict, Any
 import os
 import argparse
 import concurrent.futures
 import json
 import logging
 import contextlib
+import functools
+import signal, psutil
 
 import bugzoo
 import bugzoo.server
@@ -23,10 +25,27 @@ logger.setLevel(logging.DEBUG)
 
 DESCRIPTION = "Builds trace files for a given set of missions."
 
+SandboxFactory = Callable[[bugzoo.BugZoo, bugzoo.Bug, houston.Mission], Iterator[houston.Sandbox]]
+
+
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        return
+    children = parent.children(recursive=True)
+    for process in children:
+        if process.name() != "python":
+            continue
+        logger.debug("killing process %d", process.pid)
+        process.send_signal(sig)
+
 
 def setup_logging(verbose: bool = False) -> None:
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG if verbose else logging.INFO)
+    formatter = logging.Formatter('%(processName)s - %(message)s')
+    log_to_stdout.setFormatter(formatter)
     logging.getLogger('houston').addHandler(log_to_stdout)
     logging.getLogger('experiment').addHandler(log_to_stdout)
 
@@ -46,23 +65,18 @@ def parse_args():
                    help='number of traces to generate for each mission.')
     p.add_argument('--threads', type=int, default=1,
                    help='number of threads to use when building trace files.')
-    p.add_argument('--kill-container', action='store_true',
-                   help='provision a new container for each mission.')
-
     return p.parse_args()
 
 
-def trace(client_bugzoo: bugzoo.Client,
-          snapshot: bugzoo.Bug,
-          container: bugzoo.Container,
-          index: int,
-          mission: houston.mission.Mission,
+def trace(index: int,
+          sandbox_factory: SandboxFactory,
+          jsn_mission: Dict[str, Any],
           num_repeats: int,
           dir_output: str,
           collect_coverage: bool
           ) -> None:
-    kill_container = (container == None)
-    assert not kill_container or snapshot != None
+    mission = houston.Mission.from_dict(json.loads(jsn_mission))
+
     # generate a (very-likely-to-be) "unique" ID for the mission
     uid = hex(abs(hash(mission)))[2:][:8]
     logger.info("generating trace for mission %d: %s", index, uid)
@@ -74,20 +88,8 @@ def trace(client_bugzoo: bugzoo.Client,
 
     try:
         traces = []  # List[MissionTrace]
-        sandbox_cls = mission.system.sandbox
-
-        # if no container was provided, prepare one.
-        if not container:
-            container = client_bugzoo.containers.provision(snapshot)
-            if collect_coverage:
-                client_bugzoo.containers.prepare_for_coverage(container)
-
         for _ in range(num_repeats):
-            with sandbox_cls.for_container(client_bugzoo,
-                                           container,
-                                           mission.initial_state,
-                                           mission.environment,
-                                           mission.configuration) as sandbox:
+            with sandbox_factory() as sandbox:
                 t = sandbox.run_and_trace(mission.commands, collect_coverage)
                 traces.append(t)
 
@@ -100,54 +102,75 @@ def trace(client_bugzoo: bugzoo.Client,
     except (ConnectionLostError, NoConnectionError):
         logger.error("SITL crashed during trace %d: %s", index, uid)
     except (KeyboardInterrupt, SystemExit):
+        logger.exception("received keyboard interrupt")
         raise
     except:
         logger.exception("failed to build trace %d: %s", index, uid)
+
+
+@contextlib.contextmanager
+def build_sandbox(client_bugzoo: bugzoo.Client,
+                  snapshot: bugzoo.Bug,
+                  jsn_mission: str
+                  ) -> Iterator[houston.Sandbox]:
+    mission = houston.Mission.from_dict(json.loads(jsn_mission))
+    container = None  # type: Optional[bugzoo.Container]
+    try:
+        container = client_bugzoo.containers.provision(snapshot)
+        sandbox_cls = mission.system.sandbox
+        with sandbox_cls.for_container(client_bugzoo,
+                                       container,
+                                       mission.initial_state,
+                                       mission.environment,
+                                       mission.configuration) as sandbox:
+            yield sandbox
     finally:
-        if container and kill_container:
+        if container:
             del client_bugzoo.containers[container.uid]
 
 
 def build_traces(client_bugzoo: bugzoo.Client,
                  snapshot: bugzoo.Bug,
-                 missions: List[houston.Mission],
+                 jsn_missions: List[str],
                  num_threads: int,
                  num_repeats: int,
                  dir_output: str,
-                 kill_container: bool,
                  collect_coverage: bool
                  ) -> None:
-    containers = []
     futures = []
-    try:
-        if not kill_container:
-            logger.info("preparing containers")
-            for _ in range(num_threads):
-                container = client_bugzoo.containers.provision(snapshot)
-                if collect_coverage:
-                    client_bugzoo.containers.prepare_for_coverage(container)
-                containers.append(container)
-            logger.info("prepared containers")
+    with concurrent.futures.ProcessPoolExecutor(num_threads) as e:
+        try:
+            for i, jsn_mission in enumerate(jsn_missions):
+                logger.debug("submitting mission %d", i)
+                sandbox_factory = functools.partial(build_sandbox,
+                                                    client_bugzoo,
+                                                    snapshot,
+                                                    jsn_mission)
+                future = e.submit(trace,
+                                  i,
+                                  sandbox_factory,
+                                  jsn_mission,
+                                  num_repeats,
+                                  dir_output,
+                                  collect_coverage)
+                futures.append(future)
 
-            with concurrent.futures.ThreadPoolExecutor(num_threads) as e:
-                for i, mission in enumerate(missions):
-                    logger.debug("submitting mission %d", i)
-                    container = containers[i % num_threads]
-                    future = e.submit(trace, client_bugzoo, snapshot, container, i, mission, num_repeats, dir_output, collect_coverage)
-                    futures.append(future)
-        else:
-            with concurrent.futures.ThreadPoolExecutor(num_threads) as e:
-                for i, mission in enumerate(missions):
-                    logger.debug("submitting mission %d", i)
-                    future = e.submit(trace, client_bugzoo, snapshot, None, i, mission, num_repeats, dir_output, collect_coverage)
-                    futures.append(future)
-        logger.debug("submitted all missions")
-        logger.debug("waiting for missions to complete")
-        concurrent.futures.wait(futures)
-        logger.debug("finished executing all missions")
-    finally:
-        for c in containers:
-            del client_bugzoo.containers[c.uid]
+            logger.debug("submitted all missions")
+            logger.debug("waiting for missions to complete")
+            concurrent.futures.wait(futures)
+            logger.debug("finished executing all missions")
+        except KeyboardInterrupt:
+            logger.info("Received keyboard interrupt. Shutting down...")
+            for fut in futures:
+                logger.debug("Cancelling: %s", fut)
+                fut.cancel()
+                logger.debug("Cancelled: %s", fut.cancelled())
+            logger.info("Shutting down the process pool")
+            e.shutdown(wait=False)
+            kill_child_processes(os.getpid())
+            logger.info("Cancelled all jobs and shutdown executor.")
+            client_bugzoo.containers.clear()
+            logger.info("Killed all containers")
 
 
 if __name__ == '__main__':
@@ -165,12 +188,8 @@ if __name__ == '__main__':
 
     with open(fn_missions, 'r') as f:
         jsn = json.load(f)
-    missions = [houston.Mission.from_dict(d) for d in jsn]
+    jsn_missions = [json.dumps(m) for m in jsn]
 
-    # FIXME use an ephemeral server! (bugzoo.server.ephemeral())
-    client_bugzoo = bugzoo.BugZoo()
-    try:
+    with bugzoo.server.ephemeral() as client_bugzoo:
         snapshot = client_bugzoo.bugs[args.snapshot]
-        build_traces(client_bugzoo, snapshot, missions, num_threads, num_repeats, args.output, args.kill_container, collect_coverage)
-    finally:
-        client_bugzoo.shutdown()
+        build_traces(client_bugzoo, snapshot, jsn_missions, num_threads, num_repeats, args.output, collect_coverage)

@@ -6,6 +6,7 @@ import sys
 import threading
 import logging
 
+import docker
 import dronekit
 from bugzoo.client import Client as BugZooClient
 from pymavlink import mavutil
@@ -47,6 +48,7 @@ class Sandbox(BaseSandbox):
         super().__init__(*args, **kwargs)
         self.__connection = None
         self.__sitl_thread = None
+        self.__fn_log = None  # type: Optional[str]
 
     @property
     def connection(self,
@@ -64,13 +66,27 @@ class Sandbox(BaseSandbox):
             raise NoConnectionError()
         return self.__connection
 
+    def has_connection(self) -> bool:
+        """
+        Checks whether a connection to the system running inside this
+        sandbox exists.
+        """
+        return self.__connection is not None
+
     @property
     def vehicle(self,
                 raise_exception: bool = True
                 ) -> Optional[dronekit.Vehicle]:
-        if not self.connection and raise_exception:
+        if not self.has_connection() and raise_exception:
             raise NoConnectionError()
         return self.connection.conn
+
+    def read_logs(self) -> str:
+        """
+        Reads the contents of the log file for this sandbox.
+        """
+        assert self.__fn_log, "no log file created for sandbox."
+        return self._bugzoo.files.read(self.container, self.__fn_log)
 
     def update(self, message: Message) -> None:
         with self.__state_lock:
@@ -94,6 +110,10 @@ class Sandbox(BaseSandbox):
         """
         bzc = self._bugzoo.containers
 
+        # generate a temporary log file for the SITL
+        self.__fn_log = bzc.mktemp(self.container)
+        logger.debug("writing SITL output to: %s", self.__fn_log)
+
         # FIXME #47
         home = "-35.362938,149.165085,584,270"
         name_bin = os.path.join("/opt/ardupilot/build/sitl/bin",  # FIXME
@@ -101,22 +121,28 @@ class Sandbox(BaseSandbox):
         speedup = self.configuration.speedup
         cmd = '{} --model "{}" --speedup "{}" --home "{}" --defaults "{}"'
         cmd = cmd.format(name_bin, name_model, speedup, home, fn_param)
+        cmd = '{} >& "{}"'.format(cmd, self.__fn_log)
         logger.debug("launching SITL via: %s", cmd)
 
-        if not verbose:
-            bzc.command(self.container, cmd, block=False,
-                        stdout=False, stderr=False)
-            return
+        # FIXME add non-blocking execution to BugZoo client API
+        cmd = 'source /.environment && {}'.format(cmd)
+        cmd = "/bin/bash -c '{}'".format(cmd)
+        logger.debug("wrapped command: %s", cmd)
 
-        # FIXME this will only work if we have direct access to the BugZoo
-        #   daemon (i.e., this code won't work if we execute it remotely).
-        execution_response = \
-            bzc.command(self.container, cmd, stdout=True,
-                        stderr=True, block=False)
-
-        for line in execution_response.output:
-            line = line.decode(sys.stdout.encoding).rstrip('\n')
-            logger.debug(line)
+        docker_client = docker.from_env()  # FIXME
+        docker_api = docker_client.api
+        resp = docker_api.exec_create(self.container.id,
+                                      cmd,
+                                      tty=True,
+                                      stdout=True,
+                                      stderr=True)
+        output = docker_api.exec_start(resp['Id'], stream=verbose)
+        logger.debug("started SITL")
+        if verbose:
+            for line in output:
+                line = line.decode(sys.stdout.encoding).rstrip('\n')
+                logger.getChild('SITL').debug(line)
+            logger.debug("SITL finished")
 
     @detect_lost_connection
     def start(self,
@@ -141,9 +167,10 @@ class Sandbox(BaseSandbox):
         """
         stopwatch = Stopwatch()
         speedup = self.configuration.speedup
-        timeout_set_mode = 15 / speedup + 2
-        timeout_3d_fix = 10 / speedup + 2
-        timeout_state = 90 / speedup + 2
+        timeout_set_mode = (15 / speedup + 2) + 30
+        timeout_3d_fix = (10 / speedup + 2) + 30
+        timeout_state = (90 / speedup + 2) + 30
+        timeout_mavlink = 60
 
         bzc = self._bugzoo.containers
         args = (binary_name, model_name, param_file, verbose)
@@ -153,17 +180,17 @@ class Sandbox(BaseSandbox):
         self.__sitl_thread.start()
 
         # establish connection
-        # TODO fix connection issue
         protocol = 'tcp'
         port = 5760
         ip = str(bzc.ip_address(self.container))
         url = "{}:{}:{}".format(protocol, ip, port)
-        dummy_connection = mavutil.mavlink_connection(url)
-        time.sleep(10)
-        dummy_connection.close()
-        time.sleep(5)
-        self.__connection = MAVLinkConnection(url, {'update': self.update})
-
+        logger.debug("connecting to SITL at %s", url)
+        try:
+            self.__connection = MAVLinkConnection(url,
+                                                  {'update': self.update},
+                                                  timeout=timeout_mavlink)
+        except dronekit.APIException:
+            raise NoConnectionError
         # wait for longitude and latitude to match their expected values, and
         # for the system to match the expected `armable` state.
         initial_lon = self.state_initial['longitude']
@@ -202,11 +229,11 @@ class Sandbox(BaseSandbox):
     def stop(self) -> None:
         logger.debug("Stopping SITL")
         bzc = self._bugzoo.containers
-        if self.connection:
+        if self.has_connection():
             self.connection.close()
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
 
-        out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
+        out = bzc.command(self.container, ps_cmd)
         all_processes = out.output.splitlines()
         logger.debug("checking list of processes: %s", str(all_processes))
         for p in all_processes:
@@ -214,16 +241,13 @@ class Sandbox(BaseSandbox):
                 continue
             pid, cmd = p.split(' ')
             if cmd.startswith('/opt/ardupilot'):
-                bzc.command(self.container,
-                            "kill -2 {}".format(pid),
-                            block=True)
+                bzc.command(self.container, "kill -2 {}".format(pid))
                 break
         logger.debug("Killed it")
         self.__sitl_thread.join()
         logger.debug("Joined")
 #       cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2\'"\'"\'} | xargs kill -2'  # noqa: pycodestyle
-#       bzc.command(self.container, cmd, stdout=False, stderr=False,
-#                   block=True)
+#       bzc.command(self.container, cmd, stdout=False, stderr=False)
 
     def _on_connected(self) -> bool:
         """
@@ -256,6 +280,9 @@ class Sandbox(BaseSandbox):
         speedup = config.speedup
         timeout_command = 300 / speedup + 5
         timeout_arm = 10 / speedup + 5
+        timeout_mission_upload = 20
+        # the number of seconds for the delay added after DO commands
+        do_delay = max(4, int(20 / speedup))
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
@@ -266,23 +293,32 @@ class Sandbox(BaseSandbox):
                                        0, 16, 0, 0,
                                        0.0, 0.0, 0.0, 0.0,
                                        -35.3632607, 149.1652351, 584)
-            # 10 seconds delay to allow the robot to reach its stable state
-            # delay = dronekit.Command(0, 0, 0,
-            #                         3, 93, 0, 0,
-            #                         10, -1, -1, -1,
-            #                         0, 0, 0)
+            # delay to allow the robot to reach its stable state
+            delay = dronekit.Command(0, 0, 0,
+                                     3, 93, 0, 0,
+                                     do_delay, -1, -1, -1,
+                                     0, 0, 0)
 
-            # convertin from Houston commands to dronekit commands
-            cmds = [cmd.to_message().to_dronekit_command()
-                    for cmd in commands]
-            cmds.insert(0, initial)
+            # converting from Houston commands to dronekit commands
+            dronekitcmd_to_cmd_mapping = {}
+            cmds = [initial]
+            for i, cmd in enumerate(commands):
+                dronekitcmd_to_cmd_mapping[len(cmds)] = i
+                cmds.append(cmd.to_message().to_dronekit_command())
+                # DO commands trigger some action and return.
+                # we add a delay after them to see how they affect the state.
+                if 'MAV_CMD_DO_' in cmd.__class__.uid:
+                    dronekitcmd_to_cmd_mapping[len(cmds)] = i
+                    cmds.append(delay)
+            logger.debug("Final mission commands len: %d, mapping: %s",
+                         len(cmds), dronekitcmd_to_cmd_mapping)
 
             # uploading the mission to the vehicle
             vcmds = self.vehicle.commands
             vcmds.clear()
             for cmd in cmds:
                 vcmds.add(cmd)
-            vcmds.upload()
+            vcmds.upload(timeout=timeout_mission_upload)
             logger.debug("Mission uploaded")
             vcmds.wait_ready()
 
@@ -329,6 +365,7 @@ class Sandbox(BaseSandbox):
 
             stopwatch = Stopwatch()
             stopwatch.start()
+            self.vehicle.armed = True
             while not self.vehicle.armed:
                 if stopwatch.duration >= timeout_arm:
                     raise VehicleNotReadyError
@@ -346,7 +383,6 @@ class Sandbox(BaseSandbox):
             time_start = timer()
 
             wp_to_traces = {}
-            traces = []
             with self.record() as recorder:
                 while last_wp[0] <= len(cmds) - 1:
                     logger.debug("waiting for command")
@@ -366,18 +402,19 @@ class Sandbox(BaseSandbox):
                         logger.debug("STATE: {}".format(self.state))
                         current_time = timer()
                         time_passed = current_time - time_start
-                        wp_to_state[last_wp[0]] = (self.state, time_passed)
                         time_start = current_time
                         states, messages = recorder.flush()
-                        cmd = commands[last_wp[0] - 1]
-                        trace = CommandTrace(cmd, states)
-                        wp_to_traces[last_wp[0]] = trace
-                        traces.append(trace)
+                        if last_wp[0] > 0:
+                            cmd_index = dronekitcmd_to_cmd_mapping[last_wp[0]]
+                            wp_to_state[cmd_index] = (self.state, time_passed)
+                            cmd = commands[cmd_index]
+                            trace = CommandTrace(cmd, states)
+                            wp_to_traces[cmd_index] = trace
 
-                        # if appropriate, store coverage files
-                        if collect_coverage:
-                            cm_directory = "command{}".format(last_wp[0])
-                            self.__copy_coverage_files(cm_directory)
+                            # if appropriate, store coverage files
+                            if collect_coverage:
+                                cm_directory = "command{}".format(cmd_index)
+                                self.__copy_coverage_files(cm_directory)
 
                         last_wp[0] = last_wp[1]
                         wp_event.clear()
@@ -386,15 +423,13 @@ class Sandbox(BaseSandbox):
             logger.debug("Removed hook")
 
             if collect_coverage:
-                wp_to_state[0] = (initial_state, 0.0)
-                for i in range(len(commands)):
-                    command = commands[i]
-                    cmd_index = 1 + i
+                for cmd_index, command in enumerate(commands):
                     if cmd_index in wp_to_traces:
                         directory = 'command{}'.format(cmd_index)
                         coverage = self.__get_coverage(directory=directory)
                         wp_to_traces[cmd_index].add_coverage(coverage)
 
+            traces = [wp_to_traces[k] for k in sorted(wp_to_traces.keys())]
             return MissionTrace(tuple(traces))
 
     def __get_coverage(self, directory: str) -> "FileLineSet":
@@ -407,11 +442,11 @@ class Sandbox(BaseSandbox):
         cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'  # noqa: pycodestyle
         cp_cmd = cp_cmd.format(directory)
 
-        bzc.command(self.container, rm_cmd, block=True)
-        bzc.command(self.container, cp_cmd, block=True)
+        bzc.command(self.container, rm_cmd)
+        bzc.command(self.container, cp_cmd)
         coverage = bzc.read_coverage(self.container)
         # coverage = self._bugzoo.coverage.extract(self.container)
-        bzc.command(self.container, rm_cmd, block=True)
+        bzc.command(self.container, rm_cmd)
         return coverage
 
     def __copy_coverage_files(self, directory: str) -> None:
@@ -426,7 +461,7 @@ class Sandbox(BaseSandbox):
         mv_cmd = mv_cmd.format(directory)
         rm_cmd = 'find . -name *.gcda | xargs rm'
 
-        out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
+        out = bzc.command(self.container, ps_cmd)
         all_processes = out.output.splitlines()
         logger.debug("checking list of processes: %s", str(all_processes))
         for p in all_processes:
@@ -434,13 +469,9 @@ class Sandbox(BaseSandbox):
                 continue
             pid, cmd = p.split(' ')
             if cmd.startswith('/opt/ardupilot'):
-                bzc.command(self.container,
-                            "kill -10 {}".format(pid),
-                            block=True)
+                bzc.command(self.container, "kill -10 {}".format(pid))
                 break
         # coverage = self._bugzoo.coverage.extract(self.container)
-        bzc.command(self.container,
-                    "mkdir /tmp/{}".format(directory),
-                    block=True)
-        bzc.command(self.container, mv_cmd, block=True)
-        bzc.command(self.container, rm_cmd, block=True)
+        bzc.command(self.container, "mkdir /tmp/{}".format(directory))
+        bzc.command(self.container, mv_cmd)
+        bzc.command(self.container, rm_cmd)

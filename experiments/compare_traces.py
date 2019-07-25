@@ -16,7 +16,7 @@ from houston.exceptions import HoustonException
 from houston import Mission, MissionTrace, State
 from houston.state import Variable
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger = logging.getLogger("houston")  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 DESCRIPTION = """
@@ -26,6 +26,9 @@ appear to behave differently?).
 """.strip()
 
 SYSTEM = System.get_by_name('arducopter')
+
+categorical=['mode', 'armed', 'ekf_ok', 'armable']
+continuous=['heading', 'home_latitude', 'groundspeed', 'airspeed', 'roll', 'pitch', 'latitude', 'longitude', 'home_longitude', 'yaw', 'altitude'] #'vx', 'vy', 'vz']
 
 
 def traces_contain_same_commands(traces: List[MissionTrace]) -> bool:
@@ -39,6 +42,7 @@ def traces_contain_same_commands(traces: List[MissionTrace]) -> bool:
     for t in traces[1:]:
         actual = [ct.command for ct in t.commands]
         if actual != expected:
+            logger.debug("expected: %s, actual: %s", expected, actual)
             return False
 
     return True
@@ -70,6 +74,85 @@ def obtain_var_names(cls_state: Type[State]) -> Tuple[Set[str], Set[str]]:
     return (categorical, continuous)
 
 
+# TODO implement SimpleTrace class
+# simplify each trace to a sequence of states, representing the state
+# of the system after the completion (or non-completion) of each command.
+def simplify_trace(t: MissionTrace) -> Tuple[State, ...]:
+    return tuple(ct.states[-1] for ct in t.commands)
+ 
+
+def is_truth_valid(truth: List[MissionTrace],
+                   tol: float = 2.0) -> bool:
+    """
+    Determines whether the ground truth traces are valid to be considered
+    for evaluation.
+
+    Parameters:
+        truth: a set of ground truth traces, generated
+            from repeat executions using an identical configuration/version of
+            the SUT.
+
+    Returns:
+        True if the ground truth is valid, False otherwise.
+    """
+
+    if not truth:
+        logger.debug("ground truth set must not be empty.")
+        return False
+
+    if not truth[0].commands:
+        logger.debug("ground truth execution must perform at least one command.")
+        return False
+
+    # ensure that all traces within the ground truth set execute an identical
+    # sequence of commands
+    if not traces_contain_same_commands(truth):
+        for i, trace in enumerate(truth):
+            logger.debug("trace %d: #%d commands", i, len(trace.commands))
+        logger.debug("ground truth traces have inconsistent structure")
+        return False
+
+    state_cls = truth[0].commands[0].states[0].__class__
+#    categorical, continuous = obtain_var_names(state_cls)
+    simple_truth = [simplify_trace(t) for t in truth]
+
+    # check that categorical variable values are consistent between ground
+    # truth traces
+    def categorical_eq(var: str,
+                       state_traces: List[Tuple[State]]) -> bool:
+        collapse = lambda st: tuple(s[var] for s in st)
+        expected = collapse(state_traces[0])
+        return all(collapse(st) == expected for st in state_traces)
+
+    def all_categoricals_eq(state_traces: List[Tuple[State]]) -> bool:
+        return all(categorical_eq(v, state_traces) for v in categorical)
+
+#    if not all_categoricals_eq(simple_truth):
+#        logger.debug("failed to compare traces: inconsistent categorical values within ground truth.")
+#        return False
+
+    num_commands = len(truth[0].commands)
+    size_truth = len(truth)
+    all_vars = SYSTEM.state.variables
+    for i in range(num_commands):
+        for var in continuous:
+            vals = np.array([float(simple_truth[j][i][var])
+                             for j in range(size_truth)])
+            max_diff = max(vals) - min(vals)
+            tolerance = (all_vars[var].noise or 0.0) * tol
+            is_nearly_eq = np.isclose(max_diff, 0.0,
+                                      rtol=1e-05, atol=tolerance, equal_nan=False)
+            # logger.debug("%d:%s (%.9f +/-%.9f)", i, var, mid, tolerance)
+            logger.debug("parameter [%s]: |%f|",
+                         var, max_diff)
+            if not is_nearly_eq:
+                logger.debug("difference for parameter [%s] exceeds threshold (+/-%f)",
+                             var, tolerance)
+                return False
+
+    return True
+
+
 def matches_ground_truth(
         candidate: MissionTrace,
         truth: List[MissionTrace],
@@ -94,43 +177,22 @@ def matches_ground_truth(
         True if candidate trace is approximately equivalent to the ground
         truth.
     """
-    if not truth:
-        raise HoustonException("ground truth set must not be empty.")
+
+    truth = [t for t in truth if t.commands]
+    if not is_truth_valid(truth):
+        return False
 
     # determine the sets of categorical and continuous variables
-    state_cls = candidate.commands[0].states[0].__class__
+    state_cls = truth[0].commands[0].states[0].__class__
     categorical, continuous = obtain_var_names(state_cls)
 
-    # ensure that all traces within the ground truth set execute an identical
-    # sequence of commands
-    if not traces_contain_same_commands(truth):
-        raise HoustonException("ground truth traces have inconsistent structure")
-
-    # TODO implement SimpleTrace class
-    # simplify each trace to a sequence of states, representing the state
-    # of the system after the completion (or non-completion) of each command.
-    def simplify_trace(t: MissionTrace) -> Tuple[State]:
-        return tuple(ct.states[-1] for ct in t.commands)
     simple_candidate = simplify_trace(candidate)
     simple_truth = [simplify_trace(t) for t in truth]
-
-    # check that categorical variable values are consistent between ground
-    # truth traces
-    def categorical_eq(var: str,
-                       state_traces: List[Tuple[State]]) -> bool:
-        collapse = lambda st: tuple(s[var] for s in st)
-        expected = collapse(state_traces[0])
-        return all(collapse(st) == expected for st in state_traces)
-
-    def all_categoricals_eq(state_traces: List[Tuple[State]]) -> bool:
-        return all(categorical_eq(v, state_traces) for v in categorical)
-
-    if not all_categoricals_eq(simple_truth):
-        raise HoustonException("failed to compare traces: inconsistent categorical values within ground truth.")
 
     # check if the candidate trace executes a different sequence of commands
     # to the ground truth
     if not traces_contain_same_commands([candidate, truth[0]]):
+        logger.debug("candidate trace doesn't have same commands as the truth")
         return False
 
     # use the ground truth to build a distribution of expected values for
@@ -146,7 +208,7 @@ def matches_ground_truth(
             mid = max(vals) - ((max(vals) - min(vals)) / 2)
 #            tolerance = (max(vals) - min(vals)) / 2
 #            tolerance *= tolerance_factor
-            tolerance = all_vars[var].noise or 0.0
+            tolerance = (all_vars[var].noise or 0.0) * tolerance_factor
             diff = abs(mid - actual)
             is_nearly_eq = np.isclose(mid, actual,
                                       rtol=1e-05, atol=tolerance, equal_nan=False)

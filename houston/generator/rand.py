@@ -1,4 +1,5 @@
 from typing import Type, Dict, Callable, Optional
+import logging
 
 from .base import MissionGenerator
 from ..mission import Mission
@@ -7,6 +8,9 @@ from ..state import State
 from ..environment import Environment
 from ..configuration import Configuration
 from ..command import Command
+
+logger = logging.getLogger(__name__)   # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class RandomMissionGenerator(MissionGenerator):
@@ -56,9 +60,14 @@ class RandomMissionGenerator(MissionGenerator):
         if not takeoff:
             raise Exception("No TAKEOFF command found")
         commands = [self.generate_command(takeoff)]
-        for _ in range(self.rng.randint(1, self.max_num_commands - 1)):
-            command_class = self.rng.choice(command_classes)
-            commands.append(self.generate_command(command_class))
+        cmds_len = self.max_num_commands
+        for i in range(1, cmds_len):
+            next_allowed = commands[i - 1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
+            if next_allowed:
+                command_class = self.rng.choice(next_allowed)
+                commands.append(self.generate_command(command_class))
+            else:
+                break
         return Mission(self.__configuration,
                        self.__env,
                        self.__initial_state,
