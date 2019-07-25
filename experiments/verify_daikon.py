@@ -20,6 +20,7 @@ from ground_truth import DatabaseEntry
 from compare_traces import load_file
 from hash_mutants import mutation_to_uid
 from verify_test_data import VerifiedEntry, NewDatabaseEntry, Status
+from filter_truth import VALID_LIST_OUTPUT
 
 from enum import Enum
 
@@ -42,8 +43,10 @@ def setup_arg_parser():
                         help='path to the output invariant checker')
     parser.add_argument('nonce_file', type=str, action='store',
                         help='path to nonce file.')
-    parser.add_argument('output', action='store', type=str,
-                        help='the file where the results will be stored')
+    parser.add_argument('ground_truth', type=str, action='store',
+                        help='path to ground truth traces')
+#    parser.add_argument('output', action='store', type=str,
+#                        help='the file where the results will be stored')
     parser.add_argument('--verbose', action='store_true',
                          help='increases logging verbosity.')
     parser.add_argument('--compute-score', action='store',
@@ -57,16 +60,15 @@ def compute_score(entries: List[NewDatabaseEntry],
                   score_file: str = '',
                   models_dir: str = '') -> None:
     tp, fp, tn, fn = 0, 0, 0, 0
-    for e in entries:
-        for o, t in e.fn_inconsistent_traces:
-            if Status.REJECTED in o.verified:
-                fp += 1
-            else:
-                tn += 1
-            if Status.REJECTED in t.verified:
-                tp += 1
-            else:
-                fn += 1
+    for o, t in entries:
+        if Status.REJECTED in o.verified:
+            fp += 1
+        else:
+            tn += 1
+        if Status.REJECTED in t.verified:
+            tp += 1
+        else:
+            fn += 1
 
     logger.info("TP: %d, TN: %d, FP: %d, FN: %d", tp, tn, fp, fn)
     precision = float(tp)/float(tp + fp) if tp+fp != 0 else float('nan')
@@ -79,6 +81,7 @@ def compute_score(entries: List[NewDatabaseEntry],
     typ = 'daikon'
     seed = os.path.basename(os.path.dirname(models_dir))
     data_amount = os.path.basename(os.path.dirname(os.path.dirname(models_dir)))
+#    data_amount = '100data'
     with open(score_file, 'a') as f:
         f.write(', '.join([data_amount, seed, typ, '-', str(tp), str(tn), str(fp), str(fn),
                            str(precision), str(recall), str(f_score)]))
@@ -99,31 +102,38 @@ if __name__=="__main__":
     with open(args.nonce_file, 'r') as f:
         fn_to_nonce = YAML().load(f)
 
+    with open(os.path.join(args.ground_truth, VALID_LIST_OUTPUT), 'r') as f:
+        all_truth = YAML().load(f)
+    all_truth = [os.path.join(args.ground_truth, t) for t in all_truth]
+
+
     entries = [DatabaseEntry.from_dict(e) for e in db['entries'] if e['inconsistent']]
     logger.info("starting with %d mutants", len(entries))
 
-    validated_results = []
 
+    traces = []
     for entry in entries:
-        pairs = []
-        for oracle_fn, trace_fn in entry.fn_inconsistent_traces:
-            oracle = VerifiedEntry(oracle_fn,
-                                [Status.REJECTED if n in invalidated else Status.ACCEPTED for n in fn_to_nonce[oracle_fn]])
+        for _, trace_fn in entry.fn_inconsistent_traces:
             trace = VerifiedEntry(trace_fn,
                                 [Status.REJECTED if n in invalidated else Status.ACCEPTED for n in fn_to_nonce[trace_fn]])
-            pairs.append((oracle, trace))
-        validated_results.append(NewDatabaseEntry(entry.diff, tuple(pairs)))
+            traces.append(trace)
+    oracles = []
+    for oracle_fn in all_truth[:len(traces)]:
+        oracle = VerifiedEntry(oracle_fn,
+                               [Status.REJECTED if n in invalidated else Status.ACCEPTED for n in fn_to_nonce[oracle_fn]])
+        oracles.append(oracle)
+    validated_results = list(zip(oracles, traces))
 
-    logger.debug("finished evaluating")
+    logger.debug("finished evaluating %d", len(validated_results))
     
-    jsn = {
-        'oracle-directory': db['oracle-directory'],
-        'snapshot': db['snapshot'],
-        'entries': [e.to_dict() for e in validated_results]
-    }
-    with open(args.output, 'w') as f:
-        YAML().dump(jsn, f)
-    logger.info("wrote results to file")
+#    jsn = {
+#        'oracle-directory': db['oracle-directory'],
+#        'snapshot': db['snapshot'],
+#        'entries': [e.to_dict() for e in validated_results]
+#    }
+#    with open(args.output, 'w') as f:
+#        YAML().dump(jsn, f)
+#    logger.info("wrote results to file")
     if args.compute_score:
         compute_score(validated_results,
                       args.compute_score,

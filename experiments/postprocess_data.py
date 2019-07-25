@@ -55,6 +55,8 @@ def transform_data(files_filename, output_dir):
         else:
             os.system("tail -n {} {} >> {}".format(linecount-1, filename, data_filename))
         index += linecount - 1
+        if len(heads) % 10 == 0:
+            logger.debug("%d done", len(heads))
 
     assert len(heads) == len(files)
     logger.debug("writing the meta file")

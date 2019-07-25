@@ -89,7 +89,7 @@ def trace(index: int,
     try:
         traces = []  # List[MissionTrace]
         for _ in range(num_repeats):
-            with sandbox_factory() as sandbox:
+            with sandbox_factory(collect_coverage) as sandbox:
                 t = sandbox.run_and_trace(mission.commands, collect_coverage)
                 traces.append(t)
 
@@ -111,12 +111,15 @@ def trace(index: int,
 @contextlib.contextmanager
 def build_sandbox(client_bugzoo: bugzoo.Client,
                   snapshot: bugzoo.Bug,
-                  jsn_mission: str
+                  jsn_mission: str,
+                  collect_coverage: bool
                   ) -> Iterator[houston.Sandbox]:
     mission = houston.Mission.from_dict(json.loads(jsn_mission))
     container = None  # type: Optional[bugzoo.Container]
     try:
         container = client_bugzoo.containers.provision(snapshot)
+        if collect_coverage:
+            client_bugzoo.containers.instrument(container)
         sandbox_cls = mission.system.sandbox
         with sandbox_cls.for_container(client_bugzoo,
                                        container,

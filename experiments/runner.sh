@@ -9,10 +9,10 @@ CLUSTERS_DIR="$1/clusters/"
 GBDTSDATA_DIR="$1/GBDTs-data/"
 MODELS_DIR="$1/models/"
 
-if [ ! -d $TRAIN_TRACES ]; then
-    echo "Trace directory $TRAIN_TRACES does not exist."
-    exit 1
-fi
+#if [ ! -d $TRAIN_TRACES ]; then
+#    echo "Trace directory $TRAIN_TRACES does not exist."
+#    exit 1
+#fi
 
 preprocess () {
     if [ -d $PREPROCESS_DIR ]; then
@@ -80,6 +80,7 @@ postprocess () {
 
 learn () {
     depth=10
+    threads=3
     if [ ! -d $GBDTSDATA_DIR ]; then
         echo "GBDTs data is required"
         exit 1
@@ -88,7 +89,7 @@ learn () {
         mkdir $MODELS_DIR
     fi
     echo "start learn"
-    for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
+    for i in $(seq ${NUMBER_OF_SEEDS} ${NUMBER_OF_SEEDS}); do
         MD="${MODELS_DIR}seed_$i/"
         if [ -d $MD ]; then
             rm -r $MD
@@ -97,12 +98,38 @@ learn () {
         mkdir ${MD}fuzzy
         mkdir ${MD}normal
         for cmd in ${COMMANDS[*]}; do
-            echo "learning model for command $cmd depth $1 seed $i"
-            julia /home/afsoona/GBDTs.jl/learn.jl ${GBDTSDATA_DIR}_seed$i/$cmd --output_dir ${MD}fuzzy --name $cmd $depth --fuzzy &
-            julia /home/afsoona/GBDTs.jl/learn.jl ${GBDTSDATA_DIR}_seed$i/$cmd --output_dir ${MD}normal --name $cmd $depth &
+            echo "learning model for command $cmd depth $depth seed $i threads $threads"
+            JULIA_NUM_THREADS=$threads julia /home/afsoona/GBDTs.jl/learn.jl ${GBDTSDATA_DIR}seed_$i/$cmd --output_dir ${MD}fuzzy --name $cmd $depth --fuzzy --seed $i &
+            JULIA_NUM_THREADS=$threads julia /home/afsoona/GBDTs.jl/learn.jl ${GBDTSDATA_DIR}seed_$i/$cmd --output_dir ${MD}normal --name $cmd $depth --seed $i &
         done
+        wait
     done
-    wait
+    echo "learn done"
+}
+
+learn-noclust () {
+    depth=10
+    threads=3
+    if [ ! -d $GBDTSDATA_DIR ]; then
+        echo "GBDTs data is required"
+        exit 1
+    fi
+    if [ ! -d $MODELS_DIR ]; then
+        mkdir $MODELS_DIR
+    fi
+    echo "start learn"
+    for i in $(seq ${NUMBER_OF_SEEDS} ${NUMBER_OF_SEEDS}); do
+        MD="${MODELS_DIR}seed_$i/"
+        if [ ! -d $MD ]; then
+            mkdir $MD
+        fi
+        mkdir ${MD}noclust
+        for cmd in ${COMMANDS[*]}; do
+            echo "learning model for command $cmd depth $depth seed $i threads $threads"
+            JULIA_NUM_THREADS=$threads julia /home/afsoona/GBDTs.jl/learn.jl ${GBDTSDATA_DIR}noclust/$cmd --output_dir ${MD}noclust --name $cmd $depth --fuzzy --seed $i &
+        done
+        wait
+    done
     echo "learn done"
 }
 

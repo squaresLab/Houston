@@ -117,6 +117,9 @@ def setup_arg_parser():
     parser.add_argument('--database', action='store', type=str,
                         default='',
                         help='path to database yaml file')
+    parser.add_argument('--ground-truth', action='store', type=str,
+                        default='',
+                        help='path to ground truth data')
     parser.add_argument('--verbose', action='store_true',
                         default=False,
                         help='run in verbose mode')
@@ -270,22 +273,22 @@ if __name__=="__main__":
         logger.debug('sampled %d traces', num)
  
     logger.debug("Preparing the declaration file")
-    create_decl_file(args.commands, os.path.join(output_dir, 'ardu.decls'))
+    #create_decl_file(args.commands, os.path.join(output_dir, 'ardu.decls'))
     logger.debug("Preparing training data dtrace file")
-    create_trace_file(traces, os.path.join(output_dir, 'ardu.dtrace'))
+    #create_trace_file(traces, os.path.join(output_dir, 'ardu.dtrace'))
 
     if args.database:
         with open(args.database, 'r') as f:
             db = YAML().load(f)
+        with open(os.path.join(args.ground_truth, VALID_LIST_OUTPUT), 'r') as f:
+            all_truth = YAML().load(f)
+        all_truth = [os.path.join(args.ground_truth, t) for t in all_truth]
 
-        entries = [DatabaseEntry.from_dict(e) for e in db['entries'] if e['inconsistent']]
+        entries = [t['trace'] for e in db['entries'] for t in e['inconsistent']]
         logger.info("total number of %d mutants", len(entries))
 
-        test = []
-        for entry in entries:
-            for oracle_fn, trace_fn in entry.fn_inconsistent_traces:
-                test.append(oracle_fn)
-                test.append(trace_fn)
+        test = entries
+        test.extend(all_truth[:len(entries)])
         logger.debug("Preparing test dtrace file %d", len(test))
         create_trace_file(test, os.path.join(output_dir, 'test.dtrace'))
     logger.debug("Done")
