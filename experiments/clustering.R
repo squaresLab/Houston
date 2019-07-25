@@ -17,7 +17,9 @@ option_list = list(
   make_option("--fuzzy", action="store_true", default=FALSE, 
               help="run the clustering in fuzzy mode."),
   make_option("--select_best_k", action="store_true", default=FALSE,
-              help="select best k out of k, k-1 and k+1")
+              help="select best k out of k, k-1 and k+1"),
+  make_option("--seed", type="integer", default=0,
+              help="the random seed")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
@@ -61,6 +63,11 @@ for (f in allfiles) {
 
 write(files, file=paste(opt$output_dir, opt$command, "_files.txt", sep=""))
 
+if (length(myData) == 0) {
+    cat("The data is empty for command", opt$command)
+    quit()
+}
+
 #myData2 <- zscore(myData)
 #m <- read.csv(files[1], header=TRUE)
 
@@ -94,9 +101,9 @@ if(opt$select_best_k) {
 }
 
 if (!opt$fuzzy) {
-    mvc <- tsclust(myData, k = k, distance = dist, seed = 390L)
+    mvc <- tsclust(myData, k = k, distance = dist, seed = opt$seed)
 } else {
-    mvc <- tsclust(myData, k = k, type = "fuzzy", seed = 390L)
+    mvc <- tsclust(myData, k = k, type = "fuzzy", seed = opt$seed)
 }
 
 print(mvc)

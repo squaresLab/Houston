@@ -3,6 +3,7 @@ import argparse
 import logging
 import sys
 import os
+import concurrent.futures
 
 from ruamel.yaml import YAML
 import yaml
@@ -29,23 +30,40 @@ def setup_logging(verbose: bool = False) -> None:
 def parse_args():
     p = argparse.ArgumentParser(description=DESCRIPTION)
     p.add_argument('oracle', type=str, help='path to oracle trace directory.')
+    p.add_argument('--threads', type=int, default=1,
+                    help='number of threads')
     p.add_argument('--verbose', action='store_true',
                    help='increases logging verbosity')
     return p.parse_args()
 
 
-def filter_truth_traces(dir_oracle: str) -> List[str]:
+def validate_truth(dir_oracle: str, fn_trace: str) -> bool:
+    mission, oracle_traces = load_traces_file(os.path.join(dir_oracle, fn_trace))
+    oracle_traces = [t for t in oracle_traces if t.commands]
+    return is_truth_valid(oracle_traces, 3), fn_trace
+
+
+def filter_truth_traces(dir_oracle: str,
+                        threads: int) -> List[str]:
     trace_filenames = \
         [fn for fn in os.listdir(dir_oracle) if fn.endswith('.json')]
     valid_traces = []
-    for fn in trace_filenames:
-        fn_trace = os.path.join(dir_oracle, fn)
-        mission, oracle_traces = load_traces_file(fn_trace)
-        oracle_traces = [t for t in oracle_traces if t.commands]
-        if is_truth_valid(oracle_traces):
-            valid_traces.append(fn)
-        else:
-            logger.debug("trace %s is invalid", fn)
+    futures = []
+    with concurrent.futures.ProcessPoolExecutor(threads) as e:
+        for fn in trace_filenames:
+            future = e.submit(validate_truth, dir_oracle, fn)
+            futures.append(future)
+
+        logger.debug("submitted all candidates")
+        for future in concurrent.futures.as_completed(futures):
+            valid, trace = future.result()
+            if valid:
+                valid_traces.append(trace)
+                logger.info("trace %s is valid", trace)
+            else:
+                logger.info("trace %s is invalid", trace)
+        logger.debug("finished all")
+
     return valid_traces
 
 
@@ -59,7 +77,7 @@ def main():
         sys.exit(1)
 
     # obtain a list of oracle traces
-    trace_filenames = filter_truth_traces(dir_oracle)
+    trace_filenames = filter_truth_traces(dir_oracle, threads=args.threads)
     logger.info("Total number of %d valid truth", len(trace_filenames))
 
     with open(os.path.join(dir_oracle, VALID_LIST_OUTPUT), "w") as f:

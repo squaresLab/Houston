@@ -45,8 +45,8 @@ class State(BaseState):
     airspeed = var(float, lambda c: c.conn.airspeed, noise=1.0)
     groundspeed = var(float, lambda c: c.conn.groundspeed, noise=1.0)
     ekf_ok = var(bool, lambda c: c.conn.ekf_ok)
-    throttle_channel = var(float, lambda c: c.conn.channels['3'])
-    roll_channel = var(float, lambda c: c.conn.channels['1'])
+#    throttle_channel = var(float, lambda c: c.conn.channels['3'])
+#    roll_channel = var(float, lambda c: c.conn.channels['1'])
 
     def evolve(self,
                message: MAVLinkMessage,

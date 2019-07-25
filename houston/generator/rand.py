@@ -60,7 +60,7 @@ class RandomMissionGenerator(MissionGenerator):
         if not takeoff:
             raise Exception("No TAKEOFF command found")
         commands = [self.generate_command(takeoff)]
-        cmds_len = self.rng.randint(1, self.max_num_commands)
+        cmds_len = self.max_num_commands
         for i in range(1, cmds_len):
             next_allowed = commands[i - 1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
             if next_allowed:

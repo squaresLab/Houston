@@ -42,6 +42,8 @@ def parse_args():
                    help='comma-delimited list of variables to plot.')
     p.add_argument('--simple', action='store_true',
                    help='plots simplified traces.')
+    p.add_argument('--save', action='store', default='',
+                   help="save to file")
     return p.parse_args()
 
 
@@ -72,12 +74,15 @@ def plot_var(v, idx, num_subplots, coloured_traces, func_trace_to_plot_data):
     plt.title(v)
 
 
-def plot(variables, coloured_traces, simple=True):
+def plot(variables, coloured_traces, simple=True, save=''):
     num_vars = len(variables)
     converter = get_simple_plot_data if simple else get_detailed_plot_data
     for i, var_name in enumerate(variables):
         plot_var(var_name, i + 1, num_vars, coloured_traces, converter)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(save)
 
 
 def main():
@@ -111,12 +116,12 @@ def main():
             'heading',
             'groundspeed',
             'ekf_ok',
-            'throttle_channel',
-            'roll_channel'
+#            'throttle_channel',
+#            'roll_channel'
         ]
     variables.sort()
 
-    plot(variables, coloured_traces, simple=args.simple)
+    plot(variables, coloured_traces, simple=args.simple, args.save)
 
 
 if __name__ == '__main__':

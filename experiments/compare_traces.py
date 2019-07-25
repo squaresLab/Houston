@@ -27,6 +27,9 @@ appear to behave differently?).
 
 SYSTEM = System.get_by_name('arducopter')
 
+categorical=['mode', 'armed', 'ekf_ok', 'armable']
+continuous=['heading', 'home_latitude', 'groundspeed', 'airspeed', 'roll', 'pitch', 'latitude', 'longitude', 'home_longitude', 'yaw', 'altitude'] #'vx', 'vy', 'vz']
+
 
 def traces_contain_same_commands(traces: List[MissionTrace]) -> bool:
     """
@@ -78,7 +81,8 @@ def simplify_trace(t: MissionTrace) -> Tuple[State, ...]:
     return tuple(ct.states[-1] for ct in t.commands)
  
 
-def is_truth_valid(truth: List[MissionTrace]) -> bool:
+def is_truth_valid(truth: List[MissionTrace],
+                   tol: float = 2.0) -> bool:
     """
     Determines whether the ground truth traces are valid to be considered
     for evaluation.
@@ -109,7 +113,7 @@ def is_truth_valid(truth: List[MissionTrace]) -> bool:
         return False
 
     state_cls = truth[0].commands[0].states[0].__class__
-    categorical, continuous = obtain_var_names(state_cls)
+#    categorical, continuous = obtain_var_names(state_cls)
     simple_truth = [simplify_trace(t) for t in truth]
 
     # check that categorical variable values are consistent between ground
@@ -123,9 +127,9 @@ def is_truth_valid(truth: List[MissionTrace]) -> bool:
     def all_categoricals_eq(state_traces: List[Tuple[State]]) -> bool:
         return all(categorical_eq(v, state_traces) for v in categorical)
 
-    if not all_categoricals_eq(simple_truth):
-        logger.debug("failed to compare traces: inconsistent categorical values within ground truth.")
-        return False
+#    if not all_categoricals_eq(simple_truth):
+#        logger.debug("failed to compare traces: inconsistent categorical values within ground truth.")
+#        return False
 
     num_commands = len(truth[0].commands)
     size_truth = len(truth)
@@ -135,7 +139,7 @@ def is_truth_valid(truth: List[MissionTrace]) -> bool:
             vals = np.array([float(simple_truth[j][i][var])
                              for j in range(size_truth)])
             max_diff = max(vals) - min(vals)
-            tolerance = (all_vars[var].noise or 0.0) * 2
+            tolerance = (all_vars[var].noise or 0.0) * tol
             is_nearly_eq = np.isclose(max_diff, 0.0,
                                       rtol=1e-05, atol=tolerance, equal_nan=False)
             # logger.debug("%d:%s (%.9f +/-%.9f)", i, var, mid, tolerance)

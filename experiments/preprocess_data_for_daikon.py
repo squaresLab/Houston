@@ -3,6 +3,7 @@ import json
 import csv
 import yaml
 import logging
+import random
 
 import argparse
 from ruamel.yaml import YAML
@@ -88,14 +89,14 @@ state_vars = [
             'type': 'boolean',
             'flags': ''
             },
-        {'name': 'throttle_channel',
-            'type': 'float',
-            'flags': ''
-            },
-        {'name': 'roll_channel',
-            'type': 'float',
-            'flags': ''
-            }
+#        {'name': 'throttle_channel',
+#            'type': 'float',
+#            'flags': ''
+#            },
+#        {'name': 'roll_channel',
+#            'type': 'float',
+#            'flags': ''
+#            }
 ]
 
 def setup_logging(verbose: bool = False) -> None:
@@ -119,6 +120,12 @@ def setup_arg_parser():
     parser.add_argument('--verbose', action='store_true',
                         default=False,
                         help='run in verbose mode')
+    parser.add_argument('--seed', action='store', type=int,
+                        default=1,
+                        help='random seed')
+    parser.add_argument('--percentage', action='store', type=float,
+                        default=1.0,
+                        help='percentage of data to consider')
     args = parser.parse_args()
     return args
 
@@ -247,6 +254,7 @@ ppt-type {type}
 if __name__=="__main__":
     args = setup_arg_parser()
     setup_logging(args.verbose)
+    random.seed(args.seed)
 
     output_dir = args.output
     data_dir = args.traces
@@ -256,6 +264,10 @@ if __name__=="__main__":
     with open(os.path.join(data_dir, VALID_LIST_OUTPUT), 'r') as f:
         valid_truth = YAML().load(f)
     traces = [os.path.join(data_dir, v) for v in valid_truth]
+    if args.percentage < 1:
+        num = int(args.percentage * len(traces))
+        traces = random.sample(traces, num)
+        logger.debug('sampled %d traces', num)
  
     logger.debug("Preparing the declaration file")
     create_decl_file(args.commands, os.path.join(output_dir, 'ardu.decls'))
