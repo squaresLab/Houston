@@ -125,7 +125,6 @@ if __name__=="__main__":
 
     logger.debug("finished evaluating %d", len(validated_results))
     
-<<<<<<< HEAD
     jsn = {
         'oracle-directory': db['oracle-directory'],
         'snapshot': db['snapshot'],
@@ -134,16 +133,6 @@ if __name__=="__main__":
     with open(args.output, 'w') as f:
         YAML().dump(jsn, f)
     logger.info("wrote results to file")
-=======
-#    jsn = {
-#        'oracle-directory': db['oracle-directory'],
-#        'snapshot': db['snapshot'],
-#        'entries': [e.to_dict() for e in validated_results]
-#    }
-#    with open(args.output, 'w') as f:
-#        YAML().dump(jsn, f)
-#    logger.info("wrote results to file")
->>>>>>> a710efbb08bf4ec16f7dc490179ebfab2010184b
     if args.compute_score:
         compute_score(validated_results,
                       args.compute_score,
