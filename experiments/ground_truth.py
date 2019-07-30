@@ -21,6 +21,7 @@ import bugzoo
 import houston
 from bugzoo import Client as BugZooClient
 from bugzoo import BugZoo as BugZooDaemon
+from bugzoo.core import FileLineSet
 from houston import System
 from houston.mission import Mission
 from houston.trace import CommandTrace, MissionTrace
@@ -119,8 +120,6 @@ def build_mutant_snapshot(bz: BugZooClient,
     name_image = "houston-mutant:{}".format(uuid)
 
     lines = diff.split('\n')
-#    print(lines)
-#    print(lines[0].startswith('---'))
 
     # create a description of the mutant snapshot
     mutant = bugzoo.Bug(name=name_image,
@@ -142,12 +141,12 @@ def build_mutant_snapshot(bz: BugZooClient,
         try:
             container = bz.containers.provision(snapshot)
             if not bz.containers.patch(container, patch):
+                logger.error("Failed to patch %s", str(patch))
                 m = "failed to patch using diff: {}".format(diff)
                 raise FailedToCreateMutantSnapshot(m)
 
             logger.debug("patched using diff: %s", diff)
             if coverage:
-                print(type(bz.containers))
                 build_attempt = bz.containers.instrument(container)
             else:
                 build_attempt = bz.containers.build(container)
@@ -174,6 +173,38 @@ def build_mutant_snapshot(bz: BugZooClient,
             bz.docker.delete_image(name_image)
 
 
+def touches_the_lines(patch: bugzoo.core.Patch,
+                      oracle_traces: List[MissionTrace]
+                      ) -> bool:
+    for oracle in oracle_traces:
+        if not oracle.commands:
+            continue
+        break
+    coverage_info = [command.coverage for command in oracle.commands if command.coverage]
+    if not coverage_info:
+        # trace doesn't have coverage info
+        raise Exception("Trace doesn't have coverage info")
+
+
+    modified_lines = {}
+    for fp in patch.file_patches:
+        filename = fp.new_fn
+        lines = set([])
+        for hunks in fp.hunks:
+            for l in hunks.lines:
+                if isinstance(l, bugzoo.InsertedLine) or\
+                    isinstance(l, bugzoo.DeletedLine):
+                    lines.add(l.number)
+        modified_lines[filename] = lines
+
+    fileline_set = FileLineSet(modified_lines)
+    for coverage in coverage_info:
+        if fileline_set.intersection(coverage).files:
+            # line is covered
+            return True
+    return False
+
+
 def process_mutation(system: Type[System],
                      client_bugzoo: BugZooClient,
                      snapshot_orig: bugzoo.Bug,
@@ -184,6 +215,7 @@ def process_mutation(system: Type[System],
                      ) -> Optional[DatabaseEntry]:
     bz = client_bugzoo
     sandbox_cls = system.sandbox
+    patch = bugzoo.Patch.from_unidiff(diff)
 
     inconsistent_results = []
     consistent_results = []
@@ -191,14 +223,22 @@ def process_mutation(system: Type[System],
     # build an ephemeral image for the mutant
     try:
         with build_mutant_snapshot(client_bugzoo, snapshot_orig, coverage, diff) as snapshot:
+
             def obtain_trace(mission: houston.Mission) -> MissionTrace:
                 jsn_mission = json.dumps(mission.to_dict())  # FIXME hack
-                with build_sandbox(client_bugzoo, snapshot, jsn_mission) as sandbox:
+                with build_sandbox(client_bugzoo, snapshot, jsn_mission, False) as sandbox:
                     return sandbox.run_and_trace(mission.commands, coverage)
 
             for fn_trace in trace_filenames:
                 logger.debug("evaluating oracle trace: %s", fn_trace)
                 mission, oracle_traces = load_traces_file(fn_trace)
+                try:
+                    if (coverage and not touches_the_lines(patch, oracle_traces)):
+                        logger.debug("This mission is not valid: %s", mission.commands)
+                        continue
+                except:
+                    logger.debug("NO COV: %s", fn_trace)
+                    continue
 
                 # write mutant trace to file
                 h = hashlib.sha256()

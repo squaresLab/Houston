@@ -2,6 +2,7 @@ version: '1.0'
 
 blueprints:
   - tag: 'arducopter:3.6.4'
+  - tag: 'arducopter:3.6.9'
   - tag: 'arducopter:crash'
     file: 'Dockerfile.crash'
     depends-on: 'arducopter:3.6.4'
@@ -28,6 +29,28 @@ bugs:
                           CXXFLAGS='--coverage' \
                           LDFLAGS='--coverage' \
         && ./waf copter
+  - name: 'arducopter:3.6.9'
+    image: 'arducopter:3.6.9'
+    languages:
+      - cpp
+    coverage:
+      files-to-instrument:
+        - ArduCopter/ArduCopter.cpp
+    source-location: /opt/ardupilot
+    test-harness:
+      type: empty
+    compiler:
+      type: simple
+      time-limit: 120
+      context: /opt/ardupilot
+      command: ./waf copter
+      command_clean: ./waf clean
+      command_with_instrumentation: |
+        ./waf configure --no-submodule-update \
+                          CXXFLAGS='--coverage' \
+                          LDFLAGS='--coverage' \
+        && ./waf copter
+
 
   - name: 'arducopter:crash'
     image: 'arducopter:crash'
