@@ -17,14 +17,18 @@ def test_constructor():
     assert state.foo == 0.1
     assert state.time_offset == 30.0
 
-    with pytest.raises(TypeError, message="expected TypeError (no arguments)"):
+    with pytest.raises(TypeError):
         assert S()
-    with pytest.raises(TypeError, message="expected TypeError (missing time_offset)"):
+        pytest.fail("expected TypeError (no arguments)")
+    with pytest.raises(TypeError):
         assert S(foo=0.1)
-    with pytest.raises(TypeError, message="expected TypeError (missing foo)"):
+        pytest.fail("expected TypeError (missing time_offset)")
+    with pytest.raises(TypeError):
         assert S(time_offset=30.0)
-    with pytest.raises(TypeError, message="expected TypeError (erroneous property 'bar')"):
+        pytest.fail("expected TypeError (missing foo)")
+    with pytest.raises(TypeError):
         assert S(foo=0.1, bar=1.0, time_offset=30.0)
+        pytest.fail("expected TypeError (erroneous property 'bar')")
 
     class S(State):
         foo = var(int, lambda c: 0)
@@ -42,11 +46,13 @@ def test_is_frozen():
         bar = var(int, lambda c: 0)
 
     state = S(foo=0, bar=0, time_offset=0.0)
-    with pytest.raises(AttributeError, message="expected AttributeError (can't set time_offset)"):
+    with pytest.raises(AttributeError):
         state.time_offset = 500.0
+        pytest.fail("expected AttributeError (can't set time_offset)")
 
-    with pytest.raises(AttributeError, message="expected AttributeError (can't set foo)"):
+    with pytest.raises(AttributeError):
         state.foo = 10
+        pytest.fail("expected AttributeError (can't set foo)")
 
 
 def test_hash():
@@ -74,8 +80,9 @@ def test_eq():
     assert S(foo=1, bar=2, time_offset=0.0) != S(foo=1, bar=2, time_offset=1.0)
     assert S(foo=1, bar=2, time_offset=0.0) != S(foo=1, bar=3, time_offset=0.0)
 
-    with pytest.raises(Exception, message="expected Exception (states have different parent classes)"):
+    with pytest.raises(Exception):
         assert S(foo=1, bar=2, time_offset=0.0) == Y(foo=1, bar=2, time_offset=0.0)
+        pytest.fail("expected Exception (states have different parent classes)")
 
 
 def test_equiv():
