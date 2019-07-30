@@ -3,16 +3,11 @@
 COMMANDS=("MAV_CMD_NAV_WAYPOINT"  "MAV_CMD_NAV_TAKEOFF"  "MAV_CMD_NAV_LOITER_TURNS"  "MAV_CMD_NAV_LOITER_TIME"  "MAV_CMD_NAV_RETURN_TO_LAUNCH"  "MAV_CMD_NAV_LAND"  "MAV_CMD_NAV_SPLINE_WAYPOINT"  "MAV_CMD_DO_CHANGE_SPEED"  "MAV_CMD_DO_SET_HOME"  "MAV_CMD_DO_PARACHUTE")
 DIRECTORY=$1
 NUMBER_OF_SEEDS=$2
-TRAIN_TRACES="$1/train-traces/"
-PREPROCESS_DIR="$1/preprocessed/"
-CLUSTERS_DIR="$1/clusters/"
-GBDTSDATA_DIR="$1/GBDTs-data/"
-MODELS_DIR="$1/models/"
-
-#if [ ! -d $TRAIN_TRACES ]; then
-#    echo "Trace directory $TRAIN_TRACES does not exist."
-#    exit 1
-#fi
+TRAIN_TRACES="train-traces/"
+PREPROCESS_DIR="preprocessed/"
+CLUSTERS_DIR="clusters/"
+GBDTSDATA_DIR="GBDTs-data/"
+MODELS_DIR="models/"
 
 preprocess () {
     if [ -d $PREPROCESS_DIR ]; then
@@ -25,23 +20,25 @@ preprocess () {
 }
 
 cluster () {
-    if [ ! -d $PREPROCESS_DIR ]; then
-        echo "Preprocess data before clustering"
-        exit 1
-    fi
-    if [ ! -d $CLUSTERS_DIR ]; then
-        mkdir $CLUSTERS_DIR
-    fi
-    echo "start cluster"
     for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
-        CL="${CLUSTERS_DIR}seed_$i/"
+        PROC=$DIRECTORY/seed_$i/$PREPROCESS_DIR
+        if [ ! -d $PROC ]; then
+            echo "Preprocess data before clustering $PROC"
+            exit 1
+        fi
+        CL=$DIRECTORY/seed_$i/$CLUSTERS_DIR
         if [ -d $CL ]; then
             rm -r $CL
         fi
+        echo "start cluster"
         mkdir $CL
         for cmd in ${COMMANDS[*]}; do
+            if [ -f $CL${cmd}_labels.txt ]; then
+                echo "Already has command $CL$cmd"
+                continue
+            fi
             echo "Clustering for command $cmd seed $i"
-            Rscript --vanilla experiments/clustering.R --data_dir $PREPROCESS_DIR -c $cmd --output_dir $CL -n 20 -k 3 --select_best_k --list_of_vars time_offset,home_latitude,home_longitude,altitude,latitude,longitude,armable,armed,mode,vx,vy,vz,pitch,yaw,roll,heading,airspeed,groundspeed,ekf_ok --seed $i &
+            Rscript --vanilla experiments/clustering.R --data_dir $PROC -c $cmd --output_dir $CL -n 20 -k 3 --list_of_vars time_offset,home_latitude,home_longitude,altitude,latitude,longitude,armable,armed,mode,vx,vy,vz,pitch,yaw,roll,heading,airspeed,groundspeed,ekf_ok --seed $i &
         done
     done
     wait
@@ -49,29 +46,29 @@ cluster () {
 }
 
 postprocess () {
-    if [ ! -d $PREPROCESS_DIR ]; then
-        echo "Preprocessed data is required"
-        exit 1
-    fi
-    if [ ! -d $CLUSTERS_DIR ]; then
-        echo "Clusters are required"
-        exit 1
-    fi
-    if [ ! -d $GBDTSDATA_DIR ]; then
-        mkdir $GBDTSDATA_DIR
-    fi
-    echo "start postprocess"
     for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
-        GB="${GBDTSDATA_DIR}seed_$i/"
+        PROC=$DIRECTORY/seed_$i/$PREPROCESS_DIR
+        if [ ! -d $PROC ]; then
+            echo "Preprocess data before clustering $PROC"
+            exit 1
+        fi
+        CL=$DIRECTORY/seed_$i/$CLUSTERS_DIR
+        echo "$CL"
+        if [ ! -d $CL ]; then
+            echo "Clusters are required"
+            exit 1
+        fi
+        GB=$DIRECTORY/seed_$i/$GBDTSDATA_DIR
         if [ -d $GB ]; then
             rm -r $GB
         fi
+        echo "start postprocess"
         mkdir $GB
         for cmd in ${COMMANDS[*]}; do
             echo "Posprocessing $cmd"
             outdir=$GB$cmd
             mkdir $outdir
-            python experiments/postprocess_data.py ${CLUSTERS_DIR}seed_$i/${cmd}_files.txt --output-dir $outdir --verbose &
+            python experiments/postprocess_data.py $CL/${cmd}_files.txt --output-dir $outdir --verbose &
         done
     done
     wait
@@ -89,7 +86,7 @@ learn () {
         mkdir $MODELS_DIR
     fi
     echo "start learn"
-    for i in $(seq 1 ${NUMBER_OF_SEEDS}); do
+    for i in $(seq ${NUMBER_OF_SEEDS} ${NUMBER_OF_SEEDS}); do
         MD="${MODELS_DIR}seed_$i/"
         if [ -d $MD ]; then
             rm -r $MD

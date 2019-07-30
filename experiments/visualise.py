@@ -50,10 +50,11 @@ def parse_args():
 def get_detailed_plot_data(var_name, mission_trace):
     x = []
     y = []
-    for command_trace in mission_trace.commands:
-        for state in command_trace.states:
-            x.append(state.time_offset)
-            y.append(state[var_name])
+    #for command_trace in mission_trace.commands:
+    command_trace = mission_trace.commands[7]
+    for state in command_trace.states:
+        x.append(state.time_offset)
+        y.append(state[var_name])
     return x, y
 
 
@@ -93,7 +94,11 @@ def main():
     for i, fn in enumerate(args.files):
         colour = COLOURS[i]
         mission, traces = load_trace_from_file(fn)
-        coloured_traces += [(colour, t) for t in traces]
+#        coloured_traces += [(colour, t) for t in traces]
+        for t in traces:
+            if t.commands:
+                coloured_traces.append((colour, t))
+                break
 
     if args.vars:
         variables = [v.strip() for v in args.vars.split(',')]
@@ -121,7 +126,7 @@ def main():
         ]
     variables.sort()
 
-    plot(variables, coloured_traces, simple=args.simple, args.save)
+    plot(variables, coloured_traces, simple=args.simple, save=args.save)
 
 
 if __name__ == '__main__':

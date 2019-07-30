@@ -16,12 +16,15 @@ def test_constructor():
     conf = X(foo=0)
     assert conf.foo == 0
 
-    with pytest.raises(TypeError, message="expected TypeError (no arguments)"):
+    with pytest.raises(TypeError):
         assert X()
-    with pytest.raises(TypeError, message="expected TypeError (positional arguments are disallowed)"):
+        pytest.fail("expected TypeError (no arguments)")
+    with pytest.raises(TypeError):
         assert X(0)
-    with pytest.raises(TypeError, message="expected TypeError (erroneous property 'bar')"):
+        pytest.fail("expected TypeError (positional arguments are disallowed)")
+    with pytest.raises(TypeError):
         assert X(foo=0, bar=1)
+        pytest.fail("expected TypeError (erroneous property 'bar')")
 
     class X(Configuration):
         foo = option(int)
@@ -57,8 +60,9 @@ def test_is_frozen():
     class X(Configuration):
         foo = option(int)
     conf = X(foo=0)
-    with pytest.raises(AttributeError, message="expected AttributeError (can't set foo)"):
+    with pytest.raises(AttributeError):
         conf.foo = 10
+        pytest.fail("expected AttributeError (can't set foo)")
 
 
 def test_eq():
@@ -74,8 +78,9 @@ def test_eq():
     assert X(foo=1, bar=2) != X(foo=2, bar=2)
     assert X(foo=1, bar=2) != X(foo=1, bar=1)
 
-    with pytest.raises(Exception, message="expected Exception (confs have different parent classes)"):
+    with pytest.raises(Exception):
         assert X(foo=1, bar=2) == Y(foo=1, bar=2)
+        pytest.fail("expected Exception (confs have different parent classes)")
 
 
 def test_to_and_from_dict():

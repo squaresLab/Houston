@@ -116,6 +116,6 @@ def read_commands_yml(filename: str) -> List[Type[Command]]:
     """
     all_commands = []
     with open(filename, 'r') as f:
-        all_commands = yaml.load(f)['commands']
+        all_commands = yaml.load(f, Loader=yaml.FullLoader)['commands']
     classes = [create_command(c) for c in all_commands]
     return classes

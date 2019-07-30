@@ -73,7 +73,7 @@ if (length(myData) == 0) {
 
 total_dist <- function(mvc) {
     s <- sum(mvc@clusinfo$av_dist * mvc@clusinfo$size)
-    return(s + (s/8) * length(mvc@clusinfo$size))
+    return(s + (s/6) * length(mvc@clusinfo$size))
 }
 select_best_mvc <- function(mvc) {
     if (length(mvc) == 1) {
