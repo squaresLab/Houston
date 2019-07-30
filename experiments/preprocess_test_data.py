@@ -22,8 +22,10 @@ def setup_logging(verbose: bool = False) -> None:
 
 def setup_arg_parser():
     parser = argparse.ArgumentParser(description='Preprocess traces')
-    parser.add_argument('traces', type=str, action='store',
-                       help='path to trace files.')
+    parser.add_argument('database', type=str, action='store',
+                       help='path to test database yaml file.')
+    parser.add_argument('ground_truth', type=str, action='store',
+                        help='path to ground truth traces')
     parser.add_argument('--ignore-cat', action='store_true',
                         default=False,
                         help='ignore categorical fields of the data.')
@@ -38,17 +40,13 @@ def setup_arg_parser():
                         help='run in verbose mode')
     parser.add_argument('--threads', type=int, default=1,
                     help='number of threads')
-    parser.add_argument('--seed', type=int, default=1,
-                    help='random seed used to select data randomly')
-    parser.add_argument('--percentage', type=float, default=1.0,
-                    help='the percentage of data to consider')
     args = parser.parse_args()
     return args
 
 
-def transform_data(name, data_dir, output_dir, ignore_cat, separate_params):
-    m_hash = name[:-len('.json')]
-    filename = os.path.join(data_dir, name)
+def transform_data(name, output_dir, ignore_cat, separate_params):
+    m_hash = os.path.basename(name)[:-len('.json')]
+    filename = name
     with open(filename, 'r') as f:
         j = json.load(f)
     index = 0
@@ -105,29 +103,34 @@ def transform_data(name, data_dir, output_dir, ignore_cat, separate_params):
 if __name__=="__main__":
     args = setup_arg_parser()
     setup_logging(args.verbose)
-    data_dir = args.traces
-    random.seed(args.seed)
 
-    # obtain a list of oracle traces
-    filtered_traces_fn = os.path.join(data_dir, VALID_LIST_OUTPUT)
-    if os.path.exists(filtered_traces_fn):
-        with open(filtered_traces_fn, 'r') as f:
-            trace_filenames = YAML().load(f)
-    else:
-        trace_filenames = filter_truth_traces(data_dir)
-        with open(filtered_traces_fn, 'w') as f:
-            YAML().dump(trace_filenames, f)
-    logger.info("Total number of %d valid truth", len(trace_filenames))
+    with open(args.database, 'r') as f:
+        db = YAML().load(f)
+    with open(os.path.join(args.ground_truth, VALID_LIST_OUTPUT), 'r') as f:
+        all_truth = YAML().load(f)
+    all_truth = [os.path.join(args.ground_truth, t) for t in all_truth]
 
-    if args.percentage < 1.0:
-        num = int(args.percentage*len(trace_filenames))
-        trace_filenames = random.sample(trace_filenames, num)
-        logger.info("selected %d samples", num)
+
+    candidate_mutants = [e['inconsistent'] for e in db['entries'] if e['inconsistent']]
+    logger.info("starting with %d mutants", len(candidate_mutants))
+
+    oracles = set()
+    tests = set()
+    i = 0
+    for inc_list in candidate_mutants:
+        for tuples in inc_list:
+            oracles.add(all_truth[i])
+            tests.add(tuples['trace'])
+            i += 1
+    logger.debug("%d, %d", len(oracles), len(tests))
 
     futures = []
     with concurrent.futures.ProcessPoolExecutor(args.threads) as e:
-        for fn in trace_filenames:
-            future = e.submit(transform_data, fn, data_dir, args.output_dir, args.ignore_cat, args.separate_params)
+        for fn in oracles:
+            future = e.submit(transform_data, fn, args.output_dir, args.ignore_cat, args.separate_params)
+            futures.append(future)
+        for fn in tests:
+            future = e.submit(transform_data, fn, args.output_dir, args.ignore_cat, args.separate_params)
             futures.append(future)
 
         logger.debug("submitted all candidates")

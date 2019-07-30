@@ -42,16 +42,19 @@ def parse_args():
                    help='comma-delimited list of variables to plot.')
     p.add_argument('--simple', action='store_true',
                    help='plots simplified traces.')
+    p.add_argument('--save', action='store', default='',
+                   help="save to file")
     return p.parse_args()
 
 
 def get_detailed_plot_data(var_name, mission_trace):
     x = []
     y = []
-    for command_trace in mission_trace.commands:
-        for state in command_trace.states:
-            x.append(state.time_offset)
-            y.append(state[var_name])
+    #for command_trace in mission_trace.commands:
+    command_trace = mission_trace.commands[7]
+    for state in command_trace.states:
+        x.append(state.time_offset)
+        y.append(state[var_name])
     return x, y
 
 
@@ -72,12 +75,15 @@ def plot_var(v, idx, num_subplots, coloured_traces, func_trace_to_plot_data):
     plt.title(v)
 
 
-def plot(variables, coloured_traces, simple=True):
+def plot(variables, coloured_traces, simple=True, save=''):
     num_vars = len(variables)
     converter = get_simple_plot_data if simple else get_detailed_plot_data
     for i, var_name in enumerate(variables):
         plot_var(var_name, i + 1, num_vars, coloured_traces, converter)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(save)
 
 
 def main():
@@ -88,7 +94,11 @@ def main():
     for i, fn in enumerate(args.files):
         colour = COLOURS[i]
         mission, traces = load_trace_from_file(fn)
-        coloured_traces += [(colour, t) for t in traces]
+#        coloured_traces += [(colour, t) for t in traces]
+        for t in traces:
+            if t.commands:
+                coloured_traces.append((colour, t))
+                break
 
     if args.vars:
         variables = [v.strip() for v in args.vars.split(',')]
@@ -111,12 +121,12 @@ def main():
             'heading',
             'groundspeed',
             'ekf_ok',
-            'throttle_channel',
-            'roll_channel'
+#            'throttle_channel',
+#            'roll_channel'
         ]
     variables.sort()
 
-    plot(variables, coloured_traces, simple=args.simple)
+    plot(variables, coloured_traces, simple=args.simple, save=args.save)
 
 
 if __name__ == '__main__':
