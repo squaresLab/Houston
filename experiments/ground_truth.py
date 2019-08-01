@@ -176,12 +176,14 @@ def build_mutant_snapshot(bz: BugZooClient,
 def touches_the_lines(patch: bugzoo.core.Patch,
                       oracle_traces: List[MissionTrace]
                       ) -> bool:
+
+    coverage = None
     for oracle in oracle_traces:
-        if not oracle.commands:
+        if not oracle.coverage:
             continue
+        coverage = oracle.coverage
         break
-    coverage_info = [command.coverage for command in oracle.commands if command.coverage]
-    if not coverage_info:
+    if not coverage:
         # trace doesn't have coverage info
         raise Exception("Trace doesn't have coverage info")
 
@@ -196,13 +198,12 @@ def touches_the_lines(patch: bugzoo.core.Patch,
                     isinstance(l, bugzoo.DeletedLine):
                     lines.add(l.number)
         modified_lines[filename] = lines
-    logger.debug("AFDSA %s", modified_lines)
+    logger.debug("Modified lines %s", modified_lines)
 
     fileline_set = FileLineSet(modified_lines)
-    for coverage in coverage_info:
-        if fileline_set.intersection(coverage).files:
-            # line is covered
-            return True
+    if fileline_set.intersection(coverage).files:
+        # line is covered
+        return True
     return False
 
 

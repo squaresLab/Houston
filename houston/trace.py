@@ -40,9 +40,7 @@ class CommandTrace(object):
     command = attr.ib(type=Command)
     states = attr.ib(type=Tuple[State, ...])
     # messages = attr.ib(type=Tuple[Message, ...])
-    coverage = attr.ib(type=Optional[FileLineSet], default=None)
 
-    # TODO coverage
     # TODO messages
 
     @staticmethod
@@ -51,26 +49,17 @@ class CommandTrace(object):
                   ) -> 'CommandTrace':
         command = Command.from_dict(d['command'])
         states = tuple(system.state.from_dict(s) for s in d['states'])
-        if 'coverage' in d:
-            coverage = FileLineSet.from_dict(d['coverage'])
-        else:
-            coverage = None
-        return CommandTrace(command, states, coverage)
+        return CommandTrace(command, states)
 
     def to_dict(self) -> Dict[str, Any]:
-        cmd = {'command': self.command.to_dict(),
-               'states': [s.to_dict() for s in self.states]}
-        if self.coverage:
-            cmd['coverage'] = self.coverage.to_dict()
-        return cmd
-
-    def add_coverage(self, coverage: FileLineSet) -> None:
-        self.coverage = coverage
+        return {'command': self.command.to_dict(),
+                'states': [s.to_dict() for s in self.states]}
 
 
 @attr.s  # (frozen=True)
 class MissionTrace(object):
     commands = attr.ib(type=Tuple[CommandTrace, ...])
+    coverage = attr.ib(type=Optional[FileLineSet], default=None)
 
     @staticmethod
     def from_file(filename: str,
@@ -90,10 +79,17 @@ class MissionTrace(object):
                   ) -> 'MissionTrace':
         commands = tuple(CommandTrace.from_dict(c, system)
                          for c in d['commands'])
-        return MissionTrace(commands)
+        if 'coverage' in d:
+            coverage = FileLineSet.from_dict(d['coverage'])
+        else:
+            coverage = None
+        return MissionTrace(commands, coverage)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {'commands': [c.to_dict() for c in self]}
+        mt = {'commands': [c.to_dict() for c in self]}
+        if self.coverage:
+            mt['coverage'] = self.coverage.to_dict()
+        return mt
 
     def __iter__(self) -> Iterator[CommandTrace]:
         """
@@ -101,3 +97,6 @@ class MissionTrace(object):
         performed during this mission.
         """
         yield from self.commands
+
+    def add_coverage(self, coverage: FileLineSet) -> None:
+        self.coverage = coverage

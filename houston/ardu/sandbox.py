@@ -445,44 +445,32 @@ class Sandbox(BaseSandbox):
                             trace = CommandTrace(cmd, states)
                             wp_to_traces[cmd_index] = trace
 
-                            # if appropriate, store coverage files
-                            if collect_coverage:
-                                cm_directory = "command{}".format(cmd_index)
-                                self.__copy_coverage_files(cm_directory)
-
                         last_wp[0] = last_wp[1]
                         wp_event.clear()
 
             self.connection.remove_hook('check_for_reached')
             logger.debug("Removed hook")
 
+            coverage = None
             if collect_coverage:
-                for cmd_index, command in enumerate(commands):
-                    if cmd_index in wp_to_traces:
-                        directory = 'command{}'.format(cmd_index)
-                        coverage = self.__get_coverage(directory=directory)
-                        wp_to_traces[cmd_index].add_coverage(coverage)
+                # if appropriate, store coverage files
+                self.__flush_coverage()
+                coverage = self.__get_coverage()
 
             traces = [wp_to_traces[k] for k in sorted(wp_to_traces.keys())]
-            return MissionTrace(tuple(traces))
+            return MissionTrace(tuple(traces), coverage)
 
-    def __get_coverage(self, directory: str) -> "FileLineSet":
+    def __get_coverage(self) -> "FileLineSet":
         """
         Copies gcda files from /tmp/<directory> to /opt/ardupilot
         (where the source code is) and collects coverage results.
         """
         bzc = self._bugzoo.containers
-        rm_cmd = 'cd /opt/ardupilot/ && find . -name *.gcda | xargs rm'
-        cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'  # noqa: pycodestyle
-        cp_cmd = cp_cmd.format(directory)
 
-        bzc.command(self.container, rm_cmd)
-        bzc.command(self.container, cp_cmd)
         coverage = bzc.extract_coverage(self.container)
-        bzc.command(self.container, rm_cmd)
         return coverage
 
-    def __copy_coverage_files(self, directory: str) -> None:
+    def __flush_coverage(self) -> None:
         """
         Sends a SIGUSR1 signal to ardupilot processes running in the
         container. They will flush gcov data into gcda files that
@@ -490,9 +478,6 @@ class Sandbox(BaseSandbox):
         """
         bzc = self._bugzoo.containers
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
-        mv_cmd = 'find . -name *.gcda -exec cp --parents \\{{\\}} /tmp/{}/ \\;'
-        mv_cmd = mv_cmd.format(directory)
-        rm_cmd = 'find . -name *.gcda | xargs rm'
 
         out = bzc.command(self.container, ps_cmd)
         all_processes = out.output.splitlines()
@@ -504,7 +489,3 @@ class Sandbox(BaseSandbox):
             if cmd.startswith('/opt/ardupilot'):
                 bzc.command(self.container, "kill -10 {}".format(pid))
                 break
-        # coverage = self._bugzoo.coverage.extract(self.container)
-        bzc.command(self.container, "mkdir /tmp/{}".format(directory))
-        bzc.command(self.container, mv_cmd)
-        bzc.command(self.container, rm_cmd)
