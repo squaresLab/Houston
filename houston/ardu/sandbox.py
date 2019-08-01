@@ -48,7 +48,7 @@ def detect_lost_connection(f):
 class Sandbox(BaseSandbox):
     def __init__(self,
                  *args,
-                 home: HomeLocation = Optional[None],
+                 home: Optional[HomeLocation] = None,
                  **kwargs
                  ) -> None:
         super().__init__(*args, **kwargs)

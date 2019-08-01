@@ -196,6 +196,7 @@ def touches_the_lines(patch: bugzoo.core.Patch,
                     isinstance(l, bugzoo.DeletedLine):
                     lines.add(l.number)
         modified_lines[filename] = lines
+    logger.debug("AFDSA %s", modified_lines)
 
     fileline_set = FileLineSet(modified_lines)
     for coverage in coverage_info:
@@ -220,6 +221,8 @@ def process_mutation(system: Type[System],
     inconsistent_results = []
     consistent_results = []
 
+    count = 3
+
     # build an ephemeral image for the mutant
     try:
         with build_mutant_snapshot(client_bugzoo, snapshot_orig, coverage, diff) as snapshot:
@@ -233,7 +236,7 @@ def process_mutation(system: Type[System],
                 logger.debug("evaluating oracle trace: %s", fn_trace)
                 mission, oracle_traces = load_traces_file(fn_trace)
                 try:
-                    if (coverage and not touches_the_lines(patch, oracle_traces)):
+                    if count <= 0 or (coverage and not touches_the_lines(patch, oracle_traces)):
                         logger.debug("This mission is not valid: %s", mission.commands)
                         continue
                 except:
@@ -262,6 +265,7 @@ def process_mutation(system: Type[System],
                 except:
                     logger.exception("failed to build trace %s for mutant: %s", fn_trace, diff)
                     continue
+                count -= 1
                 try:
                     if not matches_ground_truth(trace_mutant, oracle_traces):
                         logger.info("found an acceptable mutant!")
